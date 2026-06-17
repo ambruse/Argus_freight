@@ -1,0 +1,924 @@
+// src/controllers/shipmentController.js
+// ─────────────────────────────────────────────────────────────
+//  CRUD operations for the shipments table.
+//  All queries are parameterised to prevent SQL injection.
+// ─────────────────────────────────────────────────────────────
+const db = require('../config/db');
+const { query } = require('../config/dbHelper');
+const nodemailer = require('nodemailer');
+
+// ── Helper: generate next auto REF NO ────────────────────────
+//  Pattern: ARG-XXXX  (e.g. ARG-1001)
+//  Finds the highest existing numeric suffix and increments it.
+const generateRefNo = async (req) => {
+  const result = await query(req,
+    `SELECT ref_no FROM shipments
+     WHERE ref_no ~ '^ARG-[0-9]+$'
+     ORDER BY CAST(SUBSTRING(ref_no FROM 5) AS INTEGER) DESC
+     LIMIT 1`
+  );
+
+  if (result.rows.length === 0) return 'ARG-1001';
+
+  const last = result.rows[0].ref_no; // e.g. ARG-1005
+  const num  = parseInt(last.split('-')[1], 10);
+  return `ARG-${num + 1}`;
+};
+
+// ─────────────────────────────────────────────────────────────
+//  GET /api/shipments
+//  Query params:
+//    ?exclude_direct=true  → exclude rows where note = 'Direct Booking'  (RFQ page)
+//    ?status=Confirmed      → filter by status
+// ─────────────────────────────────────────────────────────────
+const getAllShipments = async (req, res, next) => {
+  try {
+    const { exclude_direct, status } = req.query;
+    const myEmail = process.env.SMTP_USER || '';
+    const conditions = [];
+    const params     = [myEmail];
+
+    if (exclude_direct === 'true') {
+      conditions.push(`(note IS NULL OR note != 'Direct Booking')`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(`status = $${params.length}`);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const result = await query(req, 
+      `SELECT s.*, 
+         (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no) AS replies_count,
+         (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no AND r.is_read = false AND LOWER(r.from_email) != LOWER($1)) AS unread_replies_count
+       FROM shipments s ${where} ORDER BY s.created_at DESC`,
+      params
+    );
+
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  GET /api/shipments/:ref_no
+// ─────────────────────────────────────────────────────────────
+const getShipmentByRef = async (req, res, next) => {
+  try {
+    const result = await query(req, 
+      'SELECT * FROM shipments WHERE ref_no = $1',
+      [req.params.ref_no]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  POST /api/shipments
+//  If ref_no is blank, auto-generates ARG-XXXX.
+// ─────────────────────────────────────────────────────────────
+const createShipment = async (req, res, next) => {
+  try {
+    let {
+      ref_no, refer_by, pol, pod, commodity, term, dimension,
+      container, mode, weight, pickup_address, delivery_address,
+      dear_who, email, status, do_number, box_no, so_number,
+      bl_number, track_status, carrier, etd, eta, cost, profit, note,
+    } = req.body;
+
+    // Auto-generate if blank
+    if (!ref_no || ref_no.trim() === '') {
+      ref_no = await generateRefNo(req);
+    }
+
+    const result = await query(req, 
+      `INSERT INTO shipments (
+        ref_no, refer_by, pol, pod, commodity, term, dimension,
+        container, mode, weight, pickup_address, delivery_address,
+        dear_who, email, status, do_number, box_no, so_number,
+        bl_number, track_status, carrier, etd, eta, cost, profit, note, operator
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,
+        $13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27
+      ) RETURNING *`,
+      [
+        ref_no, refer_by, pol, pod, commodity, term, dimension,
+        container, mode, weight || null, pickup_address, delivery_address,
+        dear_who, email, status || 'Pending',
+        do_number, box_no, so_number, bl_number,
+        track_status, carrier, etd || null, eta || null,
+        cost || null, profit || null, note,
+        req.user.username,
+      ]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  PUT /api/shipments/:ref_no
+//  Full update — replaces all editable fields.
+// ─────────────────────────────────────────────────────────────
+const updateShipment = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    const {
+      refer_by, pol, pod, commodity, term, dimension,
+      container, mode, weight, pickup_address, delivery_address,
+      dear_who, email, status, do_number, box_no, so_number,
+      bl_number, track_status, carrier, etd, eta, cost, profit, note,
+      customer_name, customer_email,
+    } = req.body;
+
+    const result = await query(req, 
+      `UPDATE shipments SET
+        refer_by=$1, pol=$2, pod=$3, commodity=$4, term=$5, dimension=$6,
+        container=$7, mode=$8, weight=$9, pickup_address=$10, delivery_address=$11,
+        dear_who=$12, email=$13, status=$14, do_number=$15, box_no=$16,
+        so_number=$17, bl_number=$18, track_status=$19, carrier=$20,
+        etd=$21, eta=$22, cost=$23, profit=$24, note=$25,
+        customer_name=$26, customer_email=$27
+      WHERE ref_no=$28
+      RETURNING *`,
+      [
+        refer_by, pol, pod, commodity, term, dimension,
+        container, mode, weight || null, pickup_address, delivery_address,
+        dear_who, email, status,
+        do_number, box_no, so_number, bl_number, track_status, carrier,
+        etd || null, eta || null, cost || null, profit || null, note,
+        customer_name || null, customer_email || null,
+        ref_no,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  PATCH /api/shipments/:ref_no/status
+//  Updates status AND resets last_follow_up to NOW().
+//  Used by the RFQ modal "Edit Status" dropdown.
+// ─────────────────────────────────────────────────────────────
+const updateStatus = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    const { status, cost, profit } = req.body;
+
+    const result = await query(req, 
+      `UPDATE shipments SET 
+         status = COALESCE($1, status),
+         cost = COALESCE($2, cost),
+         profit = COALESCE($3, profit),
+         last_follow_up = CASE WHEN COALESCE($1, status) = 'Cancelled' THEN NULL ELSE NOW() END
+       WHERE ref_no = $4
+       RETURNING *`,
+      [status, cost, profit, ref_no]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  PATCH /api/shipments/:ref_no/tracking
+//  Updates only the tracking/execution fields.
+// ─────────────────────────────────────────────────────────────
+const updateTracking = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    const {
+      do_number, box_no, so_number, bl_number, track_status, carrier,
+      etd, eta, cost, profit, customer_name, customer_email
+    } = req.body;
+
+    const result = await query(req, 
+      `UPDATE shipments
+       SET do_number=$1, box_no=$2, so_number=$3, bl_number=$4,
+           track_status=$5, carrier=$6, etd=$7, eta=$8, cost=$9, profit=$10,
+           customer_name=$11, customer_email=$12
+       WHERE ref_no=$13
+       RETURNING *`,
+      [
+        do_number, box_no, so_number, bl_number, track_status, carrier,
+        etd || null, eta || null, cost || null, profit || null,
+        customer_name || null, customer_email || null,
+        ref_no
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  DELETE /api/shipments/:ref_no
+// ─────────────────────────────────────────────────────────────
+const deleteShipment = async (req, res, next) => {
+  try {
+    const result = await query(req, 
+      'DELETE FROM shipments WHERE ref_no = $1 RETURNING ref_no',
+      [req.params.ref_no]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+
+    res.json({ success: true, message: `Shipment ${req.params.ref_no} deleted.` });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+const getReplies = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    
+    // Resolve myEmail dynamically
+    let myEmail = '';
+    try {
+      const emailRes = await db.query("SELECT email_address FROM users WHERE id = $1", [req.user.id]);
+      if (emailRes.rows.length > 0 && emailRes.rows[0].email_address) {
+        myEmail = emailRes.rows[0].email_address.toLowerCase().trim();
+      }
+    } catch (dbErr) {}
+
+    // Mark incoming replies as read
+    await query(req, 
+      `UPDATE shipment_replies SET is_read = true 
+       WHERE ref_no = $1 AND LOWER(from_email) != LOWER($2)`,
+      [ref_no, myEmail]
+    );
+
+    const result = await query(req, 
+      `SELECT * FROM shipment_replies WHERE ref_no = $1 ORDER BY received_at ASC`,
+      [ref_no]
+    );
+
+    const formatted = result.rows.map(row => ({
+      ...row,
+      is_outgoing: (row.from_email || '').toLowerCase().trim() === myEmail
+    }));
+
+    res.json({ success: true, data: formatted });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  POST /api/shipments/:ref_no/replies
+//  Sends an email reply and saves it to shipment_replies
+// ─────────────────────────────────────────────────────────────
+const sendReply = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    const { message } = req.body;
+
+    if (!message || message.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Message content is required.' });
+    }
+
+    // Resolve Dynamic Email Credentials from logged-in user
+    let smtpUser = null;
+    let smtpPass = null;
+    try {
+      const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+      if (userRes.rows.length > 0) {
+        smtpUser = userRes.rows[0].email_address;
+        smtpPass = userRes.rows[0].email_password;
+      }
+    } catch (dbErr) {
+      console.error('Error loading credentials from DB:', dbErr.message);
+    }
+
+    if (!smtpUser || !smtpPass) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Your email settings are not configured. Please configure your email address and app password in Settings.' 
+      });
+    }
+
+    // 1. Fetch Shipment
+    const shipRes = await query(req, 'SELECT * FROM shipments WHERE ref_no = $1', [ref_no]);
+    if (shipRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+    const shipment = shipRes.rows[0];
+
+    // 2. Find Recipient Email
+    let recipientEmail = shipment.email;
+
+    // Look for the latest incoming reply (not from ourselves) to reply to
+    const myEmail = process.env.SMTP_USER;
+    const latestReplyRes = await query(req, 
+      `SELECT from_email FROM shipment_replies 
+       WHERE ref_no = $1 AND from_email != $2 
+       ORDER BY received_at DESC LIMIT 1`,
+      [ref_no, myEmail]
+    );
+
+    if (latestReplyRes.rows.length > 0) {
+      recipientEmail = latestReplyRes.rows[0].from_email;
+    }
+
+    if (!recipientEmail) {
+      return res.status(400).json({ success: false, message: 'No recipient email address available.' });
+    }
+
+    // 3. SMTP Credentials already resolved at top
+
+    // 4. Configure Nodemailer
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465', 
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+
+    // 5. Construct Subject
+    let subject = `Re: RFQ FROM ${shipment.pol || ''} TO ${shipment.pod || ''}`;
+    if (shipment.mode) subject += `/${shipment.mode}`;
+    if (shipment.container) subject += `/${shipment.container}`;
+    subject += `/${shipment.ref_no}/CID : ${shipment.customer_id || ''}`;
+
+    // 6. Construct Email Text & HTML
+    const salutation = shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,';
+    const messageText = `${salutation}\n\n${message.trim()}\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
+
+    const formattedInput = message.trim().replace(/\n/g, '<br>');
+    const htmlBody = `
+      <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        ${salutation}<br><br>
+        ${formattedInput}<br><br>
+        Best regards,<br><br>
+        <b>Muhammed Jabir</b><br>
+        PRICING AND OPERATION<br>
+        ARGUS SHIPPING<br><br>
+        📞 +974 30512233<br><br>
+        📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
+        🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
+      </body>
+      </html>
+    `;
+
+    // 7. Setup Mail Options
+    const mailOptions = {
+      from: `"FreightOS" <${smtpUser}>`,
+      to: recipientEmail,
+      subject: subject,
+      text: messageText,
+      html: htmlBody,
+    };
+
+    // 8. Send Email
+    await transporter.sendMail(mailOptions);
+
+    // 9. Save to shipment_replies DB
+    const insertRes = await query(req, 
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [ref_no, smtpUser, subject, messageText]
+    );
+
+    // 8. Update last_follow_up
+    await query(req, `UPDATE shipments SET last_follow_up = NOW() WHERE ref_no = $1`, [ref_no]);
+
+    res.json({ 
+      success: true, 
+      data: { ...insertRes.rows[0], is_outgoing: true }, 
+      message: 'Reply sent successfully.' 
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  POST /api/shipments/:ref_no/follow-up
+//  Sends a standardized follow-up email and updates follow-up time
+// ─────────────────────────────────────────────────────────────
+const sendFollowUp = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+
+    // Resolve Dynamic Email Credentials from logged-in user
+    let smtpUser = null;
+    let smtpPass = null;
+    try {
+      const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+      if (userRes.rows.length > 0) {
+        smtpUser = userRes.rows[0].email_address;
+        smtpPass = userRes.rows[0].email_password;
+      }
+    } catch (dbErr) {
+      console.error('Error loading credentials from DB:', dbErr.message);
+    }
+
+    if (!smtpUser || !smtpPass) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Your email settings are not configured. Please configure your email address and app password in Settings.' 
+      });
+    }
+
+    // 1. Fetch Shipment
+    const shipRes = await query(req, 'SELECT * FROM shipments WHERE ref_no = $1', [ref_no]);
+    if (shipRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+    const shipment = shipRes.rows[0];
+
+    // 2. Find Recipient Email
+    let recipientEmail = shipment.email;
+
+    // Look for the latest incoming reply (not from ourselves) to reply to
+    const myEmail = process.env.SMTP_USER;
+    const latestReplyRes = await query(req, 
+      `SELECT from_email FROM shipment_replies 
+       WHERE ref_no = $1 AND from_email != $2 
+       ORDER BY received_at DESC LIMIT 1`,
+      [ref_no, myEmail]
+    );
+
+    if (latestReplyRes.rows.length > 0) {
+      recipientEmail = latestReplyRes.rows[0].from_email;
+    }
+
+    if (!recipientEmail) {
+      return res.status(400).json({ success: false, message: 'No recipient email address available.' });
+    }
+
+    // 3. SMTP Credentials already resolved at top
+
+    // 4. Configure Nodemailer
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465', 
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+
+    // 5. Construct Subject
+    let subject = `Re: RFQ FROM ${shipment.pol || ''} TO ${shipment.pod || ''}`;
+    if (shipment.mode) subject += `/${shipment.mode}`;
+    if (shipment.container) subject += `/${shipment.container}`;
+    subject += `/${shipment.ref_no}/CID : ${shipment.customer_id || ''}`;
+
+    // 6. Construct Email Text & HTML
+    const salutation = shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,';
+    const messageText = `${salutation}\n\nI hope this email finds you well.\n\nI am writing to gently follow up on my previous message regarding the pending shipment. Could you please provide an update on its current status at your earliest convenience?\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
+
+    const htmlBody = `
+      <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        ${salutation}<br><br>
+        I hope this email finds you well.<br><br>
+        I am writing to gently follow up on my previous message regarding the pending shipment. Could you please provide an update on its current status at your earliest convenience?<br><br>
+        Best regards,<br><br>
+        <b>Muhammed Jabir</b><br>
+        PRICING AND OPERATION<br>
+        ARGUS SHIPPING<br><br>
+        📞 +974 30512233<br><br>
+        📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
+        🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
+      </body>
+      </html>
+    `;
+
+    // 7. Setup Mail Options
+    const mailOptions = {
+      from: `"FreightOS" <${smtpUser}>`,
+      to: recipientEmail,
+      subject: subject,
+      html: htmlBody,
+    };
+
+    // 8. Send Email
+    await transporter.sendMail(mailOptions);
+
+    // 9. Save to shipment_replies DB
+    const insertRes = await query(req, 
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [ref_no, smtpUser, subject, messageText]
+    );
+
+    // 9. Update last_follow_up
+    const updatedShipment = await query(req, 
+      `UPDATE shipments SET last_follow_up = NOW() WHERE ref_no = $1 RETURNING last_follow_up`,
+      [ref_no]
+    );
+
+    res.json({
+      success: true,
+      data: { ...insertRes.rows[0], is_outgoing: true },
+      last_follow_up: updatedShipment.rows[0].last_follow_up,
+      message: 'Follow-up email sent successfully.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  POST /api/shipments/:ref_no/send-quotation
+//  Sends a custom quotation email to the customer
+// ─────────────────────────────────────────────────────────────
+const sendQuotation = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    const { mode, freightRate, exWork, warTime, note, changeTrans, zone, trans, currency, validityDate } = req.body;
+
+    if (!mode || (mode !== 'AIR' && mode !== 'SEA')) {
+      return res.status(400).json({ success: false, message: 'Valid mode (AIR or SEA) is required.' });
+    }
+
+    // Resolve Dynamic Email Credentials from logged-in user
+    let smtpUser = null;
+    let smtpPass = null;
+    try {
+      const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+      if (userRes.rows.length > 0) {
+        smtpUser = userRes.rows[0].email_address;
+        smtpPass = userRes.rows[0].email_password;
+      }
+    } catch (dbErr) {
+      console.error('Error loading credentials from DB:', dbErr.message);
+    }
+
+    if (!smtpUser || !smtpPass) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Your email settings are not configured. Please configure your email address and app password in Settings.' 
+      });
+    }
+
+    // 1. Fetch Shipment
+    const shipRes = await query(req, 'SELECT * FROM shipments WHERE ref_no = $1', [ref_no]);
+    if (shipRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+    const shipment = shipRes.rows[0];
+
+    // 2. Validate Customer Email
+    const recipientEmail = shipment.customer_email || shipment.email;
+    if (!recipientEmail) {
+      return res.status(400).json({ success: false, message: 'Customer email address is not configured for this shipment.' });
+    }
+
+    // 3. Generate PDF Attachment via DOCX template rendering and Word COM conversion
+    const PizZip = require('pizzip');
+    const Docxtemplater = require('docxtemplater');
+    const { exec } = require('child_process');
+    const fs = require('fs');
+    const path = require('path');
+
+    const assetsDir = path.resolve(__dirname, '../../../assets');
+    
+    // We check if "SEA TEMPLATE.docx" exists, otherwise fallback to "SEA TEMPLATE NEW.docx"
+    let templateFileName = mode === 'AIR' ? 'AIR TEMPLATE.docx' : 'SEA TEMPLATE.docx';
+    let templatePath = path.join(assetsDir, templateFileName);
+    if (mode === 'SEA' && !fs.existsSync(templatePath)) {
+      templateFileName = 'SEA TEMPLATE NEW.docx';
+      templatePath = path.join(assetsDir, templateFileName);
+    }
+
+    if (!fs.existsSync(templatePath)) {
+      return res.status(500).json({ success: false, message: `Template file ${templateFileName} not found in assets directory.` });
+    }
+
+    // Date formatting
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const dateStr = `${dd}/${mm}/${yyyy}`;
+
+    // Format validity date based on input
+    let validityStr = '';
+    if (validityDate && validityDate.trim() !== '') {
+      try {
+        const parts = validityDate.split('-');
+        if (parts.length === 3) {
+          // input is YYYY-MM-DD from HTML date input
+          validityStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        } else {
+          validityStr = validityDate;
+        }
+      } catch (e) {
+        const validityDateDefault = new Date(today);
+        validityDateDefault.setDate(today.getDate() + 3);
+        const vDd = String(validityDateDefault.getDate()).padStart(2, '0');
+        const vMm = String(validityDateDefault.getMonth() + 1).padStart(2, '0');
+        const vYyyy = validityDateDefault.getFullYear();
+        validityStr = `${vDd}/${vMm}/${vYyyy}`;
+      }
+    } else {
+      const validityDateDefault = new Date(today);
+      validityDateDefault.setDate(today.getDate() + 3);
+      const vDd = String(validityDateDefault.getDate()).padStart(2, '0');
+      const vMm = String(validityDateDefault.getMonth() + 1).padStart(2, '0');
+      const vYyyy = validityDateDefault.getFullYear();
+      validityStr = `${vDd}/${vMm}/${vYyyy}`;
+    }
+
+    const formatCurrency = (val) => {
+      if (val === undefined || val === null || val === '') return '—';
+      const num = Number(val);
+      return isNaN(num) ? val : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    // Currency conversion logic
+    let multiplier = 1;
+    if (currency === 'GBP') {
+      multiplier = 5;
+    } else if (currency === 'USD') {
+      multiplier = 3.65;
+    }
+
+    const freightRateNum = parseFloat(freightRate) || 0;
+    const exWorkNum = parseFloat(exWork) || 0;
+
+    const freightQar = freightRateNum * multiplier;
+    const exWorkQar = exWorkNum * multiplier;
+    const sumQar = freightQar + exWorkQar;
+
+    // Load the DOCX template
+    const templateBytes = fs.readFileSync(templatePath);
+    const zip = new PizZip(templateBytes);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+    });
+
+    // Extract Zone and Trans details (apply defaults if empty)
+    const finalZone = zone && zone.trim() !== '' ? zone.trim() : 'Zone-1';
+    let finalTrans = '900';
+    if (mode === 'AIR') {
+      finalTrans = trans && trans.trim() !== '' ? trans.trim() : '500';
+    } else {
+      finalTrans = trans && trans.trim() !== '' ? trans.trim() : '900';
+    }
+
+    const transNum = parseFloat(finalTrans) || 0;
+
+    // Extract Port Codes helper
+    const extractPortCode = (portStr) => {
+      if (!portStr) return '';
+      const match = portStr.match(/\(([^)]+)\)\s*$/);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+      return portStr;
+    };
+
+    const polCode = extractPortCode(shipment.pol);
+    const podCode = extractPortCode(shipment.pod);
+
+    // Set docxtemplater variables matching new placeholders
+    const renderVars = {
+      'DATE': dateStr,
+      'VALIDITY': validityStr,
+      'POL': shipment.pol || '',
+      'POD': shipment.pod || '',
+      'POL_PCODE': polCode,
+      'POD_PCODE': podCode,
+      'COMMODITY': shipment.commodity || '',
+      'FREIGHT': formatCurrency(sumQar),
+      'Zone': finalZone,
+      'TRANS': formatCurrency(transNum),
+      '400+TRANS+FREIGHT': formatCurrency(400 + transNum + sumQar)
+    };
+
+    doc.render(renderVars);
+    const docxBuffer = doc.getZip().generate({ type: 'nodebuffer' });
+
+    // 4. Archive PDF to disk (save templated docx, convert to pdf, delete docx)
+    const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../../uploads');
+    const refNoClean = ref_no.replace(/[^a-zA-Z0-9\-]/g, '_');
+    const targetDir = path.join(UPLOAD_DIR, refNoClean);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    const timestamp = Date.now();
+    const cid = shipment.customer_id || 'UNKNOWN';
+    const originalName = `Quotation-${cid}.pdf`;
+    const fileName = `${timestamp}_${originalName}`;
+    const filePath = path.join(targetDir, fileName);
+
+    const tempDocxFileName = `${timestamp}_Quotation-${cid}.docx`;
+    const tempDocxPath = path.join(targetDir, tempDocxFileName);
+
+    // Write temp docx
+    fs.writeFileSync(tempDocxPath, docxBuffer);
+
+    // Convert docx to pdf
+    const convertDocxToPdf = (docxPath, pdfPath) => {
+      return new Promise((resolve, reject) => {
+        const absoluteDocx = path.resolve(docxPath);
+        const absolutePdf = path.resolve(pdfPath);
+        const escapedDocx = absoluteDocx.replace(/\\/g, '/').replace(/'/g, "''");
+        const escapedPdf = absolutePdf.replace(/\\/g, '/').replace(/'/g, "''");
+        const psCommand = `$word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open('${escapedDocx}'); $doc.SaveAs('${escapedPdf}', 17); $doc.Close(); $word.Quit();`;
+        
+        exec(`powershell -NoProfile -Command "${psCommand}"`, (err, stdout, stderr) => {
+          console.log("PS STDOUT:", stdout);
+          console.log("PS STDERR:", stderr);
+          if (err) {
+            return reject(new Error(stderr || err.message));
+          }
+          resolve();
+        });
+      });
+    };
+
+    await convertDocxToPdf(tempDocxPath, filePath);
+
+    // Clean up temporary docx
+    try {
+      fs.unlinkSync(tempDocxPath);
+    } catch (e) {
+      console.error("Failed to delete temporary docx:", e);
+    }
+
+    const pdfBytes = fs.readFileSync(filePath);
+
+    // Delete previous quotation files for this shipment/RFQ from disk and DB
+    try {
+      const oldQuots = await query(req, 
+        `SELECT id, file_path FROM files 
+         WHERE shipment_ref_no = $1 AND original_name LIKE 'Quotation-%.pdf'`,
+        [ref_no]
+      );
+      for (const oldFile of oldQuots.rows) {
+        const oldAbsPath = path.resolve(process.cwd(), oldFile.file_path);
+        if (fs.existsSync(oldAbsPath)) {
+          fs.unlinkSync(oldAbsPath);
+        }
+        await query(req, 'DELETE FROM files WHERE id = $1', [oldFile.id]);
+      }
+    } catch (err) {
+      console.error('[Quotation Cleanup] Failed to clean up old quotation files:', err);
+    }
+
+    // Save to files table
+    const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
+    await query(req, 
+      `INSERT INTO files (shipment_ref_no, filename, original_name, file_path, mime_type, size_bytes)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [ref_no, fileName, originalName, relativePath, 'application/pdf', pdfBytes.length]
+    );
+
+    // 5. SMTP Credentials already resolved at top
+
+    // 6. Configure Nodemailer
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+
+    // 7. Construct Subject
+    let subject = `Quotation for Shipment - Ref: ${shipment.ref_no}`;
+    if (shipment.pol && shipment.pod) {
+      subject += ` (POL: ${shipment.pol} - POD: ${shipment.pod})`;
+    }
+
+    // 8. Construct Email Text & HTML
+    const salutation = shipment.customer_name ? `Dear ${shipment.customer_name},` : (shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,');
+    
+    let emailBodyText = `Find the Quotation given.`;
+    if (note && note.trim()) {
+      emailBodyText += `\n\n${note.trim()}`;
+    }
+    
+    if (mode === 'SEA' && warTime) {
+      emailBodyText += `\n\nShipping line charges, port charges, and customs duties will be charged at actuals.\n` +
+        `* War risk surcharge (WRS) and any emergency surcharges are excluded.\n` +
+        `* Cargo may be rerouted by the carrier due to the ongoing regional crisis.\n` +
+        `* The above rates are subject to the availability of space and equipment.\n` +
+        `* Transit times are for indicative purposes only; the carrier will confirm the exact transit time at departure.\n` +
+        `* In case of end-voyage or discharge at a contingency/alternate port, the consignee will be liable for all additional costs arising.`;
+    }
+
+    const messageText = `${salutation}\n\n${emailBodyText}\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
+
+    const htmlContent = emailBodyText.replace(/\n/g, '<br>');
+    const htmlBody = `
+      <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        ${salutation}<br><br>
+        ${htmlContent}<br><br>
+        Best regards,<br><br>
+        <b>Muhammed Jabir</b><br>
+        PRICING AND OPERATION<br>
+        ARGUS SHIPPING<br><br>
+        📞 +974 30512233<br><br>
+        📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
+        🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
+      </body>
+      </html>
+    `;
+
+    // 9. Setup Mail Options with Attachment
+    const mailOptions = {
+      from: `"FreightOS" <${smtpUser}>`,
+      to: recipientEmail,
+      subject: subject,
+      text: messageText,
+      html: htmlBody,
+      attachments: [
+        {
+          filename: originalName,
+          content: pdfBytes,
+        }
+      ]
+    };
+
+    // 10. Send Email
+    await transporter.sendMail(mailOptions);
+
+    // 11. Save to shipment_replies DB
+    const insertRes = await query(req, 
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [ref_no, smtpUser, subject, messageText]
+    );
+
+    // 12. Update last_follow_up, cost and profit (cost defaults to 0, profit holds the total quoted price sum)
+    const finalProfit = 400 + transNum + sumQar;
+    const updatedShipment = await query(req, 
+      `UPDATE shipments SET last_follow_up = NOW(), cost = 0, profit = $1 WHERE ref_no = $2 RETURNING last_follow_up, cost, profit`,
+      [finalProfit, ref_no]
+    );
+
+    res.json({
+      success: true,
+      data: { ...insertRes.rows[0], is_outgoing: true },
+      last_follow_up: updatedShipment.rows[0].last_follow_up,
+      cost: updatedShipment.rows[0].cost,
+      profit: updatedShipment.rows[0].profit,
+      message: 'Quotation sent successfully.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  getAllShipments,
+  getShipmentByRef,
+  createShipment,
+  updateShipment,
+  updateStatus,
+  updateTracking,
+  deleteShipment,
+  getReplies,
+  sendReply,
+  sendFollowUp,
+  sendQuotation,
+};
