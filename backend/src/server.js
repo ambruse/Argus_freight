@@ -84,6 +84,85 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ── Database Initialization ────────────────────────────────────
 const db = require('./config/db');
 db.query(`
+  CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+  DO $$ BEGIN
+    CREATE TYPE shipment_status AS ENUM (
+      'Pending',
+      'Quoted',
+      'Customer Review',
+      'Confirmed',
+      'Files Pending',
+      'Completed',
+      'Return Pending',
+      'Cancelled'
+    );
+  EXCEPTION
+    WHEN duplicate_object THEN null;
+  END $$;
+
+  DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('admin', 'operator', 'calling_agent', 'sales', 'customer');
+  EXCEPTION
+    WHEN duplicate_object THEN null;
+  END $$;
+
+  CREATE TABLE IF NOT EXISTS users (
+    id            SERIAL PRIMARY KEY,
+    username      VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role          user_role    NOT NULL DEFAULT 'operator',
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS shipments (
+    id                SERIAL,
+    ref_no            VARCHAR(50)  PRIMARY KEY,
+    customer_id       VARCHAR(5),
+    cust_req_no       VARCHAR(50),
+    refer_by          VARCHAR(100),
+    pol               VARCHAR(100),
+    pod               VARCHAR(100),
+    commodity         VARCHAR(255),
+    term              VARCHAR(50),
+    dimension         VARCHAR(255),
+    container         VARCHAR(100),
+    mode              VARCHAR(50),
+    weight            VARCHAR(100),
+    pickup_address    TEXT,
+    delivery_address  TEXT,
+    dear_who          VARCHAR(255),
+    email             VARCHAR(255),
+    status            shipment_status NOT NULL DEFAULT 'Pending',
+    last_follow_up    TIMESTAMPTZ     DEFAULT NOW(),
+    do_number         VARCHAR(100),
+    box_no            VARCHAR(100),
+    so_number         VARCHAR(100),
+    bl_number         VARCHAR(100),
+    track_status      VARCHAR(255),
+    carrier           VARCHAR(150),
+    etd               DATE,
+    eta               DATE,
+    cost              NUMERIC(15, 2),
+    profit            NUMERIC(15, 2),
+    customer_name     VARCHAR(255),
+    customer_email    VARCHAR(255),
+    note              TEXT,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS files (
+    id              SERIAL PRIMARY KEY,
+    shipment_ref_no VARCHAR(50)  NOT NULL REFERENCES shipments(ref_no) ON DELETE CASCADE,
+    filename        VARCHAR(255) NOT NULL,
+    original_name   VARCHAR(255) NOT NULL,
+    file_path       TEXT         NOT NULL,
+    mime_type       VARCHAR(100) NOT NULL DEFAULT 'application/pdf',
+    size_bytes      BIGINT,
+    uploaded_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+  );
+
   CREATE TABLE IF NOT EXISTS contacts (
     id          SERIAL PRIMARY KEY,
     email       VARCHAR(255) NOT NULL,
