@@ -4,10 +4,11 @@ const nextConfig = {
   distDir: process.env.NODE_ENV === "development" ? ".next/dev" : ".next",
   // Allow proxying API requests to backend in development
   async rewrites() {
+    const backendPort = process.env.NODE_ENV === "production" ? "3009" : "3001";
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3001/api/:path*",
+        destination: `http://localhost:${backendPort}/api/:path*`,
       },
       {
         source: "/",

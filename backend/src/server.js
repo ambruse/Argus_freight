@@ -25,7 +25,7 @@ const errorHandler       = require('./middleware/errorHandler');
 const { startImapService } = require('./services/imapService');
 
 const app  = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.NODE_ENV === 'production' ? 3009 : (process.env.PORT || 3001);
 const http = require('http');
 const { Server } = require('socket.io');
 const server = http.createServer(app);
