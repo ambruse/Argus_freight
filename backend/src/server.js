@@ -267,6 +267,24 @@ db.query(`
     console.error("[Migration] Error running operator and cust_req_no column migration:", opMigErr.message);
   }
 
+  // Auto-register user 'admin' with default password 'Admin@1234' if not exists
+  try {
+    const adminCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'admin'");
+    if (adminCheck.rows.length === 0) {
+      const bcrypt = require('bcryptjs');
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash('Admin@1234', salt);
+      
+      await db.query(
+        "INSERT INTO users (username, password_hash, role) VALUES ('admin', $1, 'admin')",
+        [hash]
+      );
+      console.log("[Seeding] Created default admin user 'admin' (password: Admin@1234)");
+    }
+  } catch (err) {
+    console.error("[Seeding] Error creating user 'admin':", err.message);
+  }
+
   // Auto-register user 'jabir' with default password 'Jabir@1234' if not exists
   try {
     const userCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'jabir'");
