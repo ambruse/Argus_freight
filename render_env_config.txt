@@ -1,0 +1,40 @@
+# =========================================================================
+#  RENDER ENVIRONMENT VARIABLES FOR ARGUS SHIPPING
+#  Copy and paste these Key-Value pairs into the Render "Environment" tab.
+# =========================================================================
+
+# --- 1. Client URL (Production URL) ---
+# Replace this with your actual Render primary URL (from the deploy logs)
+CLIENT_URL=https://argus-freight.onrender.com
+
+# --- 2. Database Connection ---
+# IMPORTANT: Render cannot connect to "localhost" for your database.
+# You must create a PostgreSQL database on Render (or Neon/AWS) and copy 
+# the host, user, password, and database name values here.
+DB_HOST=dpg-d8skccj7uimc738g7pdg-a
+DB_NAME=details_1w7x
+DB_USER=details_1w7x_user
+DB_PASSWORD=JCJaBRHDRjMZvsYHEfQJtJ4OQGkx2A5k
+DB_PORT=5432
+
+# --- 3. Security (JWT) ---
+# Change the secret key to a secure random string of your choice
+JWT_SECRET=argus_shipping_super_secret_jwt_key_prod_2026
+JWT_EXPIRES_IN=8h
+
+# --- 4. SMTP Email Sending ---
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=jabir@argusshipping.co
+SMTP_PASS=gnji iagc lcfp zpyg
+
+# --- 5. IMAP Email Ingesting ---
+IMAP_HOST=imap.gmail.com
+IMAP_PORT=993
+IMAP_USER=jabir@argusshipping.co
+IMAP_PASS=gnji iagc lcfp zpyg
+
+# --- 6. Miscellaneous ---
+MAX_FILE_SIZE_MB=10
+UPLOAD_DIR=./uploads
+NODE_ENV=production

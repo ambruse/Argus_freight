@@ -9,8 +9,8 @@
     "build:landing": "vite build",
     "copy:landing": "node scripts/copy-landing.cjs",
     "build:frontend": "npm run build --prefix frontend",
-    "install:backend": "npm install --include=dev --prefix backend",
-    "install:frontend": "npm install --include=dev --prefix frontend",
+    "install:backend": "npm install --include=dev --legacy-peer-deps --prefix backend",
+    "install:frontend": "npm install --include=dev --legacy-peer-deps --prefix frontend",
     "build": "npm run install:backend && npm run install:frontend && npm run build:landing && npm run copy:landing && npm run build:frontend",
     "start:backend": "npm run start --prefix backend",
     "start:frontend": "npm run start --prefix frontend",
@@ -19,20 +19,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "concurrently": "^10.0.3",
-    "lucide-react": "^1.21.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
-  },
-  "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^10.0.3",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "vite": "^8.0.12"
-  }
+  },
+  "devDependencies": {}
 }
