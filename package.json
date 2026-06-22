@@ -6,11 +6,20 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
     "dev:landing": "vite",
-    "build": "vite build",
+    "build:landing": "vite build",
+    "copy:landing": "node scripts/copy-landing.cjs",
+    "build:frontend": "npm run build --prefix frontend",
+    "install:backend": "npm install --prefix backend",
+    "install:frontend": "npm install --prefix frontend",
+    "build": "npm run install:backend && npm run install:frontend && npm run build:landing && npm run copy:landing && npm run build:frontend",
+    "start:backend": "npm run start --prefix backend",
+    "start:frontend": "npm run start --prefix frontend",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "concurrently": "^10.0.3",
     "lucide-react": "^1.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
@@ -20,7 +29,6 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "concurrently": "^10.0.3",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

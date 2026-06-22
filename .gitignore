@@ -5,3 +5,11 @@ uploads/
 dist/
 *.log
 .gemini/
+frontend/public/landing/
+frontend/public/assets/
+frontend/public/Videos/
+frontend/public/images/
+frontend/public/favicon.svg
+frontend/public/icons.svg
+frontend/public/logo.png
+frontend/public/light-logo.png

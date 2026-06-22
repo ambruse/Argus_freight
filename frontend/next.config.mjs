@@ -9,6 +9,34 @@ const nextConfig = {
         source: "/api/:path*",
         destination: "http://localhost:3001/api/:path*",
       },
+      {
+        source: "/",
+        destination: "/landing/index.html",
+      },
+      {
+        source: "/about",
+        destination: "/landing/index.html",
+      },
+      {
+        source: "/services",
+        destination: "/landing/index.html",
+      },
+      {
+        source: "/why-us",
+        destination: "/landing/index.html",
+      },
+      {
+        source: "/team",
+        destination: "/landing/index.html",
+      },
+      {
+        source: "/contact",
+        destination: "/landing/index.html",
+      },
+      {
+        source: "/chairman-message",
+        destination: "/landing/index.html",
+      },
     ];
   },
   // Apply standard browser security headers to all routes
