@@ -14,19 +14,20 @@ const getAllContacts = async (req, res, next) => {
 // ── POST /api/contacts ───────────────────────────────────────
 const createContact = async (req, res, next) => {
   try {
-    const { email, dear_who, pol, pod, mode } = req.body;
+    const { email, dear_who, pol, pod, mode, country } = req.body;
     
     if (!email) {
       return res.status(400).json({ success: false, message: 'Email is required.' });
     }
 
     const result = await db.query(
-      `INSERT INTO contacts (email, dear_who, pol, pod, mode) 
-       VALUES ($1, $2, $3, $4, $5) 
+      `INSERT INTO contacts (email, dear_who, pol, pod, mode, country) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        ON CONFLICT (email, COALESCE(pol, ''), COALESCE(pod, ''), COALESCE(mode, '')) DO UPDATE SET
-         dear_who = EXCLUDED.dear_who
+         dear_who = EXCLUDED.dear_who,
+         country = EXCLUDED.country
        RETURNING *`,
-      [email, dear_who || null, pol || null, pod || null, mode || null]
+      [email, dear_who || null, pol || null, pod || null, mode || null, country || null]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });

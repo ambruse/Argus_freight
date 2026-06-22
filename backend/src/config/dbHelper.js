@@ -1,13 +1,31 @@
 // src/config/dbHelper.js
 const db = require('./db');
 
-const getOperatorSuffixes = async () => {
+const getAllSuffixes = async () => {
   try {
     const res = await db.query(
       `SELECT table_name FROM information_schema.tables 
        WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
     );
     return res.rows.map(r => r.table_name.replace('shipments_', ''));
+  } catch (err) {
+    console.error('Error fetching all suffixes:', err);
+    return [];
+  }
+};
+
+const getOperatorSuffixes = async () => {
+  try {
+    const usersRes = await db.query("SELECT username FROM users WHERE role = 'operator'");
+    const opUsernames = usersRes.rows.map(r => r.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase());
+    
+    const tablesRes = await db.query(
+      `SELECT table_name FROM information_schema.tables 
+       WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
+    );
+    const allSuffixes = tablesRes.rows.map(r => r.table_name.replace('shipments_', ''));
+    
+    return allSuffixes.filter(suffix => opUsernames.includes(suffix));
   } catch (err) {
     console.error('Error fetching operator suffixes:', err);
     return [];
@@ -16,7 +34,7 @@ const getOperatorSuffixes = async () => {
 
 const findUsernameForRefNo = async (ref_no) => {
   if (!ref_no) return null;
-  const suffixes = await getOperatorSuffixes();
+  const suffixes = await getAllSuffixes();
   let queries = [`SELECT 'admin' AS username FROM shipments WHERE ref_no = $1`];
   const params = [ref_no];
   for (const suffix of suffixes) {
@@ -34,7 +52,7 @@ const findUsernameForRefNo = async (ref_no) => {
 
 const findUsernameForFileId = async (id) => {
   if (!id) return null;
-  const suffixes = await getOperatorSuffixes();
+  const suffixes = await getAllSuffixes();
   let queries = [`SELECT 'admin' AS username FROM files WHERE id = $1`];
   const params = [id];
   for (const suffix of suffixes) {
@@ -78,19 +96,37 @@ const query = async (req, sql, params) => {
   const id = req?.params?.id || req?.body?.id || req?.query?.id;
   const isSelect = /^\s*(SELECT|WITH)\b/i.test(sql);
 
-  if (isAdmin) {
-    if (req?.query?.user) {
+  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+    if (isAdmin && req?.query?.user) {
       targetUser = req.query.user;
     } else if (ref_no || id) {
       // Find the specific operator for the shipment or file
       const foundUser = (await findUsernameForRefNo(ref_no)) || (await findUsernameForFileId(id));
       if (foundUser) {
-        targetUser = foundUser;
+        // If sales or customer, ensure they actually have access to this ref_no/id
+        if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+           const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+           let hasAccess = false;
+           if (ref_no) {
+              const chk = await db.query(`SELECT 1 FROM shipments_${cleanRoleUser} WHERE ref_no = $1`, [ref_no]);
+              if (chk.rows.length > 0) hasAccess = true;
+           } else if (id) {
+              const chk = await db.query(`SELECT 1 FROM files_${cleanRoleUser} WHERE id = $1`, [id]);
+              if (chk.rows.length > 0) hasAccess = true;
+           }
+           if (hasAccess) {
+              targetUser = foundUser;
+           } else {
+              targetUser = req.user.username; // fallback to their own sandbox
+           }
+        } else {
+           targetUser = foundUser;
+        }
       } else {
         targetUser = 'admin';
       }
     } else if (isSelect) {
-      // Global SELECT query for admin: Query UNION ALL across all tables
+      // Global SELECT query: Query UNION ALL across all tables
       const suffixes = await getOperatorSuffixes();
       
       let shipmentsUnion = `(SELECT * FROM shipments`;
@@ -111,10 +147,42 @@ const query = async (req, sql, params) => {
       }
       filesUnion += `)`;
 
-      const modifiedSql = sql
+      let modifiedSql = sql
         .replace(/\bshipments\b/g, shipmentsUnion)
         .replace(/\bshipment_replies\b/g, repliesUnion)
         .replace(/\bfiles\b/g, filesUnion);
+
+      if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+         const globalShipmentsUnion = shipmentsUnion;
+         const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+         const userSuffixes = suffixes.includes(cleanRoleUser) ? suffixes : [...suffixes, cleanRoleUser];
+         
+         // Wrap the whole query and filter by their shipments
+         // Since sql could be anything, we must be careful.
+         // Prioritize operator sandboxes (1), then admin (2), then sales/customer fallback (3)
+         let sUnion = `SELECT 2 as __p, * FROM shipments WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser})`;
+         for (const suffix of userSuffixes) {
+           sUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM shipments_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser})`;
+         }
+         shipmentsUnion = `(SELECT DISTINCT ON (ref_no) * FROM (${sUnion}) sub ORDER BY ref_no, __p ASC)`;
+         
+         let rUnion = `SELECT 2 as __p, * FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+         for (const suffix of userSuffixes) {
+           rUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+         }
+         repliesUnion = `(SELECT DISTINCT ON (id) * FROM (${rUnion}) sub ORDER BY id, __p ASC)`;
+         
+         let fUnion = `SELECT 2 as __p, * FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+         for (const suffix of userSuffixes) {
+           fUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+         }
+         filesUnion = `(SELECT DISTINCT ON (id) * FROM (${fUnion}) sub ORDER BY id, __p ASC)`;
+         
+         modifiedSql = sql
+           .replace(/\bshipments\b/g, shipmentsUnion)
+           .replace(/\bshipment_replies\b/g, repliesUnion)
+           .replace(/\bfiles\b/g, filesUnion);
+      }
 
       return db.query(modifiedSql, params);
     }

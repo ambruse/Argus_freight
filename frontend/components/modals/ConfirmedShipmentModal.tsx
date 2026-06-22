@@ -12,6 +12,8 @@ import { Shipment, ShipmentFile, ShipmentReply } from "@/types";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { cleanEmailBody } from "@/lib/emailParser";
+import { useAuth } from "@/hooks/useAuth";
+import { io, Socket } from "socket.io-client";
 
 interface Props {
   shipment:  Shipment | null;
@@ -37,9 +39,13 @@ const fmtSize = (bytes: number) => {
   return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 };
 
-type Tab = "details" | "files" | "emails";
+type Tab = "details" | "files" | "emails" | "chat";
+
+
 
 export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUpdated }: Props) {
+  const { user } = useAuth();
+  const isSales = user?.role === "sales";
   const [tab,       setTab]       = useState<Tab>("details");
   const [editing,   setEditing]   = useState(false);
   const [editForm,  setEditForm]  = useState<Partial<Shipment>>({});
@@ -72,9 +78,19 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
 
   const repliesEndRef = useRef<HTMLDivElement | null>(null);
 
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [sendingChatMessage, setSendingChatMessage] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     repliesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [replies]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   const handleSendReply = async () => {
     if (!replyText.trim() || !shipment) return;
@@ -170,8 +186,10 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
         customer_name:  shipment.customer_name  ?? "",
         customer_email: shipment.customer_email ?? "",
       });
-      fetchFiles(shipment.ref_no);
-      fetchReplies(shipment.ref_no);
+      if (user?.role !== "customer") {
+        fetchFiles(shipment.ref_no);
+        fetchReplies(shipment.ref_no);
+      }
       setQuotaForm({
         mode: shipment.mode === "Road" ? "SEA" : (shipment.mode as "AIR" | "SEA"),
         freightRate: "",
@@ -184,7 +202,80 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
         currency: "QAR"
       });
     }
+  }, [isOpen, shipment, user]);
+
+  useEffect(() => {
+    if (!isOpen || !shipment || !shipment.customer_id) return;
+
+    const roomKey = shipment.cust_req_no || shipment.ref_no;
+    if (!roomKey) return;
+
+    const socketUrl = typeof window !== "undefined"
+      ? `${window.location.protocol}//${window.location.hostname}:3001`
+      : "http://localhost:3001";
+
+    const newSocket = io(socketUrl);
+    setSocket(newSocket);
+
+    newSocket.emit("joinRoom", `room_${roomKey}`);
+
+    const fetchChatHistory = async () => {
+      try {
+        const { data } = await api.get(`/shipments/chat/${roomKey}`);
+        if (data.success) {
+          setChatMessages(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch chat history:", err);
+      }
+    };
+
+    fetchChatHistory();
+
+    newSocket.on("newMessage", (msg: any) => {
+      if (msg.cust_req_no === roomKey) {
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+
+          // Alert user if the message is from someone else
+          const currentUserRaw = typeof window !== "undefined" ? localStorage.getItem("freight_user") : null;
+          const currentUser = currentUserRaw ? JSON.parse(currentUserRaw) : null;
+          if (currentUser && msg.sender_username.toLowerCase() !== currentUser.username.toLowerCase()) {
+            toast(`💬 New message from ${msg.sender_username}: "${msg.message.substring(0, 30)}${msg.message.length > 30 ? '...' : ''}"`, {
+              icon: '💬',
+            });
+          }
+
+          return [...prev, msg];
+        });
+      }
+    });
+
+    return () => {
+      newSocket.disconnect();
+      setSocket(null);
+    };
   }, [isOpen, shipment]);
+
+  const handleSendChatMessage = async () => {
+    if (!chatInput.trim() || !shipment) return;
+    const roomKey = shipment.cust_req_no || shipment.ref_no;
+    if (!roomKey) return;
+
+    setSendingChatMessage(true);
+    try {
+      const { data } = await api.post(`/shipments/chat/${roomKey}`, {
+        message: chatInput,
+      });
+      if (data.success) {
+        setChatInput("");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Failed to send message.");
+    } finally {
+      setSendingChatMessage(false);
+    }
+  };
 
   const fetchReplies = useCallback(async (refNo: string) => {
     setLoadingReplies(true);
@@ -298,7 +389,10 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
     <Modal isOpen={isOpen} onClose={onClose} title={`Shipment — ${shipment.ref_no}`} size="xl">
       {/* ── Tab Bar ──────────────────────────────────────── */}
       <div className="flex gap-1 p-1 rounded-xl bg-surface-4 border border-white/[0.05] mb-6">
-        {(["details", "files", "emails"] as Tab[]).map((t) => (
+        {(user?.role === "customer" 
+          ? (shipment.customer_id ? (["details", "chat"] as Tab[]) : (["details"] as Tab[]))
+          : (shipment.customer_id ? (["details", "files", "emails", "chat"] as Tab[]) : (["details", "files", "emails"] as Tab[]))
+        ).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -311,11 +405,15 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
             {t === "details" && "📋 Details"}
             {t === "files" && "📁 Files"}
             {t === "emails" && "📧 Emails"}
+            {t === "chat" && "💬 Chat"}
             {t === "files" && files.length > 0 && (
               <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{files.length}</span>
             )}
             {t === "emails" && replies.length > 0 && (
               <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{replies.length}</span>
+            )}
+            {t === "chat" && chatMessages.length > 0 && (
+              <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{chatMessages.length}</span>
             )}
           </button>
         ))}
@@ -340,7 +438,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
           <div className="rounded-xl border border-white/[0.07] overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 bg-surface-4 border-b border-white/[0.05]">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted">Tracking Information</p>
-              {!editing && (
+              {!editing && !isSales && (
                 <button onClick={() => setEditing(true)} className="btn-secondary text-xs px-3 py-1.5">
                   ✎ Edit Tracking
                 </button>
@@ -464,8 +562,9 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
               )}
 
               {/* Quick Reply Form */}
-              <div className="p-4 rounded-xl bg-surface-4 border border-white/[0.05] space-y-3">
-                <p className="text-xs font-semibold text-muted">Send Quick Reply</p>
+              {!isSales && (
+                <div className="p-4 rounded-xl bg-surface-4 border border-white/[0.05] space-y-3">
+                  <p className="text-xs font-semibold text-muted">Send Quick Reply</p>
                 <textarea
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
@@ -510,6 +609,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   </button>
                 </div>
               </div>
+              )}
             </div>
           )}
         </div>
@@ -521,8 +621,9 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
       {tab === "files" && (
         <div className="space-y-5">
           {/* ── Drop Zone ──────────────────────────────── */}
-          <div
-            className={`drop-zone ${dragOver ? "drag-over" : ""} ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+          {!isSales && (
+            <div
+              className={`drop-zone ${dragOver ? "drag-over" : ""} ${uploading ? "opacity-50 pointer-events-none" : ""}`}
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -543,6 +644,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
               <p className="text-xs text-muted">PDF and image files only · Max 10 MB</p>
             </div>
           </div>
+          )}
 
           {/* ── File List ──────────────────────────────── */}
           {files.length === 0 ? (
@@ -589,18 +691,90 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                     >
                       ↗ Open
                     </button>
-                    <button
-                      onClick={() => handleDelete(file.id, file.original_name)}
-                      className="btn-danger text-xs px-3 py-1.5"
-                      title="Delete file"
-                    >
-                      🗑
-                    </button>
+                    {!isSales && (
+                      <button
+                        onClick={() => handleDelete(file.id, file.original_name)}
+                        className="btn-danger text-xs px-3 py-1.5"
+                        title="Delete file"
+                      >
+                        🗑
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════ */}
+      {/* TAB 4: CHAT                                        */}
+      {/* ══════════════════════════════════════════════════ */}
+      {tab === "chat" && shipment.customer_id && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-surface-4 border border-white/[0.05] space-y-4">
+            {/* Messages List */}
+            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+              {chatMessages.length === 0 ? (
+                <div className="text-center py-8 text-muted italic text-xs">
+                  No messages yet. Send a message to start the conversation.
+                </div>
+              ) : (
+                chatMessages.map((msg) => {
+                  const isMe = msg.sender_username.toLowerCase() === user?.username?.toLowerCase();
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                    >
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-muted mb-1 px-1">
+                        {isMe ? "YOU" : msg.sender_username}
+                      </span>
+                      <div
+                        className={`p-3 rounded-2xl border text-sm text-primary max-w-[85%] whitespace-pre-wrap transition-all duration-150 ${
+                          isMe
+                            ? "bg-blue/10 border-blue/20 rounded-tr-none ml-8"
+                            : "bg-surface-3 border-white/[0.05] rounded-tl-none mr-8"
+                        }`}
+                      >
+                        <p>{msg.message}</p>
+                        <p className="text-[8px] text-muted text-right mt-1.5 font-mono">
+                          {msg.created_at ? format(new Date(msg.created_at), "dd MMM HH:mm") : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input field */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSendChatMessage();
+                  }
+                }}
+                placeholder="Type your message here..."
+                disabled={sendingChatMessage}
+                className="input-sm flex-1 bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary placeholder-faint focus:border-blue/50 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleSendChatMessage}
+                disabled={!chatInput.trim() || sendingChatMessage}
+                className="btn-primary text-xs px-4 py-1.5 shrink-0"
+              >
+                {sendingChatMessage ? "Sending..." : "💬 Send"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

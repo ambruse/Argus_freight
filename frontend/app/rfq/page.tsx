@@ -21,7 +21,7 @@ import { exportShipmentsToExcel } from "@/lib/exportExcel";
 // ── Skeleton Row ──────────────────────────────────────────────
 const SkeletonRow = () => (
   <tr className="border-b border-white/[0.04]">
-    {Array.from({ length: 13 }).map((_, i) => (
+    {Array.from({ length: 14 }).map((_, i) => (
       <td key={i} className="px-4 py-3">
         <div className="h-4 rounded-full bg-white/[0.04] animate-pulse" style={{ width: `${60 + i * 8}%` }} />
       </td>
@@ -59,8 +59,8 @@ export default function RFQPage() {
 
   useEffect(() => { fetchShipments(); }, [fetchShipments]);
 
-  // ── Auto-open checks for unread replies notification click ────
-  useEffect(() => {
+  // ── Auto-open checks for unread replies/assignments notification click ────
+  const checkAutoOpen = useCallback(() => {
     if (shipments.length > 0) {
       const autoRef = sessionStorage.getItem("autoOpenShipmentRef");
       if (autoRef) {
@@ -75,6 +75,15 @@ export default function RFQPage() {
   }, [shipments]);
 
   useEffect(() => {
+    checkAutoOpen();
+  }, [shipments, checkAutoOpen]);
+
+  useEffect(() => {
+    window.addEventListener("check-auto-open", checkAutoOpen);
+    return () => window.removeEventListener("check-auto-open", checkAutoOpen);
+  }, [checkAutoOpen]);
+
+  useEffect(() => {
     const handleOpenDetail = (e: Event) => {
       const reply = (e as CustomEvent).detail;
       const found = shipments.find((s) => s.ref_no === reply.ref_no);
@@ -86,6 +95,14 @@ export default function RFQPage() {
     window.addEventListener("open-shipment-detail", handleOpenDetail);
     return () => window.removeEventListener("open-shipment-detail", handleOpenDetail);
   }, [shipments]);
+
+  useEffect(() => {
+    const handleListUpdate = () => {
+      fetchShipments();
+    };
+    window.addEventListener("rfq-list-update", handleListUpdate);
+    return () => window.removeEventListener("rfq-list-update", handleListUpdate);
+  }, [fetchShipments]);
 
   // ── Copy REF NO to clipboard ────────────────────────────────
   const copyRefNo = async (e: React.MouseEvent, refNo: string) => {
@@ -151,7 +168,7 @@ export default function RFQPage() {
 
     // 2. Search Text Filter
     const q = search.toLowerCase();
-    return !q || [s.ref_no, s.pol, s.pod, s.commodity, s.dear_who, s.carrier, s.status, s.customer_id]
+    return !q || [s.ref_no, s.cust_req_no, s.pol, s.pod, s.commodity, s.dear_who, s.carrier, s.status, s.customer_id]
       .some((v) => v?.toLowerCase().includes(q));
   });
 
@@ -236,6 +253,7 @@ export default function RFQPage() {
             <thead>
               <tr>
                 <th>REF NO</th>
+                <th>CUST REQ NO</th>
                 <th>OPERATOR</th>
                 <th>CUSTOMER ID</th>
                 <th>REFER BY</th>
@@ -247,6 +265,7 @@ export default function RFQPage() {
                 <th>STATUS</th>
                 <th>LAST FOLLOW-UP</th>
                 <th>REPLIES</th>
+                <th>CHAT</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
@@ -255,7 +274,7 @@ export default function RFQPage() {
                 Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="text-center py-16 text-muted">
+                  <td colSpan={15} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📭</p>
                       <p className="text-sm">No RFQ records found.</p>
@@ -288,6 +307,9 @@ export default function RFQPage() {
                         </span>
                       </button>
                     </td>
+                    <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
+                      {s.cust_req_no ?? "—"}
+                    </td>
                     <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
                     <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{s.customer_id ?? "—"}</td>
                     <td>{s.refer_by ?? "—"}</td>
@@ -310,6 +332,19 @@ export default function RFQPage() {
                       ) : s.replies_count && Number(s.replies_count) > 0 ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
                           💬 Replied ({s.replies_count})
+                        </span>
+                      ) : (
+                        <span className="text-faint text-xs">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {s.unread_chat_count && Number(s.unread_chat_count) > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                          </span>
+                          New Msg ({s.unread_chat_count})
                         </span>
                       ) : (
                         <span className="text-faint text-xs">—</span>

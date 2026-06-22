@@ -190,10 +190,8 @@ export default function HistoricalRFQModal({ isOpen, onClose, onCreated }: Props
                 </label>
                 <EmailAutoSuggest
                   contacts={contacts}
-                  currentPol={form.pol}
-                  currentPod={form.pod}
+                  currentPolCountry=""
                   currentMode={form.mode}
-                  currentDearWho={form.dear_who}
                   value={form.email}
                   onChange={(email, dearWho) => {
                     setForm(prev => ({

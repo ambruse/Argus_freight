@@ -1,993 +1,1371 @@
 export interface MajorPort {
-  region: string;
-  port: string;
   country: string;
+  region: string;
+  city: string;
+  port: string;
   code: string;
+  type: "Air Port" | "Sea Port";
 }
 
 export const MAJOR_PORTS: MajorPort[] = [
   {
-    "region": "Africa",
-    "port": "Djibouti",
-    "country": "Djibouti",
-    "code": "DJJIB"
-  },
-  {
-    "region": "Africa",
-    "port": "Alexandria",
-    "country": "Egypt",
-    "code": "EGALY"
-  },
-  {
-    "region": "Africa",
-    "port": "Cairo International",
-    "country": "Egypt",
-    "code": "CAI"
-  },
-  {
-    "region": "Africa",
-    "port": "Port Said",
-    "country": "Egypt",
-    "code": "EGPSD"
-  },
-  {
-    "region": "Africa",
-    "port": "Addis Ababa Bole",
-    "country": "Ethiopia",
-    "code": "ADD"
-  },
-  {
-    "region": "Africa",
-    "port": "Abidjan",
-    "country": "Ivory Coast",
-    "code": "CIABJ"
-  },
-  {
-    "region": "Africa",
-    "port": "Mombasa",
-    "country": "Kenya",
-    "code": "KEMBA"
-  },
-  {
-    "region": "Africa",
-    "port": "Nairobi Jomo Kenyatta",
-    "country": "Kenya",
-    "code": "NBO"
-  },
-  {
-    "region": "Africa",
-    "port": "Casablanca",
-    "country": "Morocco",
-    "code": "CAS"
-  },
-  {
-    "region": "Africa",
-    "port": "Tanger Med",
-    "country": "Morocco",
-    "code": "MAPTM"
-  },
-  {
-    "region": "Africa",
-    "port": "Lagos / Apapa",
-    "country": "Nigeria",
-    "code": "NGLOS"
-  },
-  {
-    "region": "Africa",
-    "port": "Cape Town",
-    "country": "South Africa",
-    "code": "ZACPT"
-  },
-  {
-    "region": "Africa",
-    "port": "Durban",
-    "country": "South Africa",
-    "code": "ZADUR"
-  },
-  {
-    "region": "Africa",
-    "port": "OR Tambo Int. Johannesburg",
-    "country": "South Africa",
-    "code": "JNB"
-  },
-  {
-    "region": "Africa",
-    "port": "Lomé",
-    "country": "Togo",
-    "code": "TGLFW"
-  },
-  {
-    "region": "Asia",
-    "port": "Dalian",
-    "country": "China",
-    "code": "DLC"
-  },
-  {
-    "region": "Asia",
-    "port": "Guangzhou",
-    "country": "China",
-    "code": "CNCAN"
-  },
-  {
-    "region": "Asia",
-    "port": "Hong Kong",
-    "country": "China",
-    "code": "HKHKG"
-  },
-  {
-    "region": "Asia",
-    "port": "Hong Kong International",
-    "country": "China",
-    "code": "HKG"
-  },
-  {
-    "region": "Asia",
-    "port": "Ningbo-Zhoushan",
-    "country": "China",
-    "code": "CNNGB"
-  },
-  {
-    "region": "Asia",
-    "port": "Qingdao",
-    "country": "China",
-    "code": "CNTAO"
-  },
-  {
-    "region": "Asia",
-    "port": "Shanghai",
-    "country": "China",
-    "code": "CNSHA"
-  },
-  {
-    "region": "Asia",
-    "port": "Shanghai Pudong",
-    "country": "China",
-    "code": "PVG"
-  },
-  {
-    "region": "Asia",
-    "port": "Shenzhen",
-    "country": "China",
-    "code": "CNSZX"
-  },
-  {
-    "region": "Asia",
-    "port": "Tianjin",
-    "country": "China",
-    "code": "TSN"
-  },
-  {
-    "region": "Asia",
-    "port": "Xiamen",
-    "country": "China",
-    "code": "XMN"
-  },
-  {
-    "region": "Asia",
-    "port": "Chennai",
-    "country": "India",
-    "code": "MAA"
-  },
-  {
-    "region": "Asia",
-    "port": "Chhatrapati Shivaji Mumbai",
-    "country": "India",
-    "code": "BOM"
-  },
-  {
-    "region": "Asia",
-    "port": "Indira Gandhi Int. Delhi",
-    "country": "India",
-    "code": "DEL"
-  },
-  {
-    "region": "Asia",
-    "port": "Kolkata",
-    "country": "India",
-    "code": "CCU"
-  },
-  {
-    "region": "Asia",
-    "port": "Mundra",
-    "country": "India",
-    "code": "INMUN"
-  },
-  {
-    "region": "Asia",
-    "port": "Nhava Sheva / Mumbai",
-    "country": "India",
-    "code": "INNSA"
-  },
-  {
-    "region": "Asia",
-    "port": "Soekarno-Hatta",
-    "country": "Indonesia",
-    "code": "CGK"
-  },
-  {
-    "region": "Asia",
-    "port": "Tanjung Priok / Jakarta",
-    "country": "Indonesia",
-    "code": "IDIDJ"
-  },
-  {
-    "region": "Asia",
-    "port": "Kobe",
-    "country": "Japan",
-    "code": "JPUKB"
-  },
-  {
-    "region": "Asia",
-    "port": "Osaka / Kansai",
-    "country": "Japan",
-    "code": "KIX"
-  },
-  {
-    "region": "Asia",
-    "port": "Tokyo",
-    "country": "Japan",
-    "code": "JPTYO"
-  },
-  {
-    "region": "Asia",
-    "port": "Tokyo / Haneda",
-    "country": "Japan",
-    "code": "HND"
-  },
-  {
-    "region": "Asia",
-    "port": "Tokyo / Narita",
-    "country": "Japan",
-    "code": "NRT"
-  },
-  {
-    "region": "Asia",
-    "port": "Yokohama",
-    "country": "Japan",
-    "code": "JPYOK"
-  },
-  {
-    "region": "Asia",
-    "port": "Kuala Lumpur International",
-    "country": "Malaysia",
-    "code": "KUL"
-  },
-  {
-    "region": "Asia",
-    "port": "Port Klang",
-    "country": "Malaysia",
-    "code": "MYPKG"
-  },
-  {
-    "region": "Asia",
-    "port": "Tanjung Pelepas",
-    "country": "Malaysia",
-    "code": "MYTPP"
-  },
-  {
-    "region": "Asia",
-    "port": "Karachi",
-    "country": "Pakistan",
-    "code": "PKKHI"
-  },
-  {
-    "region": "Asia",
-    "port": "Manila",
-    "country": "Philippines",
-    "code": "PHMNL"
-  },
-  {
-    "region": "Asia",
-    "port": "Ninoy Aquino",
-    "country": "Philippines",
-    "code": "MNL"
-  },
-  {
-    "region": "Asia",
-    "port": "Changi",
-    "country": "Singapore",
-    "code": "SIN"
-  },
-  {
-    "region": "Asia",
-    "port": "Singapore",
-    "country": "Singapore",
-    "code": "SGSIN"
-  },
-  {
-    "region": "Asia",
-    "port": "Busan",
-    "country": "South Korea",
-    "code": "KRPUS"
-  },
-  {
-    "region": "Asia",
-    "port": "Incheon",
-    "country": "South Korea",
-    "code": "KRINC"
-  },
-  {
-    "region": "Asia",
-    "port": "Incheon International",
-    "country": "South Korea",
-    "code": "ICN"
-  },
-  {
-    "region": "Asia",
-    "port": "Colombo",
-    "country": "Sri Lanka",
-    "code": "LKCMB"
-  },
-  {
-    "region": "Asia",
-    "port": "Kaohsiung",
-    "country": "Taiwan",
-    "code": "TWKHH"
-  },
-  {
-    "region": "Asia",
-    "port": "Taoyuan International",
-    "country": "Taiwan",
-    "code": "TPE"
-  },
-  {
-    "region": "Asia",
-    "port": "Bangkok / Suvarnabhumi",
-    "country": "Thailand",
-    "code": "BKK"
-  },
-  {
-    "region": "Asia",
-    "port": "Laem Chabang",
-    "country": "Thailand",
-    "code": "THLCH"
-  },
-  {
-    "region": "Asia",
-    "port": "Hai Phong",
-    "country": "Vietnam",
-    "code": "VNHPH"
-  },
-  {
-    "region": "Asia",
-    "port": "Ho Chi Minh City / Cat Lai",
-    "country": "Vietnam",
-    "code": "VNSGN"
-  },
-  {
-    "region": "Asia",
-    "port": "Tan Son Nhat",
-    "country": "Vietnam",
-    "code": "SGN"
-  },
-  {
-    "region": "Central America",
-    "port": "Kingston",
-    "country": "Jamaica",
-    "code": "JMKIN"
-  },
-  {
-    "region": "Central America",
-    "port": "Balboa",
-    "country": "Panama",
-    "code": "PABBL"
-  },
-  {
-    "region": "Central America",
-    "port": "Manzanillo / Colon",
-    "country": "Panama",
-    "code": "PAMIT"
-  },
-  {
-    "region": "Central America",
-    "port": "San Juan",
-    "country": "Puerto Rico",
-    "code": "SJU"
-  },
-  {
-    "region": "Europe",
-    "port": "Antwerp-Bruges",
-    "country": "Belgium",
-    "code": "BEANR"
-  },
-  {
-    "region": "Europe",
-    "port": "Linge",
-    "country": "Belgium",
-    "code": "LGG"
-  },
-  {
-    "region": "Europe",
-    "port": "Copenhagen",
-    "country": "Denmark",
-    "code": "CPH"
-  },
-  {
-    "region": "Europe",
-    "port": "Le Havre",
-    "country": "France",
-    "code": "FRLEH"
-  },
-  {
-    "region": "Europe",
-    "port": "Marseille",
-    "country": "France",
-    "code": "MRS"
-  },
-  {
-    "region": "Europe",
-    "port": "Paris Charles de Gaulle",
-    "country": "France",
-    "code": "CDG"
-  },
-  {
-    "region": "Europe",
-    "port": "Bremerhaven",
-    "country": "Germany",
-    "code": "DEBRV"
-  },
-  {
-    "region": "Europe",
-    "port": "Frankfurt",
-    "country": "Germany",
-    "code": "FRA"
-  },
-  {
-    "region": "Europe",
-    "port": "Hamburg",
-    "country": "Germany",
-    "code": "DEHAM"
-  },
-  {
-    "region": "Europe",
-    "port": "Leipzig/Halle",
-    "country": "Germany",
-    "code": "LEJ"
-  },
-  {
-    "region": "Europe",
-    "port": "Piraeus",
-    "country": "Greece",
-    "code": "GRPIR"
-  },
-  {
-    "region": "Europe",
-    "port": "Genoa",
-    "country": "Italy",
-    "code": "GOA"
-  },
-  {
-    "region": "Europe",
-    "port": "Gioia Tauro",
-    "country": "Italy",
-    "code": "ITGIT"
-  },
-  {
-    "region": "Europe",
-    "port": "Milan Malpensa",
-    "country": "Italy",
-    "code": "MXP"
-  },
-  {
-    "region": "Europe",
-    "port": "Amsterdam Schiphol",
-    "country": "Netherlands",
-    "code": "AMS"
-  },
-  {
-    "region": "Europe",
-    "port": "Rotterdam",
-    "country": "Netherlands",
-    "code": "NLRTM"
-  },
-  {
-    "region": "Europe",
-    "port": "Oslo",
-    "country": "Norway",
-    "code": "OSL"
-  },
-  {
-    "region": "Europe",
-    "port": "Gdansk",
-    "country": "Poland",
-    "code": "PLGDN"
-  },
-  {
-    "region": "Europe",
-    "port": "Sines",
-    "country": "Portugal",
-    "code": "PTSIE"
-  },
-  {
-    "region": "Europe",
-    "port": "St. Petersburg",
-    "country": "Russia",
-    "code": "LED"
-  },
-  {
-    "region": "Europe",
-    "port": "Algeciras",
-    "country": "Spain",
-    "code": "ESALG"
-  },
-  {
-    "region": "Europe",
-    "port": "Barcelona",
-    "country": "Spain",
-    "code": "BCN"
-  },
-  {
-    "region": "Europe",
-    "port": "Madrid-Barajas",
-    "country": "Spain",
-    "code": "MAD"
-  },
-  {
-    "region": "Europe",
-    "port": "Valencia",
-    "country": "Spain",
-    "code": "ESVLC"
-  },
-  {
-    "region": "Europe",
-    "port": "Gothenburg",
-    "country": "Sweden",
-    "code": "SEGOT"
-  },
-  {
-    "region": "Europe",
-    "port": "Ambarli / Istanbul",
-    "country": "Turkey",
-    "code": "TRTRM"
-  },
-  {
-    "region": "Europe",
-    "port": "Istanbul International",
-    "country": "Turkey",
-    "code": "IST"
-  },
-  {
-    "region": "Europe",
-    "port": "Mersin",
-    "country": "Turkey",
-    "code": "TRMER"
-  },
-  {
-    "region": "Europe",
-    "port": "Felixstowe",
-    "country": "United Kingdom",
-    "code": "GBFXT"
-  },
-  {
-    "region": "Europe",
-    "port": "London Heathrow",
-    "country": "United Kingdom",
-    "code": "LHR"
-  },
-  {
-    "region": "Europe",
-    "port": "London Stansted",
-    "country": "United Kingdom",
-    "code": "STN"
-  },
-  {
-    "region": "Europe",
-    "port": "Southampton",
-    "country": "United Kingdom",
-    "code": "GBSOU"
-  },
-  {
-    "region": "Middle East",
-    "port": "Bahrain International",
     "country": "Bahrain",
-    "code": "BAH"
-  },
-  {
     "region": "Middle East",
+    "city": "Hidd",
     "port": "Khalifa Bin Salman Port",
+    "code": "BHKBS",
+    "type": "Sea Port"
+  },
+  {
     "country": "Bahrain",
-    "code": "BHKBS"
+    "region": "Middle East",
+    "city": "Manama",
+    "port": "Bahrain International Airport",
+    "code": "BAH",
+    "type": "Air Port"
   },
   {
+    "country": "Belgium",
+    "region": "Europe",
+    "city": "Antwerp",
+    "port": "Port of Antwerp-Bruges",
+    "code": "BEANR",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Beijing",
+    "port": "Beijing Capital International Airport",
+    "code": "PEK",
+    "type": "Air Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Beijing",
+    "port": "Beijing Daxing International Airport",
+    "code": "PKX",
+    "type": "Air Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Chengdu",
+    "port": "Chengdu Shuangliu International Airport",
+    "code": "CTU",
+    "type": "Air Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Dalian",
+    "port": "Port of Dalian",
+    "code": "DLC",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Guangzhou",
+    "port": "Guangzhou Baiyun International Airport",
+    "code": "CAN",
+    "type": "Air Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Guangzhou",
+    "port": "Port of Guangzhou",
+    "code": "CNCAN",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Lianyungang",
+    "port": "Port of Lianyungang",
+    "code": "LYG",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Ningbo",
+    "port": "Port of Ningbo-Zhoushan",
+    "code": "CNNGB",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Qingdao",
+    "port": "Port of Qingdao",
+    "code": "CNTAO",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Rizhao",
+    "port": "Port of Rizhao",
+    "code": "RZH",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Shanghai",
+    "port": "Port of Shanghai",
+    "code": "CNSHA",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Shanghai",
+    "port": "Shanghai Pudong International Airport",
+    "code": "PVG",
+    "type": "Air Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Shenzhen",
+    "port": "Port of Shenzhen",
+    "code": "CNSZX",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Shenzhen",
+    "port": "Shenzhen Bao'an International Airport",
+    "code": "SZX",
+    "type": "Air Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Tianjin",
+    "port": "Port of Tianjin",
+    "code": "TSN",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Xiamen",
+    "port": "Port of Xiamen",
+    "code": "XMN",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Yantai",
+    "port": "Port of Yantai",
+    "code": "YNT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "China",
+    "region": "East Asia",
+    "city": "Yingkou",
+    "port": "Port of Yingkou",
+    "code": "YIK",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Egypt",
     "region": "Middle East",
-    "port": "Aqaba",
+    "city": "Alexandria",
+    "port": "Port of Alexandria",
+    "code": "EGALY",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Egypt",
+    "region": "Middle East",
+    "city": "Cairo",
+    "port": "Cairo International Airport",
+    "code": "CAI",
+    "type": "Air Port"
+  },
+  {
+    "country": "Egypt",
+    "region": "Middle East",
+    "city": "Damietta",
+    "port": "Damietta Port",
+    "code": "EGDMZ",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Egypt",
+    "region": "Middle East",
+    "city": "Port Said",
+    "port": "Port Said Port",
+    "code": "EGPSD",
+    "type": "Sea Port"
+  },
+  {
+    "country": "France",
+    "region": "Europe",
+    "city": "Le Havre",
+    "port": "Port of Le Havre",
+    "code": "FRLEH",
+    "type": "Sea Port"
+  },
+  {
+    "country": "France",
+    "region": "Europe",
+    "city": "Marseille",
+    "port": "Port of Marseille",
+    "code": "FRMRS",
+    "type": "Sea Port"
+  },
+  {
+    "country": "France",
+    "region": "Europe",
+    "city": "Paris",
+    "port": "Paris Charles de Gaulle Airport",
+    "code": "CDG",
+    "type": "Air Port"
+  },
+  {
+    "country": "France",
+    "region": "Europe",
+    "city": "Paris",
+    "port": "Paris Orly Airport",
+    "code": "ORY",
+    "type": "Air Port"
+  },
+  {
+    "country": "Germany",
+    "region": "Europe",
+    "city": "Bremen",
+    "port": "Port of Bremen",
+    "code": "DEBRE",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Germany",
+    "region": "Europe",
+    "city": "Frankfurt",
+    "port": "Frankfurt Airport",
+    "code": "FRA",
+    "type": "Air Port"
+  },
+  {
+    "country": "Germany",
+    "region": "Europe",
+    "city": "Hamburg",
+    "port": "Port of Hamburg",
+    "code": "DEHAM",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Germany",
+    "region": "Europe",
+    "city": "Munich",
+    "port": "Munich Airport",
+    "code": "MUC",
+    "type": "Air Port"
+  },
+  {
+    "country": "Hong Kong",
+    "region": "East Asia",
+    "city": "Hong Kong",
+    "port": "Hong Kong International Airport",
+    "code": "HKG",
+    "type": "Air Port"
+  },
+  {
+    "country": "Hong Kong",
+    "region": "East Asia",
+    "city": "Hong Kong",
+    "port": "Port of Hong Kong",
+    "code": "HKHKG",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "South Asia",
+    "city": "Delhi",
+    "port": "Indira Gandhi International Airport",
+    "code": "DEL",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "South Asia",
+    "city": "Mumbai",
+    "port": "Chhatrapati Shivaji Maharaj Airport",
+    "code": "BOM",
+    "type": "Air Port"
+  },
+  {
+    "country": "Indonesia",
+    "region": "Southeast Asia",
+    "city": "Jakarta",
+    "port": "Port of Tanjung Priok",
+    "code": "IDTPP",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Indonesia",
+    "region": "Southeast Asia",
+    "city": "Jakarta",
+    "port": "Soekarno Hatta International Airport",
+    "code": "CGK",
+    "type": "Air Port"
+  },
+  {
+    "country": "Indonesia",
+    "region": "Southeast Asia",
+    "city": "Surabaya",
+    "port": "Juanda International Airport",
+    "code": "SUB",
+    "type": "Air Port"
+  },
+  {
+    "country": "Indonesia",
+    "region": "Southeast Asia",
+    "city": "Surabaya",
+    "port": "Port of Tanjung Perak",
+    "code": "IDSUB",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Japan",
+    "region": "East Asia",
+    "city": "Kobe",
+    "port": "Port of Kobe",
+    "code": "UKB",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Japan",
+    "region": "East Asia",
+    "city": "Tokyo",
+    "port": "Port of Tokyo",
+    "code": "TYO",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Japan",
+    "region": "East Asia",
+    "city": "Tokyo",
+    "port": "Tokyo Haneda Airport",
+    "code": "HND",
+    "type": "Air Port"
+  },
+  {
+    "country": "Japan",
+    "region": "East Asia",
+    "city": "Yokohama",
+    "port": "Port of Yokohama",
+    "code": "YOK",
+    "type": "Sea Port"
+  },
+  {
     "country": "Jordan",
-    "code": "JOAQB"
+    "region": "Middle East",
+    "city": "Aqaba",
+    "port": "Port of Aqaba",
+    "code": "JOAQB",
+    "type": "Sea Port"
   },
   {
-    "region": "Middle East",
-    "port": "Kuwait International",
     "country": "Kuwait",
-    "code": "KWI"
+    "region": "Middle East",
+    "city": "Kuwait City",
+    "port": "Kuwait International Airport",
+    "code": "KWI",
+    "type": "Air Port"
   },
   {
+    "country": "Kuwait",
     "region": "Middle East",
+    "city": "Shuaiba",
     "port": "Shuaiba Port",
-    "country": "Kuwait",
-    "code": "KWSAA"
+    "code": "KWSAA",
+    "type": "Sea Port"
   },
   {
+    "country": "Kuwait",
     "region": "Middle East",
+    "city": "Shuwaikh",
     "port": "Shuwaikh Port",
-    "country": "Kuwait",
-    "code": "KWSWK"
+    "code": "KWSWK",
+    "type": "Sea Port"
   },
   {
-    "region": "Middle East",
-    "port": "Beirut",
-    "country": "Lebanon",
-    "code": "LBBEY"
+    "country": "Netherlands",
+    "region": "Europe",
+    "city": "Amsterdam",
+    "port": "Amsterdam Airport Schiphol",
+    "code": "AMS",
+    "type": "Air Port"
   },
   {
-    "region": "Middle East",
-    "port": "Duqm",
+    "country": "Netherlands",
+    "region": "Europe",
+    "city": "Rotterdam",
+    "port": "Port of Rotterdam",
+    "code": "NLRTM",
+    "type": "Sea Port"
+  },
+  {
     "country": "Oman",
-    "code": "OMDQM"
+    "region": "Middle East",
+    "city": "Duqm",
+    "port": "Port of Duqm",
+    "code": "OMDQM",
+    "type": "Sea Port"
   },
   {
-    "region": "Middle East",
-    "port": "Muscat International",
     "country": "Oman",
-    "code": "OMMCT"
+    "region": "Middle East",
+    "city": "Muscat",
+    "port": "Muscat International Airport",
+    "code": "MCT",
+    "type": "Air Port"
   },
   {
-    "region": "Middle East",
-    "port": "Salalah",
     "country": "Oman",
-    "code": "OMSLL"
+    "region": "Middle East",
+    "city": "Salalah",
+    "port": "Port of Salalah",
+    "code": "OMSLL",
+    "type": "Sea Port"
   },
   {
-    "region": "Middle East",
-    "port": "Sohar Port",
     "country": "Oman",
-    "code": "OMSOH"
+    "region": "Middle East",
+    "city": "Sohar",
+    "port": "Port of Sohar",
+    "code": "OMSOH",
+    "type": "Sea Port"
   },
   {
-    "region": "Middle East",
-    "port": "Doha International Airport",
+    "country": "Philippines",
+    "region": "Southeast Asia",
+    "city": "Cebu",
+    "port": "Mactan Cebu International Airport",
+    "code": "CEB",
+    "type": "Air Port"
+  },
+  {
+    "country": "Philippines",
+    "region": "Southeast Asia",
+    "city": "Cebu",
+    "port": "Port of Cebu",
+    "code": "PHCEB",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Philippines",
+    "region": "Southeast Asia",
+    "city": "Manila",
+    "port": "Ninoy Aquino International Airport",
+    "code": "MNL",
+    "type": "Air Port"
+  },
+  {
+    "country": "Philippines",
+    "region": "Southeast Asia",
+    "city": "Manila",
+    "port": "Port of Manila",
+    "code": "PHMNL",
+    "type": "Sea Port"
+  },
+  {
     "country": "Qatar",
-    "code": "QADOH"
+    "region": "Middle East",
+    "city": "Doha",
+    "port": "Doha Port",
+    "code": "QADOH",
+    "type": "Sea Port"
   },
   {
+    "country": "Qatar",
     "region": "Middle East",
+    "city": "Doha",
     "port": "Hamad International Airport",
-    "country": "Qatar",
-    "code": "QAOTH"
+    "code": "DOH",
+    "type": "Air Port"
   },
   {
+    "country": "Qatar",
     "region": "Middle East",
+    "city": "Doha",
     "port": "Hamad Port",
+    "code": "QAHMD",
+    "type": "Sea Port"
+  },
+  {
     "country": "Qatar",
-    "code": "QAHMD"
+    "region": "Middle East",
+    "city": "Mesaieed",
+    "port": "Mesaieed Port",
+    "code": "QAMSD",
+    "type": "Sea Port"
   },
   {
+    "country": "Qatar",
     "region": "Middle East",
+    "city": "Ras Laffan",
+    "port": "Ras Laffan Port",
+    "code": "QARLF",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Saudi Arabia",
+    "region": "Middle East",
+    "city": "Dammam",
+    "port": "King Abdulaziz Port",
+    "code": "SADMM",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Saudi Arabia",
+    "region": "Middle East",
+    "city": "Dammam",
+    "port": "King Fahd International Airport",
+    "code": "DMM",
+    "type": "Air Port"
+  },
+  {
+    "country": "Saudi Arabia",
+    "region": "Middle East",
+    "city": "Jeddah",
     "port": "Jeddah Islamic Port",
-    "country": "Saudi Arabia",
-    "code": "SAJED"
+    "code": "SAJED",
+    "type": "Sea Port"
   },
   {
-    "region": "Middle East",
-    "port": "King Abdulaziz International",
     "country": "Saudi Arabia",
-    "code": "JED"
+    "region": "Middle East",
+    "city": "Jeddah",
+    "port": "King Abdulaziz International Airport",
+    "code": "JED",
+    "type": "Air Port"
   },
   {
-    "region": "Middle East",
-    "port": "King Abdulaziz Port Dammam",
     "country": "Saudi Arabia",
-    "code": "SADMM"
+    "region": "Middle East",
+    "city": "Jubail",
+    "port": "Jubail Commercial Port",
+    "code": "SAJUB",
+    "type": "Sea Port"
   },
   {
+    "country": "Saudi Arabia",
     "region": "Middle East",
+    "city": "Medina",
+    "port": "Prince Mohammad bin Abdulaziz Airport",
+    "code": "MED",
+    "type": "Air Port"
+  },
+  {
+    "country": "Saudi Arabia",
+    "region": "Middle East",
+    "city": "Rabigh",
     "port": "King Abdullah Port",
+    "code": "SAKAP",
+    "type": "Sea Port"
+  },
+  {
     "country": "Saudi Arabia",
-    "code": "SAKAP"
+    "region": "Middle East",
+    "city": "Riyadh",
+    "port": "King Khalid International Airport",
+    "code": "RUH",
+    "type": "Air Port"
   },
   {
-    "region": "Middle East",
-    "port": "King Khalid International",
     "country": "Saudi Arabia",
-    "code": "RUH"
-  },
-  {
     "region": "Middle East",
-    "port": "Abu Dhabi / Khalifa Port",
-    "country": "UAE",
-    "code": "AEKFP"
+    "city": "Yanbu",
+    "port": "Yanbu Commercial Port",
+    "code": "SAYNB",
+    "type": "Sea Port"
   },
   {
+    "country": "Singapore",
+    "region": "Southeast Asia",
+    "city": "Singapore",
+    "port": "Port of Singapore",
+    "code": "SGSIN",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Singapore",
+    "region": "Southeast Asia",
+    "city": "Singapore",
+    "port": "Singapore Changi Airport",
+    "code": "SIN",
+    "type": "Air Port"
+  },
+  {
+    "country": "South Korea",
+    "region": "East Asia",
+    "city": "Busan",
+    "port": "Port of Busan",
+    "code": "KRPUS",
+    "type": "Sea Port"
+  },
+  {
+    "country": "South Korea",
+    "region": "East Asia",
+    "city": "Incheon",
+    "port": "Incheon International Airport",
+    "code": "ICN",
+    "type": "Air Port"
+  },
+  {
+    "country": "South Korea",
+    "region": "East Asia",
+    "city": "Incheon",
+    "port": "Port of Incheon",
+    "code": "KRINC",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Algeciras",
+    "port": "Port of Algeciras",
+    "code": "ESALG",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Barcelona",
+    "port": "Port of Barcelona",
+    "code": "BCN",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Bilbao",
+    "port": "Port of Bilbao",
+    "code": "BIO",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Castellon",
+    "port": "Port of Castellon",
+    "code": "CAS",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Madrid",
+    "port": "Adolfo Suarez Madrid Barajas Airport",
+    "code": "MAD",
+    "type": "Air Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Malaga",
+    "port": "Malaga Airport",
+    "code": "AGP",
+    "type": "Air Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Palma de Mallorca",
+    "port": "Palma de Mallorca Airport",
+    "code": "PMI",
+    "type": "Air Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Europe",
+    "city": "Valencia",
+    "port": "Port of Valencia",
+    "code": "ESVLC",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Bangkok",
+    "port": "Bangkok Port",
+    "code": "THBKK",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Bangkok",
+    "port": "Don Mueang International Airport",
+    "code": "DMK",
+    "type": "Air Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Bangkok",
+    "port": "Suvarnabhumi Airport",
+    "code": "BKK",
+    "type": "Air Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Chiang Mai",
+    "port": "Chiang Mai International Airport",
+    "code": "CNX",
+    "type": "Air Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Chonburi",
+    "port": "Laem Chabang Port",
+    "code": "THLCH",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Hat Yai",
+    "port": "Hat Yai International Airport",
+    "code": "HDY",
+    "type": "Air Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Phuket",
+    "port": "Phuket International Airport",
+    "code": "HKT",
+    "type": "Air Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Phuket",
+    "port": "Port of Phuket",
+    "code": "THHKT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Rayong",
+    "port": "Map Ta Phut Port",
+    "code": "THMAT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Thailand",
+    "region": "Southeast Asia",
+    "city": "Songkhla",
+    "port": "Port of Songkhla",
+    "code": "THSGZ",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Turkey",
     "region": "Middle East",
-    "port": "Abu Dhabi International",
-    "country": "UAE",
-    "code": "AUH"
+    "city": "Istanbul",
+    "port": "Istanbul Airport",
+    "code": "IST",
+    "type": "Air Port"
   },
   {
+    "country": "Turkey",
     "region": "Middle East",
-    "port": "Al Maktoum International",
-    "country": "UAE",
-    "code": "AEDWC"
+    "city": "Istanbul",
+    "port": "Port of Ambarli",
+    "code": "TRAMB",
+    "type": "Sea Port"
   },
   {
+    "country": "Turkey",
     "region": "Middle East",
-    "port": "Dubai International",
-    "country": "UAE",
-    "code": "AEDXB"
+    "city": "Izmit",
+    "port": "Port of Izmit",
+    "code": "TRIZT",
+    "type": "Sea Port"
   },
   {
+    "country": "Turkey",
     "region": "Middle East",
-    "port": "Jebel Ali",
-    "country": "UAE",
-    "code": "AEJEA"
+    "city": "Mersin",
+    "port": "Port of Mersin",
+    "code": "TRMER",
+    "type": "Sea Port"
   },
   {
+    "country": "United Arab Emirates",
     "region": "Middle East",
-    "port": "Sharjah International",
-    "country": "UAE",
-    "code": "SHJ"
+    "city": "Abu Dhabi",
+    "port": "Abu Dhabi International Airport",
+    "code": "AUH",
+    "type": "Air Port"
   },
   {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Abu Dhabi",
+    "port": "Khalifa Port",
+    "code": "AEKHA",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Dubai",
+    "port": "Al Maktoum International Airport",
+    "code": "DWC",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Dubai",
+    "port": "Dubai International Airport",
+    "code": "DXB",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Dubai",
+    "port": "Port of Jebel Ali",
+    "code": "AEJEA",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Dubai",
+    "port": "Port Rashid",
+    "code": "AEPRA",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Fujairah",
+    "port": "Port of Fujairah",
+    "code": "AEFJR",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Khor Fakkan",
+    "port": "Port of Khor Fakkan",
+    "code": "AEKFK",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Sharjah",
+    "port": "Port of Sharjah",
+    "code": "AESHJ",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "city": "Sharjah",
+    "port": "Sharjah International Airport",
+    "code": "SHJ",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Belfast",
+    "port": "Port of Belfast",
+    "code": "GBBEL",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Dover",
+    "port": "Port of Dover",
+    "code": "GBDVR",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Felixstowe",
+    "port": "Port of Felixstowe",
+    "code": "GBFXT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Grangemouth",
+    "port": "Port of Grangemouth",
+    "code": "GBGRG",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Immingham",
+    "port": "Port of Immingham",
+    "code": "GBIMM",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Liverpool",
+    "port": "Port of Liverpool",
+    "code": "GBLIV",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "London",
+    "port": "Port of London",
+    "code": "GBLON",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Milford Haven",
+    "port": "Port of Milford Haven",
+    "code": "GBMHV",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Southampton",
+    "port": "Port of Southampton",
+    "code": "GBSOU",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Teesport",
+    "port": "Port of Teesport",
+    "code": "GBTEE",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Belfast",
+    "port": "Belfast International Airport",
+    "code": "BFS",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Birmingham",
+    "port": "Birmingham Airport",
+    "code": "BHX",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "East Midlands",
+    "port": "East Midlands Airport",
+    "code": "EMA",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Edinburgh",
+    "port": "Edinburgh Airport",
+    "code": "EDI",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Glasgow",
+    "port": "Glasgow Airport",
+    "code": "GLA",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "London",
+    "port": "London Gatwick Airport",
+    "code": "LGW",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "London",
+    "port": "London Heathrow Airport",
+    "code": "LHR",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "London",
+    "port": "London Stansted Airport",
+    "code": "STN",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Manchester",
+    "port": "Manchester Airport",
+    "code": "MAN",
+    "type": "Air Port"
+  },
+  {
+    "country": "United Kingdom",
+    "region": "Europe",
+    "city": "Newcastle",
+    "port": "Newcastle Airport",
+    "code": "NCL",
+    "type": "Air Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Da Nang",
+    "port": "Da Nang International Airport",
+    "code": "DAD",
+    "type": "Air Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Da Nang",
+    "port": "Da Nang Port",
+    "code": "VNDAD",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Haiphong",
+    "port": "Haiphong Port",
+    "code": "VNHPH",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Hanoi",
+    "port": "Noi Bai International Airport",
+    "code": "HAN",
+    "type": "Air Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Ho Chi Minh City",
+    "port": "Saigon Port",
+    "code": "VNSGN",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Ho Chi Minh City",
+    "port": "Tan Son Nhat International Airport",
+    "code": "SGN",
+    "type": "Air Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Nha Trang",
+    "port": "Cam Ranh International Airport",
+    "code": "CXR",
+    "type": "Air Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Phu Quoc",
+    "port": "Phu Quoc International Airport",
+    "code": "PQC",
+    "type": "Air Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Qui Nhon",
+    "port": "Qui Nhon Port",
+    "code": "VNUIH",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Vietnam",
+    "region": "Southeast Asia",
+    "city": "Vung Tau",
+    "port": "Vung Tau Port",
+    "code": "VNVUT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "United States",
     "region": "North America",
-    "port": "Montreal",
-    "country": "Canada",
-    "code": "CAMTR"
+    "city": "Baltimore",
+    "port": "Helen Delich Bentley Port of Baltimore",
+    "code": "USBWI",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Prince Rupert",
-    "country": "Canada",
-    "code": "CAPPR"
+    "city": "Charleston",
+    "port": "Port of Charleston",
+    "code": "USCHS",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Toronto Pearson",
-    "country": "Canada",
-    "code": "YYZ"
+    "city": "Houston",
+    "port": "Port of Houston",
+    "code": "USUSH",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Vancouver",
-    "country": "Canada",
-    "code": "CAVAN"
+    "city": "Jacksonville",
+    "port": "JAXPORT",
+    "code": "USJAX",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Lázaro Cárdenas",
-    "country": "Mexico",
-    "code": "MXLZC"
+    "city": "Long Beach",
+    "port": "Port of Long Beach",
+    "code": "USLGB",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Manzanillo",
-    "country": "Mexico",
-    "code": "MXZLO"
+    "city": "Los Angeles",
+    "port": "Port of Los Angeles",
+    "code": "USLAX",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Mexico City International",
-    "country": "Mexico",
-    "code": "MEX"
+    "city": "Miami",
+    "port": "Port of Miami",
+    "code": "USMIA",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Anchorage",
-    "country": "USA",
-    "code": "ANC"
+    "city": "New Orleans",
+    "port": "Port of New Orleans",
+    "code": "USMSY",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Charleston",
-    "country": "USA",
-    "code": "USCHS"
+    "city": "New York",
+    "port": "Port of New York & New Jersey",
+    "code": "USNYC",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Chicago O'Hare",
-    "country": "USA",
-    "code": "ORD"
+    "city": "Norfolk",
+    "port": "Port of Virginia",
+    "code": "USORF",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Houston",
-    "country": "USA",
-    "code": "USHOU"
+    "city": "Oakland",
+    "port": "Port of Oakland",
+    "code": "USOAK",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "JFK New York",
-    "country": "USA",
-    "code": "JFK"
+    "city": "Philadelphia",
+    "port": "PhilaPort",
+    "code": "USPHL",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Long Beach",
-    "country": "USA",
-    "code": "USLGB"
+    "city": "Savannah",
+    "port": "Port of Savannah",
+    "code": "USSAV",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Los Angeles",
-    "country": "USA",
-    "code": "USLAX"
+    "city": "Seattle",
+    "port": "Port of Seattle",
+    "code": "USSEA",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Los Angeles International",
-    "country": "USA",
-    "code": "LAX"
+    "city": "Tacoma",
+    "port": "Port of Tacoma",
+    "code": "USTAC",
+    "type": "Sea Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Louisville International",
-    "country": "USA",
-    "code": "SDF"
+    "city": "Anchorage",
+    "port": "Ted Stevens Anchorage International Airport",
+    "code": "ANC",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Memphis",
-    "country": "USA",
-    "code": "MEM"
+    "city": "Atlanta",
+    "port": "Hartsfield-Jackson Atlanta International Airport",
+    "code": "ATL",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Miami",
-    "country": "USA",
-    "code": "USMIA"
+    "city": "Chicago",
+    "port": "Chicago O'Hare International Airport",
+    "code": "ORD",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Miami International",
-    "country": "USA",
-    "code": "MIA"
+    "city": "Dallas",
+    "port": "Dallas-Fort Worth International Airport",
+    "code": "DFW",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "New York / New Jersey",
-    "country": "USA",
-    "code": "USNYC"
+    "city": "Denver",
+    "port": "Denver International Airport",
+    "code": "DEN",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Norfolk / Hampton Roads",
-    "country": "USA",
-    "code": "USORF"
+    "city": "Honolulu",
+    "port": "Daniel K. Inouye International Airport",
+    "code": "HNL",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Oakland",
-    "country": "USA",
-    "code": "USOAK"
+    "city": "Houston",
+    "port": "George Bush Intercontinental Airport",
+    "code": "IAH",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Savannah",
-    "country": "USA",
-    "code": "USSAV"
+    "city": "Los Angeles",
+    "port": "Los Angeles International Airport",
+    "code": "LAX",
+    "type": "Air Port"
   },
   {
+    "country": "United States",
     "region": "North America",
-    "port": "Seattle-Tacoma",
-    "country": "USA",
-    "code": "USSEA"
+    "city": "Louisville",
+    "port": "Louisville Muhammad Ali International Airport",
+    "code": "SDF",
+    "type": "Air Port"
   },
   {
-    "region": "Oceania",
-    "port": "Brisbane",
-    "country": "Australia",
-    "code": "AUBNE"
+    "country": "United States",
+    "region": "North America",
+    "city": "Memphis",
+    "port": "Memphis International Airport",
+    "code": "MEM",
+    "type": "Air Port"
   },
   {
-    "region": "Oceania",
-    "port": "Fremantle / Perth",
-    "country": "Australia",
-    "code": "AUFRE"
+    "country": "United States",
+    "region": "North America",
+    "city": "Miami",
+    "port": "Miami International Airport",
+    "code": "MIA",
+    "type": "Air Port"
   },
   {
-    "region": "Oceania",
-    "port": "Melbourne",
-    "country": "Australia",
-    "code": "AUMEL"
+    "country": "United States",
+    "region": "North America",
+    "city": "Newark",
+    "port": "Newark Liberty International Airport",
+    "code": "EWR",
+    "type": "Air Port"
   },
   {
-    "region": "Oceania",
-    "port": "Melbourne International",
-    "country": "Australia",
-    "code": "MEL"
+    "country": "United States",
+    "region": "North America",
+    "city": "New York",
+    "port": "John F. Kennedy International Airport",
+    "code": "JFK",
+    "type": "Air Port"
   },
   {
-    "region": "Oceania",
-    "port": "Sydney",
-    "country": "Australia",
-    "code": "AUSYD"
+    "country": "United States",
+    "region": "North America",
+    "city": "San Francisco",
+    "port": "San Francisco International Airport",
+    "code": "SFO",
+    "type": "Air Port"
   },
   {
-    "region": "Oceania",
-    "port": "Sydney Kingsford Smith",
-    "country": "Australia",
-    "code": "SYD"
-  },
-  {
-    "region": "Oceania",
-    "port": "Auckland",
-    "country": "New Zealand",
-    "code": "NZAKL"
-  },
-  {
-    "region": "Oceania",
-    "port": "Auckland International",
-    "country": "New Zealand",
-    "code": "AKL"
-  },
-  {
-    "region": "Oceania",
-    "port": "Tauranga",
-    "country": "New Zealand",
-    "code": "NZTRG"
-  },
-  {
-    "region": "South America",
-    "port": "Buenos Aires",
-    "country": "Argentina",
-    "code": "ARBUE"
-  },
-  {
-    "region": "South America",
-    "port": "Paranaguá",
-    "country": "Brazil",
-    "code": "BRPNG"
-  },
-  {
-    "region": "South America",
-    "port": "Santos",
-    "country": "Brazil",
-    "code": "BRSSZ"
-  },
-  {
-    "region": "South America",
-    "port": "São Paulo Guarulhos",
-    "country": "Brazil",
-    "code": "GRU"
-  },
-  {
-    "region": "South America",
-    "port": "San Antonio",
-    "country": "Chile",
-    "code": "CLSAI"
-  },
-  {
-    "region": "South America",
-    "port": "Valparaíso",
-    "country": "Chile",
-    "code": "CLVAP"
-  },
-  {
-    "region": "South America",
-    "port": "Bogota El Dorado",
-    "country": "Colombia",
-    "code": "BOG"
-  },
-  {
-    "region": "South America",
-    "port": "Buenaventura",
-    "country": "Colombia",
-    "code": "COBUN"
-  },
-  {
-    "region": "South America",
-    "port": "Cartagena",
-    "country": "Colombia",
-    "code": "COCTG"
-  },
-  {
-    "region": "South America",
-    "port": "Guayaquil",
-    "country": "Ecuador",
-    "code": "ECGYE"
-  },
-  {
-    "region": "South America",
-    "port": "Callao",
-    "country": "Peru",
-    "code": "PECLL"
+    "country": "United States",
+    "region": "North America",
+    "city": "Seattle",
+    "port": "Seattle-Tacoma International Airport",
+    "code": "SEA",
+    "type": "Air Port"
   }
 ];

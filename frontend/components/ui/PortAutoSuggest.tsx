@@ -7,9 +7,10 @@ interface Props {
   onChange: (val: string) => void;
   placeholder?: string;
   mode?: string;
+  country?: string;
 }
 
-export default function PortAutoSuggest({ value, onChange, placeholder, mode }: Props) {
+export default function PortAutoSuggest({ value, onChange, placeholder, mode, country }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -24,18 +25,20 @@ export default function PortAutoSuggest({ value, onChange, placeholder, mode }: 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter major ports based on mode and typed string matching Region, Country, LOCODE, or Port Name
-  // AIR mode: IATA 3-letter codes only (airports)
-  // SEA mode: UN/LOCODE 5-letter codes only (seaports)
+  // Filter major ports based on mode and country
   const filteredPorts = MAJOR_PORTS.filter(p => {
-    if (!mode) return true;
-    const upperMode = mode.toUpperCase();
-    if (upperMode === "AIR") {
-      return p.code.length === 3;
-    } else if (upperMode === "SEA") {
-      return p.code.length === 5;
+    if (country && p.country.toLowerCase() !== country.toLowerCase()) {
+      return false;
     }
-    return true; // Road or other
+    if (mode) {
+      const upperMode = mode.toUpperCase();
+      if (upperMode === "AIR") {
+        if (p.type !== "Air Port") return false;
+      } else if (upperMode === "SEA") {
+        if (p.type !== "Sea Port") return false;
+      }
+    }
+    return true;
   });
 
   const suggestions = value
@@ -44,6 +47,7 @@ export default function PortAutoSuggest({ value, onChange, placeholder, mode }: 
         return (
           p.port.toLowerCase().includes(query) ||
           p.country.toLowerCase().includes(query) ||
+          p.city.toLowerCase().includes(query) ||
           p.region.toLowerCase().includes(query) ||
           p.code.toLowerCase().includes(query)
         );
@@ -70,8 +74,11 @@ export default function PortAutoSuggest({ value, onChange, placeholder, mode }: 
             <div
               key={`${p.code}-${idx}`}
               onClick={() => {
-                // Set value as "[Port Name], [Country] ([Code])"
-                onChange(`${p.port}, ${p.country} (${p.code})`);
+                // Set value as "[Port Name] ([Code])" if country is filtered, else normal "[Port Name], [Country] ([Code])"
+                const selectedVal = country 
+                  ? `${p.port} (${p.code})` 
+                  : `${p.port}, ${p.country} (${p.code})`;
+                onChange(selectedVal);
                 setIsOpen(false);
               }}
               className="px-4 py-2 hover:bg-white/5 cursor-pointer border-b border-white/[0.02] last:border-0 transition-colors flex justify-between items-center"
@@ -81,7 +88,7 @@ export default function PortAutoSuggest({ value, onChange, placeholder, mode }: 
                   {p.port}, {p.country}
                 </span>
                 <span className="text-[10px] text-muted">
-                  {p.region}
+                  {p.city ? `${p.city}, ` : ""}{p.region}
                 </span>
               </div>
               <div className="text-[10px] text-muted font-mono bg-white/5 px-2 py-0.5 rounded">

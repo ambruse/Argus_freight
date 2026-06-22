@@ -30,11 +30,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid — clear and redirect to login
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("freight_token");
-        localStorage.removeItem("freight_user");
-        window.location.href = "/login";
+      const url = error.config?.url || "";
+      const isAuthRequest = url.includes("/auth/login") || url.includes("/auth/register");
+
+      if (!isAuthRequest) {
+        // Token expired or invalid — clear and redirect to login
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("freight_token");
+          localStorage.removeItem("freight_user");
+          window.location.href = "/login";
+        }
       }
     }
     return Promise.reject(error);

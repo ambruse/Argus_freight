@@ -4,3 +4,4 @@ uploads/
 .next/
 dist/
 *.log
+.gemini/

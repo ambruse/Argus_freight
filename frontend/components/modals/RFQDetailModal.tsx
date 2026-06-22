@@ -13,6 +13,8 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { cleanEmailBody } from "@/lib/emailParser";
+import { useAuth } from "@/hooks/useAuth";
+import { io, Socket } from "socket.io-client";
 
 interface Props {
   shipment:  Shipment | null;
@@ -32,6 +34,9 @@ function Field({ label, value }: { label: string; value?: string | number | null
 }
 
 export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }: Props) {
+  const { user } = useAuth();
+  const isSales = user?.role === "sales";
+
   const [newStatus, setNewStatus] = useState<ShipmentStatus | "">("");
   const [saving,    setSaving]    = useState(false);
   const [replies,   setReplies]   = useState<ShipmentReply[]>([]);
@@ -45,6 +50,9 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
   const [custName, setCustName] = useState("");
   const [custEmail, setCustEmail] = useState("");
   const [savingCustomer, setSavingCustomer] = useState(false);
+
+  const [editCost, setEditCost] = useState("");
+  const [editCustPrice, setEditCustPrice] = useState("");
 
   const [showQuotationConfirm, setShowQuotationConfirm] = useState(false);
   const [sendingQuotation, setSendingQuotation] = useState(false);
@@ -60,11 +68,37 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
     currency: "QAR"
   });
 
+  const [files, setFiles] = useState<any[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+
   const repliesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [sendingChatMessage, setSendingChatMessage] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     repliesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [replies]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const fetchFiles = async () => {
+    if (!shipment) return;
+    setLoadingFiles(true);
+    try {
+      const { data } = await api.get(`/files/${shipment.ref_no}`);
+      setFiles(data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch files", err);
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
 
   const handleSendReply = async () => {
     if (!replyText.trim() || !shipment) return;
@@ -161,10 +195,18 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
 
   useEffect(() => {
     if (isOpen && shipment) {
-      fetchReplies();
+      if (user?.role !== "customer") {
+        fetchReplies();
+        fetchFiles();
+      }
       setEditingCustomer(false);
       setCustName(shipment.customer_name || "");
       setCustEmail(shipment.customer_email || "");
+      setEditCost(shipment.cost != null ? shipment.cost.toString() : "");
+      const initialCustPrice = shipment.cost != null 
+        ? (Number(shipment.cost) + Number(shipment.profit || 0)).toString() 
+        : "";
+      setEditCustPrice(initialCustPrice);
       setQuotaForm({
         mode: shipment.mode === "AIR" ? "AIR" : "SEA",
         freightRate: "",
@@ -177,7 +219,80 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         currency: "QAR"
       });
     }
+  }, [isOpen, shipment, user]);
+
+  useEffect(() => {
+    if (!isOpen || !shipment || !shipment.customer_id) return;
+
+    const roomKey = shipment.cust_req_no || shipment.ref_no;
+    if (!roomKey) return;
+
+    const socketUrl = typeof window !== "undefined"
+      ? `${window.location.protocol}//${window.location.hostname}:3001`
+      : "http://localhost:3001";
+
+    const newSocket = io(socketUrl);
+    setSocket(newSocket);
+
+    newSocket.emit("joinRoom", `room_${roomKey}`);
+
+    const fetchChatHistory = async () => {
+      try {
+        const { data } = await api.get(`/shipments/chat/${roomKey}`);
+        if (data.success) {
+          setChatMessages(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch chat history:", err);
+      }
+    };
+
+    fetchChatHistory();
+
+    newSocket.on("newMessage", (msg: any) => {
+      if (msg.cust_req_no === roomKey) {
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+
+          // Alert user if the message is from someone else
+          const currentUserRaw = typeof window !== "undefined" ? localStorage.getItem("freight_user") : null;
+          const currentUser = currentUserRaw ? JSON.parse(currentUserRaw) : null;
+          if (currentUser && msg.sender_username.toLowerCase() !== currentUser.username.toLowerCase()) {
+            toast(`💬 New message from ${msg.sender_username}: "${msg.message.substring(0, 30)}${msg.message.length > 30 ? '...' : ''}"`, {
+              icon: '💬',
+            });
+          }
+
+          return [...prev, msg];
+        });
+      }
+    });
+
+    return () => {
+      newSocket.disconnect();
+      setSocket(null);
+    };
   }, [isOpen, shipment]);
+
+  const handleSendChatMessage = async () => {
+    if (!chatInput.trim() || !shipment) return;
+    const roomKey = shipment.cust_req_no || shipment.ref_no;
+    if (!roomKey) return;
+
+    setSendingChatMessage(true);
+    try {
+      const { data } = await api.post(`/shipments/chat/${roomKey}`, {
+        message: chatInput,
+      });
+      if (data.success) {
+        setChatInput("");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Failed to send message.");
+    } finally {
+      setSendingChatMessage(false);
+    }
+  };
 
   const fetchReplies = async () => {
     if (!shipment) return;
@@ -195,15 +310,38 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
   if (!shipment) return null;
 
   const handleStatusChange = async () => {
-    if (!newStatus || newStatus === shipment.status) return;
+    const statusToSend = isSales ? (newStatus || shipment.status) : newStatus;
+
+    if (!isSales && (!newStatus || newStatus === shipment.status)) {
+      return;
+    }
+
+    const parsedCost = editCost.trim() === "" ? null : parseFloat(editCost);
+    const parsedCustPrice = editCustPrice.trim() === "" ? null : parseFloat(editCustPrice);
+    
+    let parsedProfit = null;
+    if (parsedCost !== null && parsedCustPrice !== null) {
+      parsedProfit = parsedCustPrice - parsedCost;
+    }
+
     setSaving(true);
     try {
-      const { data } = await api.patch(`/shipments/${shipment.ref_no}/status`, { status: newStatus });
-      toast.success(`Status updated to "${newStatus}" — follow-up timer reset.`);
-      onUpdated({ ...shipment, status: data.data.status, last_follow_up: data.data.last_follow_up });
+      const { data } = await api.patch(`/shipments/${shipment.ref_no}/status`, {
+        status: statusToSend,
+        cost: isSales ? parsedCost : undefined,
+        profit: isSales ? parsedProfit : undefined,
+      });
+      toast.success("Shipment updated successfully.");
+      onUpdated({
+        ...shipment,
+        status: data.data.status,
+        cost: data.data.cost,
+        profit: data.data.profit,
+        last_follow_up: data.data.last_follow_up
+      });
       setNewStatus("");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? "Failed to update status.");
+      toast.error(err?.response?.data?.message ?? "Failed to update shipment.");
     } finally {
       setSaving(false);
     }
@@ -224,8 +362,8 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-5 mb-6">
         <Field label="REF NO"       value={shipment.ref_no} />
         <Field label="Referred By"  value={shipment.refer_by} />
-        <Field label="Dear Who"     value={shipment.dear_who} />
-        <Field label="Email"        value={shipment.email} />
+        {user?.role !== "customer" && <Field label="Dear Who"     value={shipment.dear_who} />}
+        {user?.role !== "customer" && <Field label="Email"        value={shipment.email} />}
         <Field label="POL"          value={shipment.pol} />
         <Field label="POD"          value={shipment.pod} />
         <Field label="Mode"         value={shipment.mode} />
@@ -234,7 +372,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         <Field label="Container"    value={shipment.container} />
         <Field label="Weight"       value={shipment.weight ? `${shipment.weight} kg` : null} />
         <Field label="Dimension"    value={shipment.dimension} />
-        <Field label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
+        {user?.role !== "customer" && <Field label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />}
         <Field label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
         <Field label="ETD"          value={shipment.etd ? format(new Date(shipment.etd), "dd MMM yyyy") : null} />
         <Field label="ETA"          value={shipment.eta ? format(new Date(shipment.eta), "dd MMM yyyy") : null} />
@@ -243,74 +381,76 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       </div>
 
       {/* Customer Information Card */}
-      <div className="mb-6 p-4 rounded-xl bg-surface-4 border border-white/[0.05]">
-        <div className="flex items-center justify-between mb-3 border-b border-white/[0.05] pb-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">Customer Information</p>
-          {!editingCustomer ? (
-            <button
-              onClick={() => {
-                setCustName(shipment.customer_name || "");
-                setCustEmail(shipment.customer_email || "");
-                setEditingCustomer(true);
-              }}
-              className="text-xs text-blue hover:underline"
-            >
-              ✎ Edit Customer
-            </button>
+      {user?.role !== "customer" && (
+        <div className="mb-6 p-4 rounded-xl bg-surface-4 border border-white/[0.05]">
+          <div className="flex items-center justify-between mb-3 border-b border-white/[0.05] pb-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted">Customer Information</p>
+            {!isSales && !editingCustomer ? (
+              <button
+                onClick={() => {
+                  setCustName(shipment.customer_name || "");
+                  setCustEmail(shipment.customer_email || "");
+                  setEditingCustomer(true);
+                }}
+                className="text-xs text-blue hover:underline"
+              >
+                ✎ Edit Customer
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  disabled={savingCustomer}
+                  onClick={handleSaveCustomer}
+                  className="text-xs text-emerald hover:underline font-semibold"
+                >
+                  {savingCustomer ? "Saving..." : "✓ Save"}
+                </button>
+                <button
+                  onClick={() => setEditingCustomer(false)}
+                  className="text-xs text-muted hover:underline"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {editingCustomer ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] uppercase font-semibold text-muted mb-1">Customer Name</label>
+                <input
+                  className="input-sm w-full"
+                  value={custName}
+                  onChange={(e) => setCustName(e.target.value)}
+                  placeholder="Enter customer name..."
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-semibold text-muted mb-1">Customer Email</label>
+                <input
+                  className="input-sm w-full"
+                  type="email"
+                  value={custEmail}
+                  onChange={(e) => setCustEmail(e.target.value)}
+                  placeholder="Enter customer email..."
+                />
+              </div>
+            </div>
           ) : (
-            <div className="flex gap-2">
-              <button
-                disabled={savingCustomer}
-                onClick={handleSaveCustomer}
-                className="text-xs text-emerald hover:underline font-semibold"
-              >
-                {savingCustomer ? "Saving..." : "✓ Save"}
-              </button>
-              <button
-                onClick={() => setEditingCustomer(false)}
-                className="text-xs text-muted hover:underline"
-              >
-                Cancel
-              </button>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] uppercase font-semibold text-muted">Customer Name</p>
+                <p className="text-sm text-primary font-medium">{shipment.customer_name || <span className="text-faint">—</span>}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-semibold text-muted">Customer Email</p>
+                <p className="text-sm text-primary font-medium">{shipment.customer_email || <span className="text-faint">—</span>}</p>
+              </div>
             </div>
           )}
         </div>
-        
-        {editingCustomer ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] uppercase font-semibold text-muted mb-1">Customer Name</label>
-              <input
-                className="input-sm w-full"
-                value={custName}
-                onChange={(e) => setCustName(e.target.value)}
-                placeholder="Enter customer name..."
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] uppercase font-semibold text-muted mb-1">Customer Email</label>
-              <input
-                className="input-sm w-full"
-                type="email"
-                value={custEmail}
-                onChange={(e) => setCustEmail(e.target.value)}
-                placeholder="Enter customer email..."
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[10px] uppercase font-semibold text-muted">Customer Name</p>
-              <p className="text-sm text-primary font-medium">{shipment.customer_name || <span className="text-faint">—</span>}</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase font-semibold text-muted">Customer Email</p>
-              <p className="text-sm text-primary font-medium">{shipment.customer_email || <span className="text-faint">—</span>}</p>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Addresses */}
       {(shipment.pickup_address || shipment.delivery_address) && (
@@ -334,126 +474,297 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         </div>
       )}
 
-      {/* ── Email Replies ───────────────────────────────── */}
-      <div className="border-t border-white/[0.06] pt-5 mb-6">
-        <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">Email Replies</p>
-        {loadingReplies ? (
-          <div className="text-sm text-muted">Loading replies...</div>
-        ) : (
-          <div className="space-y-4">
-            {replies.length === 0 ? (
-              <div className="text-sm text-muted italic">No email replies yet.</div>
-            ) : (
-              <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
-                {replies.map((r) => {
-                  const isOutgoing = !!r.is_outgoing;
-                  const senderLabel = isOutgoing ? "YOU" : (shipment.dear_who || "Customer");
-                  const cleanedBody = cleanEmailBody(r.body_text);
-
-                  return (
-                    <div
-                      key={r.id}
-                      className={`flex flex-col ${isOutgoing ? "items-end" : "items-start"}`}
-                    >
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-muted mb-1 px-1">
-                        {senderLabel}
-                      </span>
-                      <div
-                        className={`p-3.5 rounded-2xl border text-sm text-primary max-w-[85%] whitespace-pre-wrap transition-all duration-150 ${
-                          isOutgoing
-                            ? "bg-blue/10 border-blue/20 rounded-tr-none ml-8"
-                            : "bg-surface-4 border-white/[0.05] rounded-tl-none mr-8"
-                        }`}
-                      >
-                        <p>{cleanedBody}</p>
-                        <p className="text-[9px] text-muted text-right mt-2 font-mono">
-                          {fmtDate(r.received_at)}
+      {/* Attached Files */}
+      {user?.role !== "customer" && (
+        <div className="mb-6 p-4 rounded-xl bg-surface-4 border border-white/[0.05]">
+          <h4 className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">Attached Files</h4>
+          {loadingFiles ? (
+            <p className="text-xs text-muted">Loading files...</p>
+          ) : files.length === 0 ? (
+            <p className="text-xs text-muted italic">No attached files.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {files.map((file) => {
+                const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : "";
+                const downloadUrl = `/api/files/download/${file.id}?token=${token}`;
+                return (
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm shrink-0">📎</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-primary truncate" title={file.original_name}>
+                          {file.original_name}
+                        </p>
+                        <p className="text-[10px] text-muted">
+                          {(file.size_bytes / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
                     </div>
-                  );
-                })}
-                <div ref={repliesEndRef} />
-              </div>
-            )}
+                    <a
+                      href={downloadUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-blue hover:text-blue-bright font-semibold px-2.5 py-1 rounded bg-blue/10 hover:bg-blue/20 transition-colors"
+                    >
+                      Download
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-            {/* Quick Reply Form */}
-            <div className="p-4 rounded-xl bg-surface-4 border border-white/[0.05] space-y-3">
-              <p className="text-xs font-semibold text-muted">Send Quick Reply</p>
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Type your reply here..."
-                disabled={sendingReply}
-                className="input-sm min-h-[90px] w-full text-sm bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-primary placeholder-faint focus:border-blue/50 focus:outline-none"
-              />
-              <div className="flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowQuotationConfirm(true)}
-                  disabled={sendingReply || sendingFollowUp || sendingQuotation}
-                  className="btn-secondary text-xs px-3 py-1.5 hover:text-emerald hover:border-emerald/30"
-                >
-                  📨 Send Quotation to Customer
-                </button>
-                {replyText && (
-                  <button
-                    type="button"
-                    onClick={() => setReplyText("")}
-                    disabled={sendingReply || sendingFollowUp || sendingQuotation}
-                    className="btn-secondary text-xs px-3 py-1.5"
+      {/* ── Email Replies ───────────────────────────────── */}
+      {user?.role !== "customer" && (
+        <div className="border-t border-white/[0.06] pt-5 mb-6">
+          <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">Email Replies</p>
+          {loadingReplies ? (
+            <div className="text-sm text-muted">Loading replies...</div>
+          ) : (
+            <div className="space-y-4">
+              {replies.length === 0 ? (
+                <div className="text-sm text-muted italic">No email replies yet.</div>
+              ) : (
+                <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
+                  {replies.map((r) => {
+                    const isOutgoing = !!r.is_outgoing;
+                    const senderLabel = isOutgoing ? "YOU" : (shipment.dear_who || "Customer");
+                    const cleanedBody = cleanEmailBody(r.body_text);
+
+                    return (
+                      <div
+                        key={r.id}
+                        className={`flex flex-col ${isOutgoing ? "items-end" : "items-start"}`}
+                      >
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted mb-1 px-1">
+                          {senderLabel}
+                        </span>
+                        <div
+                          className={`p-3.5 rounded-2xl border text-sm text-primary max-w-[85%] whitespace-pre-wrap transition-all duration-150 ${
+                            isOutgoing
+                              ? "bg-blue/10 border-blue/20 rounded-tr-none ml-8"
+                              : "bg-surface-4 border-white/[0.05] rounded-tl-none mr-8"
+                          }`}
+                        >
+                          <p>{cleanedBody}</p>
+                          <p className="text-[9px] text-muted text-right mt-2 font-mono">
+                            {fmtDate(r.received_at)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={repliesEndRef} />
+                </div>
+              )}
+
+              {/* Quick Reply Form */}
+              {!isSales && user?.role !== "customer" && (
+                <div className="p-4 rounded-xl bg-surface-4 border border-white/[0.05] space-y-3">
+                  <p className="text-xs font-semibold text-muted">Send Quick Reply</p>
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Type your reply here..."
+                    disabled={sendingReply}
+                    className="input-sm min-h-[90px] w-full text-sm bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-primary placeholder-faint focus:border-blue/50 focus:outline-none"
+                  />
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowQuotationConfirm(true)}
+                      disabled={sendingReply || sendingFollowUp || sendingQuotation}
+                      className="btn-secondary text-xs px-3 py-1.5 hover:text-emerald hover:border-emerald/30"
+                    >
+                      📨 Send Quotation to Customer
+                    </button>
+                    {replyText && (
+                      <button
+                        type="button"
+                        onClick={() => setReplyText("")}
+                        disabled={sendingReply || sendingFollowUp || sendingQuotation}
+                        className="btn-secondary text-xs px-3 py-1.5"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSendFollowUp}
+                      disabled={sendingReply || sendingFollowUp || sendingQuotation}
+                      className="btn-secondary text-xs px-3 py-1.5 hover:text-blue hover:border-blue/30"
+                    >
+                      {sendingFollowUp ? "Sending Follow-up..." : "📨 Send Follow up"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSendReply}
+                      disabled={!replyText.trim() || sendingReply || sendingFollowUp || sendingQuotation}
+                      className="btn-primary text-xs px-4 py-1.5"
+                    >
+                      {sendingReply ? "Sending..." : "📨 Send Reply"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Chat Box Section */}
+      {shipment.customer_id && (
+        <div className="border-t border-white/[0.06] pt-5 mb-6">
+          <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">
+            {user?.role === "customer" ? "💬 Chat with Operator" : "💬 Chat with Customer"}
+          </p>
+        <div className="p-4 rounded-xl bg-surface-4 border border-white/[0.05] space-y-4">
+          {/* Messages List */}
+          <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
+            {chatMessages.length === 0 ? (
+              <div className="text-center py-8 text-muted italic text-xs">
+                No messages yet. Send a message to start the conversation.
+              </div>
+            ) : (
+              chatMessages.map((msg) => {
+                const isMe = msg.sender_username.toLowerCase() === user?.username?.toLowerCase();
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
                   >
-                    Cancel
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleSendFollowUp}
-                  disabled={sendingReply || sendingFollowUp || sendingQuotation}
-                  className="btn-secondary text-xs px-3 py-1.5 hover:text-blue hover:border-blue/30"
+                    <span className="text-[9px] uppercase font-bold tracking-wider text-muted mb-1 px-1">
+                      {isMe ? "YOU" : msg.sender_username}
+                    </span>
+                    <div
+                      className={`p-3 rounded-2xl border text-sm text-primary max-w-[85%] whitespace-pre-wrap transition-all duration-150 ${
+                        isMe
+                          ? "bg-blue/10 border-blue/20 rounded-tr-none ml-8"
+                          : "bg-surface-3 border-white/[0.05] rounded-tl-none mr-8"
+                      }`}
+                    >
+                      <p>{msg.message}</p>
+                      <p className="text-[8px] text-muted text-right mt-1.5 font-mono">
+                        {msg.created_at ? format(new Date(msg.created_at), "dd MMM HH:mm") : "—"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Message Input Area */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSendChatMessage();
+                }
+              }}
+              placeholder="Type your message here..."
+              disabled={sendingChatMessage}
+              className="input-sm flex-1 bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary placeholder-faint focus:border-blue/50 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleSendChatMessage}
+              disabled={!chatInput.trim() || sendingChatMessage}
+              className="btn-primary text-xs px-4 py-1.5 shrink-0"
+            >
+              {sendingChatMessage ? "Sending..." : "💬 Send"}
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* ── Edit Status & Financials ───────────────────── */}
+      {user?.role !== "customer" && (
+        <div className="border-t border-white/[0.06] pt-5">
+          <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">
+            {isSales ? "Update Status & Financials" : "Edit Status"}
+          </p>
+          
+          {isSales ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="block text-[10px] uppercase font-semibold text-muted mb-1.5">Status</label>
+                <select
+                  value={newStatus || shipment.status}
+                  onChange={(e) => setNewStatus(e.target.value as ShipmentStatus)}
+                  className="select w-full"
                 >
-                  {sendingFollowUp ? "Sending Follow-up..." : "📨 Send Follow up"}
-                </button>
+                  {ALL_STATUSES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-semibold text-muted mb-1.5">Cost (QAR)</label>
+                <input
+                  type="text"
+                  value={editCost}
+                  onChange={(e) => setEditCost(e.target.value)}
+                  placeholder="e.g. 1500"
+                  className="input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-semibold text-muted mb-1.5">Customer Price (QAR)</label>
+                <input
+                  type="text"
+                  value={editCustPrice}
+                  onChange={(e) => setEditCustPrice(e.target.value)}
+                  placeholder="e.g. 2000"
+                  className="input w-full"
+                />
+              </div>
+              <div className="md:col-span-3 flex justify-end">
                 <button
-                  type="button"
-                  onClick={handleSendReply}
-                  disabled={!replyText.trim() || sendingReply || sendingFollowUp || sendingQuotation}
-                  className="btn-primary text-xs px-4 py-1.5"
+                  onClick={handleStatusChange}
+                  disabled={saving}
+                  className="btn-primary px-8"
                 >
-                  {sendingReply ? "Sending..." : "📨 Send Reply"}
+                  {saving ? "Saving…" : "Save Changes"}
                 </button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Edit Status ─────────────────────────────────── */}
-      <div className="border-t border-white/[0.06] pt-5">
-        <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">Edit Status</p>
-        <div className="flex items-center gap-3">
-          <select
-            value={newStatus}
-            onChange={(e) => setNewStatus(e.target.value as ShipmentStatus)}
-            className="select flex-1 max-w-xs"
-          >
-            <option value="">— Select new status —</option>
-            {ALL_STATUSES.filter((s) => s !== shipment.status).map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <button
-            onClick={handleStatusChange}
-            disabled={!newStatus || saving}
-            className="btn-primary disabled:opacity-40 disabled:hover:shadow-none disabled:hover:translate-y-0"
-          >
-            {saving ? "Saving…" : "Update Status"}
-          </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value as ShipmentStatus)}
+                className="select flex-1 max-w-xs"
+              >
+                <option value="">— Select new status —</option>
+                {ALL_STATUSES.filter((s) => s !== shipment.status).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleStatusChange}
+                disabled={!newStatus || saving}
+                className="btn-primary disabled:opacity-40 disabled:hover:shadow-none disabled:hover:translate-y-0"
+              >
+                {saving ? "Saving…" : "Update Status"}
+              </button>
+            </div>
+          )}
+          <p className="text-[11px] text-muted mt-2">
+            Changing status will automatically reset the follow-up timer to now.
+          </p>
         </div>
-        <p className="text-[11px] text-muted mt-2">
-          Changing status will automatically reset the follow-up timer to now.
-        </p>
-      </div>
+      )}
 
       {/* ── Follow-Up Confirmation Modal ──────────────── */}
       <Modal

@@ -5,6 +5,8 @@ import { format, subMonths, addMonths } from "date-fns";
 import toast from "react-hot-toast";
 import AppLayout from "@/components/layout/AppLayout";
 
+import { useAuth } from "@/hooks/useAuth";
+
 interface SummaryData {
   totalRFQs: number;
   totalConfirmed: number;
@@ -14,6 +16,10 @@ interface SummaryData {
 }
 
 export default function SummaryPage() {
+  const { user } = useAuth();
+
+
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);

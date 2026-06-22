@@ -11,18 +11,42 @@ const cors         = require('cors');
 const path         = require('path');
 const fs           = require('fs');
 
-const authRoutes      = require('./routes/auth');
-const shipmentRoutes  = require('./routes/shipments');
-const dashboardRoutes = require('./routes/dashboard');
-const fileRoutes      = require('./routes/files');
-const rfqRoutes       = require('./routes/rfq');
-const contactRoutes   = require('./routes/contacts');
-const customerRoutes  = require('./routes/customers');
-const errorHandler    = require('./middleware/errorHandler');
+const authRoutes         = require('./routes/auth');
+const shipmentRoutes     = require('./routes/shipments');
+const dashboardRoutes    = require('./routes/dashboard');
+const fileRoutes         = require('./routes/files');
+const rfqRoutes          = require('./routes/rfq');
+const contactRoutes      = require('./routes/contacts');
+const customerRoutes     = require('./routes/customers');
+const ccRecipientsRoutes = require('./routes/ccRecipients');
+const compulsoryEmailsRoutes = require('./routes/compulsoryEmails');
+const callEnquiryRoutes  = require('./routes/callEnquiries');
+const errorHandler       = require('./middleware/errorHandler');
 const { startImapService } = require('./services/imapService');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
+const http = require('http');
+const { Server } = require('socket.io');
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+global.io = io;
+
+io.on('connection', (socket) => {
+  console.log(`[Socket] Client connected: ${socket.id}`);
+  socket.on('joinRoom', (room) => {
+    socket.join(room);
+    console.log(`[Socket] Client ${socket.id} joined room: ${room}`);
+  });
+  socket.on('disconnect', () => {
+    console.log(`[Socket] Client disconnected: ${socket.id}`);
+  });
+});
 
 // ── Ensure uploads directory exists ─────────────────────────
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
@@ -74,6 +98,7 @@ db.query(`
   DROP INDEX IF EXISTS idx_contacts_email_pol_pod;
   CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_email_pol_pod_mode 
     ON contacts (email, COALESCE(pol, ''), COALESCE(pod, ''), COALESCE(mode, ''));
+  ALTER TABLE contacts ADD COLUMN IF NOT EXISTS country VARCHAR(100);
   
   CREATE TABLE IF NOT EXISTS customers (
     id          SERIAL PRIMARY KEY,
@@ -85,7 +110,45 @@ db.query(`
   ALTER TABLE shipments ADD COLUMN IF NOT EXISTS profit NUMERIC(15, 2);
   ALTER TABLE shipments ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);
   ALTER TABLE shipments ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255);
-  
+
+  DO $$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'user_role' AND e.enumlabel = 'calling_agent') THEN
+      ALTER TYPE user_role ADD VALUE 'calling_agent';
+    END IF;
+  END$$;
+
+  DO $$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'user_role' AND e.enumlabel = 'sales') THEN
+      ALTER TYPE user_role ADD VALUE 'sales';
+    END IF;
+  END$$;
+
+  DO $$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'user_role' AND e.enumlabel = 'customer') THEN
+      ALTER TYPE user_role ADD VALUE 'customer';
+    END IF;
+  END$$;
+
+  CREATE TABLE IF NOT EXISTS call_enquiries (
+    id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(255) NOT NULL,
+    company VARCHAR(255),
+    type VARCHAR(255),
+    customer_number VARCHAR(100) NOT NULL,
+    customer_email VARCHAR(255),
+    customer_address TEXT,
+    details TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    calling_agent VARCHAR(255) NOT NULL,
+    assigned_sales VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+
   DO $$ 
   BEGIN 
     ALTER TABLE shipments RENAME COLUMN price TO cost;
@@ -111,7 +174,54 @@ db.query(`
   ALTER TABLE shipments ALTER COLUMN last_follow_up DROP NOT NULL;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS email_address VARCHAR(255);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS email_password VARCHAR(255);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS is_stalled BOOLEAN DEFAULT false;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS contact_number VARCHAR(100);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS customer_id VARCHAR(5);
+
   ALTER TABLE shipments ADD COLUMN IF NOT EXISTS operator VARCHAR(100);
+
+  CREATE TABLE IF NOT EXISTS cc_recipients (
+    id           SERIAL PRIMARY KEY,
+    name         VARCHAR(100) NOT NULL,
+    email        VARCHAR(255) NOT NULL UNIQUE,
+    multi_select BOOLEAN NOT NULL DEFAULT false
+  );
+
+  ALTER TABLE cc_recipients ADD COLUMN IF NOT EXISTS multi_select BOOLEAN NOT NULL DEFAULT false;
+
+  INSERT INTO cc_recipients (name, email, multi_select) VALUES
+    ('Nafih',  'op2@argusshipping.co',     false),
+    ('Jabir',  'jabir@argusshipping.co',   false),
+    ('Shamil', 'op1@argusshipping.co',     false),
+    ('Ganesh', 'ganesh@argusshipping.co',  true),
+    ('Jemshy', 'jemshy@argusshipping.co',  true)
+  ON CONFLICT (email) DO NOTHING;
+
+  CREATE TABLE IF NOT EXISTS compulsory_emails (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    dear_who VARCHAR(255) NOT NULL,
+    mode VARCHAR(50) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    UNIQUE(email, mode)
+  );
+
+  INSERT INTO compulsory_emails (email, dear_who, mode, is_active) VALUES 
+    ('reshma@aramex.com', 'Reshma', 'Air', true),
+    ('MelanieR@aramex.com', 'Melanie', 'Air', true),
+    ('Kumudu.Karunarathna@gwcss.qa', 'Kumudu', 'Sea', true)
+  ON CONFLICT (email, mode) DO NOTHING;
+
+  CREATE TABLE IF NOT EXISTS customer_operator_chats (
+    id SERIAL PRIMARY KEY,
+    cust_req_no VARCHAR(50) NOT NULL,
+    sender_username VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+  ALTER TABLE customer_operator_chats ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT false;
 `).then(async () => {
   // Auto-migrate credentials from app_settings to admin user if empty
   try {
@@ -133,14 +243,18 @@ db.query(`
     console.error("[Migration] Error migrating global settings to admin:", migErr.message);
   }
 
-  // Operator Column Migration for dynamic shipments tables and past RFQs
+  // Operator and Cust_Req_No Column Migration for dynamic shipments tables and past RFQs
   try {
     const tablesRes = await db.query(
       `SELECT table_name FROM information_schema.tables 
        WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
     );
+    await db.query(`ALTER TABLE shipments ADD COLUMN IF NOT EXISTS operator VARCHAR(100)`);
+    await db.query(`ALTER TABLE shipments ADD COLUMN IF NOT EXISTS cust_req_no VARCHAR(50)`);
+
     for (const r of tablesRes.rows) {
       await db.query(`ALTER TABLE ${r.table_name} ADD COLUMN IF NOT EXISTS operator VARCHAR(100)`);
+      await db.query(`ALTER TABLE ${r.table_name} ADD COLUMN IF NOT EXISTS cust_req_no VARCHAR(50)`);
     }
 
     // Set existing NULL operator values to 'jabir' for past RFQs
@@ -148,9 +262,9 @@ db.query(`
     for (const r of tablesRes.rows) {
       await db.query(`UPDATE ${r.table_name} SET operator = 'jabir' WHERE operator IS NULL`);
     }
-    console.log("[Migration] Added operator column and set past RFQs operator to 'jabir' across all tables.");
+    console.log("[Migration] Added operator & cust_req_no columns and set past RFQs operator to 'jabir' across all tables.");
   } catch (opMigErr) {
-    console.error("[Migration] Error running operator column migration:", opMigErr.message);
+    console.error("[Migration] Error running operator and cust_req_no column migration:", opMigErr.message);
   }
 
   // Auto-register user 'jabir' with default password 'Jabir@1234' if not exists
@@ -195,13 +309,17 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ── Routes ───────────────────────────────────────────────────
-app.use('/api/auth',      authRoutes);
-app.use('/api/shipments', shipmentRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/files',     fileRoutes);
-app.use('/api/rfq',       rfqRoutes);
-app.use('/api/contacts',  contactRoutes);
-app.use('/api/customers', customerRoutes);
+app.use('/api/auth',           authRoutes);
+app.use('/api/shipments',      shipmentRoutes);
+app.use('/api/dashboard',      dashboardRoutes);
+app.use('/api/files',          fileRoutes);
+app.use('/api/rfq',            rfqRoutes);
+app.use('/api/contacts',       contactRoutes);
+app.use('/api/customers',      customerRoutes);
+app.use('/api/cc-recipients',  ccRecipientsRoutes);
+app.use('/api/compulsory-emails', compulsoryEmailsRoutes);
+app.use('/api/call-enquiries', callEnquiryRoutes);
+
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {
@@ -212,7 +330,7 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ── Start Server ─────────────────────────────────────────────
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n===========================================`);
   console.log(`🚀 FreightOS Backend running on port ${PORT}`);
   console.log(`===========================================\n`);

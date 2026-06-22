@@ -7,6 +7,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { query } = require('../config/dbHelper');
+const db = require('../config/db');
 
 // ─────────────────────────────────────────────────────────────
 //  POST /api/files/:ref_no
@@ -22,8 +23,8 @@ const uploadFile = async (req, res, next) => {
     const { ref_no } = req.params;
     const { originalname, filename, path: filePath, mimetype, size } = req.file;
 
-    // Verify the shipment exists
-    const ship = await query(req, 'SELECT ref_no FROM shipments WHERE ref_no = $1', [ref_no]);
+    // Verify the shipment exists and fetch the operator
+    const ship = await query(req, 'SELECT ref_no, operator FROM shipments WHERE ref_no = $1', [ref_no]);
     if (ship.rows.length === 0) {
       // Remove orphaned file from disk
       fs.unlinkSync(filePath);
@@ -39,6 +40,57 @@ const uploadFile = async (req, res, next) => {
        RETURNING *`,
       [ref_no, filename, originalname, relativePath, mimetype, size]
     );
+
+    // ── Clone file metadata to respective operator sandbox ──────────
+    let opUsername = null;
+    const operator = ship.rows[0].operator;
+    if (operator) {
+      const opByUsername = await db.query(
+        "SELECT username FROM users WHERE LOWER(username) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+        [operator]
+      );
+      if (opByUsername.rows.length > 0) {
+        opUsername = opByUsername.rows[0].username.toLowerCase();
+      } else {
+        const opUserCheck = await db.query(
+          "SELECT username FROM users WHERE LOWER(email_address) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+          [operator]
+        );
+        if (opUserCheck.rows.length > 0) {
+          opUsername = opUserCheck.rows[0].username.toLowerCase();
+        }
+      }
+    }
+
+    if (opUsername && opUsername !== req.user.username.toLowerCase()) {
+      const opFilesTable = opUsername === 'admin' ? 'files' : `files_${opUsername}`;
+      const opShipmentsTable = opUsername === 'admin' ? 'shipments' : `shipments_${opUsername}`;
+
+      // Query operator shipments table to see if we have individual recipient shipments for this cust_req_no
+      const opShipmentsRes = await db.query(
+        `SELECT ref_no FROM ${opShipmentsTable} WHERE cust_req_no = $1`,
+        [ref_no]
+      );
+
+      if (opShipmentsRes.rows.length > 0) {
+        for (const opShipment of opShipmentsRes.rows) {
+          await db.query(
+            `INSERT INTO ${opFilesTable} (shipment_ref_no, filename, original_name, file_path, mime_type, size_bytes)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT DO NOTHING`,
+            [opShipment.ref_no, filename, originalname, relativePath, mimetype, size]
+          );
+        }
+      } else {
+        // Fallback to inserting with original ref_no if no sub-shipments found
+        await db.query(
+          `INSERT INTO ${opFilesTable} (shipment_ref_no, filename, original_name, file_path, mime_type, size_bytes)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT DO NOTHING`,
+          [ref_no, filename, originalname, relativePath, mimetype, size]
+        );
+      }
+    }
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {

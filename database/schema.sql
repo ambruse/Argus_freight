@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS shipments (
   id                SERIAL,
   ref_no            VARCHAR(50)  PRIMARY KEY,   -- e.g. ARG-1001 (unique, user or auto-generated)
   customer_id       VARCHAR(5),                 -- Links to customers.customer_id
+  cust_req_no       VARCHAR(50),                 -- Consolidated customer request ref_no (e.g. CID-01)
   refer_by          VARCHAR(100),               -- referred by whom
   -- ── Route ─────────────────────────────────────────────────
   pol               VARCHAR(100),               -- Port of Loading

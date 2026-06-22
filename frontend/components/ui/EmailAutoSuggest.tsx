@@ -2,18 +2,24 @@
 import { useState, useRef, useEffect } from "react";
 import { Contact } from "@/types";
 
+type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; is_active: boolean };
+
 interface Props {
   contacts: Contact[];
-  currentPol: string;
-  currentPod: string;
+  compulsoryEmails?: CompulsoryEmail[];
+  currentPolCountry: string;
   currentMode: string;
-  currentDearWho: string;
   value: string;
   onChange: (email: string, dearWho?: string) => void;
 }
 
 export default function EmailAutoSuggest({
-  contacts, currentPol, currentPod, currentMode, currentDearWho, value, onChange
+  contacts,
+  compulsoryEmails = [],
+  currentPolCountry,
+  currentMode,
+  value,
+  onChange
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -29,39 +35,48 @@ export default function EmailAutoSuggest({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Smarter matching logic: handles "INDIA, GUJRAT" vs "GUJRAT"
-  const isMatch = (input: string | null | undefined, dbVal: string | null | undefined) => {
-    // If the input field in the form is empty, we don't enforce a match for this field.
-    // If the user hasn't typed anything for POL, any POL is technically acceptable.
-    if (!input || input.trim() === '') return true;
-    
-    // If input has a value but DB doesn't, they don't match.
-    if (!dbVal) return false;
+  // Filter contacts by country and mode
+  const filteredContacts = contacts.filter(c => {
+    const countryMatch = !currentPolCountry || (c.country && c.country.trim().toLowerCase() === currentPolCountry.trim().toLowerCase());
+    const modeMatch = !currentMode || (c.mode && c.mode.trim().toLowerCase() === currentMode.trim().toLowerCase());
+    return countryMatch && modeMatch;
+  });
 
-    // Split by comma, trim, and check for intersection
-    const inputParts = input.toLowerCase().split(',').map(s => s.trim()).filter(s => s.length > 0);
-    const dbParts = dbVal.toLowerCase().split(',').map(s => s.trim()).filter(s => s.length > 0);
+  // Filter compulsory emails by mode
+  const filteredCompulsory = compulsoryEmails.filter(ce => {
+    const modeMatch = !currentMode || (ce.mode && ce.mode.trim().toLowerCase() === currentMode.trim().toLowerCase());
+    return ce.is_active && modeMatch;
+  });
 
-    // If any part of the input matches any part of the DB value, it's a match
-    return inputParts.some(ip => dbParts.some(dp => ip === dp || ip.includes(dp) || dp.includes(ip)));
-  };
+  // Merge suggestions into a unified display structure
+  const mergedSuggestions = [
+    ...filteredCompulsory.map(ce => ({
+      email: ce.email,
+      dear_who: ce.dear_who,
+      mode: ce.mode,
+      isCompulsory: true,
+      country: null,
+      pol: null,
+      pod: null,
+    })),
+    ...filteredContacts.map(c => ({
+      email: c.email,
+      dear_who: c.dear_who,
+      mode: c.mode,
+      isCompulsory: false,
+      country: c.country,
+      pol: c.pol,
+      pod: c.pod,
+    }))
+  ];
 
-  // Filter contacts
-  const suggestions = contacts.filter(c => {
-    // If they are actively typing an email, prioritize that
-    if (value && c.email.toLowerCase().includes(value.toLowerCase())) return true;
-    
-    // Otherwise, strictly match context: ALL provided fields must match (AND condition)
-    const polMatch = isMatch(currentPol, c.pol);
-    const podMatch = isMatch(currentPod, c.pod);
-    const modeMatch = isMatch(currentMode, c.mode);
-    
-    // If all conditions pass, it's a valid suggestion for this specific route/mode
-    // But don't just show ALL contacts if everything is blank.
-    // Require at least one field (pol, mode) to have been filled out to show contextual suggestions.
-    const hasContext = (currentPol.trim() !== '') || (currentMode.trim() !== '');
-    
-    return hasContext && polMatch && modeMatch;
+  // Apply query filter if user is actively typing
+  const suggestions = mergedSuggestions.filter(s => {
+    if (value) {
+      return s.email.toLowerCase().includes(value.toLowerCase());
+    }
+    // If no value typed, only show suggestions if there's context (pol_country or mode)
+    return currentPolCountry.trim() !== "" || currentMode.trim() !== "";
   });
 
   return (
@@ -81,27 +96,35 @@ export default function EmailAutoSuggest({
       
       {isOpen && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-surface-2 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto overflow-x-hidden">
-          {suggestions.map((c) => (
+          {suggestions.map((c, index) => (
             <div
-              key={c.id}
+              key={`${c.email}-${c.isCompulsory ? "comp" : "contact"}-${index}`}
               onClick={() => {
                 onChange(c.email, c.dear_who);
                 setIsOpen(false);
               }}
               className="px-4 py-2 hover:bg-white/5 cursor-pointer border-b border-white/[0.02] last:border-0 transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-primary text-xs">{c.email}</div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-semibold text-primary text-xs truncate flex items-center gap-1.5">
+                  {c.email}
+                  {c.isCompulsory && (
+                    <span className="text-[8px] font-extrabold uppercase px-1 py-0.2 rounded bg-rose/10 text-rose border border-rose/20 flex-shrink-0">
+                      Compulsory
+                    </span>
+                  )}
+                </div>
                 {c.mode && (
-                  <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded bg-white/10 text-muted uppercase">
+                  <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded bg-white/10 text-muted uppercase flex-shrink-0">
                     {c.mode}
                   </span>
                 )}
               </div>
-              <div className="text-[10px] text-muted flex gap-2 mt-0.5">
-                {c.dear_who && <span>👤 {c.dear_who}</span>}
-                {c.pol && <span>🚢 {c.pol}</span>}
-                {c.pod && <span>➡ {c.pod}</span>}
+              <div className="text-[10px] text-muted flex gap-2 mt-0.5 flex-wrap">
+                {c.dear_who && <span className="truncate">👤 {c.dear_who}</span>}
+                {c.country && <span className="truncate">📍 {c.country}</span>}
+                {c.pol && <span className="truncate">🚢 {c.pol}</span>}
+                {c.pod && <span className="truncate">➡ {c.pod}</span>}
               </div>
             </div>
           ))}

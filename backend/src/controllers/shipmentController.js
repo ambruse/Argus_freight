@@ -7,6 +7,57 @@ const db = require('../config/db');
 const { query } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
 
+const syncShipmentToCustomer = async (shipment) => {
+  if (!shipment || !shipment.cust_req_no || !shipment.customer_id) return;
+  try {
+    // Find customer username
+    const custUserRes = await db.query(
+      `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' LIMIT 1`,
+      [shipment.customer_id]
+    );
+    if (custUserRes.rows.length === 0) return;
+    const customerUsername = custUserRes.rows[0].username;
+    const cleanUsername = customerUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+
+    // Update customer sandbox table shipments_username
+    await db.query(
+      `UPDATE shipments_${cleanUsername} SET
+         status = $1,
+         do_number = $2,
+         box_no = $3,
+         so_number = $4,
+         bl_number = $5,
+         track_status = $6,
+         carrier = $7,
+         etd = $8,
+         eta = $9,
+         cost = $10,
+         profit = $11,
+         last_follow_up = $12,
+         updated_at = NOW()
+       WHERE ref_no = $13`,
+      [
+        shipment.status,
+        shipment.do_number,
+        shipment.box_no,
+        shipment.so_number,
+        shipment.bl_number,
+        shipment.track_status,
+        shipment.carrier,
+        shipment.etd,
+        shipment.eta,
+        shipment.cost,
+        shipment.profit,
+        shipment.last_follow_up,
+        shipment.cust_req_no
+      ]
+    );
+    console.log(`[Sync] Synced shipment ${shipment.ref_no} updates to customer ${cleanUsername} ref_no ${shipment.cust_req_no}`);
+  } catch (err) {
+    console.error(`[Sync] Failed to sync shipment ${shipment.ref_no} to customer:`, err.message);
+  }
+};
+
 // ── Helper: generate next auto REF NO ────────────────────────
 //  Pattern: ARG-XXXX  (e.g. ARG-1001)
 //  Finds the highest existing numeric suffix and increments it.
@@ -26,6 +77,25 @@ const generateRefNo = async (req) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+const cleanupStaleRFQs = async () => {
+  try {
+    const tablesRes = await db.query(
+      `SELECT table_name FROM information_schema.tables 
+       WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
+    );
+    const tables = ['shipments', ...tablesRes.rows.map(r => r.table_name)];
+    for (const table of tables) {
+      await db.query(
+        `DELETE FROM ${table} 
+         WHERE (status = 'Pending' OR status = 'Customer Review') 
+           AND last_follow_up < NOW() - INTERVAL '40 days'`
+      );
+    }
+  } catch (err) {
+    console.error('Error cleaning up stale RFQs:', err);
+  }
+};
+
 //  GET /api/shipments
 //  Query params:
 //    ?exclude_direct=true  → exclude rows where note = 'Direct Booking'  (RFQ page)
@@ -33,10 +103,12 @@ const generateRefNo = async (req) => {
 // ─────────────────────────────────────────────────────────────
 const getAllShipments = async (req, res, next) => {
   try {
+    await cleanupStaleRFQs();
     const { exclude_direct, status } = req.query;
     const myEmail = process.env.SMTP_USER || '';
+    const myUsername = req.user.username;
     const conditions = [];
-    const params     = [myEmail];
+    const params     = [myEmail, myUsername];
 
     if (exclude_direct === 'true') {
       conditions.push(`(note IS NULL OR note != 'Direct Booking')`);
@@ -49,14 +121,33 @@ const getAllShipments = async (req, res, next) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const result = await query(req, 
-      `SELECT s.*, 
-         (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no) AS replies_count,
-         (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no AND r.is_read = false AND LOWER(r.from_email) != LOWER($1)) AS unread_replies_count
+      `SELECT s.ref_no, s.cust_req_no, s.refer_by, s.pol, s.pod, s.commodity, s.term, s.dimension,
+              s.container, s.mode, s.weight, s.pickup_address, s.delivery_address,
+              s.dear_who, s.email, s.status, s.note, s.customer_id, s.customer_name, s.customer_email,
+              s.created_at, s.last_follow_up, s.do_number, s.box_no, s.so_number, s.bl_number,
+              s.track_status, s.carrier, s.etd, s.eta, s.cost, s.profit,
+              COALESCE(
+                (SELECT username FROM users WHERE LOWER(email_address) = LOWER(s.operator) OR LOWER(username) = LOWER(s.operator) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1),
+                s.operator
+              ) AS operator,
+              (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no) AS replies_count,
+              (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no AND r.is_read = false AND LOWER(r.from_email) != LOWER($1)) AS unread_replies_count,
+              (SELECT COUNT(*)::int FROM customer_operator_chats c WHERE (c.cust_req_no = s.cust_req_no OR c.cust_req_no = s.ref_no) AND c.is_read = false AND LOWER(c.sender_username) != LOWER($2)) AS unread_chat_count
        FROM shipments s ${where} ORDER BY s.created_at DESC`,
       params
     );
 
-    res.json({ success: true, data: result.rows });
+    let rows = result.rows;
+    if (req.user && req.user.role === 'customer') {
+      rows = rows.map(r => ({
+        ...r,
+        email: 'Hidden',
+        dear_who: 'Agent',
+        cost: null
+      }));
+    }
+
+    res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
   }
@@ -68,7 +159,16 @@ const getAllShipments = async (req, res, next) => {
 const getShipmentByRef = async (req, res, next) => {
   try {
     const result = await query(req, 
-      'SELECT * FROM shipments WHERE ref_no = $1',
+      `SELECT s.ref_no, s.cust_req_no, s.refer_by, s.pol, s.pod, s.commodity, s.term, s.dimension,
+              s.container, s.mode, s.weight, s.pickup_address, s.delivery_address,
+              s.dear_who, s.email, s.status, s.note, s.customer_id, s.customer_name, s.customer_email,
+              s.created_at, s.last_follow_up, s.do_number, s.box_no, s.so_number, s.bl_number,
+              s.track_status, s.carrier, s.etd, s.eta, s.cost, s.profit,
+              COALESCE(
+                (SELECT username FROM users WHERE LOWER(email_address) = LOWER(s.operator) OR LOWER(username) = LOWER(s.operator) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1),
+                s.operator
+              ) AS operator
+       FROM shipments s WHERE s.ref_no = $1`,
       [req.params.ref_no]
     );
 
@@ -76,7 +176,17 @@ const getShipmentByRef = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
 
-    res.json({ success: true, data: result.rows[0] });
+    let data = result.rows[0];
+    if (req.user && req.user.role === 'customer') {
+      data = {
+        ...data,
+        email: 'Hidden',
+        dear_who: 'Agent',
+        cost: null
+      };
+    }
+
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
@@ -167,6 +277,7 @@ const updateShipment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
 
+    await syncShipmentToCustomer(result.rows[0]);
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
@@ -198,6 +309,7 @@ const updateStatus = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
 
+    await syncShipmentToCustomer(result.rows[0]);
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
@@ -235,6 +347,7 @@ const updateTracking = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
 
+    await syncShipmentToCustomer(result.rows[0]);
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
@@ -262,6 +375,17 @@ const deleteShipment = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────────────────────
+const maskEmails = (text, allowedEmails = []) => {
+  if (!text) return text;
+  // Regex to find email addresses
+  const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
+  return text.replace(emailRegex, (match) => {
+    const isAllowed = allowedEmails.some(email => email && email.toLowerCase() === match.toLowerCase());
+    return isAllowed ? match : '[Email Hidden]';
+  });
+};
+
+// ─────────────────────────────────────────────────────────────
 const getReplies = async (req, res, next) => {
   try {
     const { ref_no } = req.params;
@@ -275,7 +399,66 @@ const getReplies = async (req, res, next) => {
       }
     } catch (dbErr) {}
 
-    // Mark incoming replies as read
+    if (req.user && req.user.role === 'customer') {
+      const cleanUsername = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      const shipRes = await db.query(`SELECT operator FROM shipments_${cleanUsername} WHERE ref_no = $1 LIMIT 1`, [ref_no]);
+      if (shipRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Shipment not found.' });
+      }
+
+      const operatorName = shipRes.rows[0].operator;
+      const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
+      const opRepliesTable = cleanOperator === 'admin' ? 'shipment_replies' : `shipment_replies_${cleanOperator}`;
+
+      let operatorEmail = '';
+      const opEmailRes = await db.query(
+        "SELECT email_address FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) LIMIT 1",
+        [operatorName]
+      );
+      if (opEmailRes.rows.length > 0) {
+        operatorEmail = opEmailRes.rows[0].email_address || '';
+      }
+
+      // Mark incoming replies as read in operator replies table
+      await db.query(
+        `UPDATE ${opRepliesTable} SET is_read = true 
+         WHERE ref_no IN (SELECT ref_no FROM ${opTableName} WHERE cust_req_no = $1)
+           AND LOWER(from_email) != LOWER($2)`,
+        [ref_no, myEmail]
+      );
+
+      // Fetch replies from operator replies table
+      const result = await db.query(
+        `SELECT * FROM ${opRepliesTable} 
+         WHERE ref_no IN (SELECT ref_no FROM ${opTableName} WHERE cust_req_no = $1)
+         ORDER BY received_at ASC`,
+        [ref_no]
+      );
+
+      const customerEmail = req.user.email_address || '';
+      const allowedEmails = [customerEmail, operatorEmail];
+      
+      const formatted = result.rows.map(row => {
+        const isFromOperator = operatorEmail && (row.from_email || '').toLowerCase().trim() === operatorEmail.toLowerCase().trim();
+        const isFromCustomer = customerEmail && (row.from_email || '').toLowerCase().trim() === customerEmail.toLowerCase().trim();
+        
+        let maskedFrom = 'Agent';
+        if (isFromOperator) maskedFrom = 'Operator';
+        if (isFromCustomer) maskedFrom = 'Me';
+
+        return {
+          ...row,
+          from_email: maskedFrom,
+          subject: maskEmails(row.subject, allowedEmails),
+          body_text: maskEmails(row.body_text, allowedEmails),
+          is_outgoing: isFromOperator || isFromCustomer
+        };
+      });
+      return res.json({ success: true, data: formatted });
+    }
+
+    // Mark incoming replies as read (Standard User/Operator/Admin)
     await query(req, 
       `UPDATE shipment_replies SET is_read = true 
        WHERE ref_no = $1 AND LOWER(from_email) != LOWER($2)`,
@@ -418,7 +601,10 @@ const sendReply = async (req, res, next) => {
     );
 
     // 8. Update last_follow_up
-    await query(req, `UPDATE shipments SET last_follow_up = NOW() WHERE ref_no = $1`, [ref_no]);
+    const updateRes = await query(req, `UPDATE shipments SET last_follow_up = NOW() WHERE ref_no = $1 RETURNING *`, [ref_no]);
+    if (updateRes.rows.length > 0) {
+      await syncShipmentToCustomer(updateRes.rows[0]);
+    }
 
     res.json({ 
       success: true, 
@@ -545,9 +731,12 @@ const sendFollowUp = async (req, res, next) => {
 
     // 9. Update last_follow_up
     const updatedShipment = await query(req, 
-      `UPDATE shipments SET last_follow_up = NOW() WHERE ref_no = $1 RETURNING last_follow_up`,
+      `UPDATE shipments SET last_follow_up = NOW() WHERE ref_no = $1 RETURNING *`,
       [ref_no]
     );
+    if (updatedShipment.rows.length > 0) {
+      await syncShipmentToCustomer(updatedShipment.rows[0]);
+    }
 
     res.json({
       success: true,
@@ -909,6 +1098,58 @@ const sendQuotation = async (req, res, next) => {
   }
 };
 
+const getChatMessages = async (req, res, next) => {
+  try {
+    const { cust_req_no } = req.params;
+    const username = req.user.username;
+    
+    // Mark messages sent by others as read
+    await db.query(
+      `UPDATE customer_operator_chats 
+       SET is_read = true 
+       WHERE cust_req_no = $1 AND LOWER(sender_username) != LOWER($2)`,
+      [cust_req_no, username]
+    );
+
+    const result = await db.query(
+      `SELECT * FROM customer_operator_chats 
+       WHERE cust_req_no = $1 
+       ORDER BY created_at ASC`,
+      [cust_req_no]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const sendChatMessage = async (req, res, next) => {
+  try {
+    const { cust_req_no } = req.params;
+    const { message } = req.body;
+    const sender = req.user.username;
+
+    if (!message || message.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Message content is required.' });
+    }
+
+    const result = await db.query(
+      `INSERT INTO customer_operator_chats (cust_req_no, sender_username, message) 
+       VALUES ($1, $2, $3) 
+       RETURNING *`,
+      [cust_req_no, sender, message]
+    );
+
+    if (global.io) {
+      global.io.to(`room_${cust_req_no}`).emit('newMessage', result.rows[0]);
+    }
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllShipments,
   getShipmentByRef,
@@ -921,4 +1162,6 @@ module.exports = {
   sendReply,
   sendFollowUp,
   sendQuotation,
+  getChatMessages,
+  sendChatMessage,
 };

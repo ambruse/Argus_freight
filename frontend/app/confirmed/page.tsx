@@ -17,6 +17,7 @@ import { Shipment } from "@/types";
 import { exportShipmentsToExcel } from "@/lib/exportExcel";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 const SkeletonRow = () => (
   <tr className="border-b border-white/[0.04]">
@@ -29,6 +30,10 @@ const SkeletonRow = () => (
 );
 
 export default function ConfirmedPage() {
+  const { user } = useAuth();
+
+
+
   const [shipments,   setShipments]   = useState<Shipment[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState("");
@@ -144,18 +149,20 @@ export default function ConfirmedPage() {
           >
             📊 Export Excel
           </button>
-          <button 
-            onClick={() => {
-              setPasswordPrompt({
-                isOpen: true,
-                actionName: "add a Direct Shipment",
-                onSuccess: () => setAddOpen(true)
-              });
-            }} 
-            className="btn-emerald"
-          >
-            + Add Direct Shipment
-          </button>
+          {!user || user.role !== "sales" ? (
+            <button 
+              onClick={() => {
+                setPasswordPrompt({
+                  isOpen: true,
+                  actionName: "add a Direct Shipment",
+                  onSuccess: () => setAddOpen(true)
+                });
+              }} 
+              className="btn-emerald"
+            >
+              + Add Direct Shipment
+            </button>
+          ) : null}
         </div>
       }
     >
@@ -204,6 +211,7 @@ export default function ConfirmedPage() {
                 <th>BL</th>
                 <th>TRACK STATUS</th>
                 <th>REPLIES</th>
+                <th>CHAT</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
@@ -212,13 +220,15 @@ export default function ConfirmedPage() {
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={18} className="text-center py-16 text-muted">
+                  <td colSpan={19} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📦</p>
                       <p className="text-sm">No confirmed shipments found.</p>
-                      <button onClick={() => setAddOpen(true)} className="btn-emerald text-xs mt-3">
-                        + Add Direct Shipment
-                      </button>
+                      {(!user || user.role !== "sales") && (
+                        <button onClick={() => setAddOpen(true)} className="btn-emerald text-xs mt-3">
+                          + Add Direct Shipment
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -276,13 +286,28 @@ export default function ConfirmedPage() {
                       )}
                     </td>
                     <td>
-                      <button
-                        onClick={(e) => handleDelete(e, s.ref_no)}
-                        className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
-                        title="Delete Shipment"
-                      >
-                        🗑
-                      </button>
+                      {s.unread_chat_count && Number(s.unread_chat_count) > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                          </span>
+                          New Msg ({s.unread_chat_count})
+                        </span>
+                      ) : (
+                        <span className="text-faint text-xs">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {(!user || user.role !== "sales") && (
+                        <button
+                          onClick={(e) => handleDelete(e, s.ref_no)}
+                          className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
+                          title="Delete Shipment"
+                        >
+                          🗑
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

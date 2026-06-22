@@ -66,8 +66,10 @@ export interface Shipment {
   created_at:       string;
   updated_at:       string;
   operator?:        string | null;
+  cust_req_no?:     string | null;
   replies_count?:   number | string;
   unread_replies_count?: number | string;
+  unread_chat_count?: number | string;
 }
 
 export interface ShipmentFile {
@@ -104,6 +106,12 @@ export interface DashboardMetrics {
   returnPending:    number;
   cancelled:        number;
   followUpsDue:     number;
+  // Calling Agent metrics
+  totalEnquiries?:   number;
+  lost?:             number;
+  lead?:             number;
+  noLead?:           number;
+  isCallingAgent?:   boolean;
 }
 
 export interface Contact {
@@ -113,6 +121,7 @@ export interface Contact {
   pol: string;
   pod: string;
   mode: string | null;
+  country: string | null;
   created_at: string;
 }
 
@@ -121,4 +130,20 @@ export interface Customer {
   customer_id: string;
   name: string;
   created_at: string;
+}
+
+export interface CallEnquiry {
+  id: number;
+  customer_name: string;
+  company: string | null;
+  type: string | null;
+  customer_number: string;
+  customer_email: string | null;
+  customer_address: string | null;
+  details: string;
+  status: 'Lead' | 'No Lead' | 'Confirmed' | 'Lost';
+  calling_agent: string;
+  assigned_sales: string | null;
+  created_at: string;
+  updated_at: string;
 }

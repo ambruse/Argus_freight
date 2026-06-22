@@ -136,8 +136,30 @@ const syncInboxForUser = async (session, limit = 40) => {
                     [linkedRefNo, fromEmail, subject, bodyText, date, isReadInImap, messageId]
                   );
 
-                  // Update last_follow_up
-                  await db.query(`UPDATE ${tables.shipments} SET last_follow_up = NOW() WHERE ref_no = $1`, [linkedRefNo]);
+                  // Update last_follow_up and sync to customer sandbox if associated
+                  const updatedShipRes = await db.query(`UPDATE ${tables.shipments} SET last_follow_up = NOW() WHERE ref_no = $1 RETURNING *`, [linkedRefNo]);
+                  if (updatedShipRes.rows.length > 0) {
+                    const updatedShip = updatedShipRes.rows[0];
+                    if (updatedShip.cust_req_no && updatedShip.customer_id) {
+                      try {
+                        const custUserRes = await db.query(
+                          `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' LIMIT 1`,
+                          [updatedShip.customer_id]
+                        );
+                        if (custUserRes.rows.length > 0) {
+                          const customerUsername = custUserRes.rows[0].username;
+                          const cleanUsername = customerUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                          await db.query(
+                            `UPDATE shipments_${cleanUsername} SET last_follow_up = NOW(), updated_at = NOW() WHERE ref_no = $1`,
+                            [updatedShip.cust_req_no]
+                          );
+                          console.log(`[IMAP Sync] Synced follow-up timestamp for customer ${cleanUsername} ref_no ${updatedShip.cust_req_no}`);
+                        }
+                      } catch (custErr) {
+                        console.error("Error updating customer follow up from IMAP:", custErr.message);
+                      }
+                    }
+                  }
                 }
               }
             }

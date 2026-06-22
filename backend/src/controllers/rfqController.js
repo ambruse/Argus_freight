@@ -26,7 +26,8 @@ const generateRfq = async (req, res, next) => {
     const {
       refer_by, pol, pod, commodity, term, dimension,
       container, mode, weight, pickup_address, delivery_address,
-      dear_who, email, note, customer_name, customer_email
+      dear_who, email, note, customer_name, customer_email, operator,
+      pol_country
     } = req.body;
 
     let isLogged = false;
@@ -60,6 +61,25 @@ const generateRfq = async (req, res, next) => {
         }
       }
     }
+    // ── Resolve Operator Username (if sent by sales) ──────────
+    let opUsername = null;
+    if (req.user.role === 'sales' && operator) {
+      const opByUsername = await db.query(
+        "SELECT username FROM users WHERE LOWER(username) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+        [operator]
+      );
+      if (opByUsername.rows.length > 0) {
+        opUsername = opByUsername.rows[0].username.toLowerCase();
+      } else {
+        const opUserCheck = await db.query(
+          "SELECT username FROM users WHERE LOWER(email_address) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+          [operator]
+        );
+        if (opUserCheck.rows.length > 0) {
+          opUsername = opUserCheck.rows[0].username.toLowerCase();
+        }
+      }
+    }
 
     while (!isLogged && attempts < maxAttempts) {
       const baseRfq = generateId();
@@ -80,21 +100,67 @@ const generateRfq = async (req, res, next) => {
             ref_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
-            req.user.username
+            (req.user.role === 'sales' && operator) ? (opUsername || operator) : req.user.username
           ]
         );
         isLogged = true;
         shipmentData = result.rows[0];
 
+        // ── Clone shipment to respective operator sandbox ──────────
+        if (opUsername && opUsername !== req.user.username.toLowerCase()) {
+          const opTableName = opUsername === 'admin' ? 'shipments' : `shipments_${opUsername}`;
+          await db.query(
+            `INSERT INTO ${opTableName} (
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              container, mode, weight, pickup_address, delivery_address,
+              dear_who, email, status, note, customer_id, customer_name, customer_email, operator
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+             ON CONFLICT (ref_no) DO NOTHING`,
+            [
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              container, mode, weight || null, pickup_address, delivery_address,
+              dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
+              opUsername || operator
+            ]
+          );
+        }
+
         // ── Auto-save contact to Address Book ──────────
         if (email) {
           try {
-            await db.query(`
-              INSERT INTO contacts (email, dear_who, pol, pod, mode)
-              VALUES ($1, $2, $3, $4, $5)
-              ON CONFLICT (email, COALESCE(pol, ''), COALESCE(pod, ''), COALESCE(mode, '')) 
-              DO UPDATE SET dear_who = EXCLUDED.dear_who
-            `, [email, dear_who || null, pol || null, pod || null, mode || null]);
+            // 1. Check if email is in compulsory_emails
+            const compEmailRes = await db.query(
+              'SELECT id FROM compulsory_emails WHERE LOWER(email) = LOWER($1)',
+              [email]
+            );
+
+            if (compEmailRes.rows.length === 0) {
+              // Resolve country: use pol_country or parse from pol string if not provided (defensive check)
+              let resolvedCountry = pol_country || '';
+              if (!resolvedCountry && pol) {
+                const match = pol.match(/,\s*([^,\(]+)\s*\([A-Z]{3,5}\)/);
+                if (match) {
+                  resolvedCountry = match[1].trim();
+                }
+              }
+
+              // 2. Check if contact (email + POL_Country) already exists in contacts
+              const existingContact = await db.query(`
+                SELECT id FROM contacts 
+                WHERE LOWER(email) = LOWER($1) 
+                  AND (LOWER(country) = LOWER($2) OR (country IS NULL AND $2 = '') OR (country = '' AND $2 = ''))
+              `, [email, resolvedCountry]);
+
+              if (existingContact.rows.length === 0) {
+                // 3. Insert new contact
+                await db.query(`
+                  INSERT INTO contacts (email, dear_who, pol, pod, mode, country)
+                  VALUES ($1, $2, $3, $4, $5, $6)
+                  ON CONFLICT (email, COALESCE(pol, ''), COALESCE(pod, ''), COALESCE(mode, '')) 
+                  DO UPDATE SET dear_who = EXCLUDED.dear_who, country = EXCLUDED.country
+                `, [email, dear_who || null, pol || null, pod || null, mode || null, resolvedCountry || null]);
+              }
+            }
           } catch (contactErr) {
             console.error("Failed to auto-save contact:", contactErr);
             // Non-fatal, continue with RFQ generation
@@ -130,6 +196,7 @@ const generateRfq = async (req, res, next) => {
 const sendRfqEmail = async (req, res, next) => {
   try {
     const { ref_no } = req.params;
+    const { cc } = req.body;  // optional CC addresses (comma-separated string)
 
     // 1. Fetch Shipment
     const shipRes = await query(req, 'SELECT * FROM shipments WHERE ref_no = $1', [ref_no]);
@@ -143,21 +210,34 @@ const sendRfqEmail = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'No recipient email found for this shipment.' });
     }
 
-    // 2. Fetch latest attached file (if any)
+    // 2. Fetch all attached files
     const fileRes = await query(req,
-      'SELECT * FROM files WHERE shipment_ref_no = $1 ORDER BY uploaded_at DESC LIMIT 1',
+      'SELECT * FROM files WHERE shipment_ref_no = $1 ORDER BY uploaded_at ASC',
       [ref_no]
     );
-    const attachedFile = fileRes.rows.length > 0 ? fileRes.rows[0] : null;
+    const attachedFiles = fileRes.rows;
 
-    // 3. Resolve Dynamic Email Credentials from logged-in user
+    // 3. Resolve Dynamic Email Credentials
     let smtpUser = null;
     let smtpPass = null;
     try {
-      const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
-      if (userRes.rows.length > 0) {
-        smtpUser = userRes.rows[0].email_address;
-        smtpPass = userRes.rows[0].email_password;
+      if (req.user.role === 'sales') {
+        // Sales sends through the selected operator's email address or username
+        const userRes = await db.query(
+          "SELECT email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+          [shipment.operator]
+        );
+        if (userRes.rows.length > 0) {
+          smtpUser = userRes.rows[0].email_address;
+          smtpPass = userRes.rows[0].email_password;
+        }
+      } else {
+        // Admin/Operator sends through their own credentials
+        const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+        if (userRes.rows.length > 0) {
+          smtpUser = userRes.rows[0].email_address;
+          smtpPass = userRes.rows[0].email_password;
+        }
       }
     } catch (dbErr) {
       console.error('Error loading credentials from DB:', dbErr.message);
@@ -166,7 +246,9 @@ const sendRfqEmail = async (req, res, next) => {
     if (!smtpUser || !smtpPass) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Your email settings are not configured. Please configure your email address and app password in Settings.' 
+        message: req.user.role === 'sales'
+          ? 'Email credentials for the selected Operator are not configured. Please ask the Admin to configure the Operator email and app password in Settings.'
+          : 'Your email settings are not configured. Please configure your email address and app password in Settings.' 
       });
     }
 
@@ -280,15 +362,24 @@ const sendRfqEmail = async (req, res, next) => {
       html: htmlBody,
     };
 
-    if (attachedFile) {
-      const absPath = path.resolve(process.cwd(), attachedFile.file_path);
-      if (fs.existsSync(absPath)) {
-        mailOptions.attachments = [
-          {
-            filename: attachedFile.original_name,
+    // Add CC if provided
+    if (cc && cc.trim()) {
+      mailOptions.cc = cc.trim();
+    }
+
+    if (attachedFiles.length > 0) {
+      const attachments = [];
+      attachedFiles.forEach(file => {
+        const absPath = path.resolve(process.cwd(), file.file_path);
+        if (fs.existsSync(absPath)) {
+          attachments.push({
+            filename: file.original_name,
             path: absPath
-          }
-        ];
+          });
+        }
+      });
+      if (attachments.length > 0) {
+        mailOptions.attachments = attachments;
       }
     }
 

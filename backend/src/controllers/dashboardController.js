@@ -5,11 +5,38 @@
 //  is older than 4 hours from now.
 // ─────────────────────────────────────────────────────────────
 const { query } = require('../config/dbHelper');
+const db = require('../config/db');
 
 const ACTIVE_STATUSES = ['Pending', 'Quoted', 'Customer Review'];
 
 const getMetrics = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'calling_agent') {
+      const result = await db.query(`
+        SELECT
+          COUNT(*) AS total_enquiries,
+          COUNT(*) FILTER (WHERE status = 'Lost') AS lost,
+          COUNT(*) FILTER (WHERE status = 'Lead') AS lead,
+          COUNT(*) FILTER (WHERE status = 'No Lead') AS no_lead,
+          COUNT(*) FILTER (WHERE status = 'Confirmed') AS confirmed
+        FROM call_enquiries
+        WHERE calling_agent = $1
+      `, [req.user.username]);
+
+      const raw = result.rows[0];
+      return res.json({
+        success: true,
+        data: {
+          totalEnquiries: parseInt(raw.total_enquiries || 0),
+          lost: parseInt(raw.lost || 0),
+          lead: parseInt(raw.lead || 0),
+          noLead: parseInt(raw.no_lead || 0),
+          confirmed: parseInt(raw.confirmed || 0),
+          isCallingAgent: true
+        }
+      });
+    }
+
     const result = await query(req, `
       SELECT
         -- ── Row 1: Pipeline ──────────────────────────────────

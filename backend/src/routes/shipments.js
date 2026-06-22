@@ -4,7 +4,8 @@ const router  = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const {
   getAllShipments, getShipmentByRef, createShipment,
-  updateShipment, updateStatus, updateTracking, deleteShipment, getReplies, sendReply, sendFollowUp, sendQuotation
+  updateShipment, updateStatus, updateTracking, deleteShipment, getReplies, sendReply, sendFollowUp, sendQuotation,
+  getChatMessages, sendChatMessage
 } = require('../controllers/shipmentController');
 
 // All shipment routes require authentication
@@ -21,5 +22,7 @@ router.get('/:ref_no/replies',      getReplies);
 router.post('/:ref_no/replies',     sendReply);
 router.post('/:ref_no/follow-up',   sendFollowUp);
 router.post('/:ref_no/send-quotation', sendQuotation);
+router.get('/chat/:cust_req_no',    getChatMessages);
+router.post('/chat/:cust_req_no',   sendChatMessage);
 
 module.exports = router;
