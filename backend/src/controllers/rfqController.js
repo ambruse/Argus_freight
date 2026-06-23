@@ -243,6 +243,22 @@ const sendRfqEmail = async (req, res, next) => {
       console.error('Error loading credentials from DB:', dbErr.message);
     }
 
+    // Fallback to global env variables if not set in DB
+    if (!smtpUser) {
+      smtpUser = process.env.SMTP_USER || null;
+    }
+    if (!smtpPass) {
+      smtpPass = process.env.SMTP_PASS || null;
+    }
+
+    // Sanitize any accidental surrounding quotes
+    if (smtpUser) {
+      smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
+    }
+    if (smtpPass) {
+      smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
+    }
+
     if (!smtpUser || !smtpPass) {
       return res.status(400).json({ 
         success: false, 

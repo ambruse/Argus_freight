@@ -280,15 +280,31 @@ const sendCustomerRfqEmail = async (req, res, next) => {
       [operatorName]
     );
 
-    if (userRes.rows.length === 0 || !userRes.rows[0].email_address || !userRes.rows[0].email_password) {
+    let smtpUser = userRes.rows.length > 0 ? userRes.rows[0].email_address : null;
+    let smtpPass = userRes.rows.length > 0 ? userRes.rows[0].email_password : null;
+
+    // Fallback to global env variables if not set in DB
+    if (!smtpUser) {
+      smtpUser = process.env.SMTP_USER || null;
+    }
+    if (!smtpPass) {
+      smtpPass = process.env.SMTP_PASS || null;
+    }
+
+    if (!smtpUser || !smtpPass) {
       return res.status(500).json({
         success: false,
         message: 'SMTP credentials for the assigned operator are not configured.'
       });
     }
 
-    const smtpUser = userRes.rows[0].email_address;
-    const smtpPass = userRes.rows[0].email_password;
+    // Sanitize any accidental surrounding quotes
+    if (smtpUser) {
+      smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
+    }
+    if (smtpPass) {
+      smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
+    }
 
     // 4. Configure Nodemailer
     const transporter = nodemailer.createTransport({
