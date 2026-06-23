@@ -314,6 +314,9 @@ const sendCustomerRfqEmail = async (req, res, next) => {
       auth: {
         user: smtpUser,
         pass: smtpPass
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
 

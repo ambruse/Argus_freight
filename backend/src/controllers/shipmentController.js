@@ -568,6 +568,9 @@ const sendReply = async (req, res, next) => {
         user: smtpUser,
         pass: smtpPass,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     // 5. Construct Subject
@@ -714,6 +717,9 @@ const sendFollowUp = async (req, res, next) => {
         user: smtpUser,
         pass: smtpPass,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     // 5. Construct Subject
@@ -1057,6 +1063,9 @@ const sendQuotation = async (req, res, next) => {
         user: smtpUser,
         pass: smtpPass,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     // 7. Construct Subject

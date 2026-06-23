@@ -277,6 +277,9 @@ const sendRfqEmail = async (req, res, next) => {
         user: smtpUser,
         pass: smtpPass,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     // 4. Construct Subject
