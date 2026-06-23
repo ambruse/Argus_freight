@@ -405,6 +405,51 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/api/health-email', async (_req, res) => {
+  try {
+    const nodemailer = require('nodemailer');
+    let smtpHost = process.env.SMTP_HOST;
+    let smtpPort = process.env.SMTP_PORT || '587';
+    let smtpUser = process.env.SMTP_USER;
+    let smtpPass = process.env.SMTP_PASS;
+
+    if (smtpUser) smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
+    if (smtpPass) smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: parseInt(smtpPort),
+      secure: smtpPort === '465',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+
+    await transporter.verify();
+    res.json({ 
+      success: true, 
+      message: 'SMTP connection verified successfully!',
+      config: {
+        host: smtpHost,
+        port: smtpPort,
+        user: smtpUser
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'SMTP verification failed', 
+      error: err.message,
+      code: err.code,
+      stack: err.stack
+    });
+  }
+});
+
 // ── Routes ───────────────────────────────────────────────────
 app.use('/api/auth',           authRoutes);
 app.use('/api/shipments',      shipmentRoutes);
