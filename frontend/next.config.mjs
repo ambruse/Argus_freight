@@ -7,8 +7,12 @@ const nextConfig = {
     const backendPort = process.env.NODE_ENV === "production" ? "3009" : "3001";
     return [
       {
+        source: "/socket.io/:path*",
+        destination: `http://127.0.0.1:${backendPort}/socket.io/:path*`,
+      },
+      {
         source: "/api/:path*",
-        destination: `http://localhost:${backendPort}/api/:path*`,
+        destination: `http://127.0.0.1:${backendPort}/api/:path*`,
       },
       {
         source: "/",

@@ -228,7 +228,9 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
     if (!roomKey) return;
 
     const socketUrl = typeof window !== "undefined"
-      ? `${window.location.protocol}//${window.location.hostname}:3001`
+      ? (process.env.NODE_ENV === "production"
+          ? window.location.origin
+          : `${window.location.protocol}//${window.location.hostname}:3001`)
       : "http://localhost:3001";
 
     const newSocket = io(socketUrl);
