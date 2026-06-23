@@ -317,7 +317,8 @@ const sendCustomerRfqEmail = async (req, res, next) => {
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      family: 4
     });
 
     // 5. Send to each recipient

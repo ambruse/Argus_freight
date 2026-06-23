@@ -279,7 +279,8 @@ const sendRfqEmail = async (req, res, next) => {
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      family: 4
     });
 
     // 4. Construct Subject

@@ -570,7 +570,8 @@ const sendReply = async (req, res, next) => {
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      family: 4
     });
 
     // 5. Construct Subject
@@ -719,7 +720,8 @@ const sendFollowUp = async (req, res, next) => {
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      family: 4
     });
 
     // 5. Construct Subject
@@ -1065,7 +1067,8 @@ const sendQuotation = async (req, res, next) => {
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      family: 4
     });
 
     // 7. Construct Subject
