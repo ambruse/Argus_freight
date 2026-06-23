@@ -410,45 +410,65 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.get('/api/health-email', async (_req, res) => {
-  try {
-    const nodemailer = require('nodemailer');
-    let smtpHost = process.env.SMTP_HOST;
-    let smtpPort = process.env.SMTP_PORT || '587';
-    let smtpUser = process.env.SMTP_USER;
-    let smtpPass = process.env.SMTP_PASS;
+  const net = require('net');
+  const dns = require('dns');
 
-    if (smtpUser) smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
-    if (smtpPass) smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
+  const testSocket = (host, port) => {
+    return new Promise((resolve) => {
+      const socket = new net.Socket();
+      const startTime = Date.now();
+      socket.setTimeout(5000);
 
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: parseInt(smtpPort),
-      secure: smtpPort === '465',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
+      socket.on('connect', () => {
+        const duration = Date.now() - startTime;
+        socket.destroy();
+        resolve({ success: true, message: `TCP Handshake successful in ${duration}ms` });
+      });
+
+      socket.on('timeout', () => {
+        socket.destroy();
+        resolve({ success: false, error: 'Connection timed out (5s)' });
+      });
+
+      socket.on('error', (err) => {
+        socket.destroy();
+        resolve({ success: false, error: err.message });
+      });
+
+      socket.connect(port, host);
     });
+  };
 
-    await transporter.verify();
-    res.json({ 
-      success: true, 
-      message: 'SMTP connection verified successfully!',
-      config: {
-        host: smtpHost,
-        port: smtpPort,
-        user: smtpUser
+  try {
+    const host = 'smtp.gmail.com';
+    const result587 = await testSocket(host, 587);
+    const result465 = await testSocket(host, 465);
+
+    let dnsIps = [];
+    try {
+      dnsIps = await new Promise((resIp, rejIp) => {
+        dns.resolve4(host, (err, addresses) => {
+          if (err) rejIp(err);
+          else resIp(addresses);
+        });
+      });
+    } catch (e) {
+      dnsIps = [e.message];
+    }
+
+    res.json({
+      success: true,
+      diagnostics: {
+        targetHost: host,
+        resolvedIps: dnsIps,
+        port587Status: result587,
+        port465Status: result465
       }
     });
   } catch (err) {
     res.status(500).json({ 
       success: false, 
-      message: 'SMTP verification failed', 
       error: err.message,
-      code: err.code,
       stack: err.stack
     });
   }
