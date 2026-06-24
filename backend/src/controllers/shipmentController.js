@@ -1210,6 +1210,48 @@ const sendChatMessage = async (req, res, next) => {
   }
 };
 
+const markRepliesAsRead = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    
+    // Resolve myEmail dynamically
+    let myEmail = '';
+    try {
+      const emailRes = await db.query("SELECT email_address FROM users WHERE id = $1", [req.user.id]);
+      if (emailRes.rows.length > 0 && emailRes.rows[0].email_address) {
+        myEmail = emailRes.rows[0].email_address.toLowerCase().trim();
+      }
+    } catch (dbErr) {}
+
+    if (req.user && req.user.role === 'customer') {
+      const cleanUsername = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      const shipRes = await db.query(`SELECT operator FROM shipments_${cleanUsername} WHERE ref_no = $1 LIMIT 1`, [ref_no]);
+      if (shipRes.rows.length > 0) {
+        const operatorName = shipRes.rows[0].operator;
+        const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+        const opRepliesTable = cleanOperator === 'admin' ? 'shipment_replies' : `shipment_replies_${cleanOperator}`;
+
+        await db.query(
+          `UPDATE ${opRepliesTable} SET is_read = true 
+           WHERE ref_no = $1 AND LOWER(from_email) != LOWER($2)`,
+          [ref_no, myEmail]
+        );
+      }
+    } else {
+      // Standard User/Operator/Admin
+      await query(req, 
+        `UPDATE shipment_replies SET is_read = true 
+         WHERE ref_no = $1 AND LOWER(from_email) != LOWER($2)`,
+        [ref_no, myEmail]
+      );
+    }
+
+    res.json({ success: true, message: 'All replies marked as read.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllShipments,
   getShipmentByRef,
@@ -1224,4 +1266,5 @@ module.exports = {
   sendQuotation,
   getChatMessages,
   sendChatMessage,
+  markRepliesAsRead,
 };

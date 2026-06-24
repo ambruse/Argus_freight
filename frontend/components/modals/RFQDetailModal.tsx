@@ -309,6 +309,24 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
     }
   };
 
+  const handleMarkAsRead = async () => {
+    if (!shipment) return;
+    try {
+      await api.patch(`/shipments/${shipment.ref_no}/replies/read`);
+      setReplies((prev) =>
+        prev.map((r) => ({ ...r, is_read: true }))
+      );
+      onUpdated({
+        ...shipment,
+        unread_replies_count: 0,
+      });
+      toast.success("Replies marked as read.");
+    } catch (err) {
+      console.error("Failed to mark replies as read:", err);
+      toast.error("Failed to mark replies as read.");
+    }
+  };
+
   if (!shipment) return null;
 
   const handleStatusChange = async () => {
@@ -524,7 +542,17 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       {/* ── Email Replies ───────────────────────────────── */}
       {user?.role !== "customer" && (
         <div className="border-t border-white/[0.06] pt-5 mb-6">
-          <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">Email Replies</p>
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-xs uppercase font-semibold tracking-widest text-muted">Email Replies</p>
+            {shipment.unread_replies_count && Number(shipment.unread_replies_count) > 0 ? (
+              <button
+                onClick={handleMarkAsRead}
+                className="btn-secondary px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider font-outfit"
+              >
+                Mark as Read
+              </button>
+            ) : null}
+          </div>
           {loadingReplies ? (
             <div className="text-sm text-muted">Loading replies...</div>
           ) : (
