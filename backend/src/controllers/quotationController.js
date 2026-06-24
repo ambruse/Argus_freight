@@ -169,8 +169,11 @@ const generateQuotation = async (req, res, next) => {
 
       // Slash-braced placeholders requested by user
       'CARRIER/AIRLINE/TRUCK': carrierPlaceholderValue,
-      'CARRIER_name/AIRLINE_name/TRUCK_name': carrier_name || '',
+      'CARRIER/AIRLINE/TRUCK ': carrierPlaceholderValue,
+      'CARRIER_name/AIRLINE_name /TRUCK_name ': carrier_name || '',
+      'CARRIER_name/AIRLINE_name/TRUCK_name ': carrier_name || '',
       'CARRIER_name/AIRLINE_name /TRUCK_name': carrier_name || '',
+      'CARRIER_name/AIRLINE_name/TRUCK_name': carrier_name || '',
       
       // Individual backups
       'carrier_name': carrier_name || '',
@@ -232,17 +235,24 @@ const generateQuotation = async (req, res, next) => {
     };
 
     let savedPath = '';
-    let isPdf = true;
 
     try {
       await convertDocxToPdf(tempDocxPath, pdfPath);
       // Clean up temporary docx
-      fs.unlinkSync(tempDocxPath);
+      if (fs.existsSync(tempDocxPath)) {
+        fs.unlinkSync(tempDocxPath);
+      }
       savedPath = path.relative(process.cwd(), pdfPath).replace(/\\/g, '/');
     } catch (err) {
-      console.error("[Quotation PDF Warning] PDF conversion failed, falling back to DOCX:", err.message);
-      isPdf = false;
-      savedPath = path.relative(process.cwd(), tempDocxPath).replace(/\\/g, '/');
+      console.error("[Quotation PDF Error] PDF conversion failed:", err.message);
+      // Clean up temporary docx anyway
+      if (fs.existsSync(tempDocxPath)) {
+        fs.unlinkSync(tempDocxPath);
+      }
+      return res.status(500).json({
+        success: false,
+        message: `PDF generation failed: ${err.message}`
+      });
     }
 
     // 5. Insert record into database
@@ -263,7 +273,7 @@ const generateQuotation = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: isPdf ? 'Quotation PDF generated successfully.' : 'Quotation DOCX generated successfully (PDF conversion fallback).',
+      message: 'Quotation PDF generated successfully.',
       data: insertRes.rows[0]
     });
 

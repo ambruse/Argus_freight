@@ -278,7 +278,7 @@ export default function QuotationPage() {
             <form onSubmit={handleGenerate} className="space-y-6">
               
               {/* Card 1: Client & Operator */}
-              <div className="card p-6 space-y-4">
+              <div className="glass rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-[#F5B037] border-b border-white/5 pb-2">
                   Client & Personnel Info
                 </h2>
@@ -317,7 +317,7 @@ export default function QuotationPage() {
               </div>
 
               {/* Card 2: Port & Cargo Details */}
-              <div className="card p-6 space-y-4">
+              <div className="glass rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-[#F5B037] border-b border-white/5 pb-2">
                   Route & Cargo Info
                 </h2>
@@ -433,7 +433,7 @@ export default function QuotationPage() {
               </div>
 
               {/* Card 3: Rates & Validity */}
-              <div className="card p-6 space-y-4">
+              <div className="glass rounded-2xl p-6 space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-[#F5B037] border-b border-white/5 pb-2">
                   Financials & Validity
                 </h2>
@@ -519,7 +519,7 @@ export default function QuotationPage() {
 
           {/* Live Preview Column */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="card p-6 space-y-5 border border-white/10 relative overflow-hidden bg-gradient-to-b from-[#1C263A] to-[#121A28]">
+            <div className="glass rounded-2xl p-6 space-y-5 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-full blur-2xl"></div>
               
               <h2 className="text-sm font-bold uppercase tracking-widest text-[#F5B037] border-b border-white/5 pb-2">
@@ -615,7 +615,7 @@ export default function QuotationPage() {
         </div>
 
         {/* Historical List Table */}
-        <div className="card p-6 space-y-4">
+        <div className="glass rounded-2xl p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5B037] border-b border-white/5 pb-2">
             Quotation History
           </h2>
