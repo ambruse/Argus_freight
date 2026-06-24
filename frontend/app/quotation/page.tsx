@@ -32,6 +32,8 @@ interface QuotationRecord {
   mode: string | null;
   carrier_name: string | null;
   currency: string | null;
+  approval_status: string;
+  shipment_ref?: string | null;
 }
 
 interface FormState {
@@ -73,6 +75,7 @@ const INITIAL_FORM: FormState = {
 };
 
 const AIRLINES = [
+  { country: "Turkey", name: "Turksih Aline", code: "TK" },
   {country: "Qatar", name: "Qatar Airways", code: "QR"},
   { country: "Germany", name: "Lufthansa", code: "LH" },
   { country: "UK", name: "British Airways", code: "BA" },
@@ -93,6 +96,7 @@ const AIRLINES = [
   { country: "Philippines", name: "Philippine Airlines", code: "PR" },
   { country: "Indonesia", name: "Garuda Indonesia", code: "GA" },
   { country: "US", name: "American Airlines", code: "AA" }
+  
 ];
 
 export default function QuotationPage() {
@@ -637,45 +641,74 @@ export default function QuotationPage() {
                     <th className="py-3 px-4 text-right">Freight</th>
                     <th className="py-3 px-4 text-right">Trans</th>
                     <th className="py-3 px-4 text-right">Total (QAR)</th>
+                    <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {quotations.map((q) => (
-                    <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3 px-4 font-semibold text-primary">{q.q_no}</td>
-                      <td className="py-3 px-4 text-muted">
-                        {new Date(q.created_at).toLocaleDateString("en-GB").replace(/\//g, "-")}
-                      </td>
-                      <td className="py-3 px-4 font-outfit text-primary font-medium">
-                        {q.customer_name || "—"}
-                      </td>
-                      <td className="py-3 px-4 text-muted">
-                        {q.pol_pcode || "—"} ➔ {q.pod_pcode || "—"}
-                      </td>
-                      <td className="py-3 px-4 text-muted uppercase">{q.mode || "OCEAN"}</td>
-                      <td className="py-3 px-4 text-muted truncate max-w-[120px]" title={q.carrier_name || ""}>
-                        {q.carrier_name || "—"}
-                      </td>
-                      <td className="py-3 px-4 text-right text-muted">
-                        {previewFormat(parseFloat(q.freight))} {q.currency || "QAR"}
-                      </td>
-                      <td className="py-3 px-4 text-right text-muted">
-                        {previewFormat(parseFloat(q.trans))}
-                      </td>
-                      <td className="py-3 px-4 text-right font-bold text-gold">
-                        {previewFormat(parseFloat(q.total_rate))}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => handleDownload(q.id)}
-                          className="btn-secondary px-3 py-1.5 text-[10px] uppercase font-semibold tracking-wider font-outfit"
-                        >
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {quotations.map((q) => {
+                    const isDownloadAllowed = user.role === 'admin' || q.approval_status === 'Approved';
+                    return (
+                      <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 px-4 font-semibold text-primary">{q.q_no}</td>
+                        <td className="py-3 px-4 text-muted">
+                          {new Date(q.created_at).toLocaleDateString("en-GB").replace(/\//g, "-")}
+                        </td>
+                        <td className="py-3 px-4 font-outfit text-primary font-medium">
+                          {q.customer_name || "—"}
+                        </td>
+                        <td className="py-3 px-4 text-muted">
+                          {q.pol_pcode || "—"} ➔ {q.pod_pcode || "—"}
+                        </td>
+                        <td className="py-3 px-4 text-muted uppercase">{q.mode || "OCEAN"}</td>
+                        <td className="py-3 px-4 text-muted truncate max-w-[120px]" title={q.carrier_name || ""}>
+                          {q.carrier_name || "—"}
+                        </td>
+                        <td className="py-3 px-4 text-right text-muted">
+                          {previewFormat(parseFloat(q.freight))} {q.currency || "QAR"}
+                        </td>
+                        <td className="py-3 px-4 text-right text-muted">
+                          {previewFormat(parseFloat(q.trans))}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-gold">
+                          {previewFormat(parseFloat(q.total_rate))}
+                        </td>
+                        <td className="py-3 px-4 text-center font-outfit">
+                          {q.approval_status === 'Approved' ? (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Approved
+                            </span>
+                          ) : q.approval_status === 'Disapproved' ? (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              Disapproved
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              Pending
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {isDownloadAllowed ? (
+                            <button
+                              onClick={() => handleDownload(q.id)}
+                              className="btn-secondary px-3 py-1.5 text-[10px] uppercase font-semibold tracking-wider font-outfit"
+                            >
+                              Download
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="px-3 py-1.5 text-[10px] uppercase font-semibold tracking-wider font-outfit bg-white/5 text-muted border border-white/5 cursor-not-allowed rounded-lg flex items-center gap-1 mx-auto"
+                              title="Pending Admin approval"
+                            >
+                              🔒 Locked
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

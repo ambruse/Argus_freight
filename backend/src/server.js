@@ -332,6 +332,9 @@ db.query(`
   ALTER TABLE quotations ADD COLUMN IF NOT EXISTS mode VARCHAR(50);
   ALTER TABLE quotations ADD COLUMN IF NOT EXISTS carrier_name VARCHAR(255);
   ALTER TABLE quotations ADD COLUMN IF NOT EXISTS currency VARCHAR(10);
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS approval_status VARCHAR(50) DEFAULT 'Pending';
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS shipment_ref VARCHAR(50);
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS email_payload TEXT;
 `).then(async () => {
   // Auto-migrate credentials from app_settings to admin user if empty
   try {

@@ -1027,6 +1027,114 @@ const sendQuotation = async (req, res, next) => {
     }
 
     const pdfBytes = fs.readFileSync(filePath);
+    const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
+    const finalProfit = 400 + transNum + sumQar;
+
+    // Check if user is Operator/Sales (requires Admin approval to send email)
+    if (req.user.role !== 'admin') {
+      // 1. Generate Q.NO (format: YYYYMMDDXXX)
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const yyyy = today.getFullYear();
+      const datePrefix = `${yyyy}${mm}${dd}`;
+
+      const highestQuotRes = await db.query(
+        `SELECT q_no FROM quotations WHERE q_no LIKE $1 ORDER BY q_no DESC LIMIT 1`,
+        [`${datePrefix}%`]
+      );
+
+      let seq = 1;
+      if (highestQuotRes.rows.length > 0) {
+        const highestQNo = highestQuotRes.rows[0].q_no;
+        const seqStr = highestQNo.substring(8);
+        const parsedSeq = parseInt(seqStr, 10);
+        if (!isNaN(parsedSeq)) {
+          seq = parsedSeq + 1;
+        }
+      }
+      const q_no = `${datePrefix}${String(seq).padStart(3, '0')}`;
+
+      // 2. Construct email subject, text, HTML body
+      let subject = `Quotation for Shipment - Ref: ${shipment.ref_no}`;
+      if (shipment.pol && shipment.pod) {
+        subject += ` (POL: ${shipment.pol} - POD: ${shipment.pod})`;
+      }
+
+      const salutation = shipment.customer_name ? `Dear ${shipment.customer_name},` : (shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,');
+      
+      let emailBodyText = `Find the Quotation given.`;
+      if (note && note.trim()) {
+        emailBodyText += `\n\n${note.trim()}`;
+      }
+      
+      if (mode === 'SEA' && warTime) {
+        emailBodyText += `\n\nShipping line charges, port charges, and customs duties will be charged at actuals.\n` +
+          `* War risk surcharge (WRS) and any emergency surcharges are excluded.\n` +
+          `* Cargo may be rerouted by the carrier due to the ongoing regional crisis.\n` +
+          `* The above rates are subject to the availability of space and equipment.\n` +
+          `* Transit times are for indicative purposes only; the carrier will confirm the exact transit time at departure.\n` +
+          `* In case of end-voyage or discharge at a contingency/alternate port, the consignee will be liable for all additional costs arising.`;
+      }
+
+      const messageText = `${salutation}\n\n${emailBodyText}\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
+
+      const htmlContent = emailBodyText.replace(/\n/g, '<br>');
+      const htmlBody = `
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          ${salutation}<br><br>
+          ${htmlContent}<br><br>
+          Best regards,<br><br>
+          <b>Muhammed Jabir</b><br>
+          PRICING AND OPERATION<br>
+          ARGUS SHIPPING<br><br>
+          📞 +974 30512233<br><br>
+          📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
+          🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
+        </body>
+        </html>
+      `;
+
+      // 3. Package email payload
+      const emailPayload = {
+        smtpUser,
+        smtpPass,
+        recipientEmail,
+        subject,
+        messageText,
+        htmlBody,
+        fileName,
+        originalName,
+        file_path: relativePath,
+        sizeBytes: pdfBytes.length,
+        finalProfit
+      };
+
+      // 4. Save to quotations table with status Pending
+      await db.query(
+        `INSERT INTO quotations (
+          q_no, pol, pod, commodity, pod_pcode, pol_pcode, freight, zone, trans, total_rate,
+          sales_p, operator, customer_name, transit_time, validity, created_by, file_path,
+          mode, carrier_name, currency, approval_status, shipment_ref, email_payload
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
+        [
+          q_no, shipment.pol || null, shipment.pod || null, shipment.commodity || null,
+          extractPortCode(shipment.pod), extractPortCode(shipment.pol),
+          parseFloat(freightRate) || 0, finalZone, transNum, finalProfit,
+          shipment.sales_p || null, shipment.operator || null,
+          shipment.customer_name || null, null, validityStr ? new Date(validityStr.split('/').reverse().join('-')) : null,
+          req.user.id, relativePath, mode, shipment.carrier || null, currency || 'QAR',
+          'Pending', ref_no, JSON.stringify(emailPayload)
+        ]
+      );
+
+      return res.json({
+        success: true,
+        pendingApproval: true,
+        message: 'Quotation generated successfully. Pending Admin approval to send email.'
+      });
+    }
 
     // Delete previous quotation files for this shipment/RFQ from disk and DB
     try {
@@ -1047,7 +1155,6 @@ const sendQuotation = async (req, res, next) => {
     }
 
     // Save to files table
-    const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
     await query(req, 
       `INSERT INTO files (shipment_ref_no, filename, original_name, file_path, mime_type, size_bytes)
        VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -1139,7 +1246,6 @@ const sendQuotation = async (req, res, next) => {
     );
 
     // 12. Update last_follow_up, cost and profit (cost defaults to 0, profit holds the total quoted price sum)
-    const finalProfit = 400 + transNum + sumQar;
     const updatedShipment = await query(req, 
       `UPDATE shipments SET last_follow_up = NOW(), cost = 0, profit = $1 WHERE ref_no = $2 RETURNING last_follow_up, cost, profit`,
       [finalProfit, ref_no]

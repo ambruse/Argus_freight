@@ -35,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   // Admin
   { href: "/admin/call-enquiries",  label: "All Enquiries",    icon: "◑",  section: "ADMIN" },
   { href: "/admin/register",        label: "Register User",    icon: "⊕",  section: "ADMIN" },
+  { href: "/admin/quotations",      label: "Quotation Approval", icon: "☑", section: "ADMIN" },
   // Sales
   { href: "/sales/call-enquiries",  label: "Assigned Calls",   icon: "◐",  section: "SALES" },
   // Bottom always

@@ -105,7 +105,7 @@ const generateQuotation = async (req, res, next) => {
     }
 
     // 3. Render DOCX using docxtemplater
-    const assetsDir = path.resolve(__dirname, '../../../assets');
+    const assetsDir = path.resolve(__dirname, '../../../public');
     const templatePath = path.join(assetsDir, 'Argus_Ambient_Premium_Quotation.docx');
 
     if (!fs.existsSync(templatePath)) {
@@ -263,24 +263,26 @@ const generateQuotation = async (req, res, next) => {
     }
 
     // 5. Insert record into database
+    const approvalStatus = req.user.role === 'admin' ? 'Approved' : 'Pending';
+
     const insertRes = await db.query(
       `INSERT INTO quotations (
         q_no, pol, pod, commodity, pod_pcode, pol_pcode, freight, zone, trans, total_rate,
         sales_p, operator, customer_name, transit_time, validity, created_by, file_path,
-        mode, carrier_name, currency
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        mode, carrier_name, currency, approval_status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *`,
       [
         q_no, pol || null, pod || null, commodity || null, pod_pcode || null, pol_pcode || null,
         freightNum, zone || null, transNum, totalRate, sales_p || null, operator || null,
         customer_name || null, transit_time || null, validityDbDate, creatorId, savedPath,
-        mode || 'OCEAN', carrier_name || null, currency || 'QAR'
+        mode || 'OCEAN', carrier_name || null, currency || 'QAR', approvalStatus
       ]
     );
 
     res.status(201).json({
       success: true,
-      message: 'Quotation PDF generated successfully.',
+      message: approvalStatus === 'Approved' ? 'Quotation PDF generated successfully.' : 'Quotation PDF generated. Pending Admin approval.',
       data: insertRes.rows[0]
     });
 
@@ -324,6 +326,11 @@ const downloadQuotation = async (req, res, next) => {
     }
 
     const quotation = result.rows[0];
+
+    // Enforce approval lock: only admins can download unapproved quotations
+    if (req.user.role !== 'admin' && quotation.approval_status !== 'Approved') {
+      return res.status(403).json({ success: false, message: 'Access denied. This quotation is pending admin approval.' });
+    }
     const absPath = path.resolve(process.cwd(), quotation.file_path);
 
     if (!fs.existsSync(absPath)) {
@@ -341,4 +348,102 @@ const downloadQuotation = async (req, res, next) => {
   }
 };
 
-module.exports = { generateQuotation, getQuotations, downloadQuotation };
+// ─────────────────────────────────────────────────────────────
+//  POST /api/quotation/approve/:id
+//  Approves a quotation, sends email if pending, files PDF, and updates status.
+// ─────────────────────────────────────────────────────────────
+const approveQuotation = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    const { id } = req.params;
+    const quotRes = await db.query('SELECT * FROM quotations WHERE id = $1', [id]);
+    if (quotRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Quotation not found.' });
+    }
+
+    const quotation = quotRes.rows[0];
+
+    // If it has a pending email payload, send the email and save it to files table
+    if (quotation.email_payload) {
+      const payload = JSON.parse(quotation.email_payload);
+      
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_PORT === '465',
+        auth: {
+          user: payload.smtpUser,
+          pass: payload.smtpPass,
+        },
+        tls: {
+          rejectUnauthorized: false
+        },
+        family: 4
+      });
+
+      await transporter.sendMail({
+        from: `ARGUS SHIPPING <${payload.smtpUser}>`,
+        to: payload.recipientEmail,
+        subject: payload.subject,
+        text: payload.messageText,
+        html: payload.htmlBody,
+        attachments: [
+          {
+            filename: payload.originalName,
+            path: path.resolve(process.cwd(), payload.file_path)
+          }
+        ]
+      });
+
+      await db.query(
+        `INSERT INTO files (shipment_ref_no, filename, original_name, file_path, mime_type, size_bytes)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [quotation.shipment_ref, payload.fileName, payload.originalName, payload.file_path, 'application/pdf', payload.sizeBytes]
+      );
+    }
+
+    await db.query(
+      `UPDATE quotations SET approval_status = 'Approved', email_payload = NULL WHERE id = $1`,
+      [id]
+    );
+
+    res.json({ success: true, message: 'Quotation approved and sent successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  POST /api/quotation/disapprove/:id
+//  Disapproves a quotation and updates status.
+// ─────────────────────────────────────────────────────────────
+const disapproveQuotation = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    const { id } = req.params;
+    
+    await db.query(
+      `UPDATE quotations SET approval_status = 'Disapproved', email_payload = NULL WHERE id = $1`,
+      [id]
+    );
+
+    res.json({ success: true, message: 'Quotation disapproved successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { 
+  generateQuotation, 
+  getQuotations, 
+  downloadQuotation,
+  approveQuotation,
+  disapproveQuotation
+};
