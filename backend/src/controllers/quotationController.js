@@ -27,7 +27,7 @@ const generateQuotation = async (req, res, next) => {
     const {
       pol, pod, pol_pcode, pod_pcode, commodity,
       freight, zone, trans, sales_p, operator, customer_name,
-      transit_time, validity
+      transit_time, validity, mode, carrier_name, currency
     } = req.body;
 
     const creatorId = req.user.id;
@@ -56,13 +56,26 @@ const generateQuotation = async (req, res, next) => {
     }
     const q_no = `${datePrefix}${String(seq).padStart(3, '0')}`;
 
-    // 2. Auto calculations
+    // 2. Financials and currency conversion calculations
     const freightNum = parseFloat(freight) || 0;
     const transNum = parseFloat(trans) || 0;
-    const totalRate = 400 + transNum + freightNum;
+    const isUsd = (currency || 'QAR').toUpperCase() === 'USD';
 
-    // Date formatting
-    const dateStr = `${dd}/${mm}/${yyyy}`;
+    let freightQar = 0;
+    let freightUsd = 0;
+
+    if (isUsd) {
+      freightUsd = freightNum;
+      freightQar = freightNum * 3.65;
+    } else {
+      freightQar = freightNum;
+      freightUsd = freightNum / 3.65;
+    }
+
+    const totalRate = 400 + transNum + freightQar;
+
+    // Date formatting (dd-mm-yyyy / DD-MM-YYYY)
+    const dateStr = `${dd}-${mm}-${yyyy}`;
 
     // Validity formatting (default to 3 days from generating day)
     let validityStr = '';
@@ -71,7 +84,7 @@ const generateQuotation = async (req, res, next) => {
       try {
         const parts = validity.split('-');
         if (parts.length === 3) {
-          validityStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          validityStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
           validityDbDate = validity;
         } else {
           validityStr = validity;
@@ -82,13 +95,13 @@ const generateQuotation = async (req, res, next) => {
         const vDate = new Date(today);
         vDate.setDate(today.getDate() + 3);
         validityDbDate = vDate;
-        validityStr = `${String(vDate.getDate()).padStart(2, '0')}/${String(vDate.getMonth() + 1).padStart(2, '0')}/${vDate.getFullYear()}`;
+        validityStr = `${String(vDate.getDate()).padStart(2, '0')}-${String(vDate.getMonth() + 1).padStart(2, '0')}-${vDate.getFullYear()}`;
       }
     } else {
       const vDate = new Date(today);
       vDate.setDate(today.getDate() + 3);
       validityDbDate = vDate;
-      validityStr = `${String(vDate.getDate()).padStart(2, '0')}/${String(vDate.getMonth() + 1).padStart(2, '0')}/${vDate.getFullYear()}`;
+      validityStr = `${String(vDate.getDate()).padStart(2, '0')}-${String(vDate.getMonth() + 1).padStart(2, '0')}-${vDate.getFullYear()}`;
     }
 
     // 3. Render DOCX using docxtemplater
@@ -101,28 +114,66 @@ const generateQuotation = async (req, res, next) => {
 
     const templateBytes = fs.readFileSync(templatePath);
     const zip = new PizZip(templateBytes);
+
+    // Clean all XML files inside the zip to fix formatting-split placeholders (e.g. `{` and `Q_no` and `}`)
+    Object.keys(zip.files).forEach(fileName => {
+      if (fileName.endsWith('.xml')) {
+        let content = zip.files[fileName].asText();
+        content = content.replace(/\{[^{}]+\}/g, (match) => {
+          return match.replace(/<[^>]+>/g, '');
+        });
+        zip.file(fileName, content);
+      }
+    });
+
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
     });
 
+    const carrierPlaceholderValue = mode === 'AIR' ? 'AIRLINE' : (mode === 'LAND' ? 'TRUCK' : 'CARRIER');
+
     const renderVars = {
+      // Direct placeholders mapped with casing fallbacks
+      'Q_no': q_no,
+      'q_no': q_no,
+      'DATE': dateStr,
+      'Date': dateStr,
+      'VALIDITY': validityStr,
+      'Validity': validityStr,
+      'C_NAME': customer_name || '',
+      'C_name': customer_name || '',
+      'c_name': customer_name || '',
+      'SALES_P': sales_p || '',
+      'Sales_P': sales_p || '',
+      'sales_p': sales_p || '',
+      'OPERATOR': operator || '',
+      'Operator': operator || '',
+      'operator': operator || '',
+      'TT': transit_time || '',
+      'tt': transit_time || '',
       'POL': pol || '',
       'POD': pod || '',
       'COMMODITY': commodity || '',
+      'MODE': mode || '',
+      'mode': mode || '',
       'POD_PCODE': pod_pcode || '',
       'POL_PCODE': pol_pcode || '',
-      'FREIGHT': formatCurrency(freightNum),
+      'FREIGHT_QAR': formatCurrency(freightQar),
+      'FREIGHT_USD': formatCurrency(freightUsd),
       'Zone': zone || 'Zone-1',
       'TRANS': formatCurrency(transNum),
       '400+TRANS+FREIGHT': formatCurrency(totalRate),
-      'Sales_P': sales_p || '',
-      'OPERATOR': operator || '',
-      'C_name': customer_name || '',
-      'Q_no': q_no,
-      'TT': transit_time || '',
-      'Validity': validityStr,
-      'Date': dateStr
+
+      // Slash-braced placeholders requested by user
+      'CARRIER/AIRLINE/TRUCK': carrierPlaceholderValue,
+      'CARRIER_name/AIRLINE_name/TRUCK_name': carrier_name || '',
+      'CARRIER_name/AIRLINE_name /TRUCK_name': carrier_name || '',
+      
+      // Individual backups
+      'carrier_name': carrier_name || '',
+      'airline_name': carrier_name || '',
+      'truck_name': carrier_name || ''
     };
 
     doc.render(renderVars);
@@ -196,13 +247,15 @@ const generateQuotation = async (req, res, next) => {
     const insertRes = await db.query(
       `INSERT INTO quotations (
         q_no, pol, pod, commodity, pod_pcode, pol_pcode, freight, zone, trans, total_rate,
-        sales_p, operator, customer_name, transit_time, validity, created_by, file_path
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        sales_p, operator, customer_name, transit_time, validity, created_by, file_path,
+        mode, carrier_name, currency
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *`,
       [
         q_no, pol || null, pod || null, commodity || null, pod_pcode || null, pol_pcode || null,
         freightNum, zone || null, transNum, totalRate, sales_p || null, operator || null,
-        customer_name || null, transit_time || null, validityDbDate, creatorId, savedPath
+        customer_name || null, transit_time || null, validityDbDate, creatorId, savedPath,
+        mode || 'OCEAN', carrier_name || null, currency || 'QAR'
       ]
     );
 
@@ -223,7 +276,6 @@ const generateQuotation = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 const getQuotations = async (req, res, next) => {
   try {
-    // Admins and operators can see all quotations, sales can see all or just theirs (let's display all for operators/sales/admins to simplify collaboration)
     const result = await db.query(
       `SELECT q.*, u.username as creator_username 
        FROM quotations q

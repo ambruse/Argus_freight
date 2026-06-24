@@ -29,6 +29,9 @@ interface QuotationRecord {
   created_date: string;
   created_at: string;
   creator_username: string | null;
+  mode: string | null;
+  carrier_name: string | null;
+  currency: string | null;
 }
 
 interface FormState {
@@ -45,6 +48,9 @@ interface FormState {
   trans: string;
   transit_time: string;
   validity: string;
+  mode: string;
+  carrier_name: string;
+  currency: string;
 }
 
 const INITIAL_FORM: FormState = {
@@ -61,7 +67,32 @@ const INITIAL_FORM: FormState = {
   trans: "",
   transit_time: "",
   validity: "",
+  mode: "OCEAN",
+  carrier_name: "",
+  currency: "QAR",
 };
+
+const AIRLINES = [
+  { country: "Germany", name: "Lufthansa", code: "LH" },
+  { country: "UK", name: "British Airways", code: "BA" },
+  { country: "France", name: "Air France", code: "AF" },
+  { country: "Spain", name: "Iberia", code: "IB" },
+  { country: "Italy", name: "ITA Airways", code: "AZ" },
+  { country: "UAE", name: "Emirates", code: "EK" },
+  { country: "UAE", name: "Etihad Airways", code: "EY" },
+  { country: "UAE", name: "Flydubai", code: "FZ" },
+  { country: "UAE", name: "Air Arabia", code: "G9" },
+  { country: "Saudi Arabia", name: "Saudia", code: "SV" },
+  { country: "Saudi Arabia", name: "Flynas", code: "XY" },
+  { country: "Bahrain", name: "Gulf Air", code: "GF" },
+  { country: "India", name: "Air India", code: "AI" },
+  { country: "India", name: "IndiGo", code: "6E" },
+  { country: "India", name: "Air India Express", code: "IX" },
+  { country: "India", name: "Akasa Air", code: "QP" },
+  { country: "Philippines", name: "Philippine Airlines", code: "PR" },
+  { country: "Indonesia", name: "Garuda Indonesia", code: "GA" },
+  { country: "US", name: "American Airlines", code: "AA" }
+];
 
 export default function QuotationPage() {
   const { user } = useAuth();
@@ -148,10 +179,14 @@ export default function QuotationPage() {
     });
   };
 
-  // Real-time calculation formula: 400 + TRANS + FREIGHT
+  // Currency conversions
   const freightNum = parseFloat(form.freight) || 0;
   const transNum = parseFloat(form.trans) || 0;
-  const autoCalculatedTotal = 400 + transNum + freightNum;
+  const isUsdSelected = form.currency === "USD";
+
+  const freightQar = isUsdSelected ? freightNum * 3.65 : freightNum;
+  const freightUsd = isUsdSelected ? freightNum : freightNum / 3.65;
+  const autoCalculatedTotal = 400 + transNum + freightQar;
 
   // Format currency preview helper
   const previewFormat = (num: number) => {
@@ -166,6 +201,8 @@ export default function QuotationPage() {
     if (!form.pod) return toast.error("POD is required.");
     if (!form.freight) return toast.error("Freight rate is required.");
     if (!form.trans) return toast.error("Trans rate is required.");
+    if (form.mode === "AIR" && !form.carrier_name) return toast.error("Airline selection is required.");
+    if (form.mode !== "AIR" && !form.carrier_name) return toast.error("Carrier name is required.");
 
     setLoading(true);
     try {
@@ -203,6 +240,14 @@ export default function QuotationPage() {
     
     // Trigger download in new window/tab
     window.open(`/api/quotation/download/${id}?token=${encodeURIComponent(token)}`, "_blank");
+  };
+
+  const handleModeChange = (selectedMode: string) => {
+    setForm((prev) => ({
+      ...prev,
+      mode: selectedMode,
+      carrier_name: "", // Clear previous selection
+    }));
   };
 
   return (
@@ -282,6 +327,7 @@ export default function QuotationPage() {
                       value={form.pol}
                       onChange={handlePolChange}
                       placeholder="Search loading port..."
+                      mode={form.mode}
                     />
                   </div>
                   <div className="space-y-1">
@@ -301,6 +347,7 @@ export default function QuotationPage() {
                       value={form.pod}
                       onChange={handlePodChange}
                       placeholder="Search discharge port..."
+                      mode={form.mode}
                     />
                   </div>
                   <div className="space-y-1">
@@ -314,6 +361,51 @@ export default function QuotationPage() {
                       className="input w-full font-mono uppercase"
                     />
                   </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-muted uppercase">Mode</label>
+                    <select
+                      value={form.mode}
+                      onChange={(e) => handleModeChange(e.target.value)}
+                      className="select w-full"
+                    >
+                      <option value="OCEAN">OCEAN</option>
+                      <option value="AIR">AIR</option>
+                      <option value="LAND">LAND</option>
+                    </select>
+                  </div>
+                  
+                  {form.mode === "AIR" ? (
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-muted uppercase">Airline Selection</label>
+                      <select
+                        value={form.carrier_name}
+                        onChange={(e) => setForm((prev) => ({ ...prev, carrier_name: e.target.value }))}
+                        className="select w-full"
+                      >
+                        <option value="">-- Select Airline --</option>
+                        {AIRLINES.map((airline, idx) => (
+                          <option key={idx} value={`${airline.name} (${airline.code})`}>
+                            {airline.country}: {airline.name} ({airline.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-muted uppercase">
+                        {form.mode === "LAND" ? "Truck Name / Details" : "Carrier Name"}
+                      </label>
+                      <input
+                        type="text"
+                        name="carrier_name"
+                        value={form.carrier_name}
+                        onChange={(e) => setForm((prev) => ({ ...prev, carrier_name: e.target.value }))}
+                        placeholder={form.mode === "LAND" ? "e.g. Volvo Truck" : "e.g. Maersk"}
+                        className="input w-full"
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-muted uppercase">Commodity Description</label>
                     <input
@@ -346,6 +438,17 @@ export default function QuotationPage() {
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-muted uppercase">Currency</label>
+                    <select
+                      value={form.currency}
+                      onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
+                      className="select w-full"
+                    >
+                      <option value="QAR">QAR</option>
+                      <option value="USD">USD</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-muted uppercase">Freight Rate</label>
                     <input
                       type="number"
@@ -368,7 +471,7 @@ export default function QuotationPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-muted uppercase">Trans Rate</label>
+                    <label className="text-[11px] font-semibold text-muted uppercase">Trans Rate (QAR)</label>
                     <input
                       type="number"
                       step="any"
@@ -379,7 +482,7 @@ export default function QuotationPage() {
                       className="input w-full font-mono"
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1 col-span-2">
                     <label className="text-[11px] font-semibold text-muted uppercase">Validity Until</label>
                     <input
                       type="date"
@@ -427,7 +530,7 @@ export default function QuotationPage() {
                 <div className="flex justify-between items-center py-1.5 border-b border-white/[0.03]">
                   <span>Date:</span>
                   <span className="text-primary font-semibold">
-                    {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                    {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-")}
                   </span>
                 </div>
 
@@ -439,9 +542,23 @@ export default function QuotationPage() {
                 </div>
 
                 <div className="flex justify-between items-center py-1.5 border-b border-white/[0.03]">
-                  <span>Validity (3 Days):</span>
+                  <span>Validity:</span>
                   <span className="text-primary font-semibold">
-                    {form.validity ? form.validity.split("-").reverse().join("/") : "—"}
+                    {form.validity ? form.validity.split("-").reverse().join("-") : "—"}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-white/[0.03]">
+                  <span>Mode:</span>
+                  <span className="text-primary font-semibold uppercase">{form.mode}</span>
+                </div>
+
+                <div className="flex justify-between items-start py-1.5 border-b border-white/[0.03]">
+                  <span>
+                    {form.mode === "AIR" ? "AIRLINE" : (form.mode === "LAND" ? "TRUCK" : "CARRIER")}:
+                  </span>
+                  <span className="text-primary font-semibold text-right max-w-[70%] truncate">
+                    {form.carrier_name || "—"}
                   </span>
                 </div>
 
@@ -460,28 +577,35 @@ export default function QuotationPage() {
                 </div>
 
                 <div className="flex justify-between items-center py-1.5 border-b border-white/[0.03]">
-                  <span>Freight Rate:</span>
+                  <span>Freight (QAR):</span>
                   <span className="text-primary font-semibold">
-                    QAR {previewFormat(freightNum)}
+                    QAR {previewFormat(freightQar)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center py-1.5 border-b border-white/[0.03]">
-                  <span>Trans Rate:</span>
+                  <span>Freight (USD):</span>
+                  <span className="text-primary font-semibold">
+                    USD {previewFormat(freightUsd)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 border-b border-white/[0.03]">
+                  <span>Trans (QAR):</span>
                   <span className="text-primary font-semibold">
                     QAR {previewFormat(transNum)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center py-2 bg-white/5 px-3 rounded-lg border border-white/5 mt-2">
-                  <span className="text-gold font-bold text-xs uppercase font-outfit">Total Rate:</span>
-                  <span className="text-gold font-bold text-sm">
+                  <span className="text-gold font-bold text-xs uppercase font-outfit">Total Rate (QAR):</span>
+                  <span className="text-gold font-bold text-sm font-mono">
                     QAR {previewFormat(autoCalculatedTotal)}
                   </span>
                 </div>
 
                 <div className="text-[10px] text-muted text-center italic mt-4">
-                  Formula: 400 (Fixed Fee) + TRANS + FREIGHT
+                  Formula: 400 (Fixed Fee) + TRANS (QAR) + FREIGHT (QAR)
                 </div>
               </div>
             </div>
@@ -505,12 +629,13 @@ export default function QuotationPage() {
                   <tr className="border-b border-white/10 text-muted uppercase tracking-wider text-[10px] font-semibold">
                     <th className="py-3 px-4">Q.NO</th>
                     <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Customer Name</th>
-                    <th className="py-3 px-4">Route (POL ➔ POD)</th>
+                    <th className="py-3 px-4">Customer</th>
+                    <th className="py-3 px-4">Route</th>
+                    <th className="py-3 px-4">Mode</th>
+                    <th className="py-3 px-4">Carrier/Airline</th>
                     <th className="py-3 px-4 text-right">Freight</th>
                     <th className="py-3 px-4 text-right">Trans</th>
-                    <th className="py-3 px-4 text-right">Total Rate</th>
-                    <th className="py-3 px-4 text-center">Created By</th>
+                    <th className="py-3 px-4 text-right">Total (QAR)</th>
                     <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -519,7 +644,7 @@ export default function QuotationPage() {
                     <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-3 px-4 font-semibold text-primary">{q.q_no}</td>
                       <td className="py-3 px-4 text-muted">
-                        {new Date(q.created_at).toLocaleDateString("en-GB")}
+                        {new Date(q.created_at).toLocaleDateString("en-GB").replace(/\//g, "-")}
                       </td>
                       <td className="py-3 px-4 font-outfit text-primary font-medium">
                         {q.customer_name || "—"}
@@ -527,17 +652,18 @@ export default function QuotationPage() {
                       <td className="py-3 px-4 text-muted">
                         {q.pol_pcode || "—"} ➔ {q.pod_pcode || "—"}
                       </td>
+                      <td className="py-3 px-4 text-muted uppercase">{q.mode || "OCEAN"}</td>
+                      <td className="py-3 px-4 text-muted truncate max-w-[120px]" title={q.carrier_name || ""}>
+                        {q.carrier_name || "—"}
+                      </td>
                       <td className="py-3 px-4 text-right text-muted">
-                        {previewFormat(parseFloat(q.freight))}
+                        {previewFormat(parseFloat(q.freight))} {q.currency || "QAR"}
                       </td>
                       <td className="py-3 px-4 text-right text-muted">
                         {previewFormat(parseFloat(q.trans))}
                       </td>
                       <td className="py-3 px-4 text-right font-bold text-gold">
                         {previewFormat(parseFloat(q.total_rate))}
-                      </td>
-                      <td className="py-3 px-4 text-center text-muted font-outfit text-[11px]">
-                        {q.creator_username || "System"}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <button

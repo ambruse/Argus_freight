@@ -329,6 +329,9 @@ db.query(`
     created_by        INTEGER REFERENCES users(id),
     file_path         VARCHAR(512)
   );
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS mode VARCHAR(50);
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS carrier_name VARCHAR(255);
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS currency VARCHAR(10);
 `).then(async () => {
   // Auto-migrate credentials from app_settings to admin user if empty
   try {
