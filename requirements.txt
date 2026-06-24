@@ -3,7 +3,7 @@
 # ==============================================================================
 
 # --- System Environment ---
-# NodeJS >= 18.0.0 (Tested on v24.16.0)
+NodeJS >= 18.0.0 (Tested on v24.16.0)
 PostgreSQL >= 14.0 (Recommended)
 Microsoft Word (Optional: required on host only for Windows local DOCX to PDF converter)
 

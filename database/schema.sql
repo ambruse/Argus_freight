@@ -180,7 +180,8 @@ CREATE TABLE IF NOT EXISTS contacts (
   pol         VARCHAR(100),
   pod         VARCHAR(100),
   mode        VARCHAR(50),
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  country   VARCHAR(100)
 );
 
 -- Ensure an email can have multiple routes/modes but not duplicate routes/modes

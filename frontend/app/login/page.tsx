@@ -112,30 +112,6 @@ export default function LoginPage() {
         {/* Content */}
         <div className="relative z-10 flex flex-col h-full px-14 py-12">
           {/* Logo + name */}
-          <div className="flex items-center gap-4 animate-fade-in">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-2xl blur-lg opacity-50"
-                style={{ background: "radial-gradient(circle, rgba(245,176,55,0.60) 0%, transparent 70%)" }}
-              />
-              <img
-                src={theme === "light" ? "/light-logo.png" : "/logo.png"}
-                alt="ARGUS"
-                className="relative h-12 w-auto object-contain"
-              />
-            </div>
-            <div>
-              <p className="font-black text-2xl tracking-tight"
-                style={{ color: "var(--text-primary)", fontFamily: "'Outfit', sans-serif" }}
-              >
-                ARGUS
-              </p>
-              <p className="text-[11px] uppercase tracking-[0.20em] mt-0.5"
-                style={{ color: "var(--sidebar-text-gold)" }}
-              >
-                Shipping & Cargo
-              </p>
-            </div>
-          </div>
 
           {/* Hero text */}
           <div className="flex-1 flex flex-col justify-center max-w-md">

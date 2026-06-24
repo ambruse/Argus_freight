@@ -68,7 +68,7 @@ const DETAILED_SERVICES = [
     title: 'Finished Vehicle Logistics',
     shortTitle: 'Vehicle Logistics',
     icon: Car,
-    imgSrc: '/images/Vehicle_logistics.jpg',
+    imgSrc: '/Videos/Car_shipment.mp4',
     description: 'Specialized vehicle import/export logistics for automakers, dealers, and private owners. We combine advanced software with trained handling experts.',
     extended: [
       'International Automobile Logistics Organization trained lashing specialists.',
@@ -83,7 +83,7 @@ const DETAILED_SERVICES = [
     title: 'Courier & Parcel Express',
     shortTitle: 'Courier / Parcel',
     icon: Package,
-    imgSrc: '/images/Courier_parcel.png',
+    imgSrc: '/Videos/Express.mp4',
     description: 'Speedy, secure shipping of corporate documents, sensitive packets, and individual parcels to destinations worldwide.',
     extended: [
       'Worldwide courier network covering documents and non-document packages.',
@@ -98,7 +98,7 @@ const DETAILED_SERVICES = [
     title: 'Standardized Warehousing Solutions',
     shortTitle: 'Warehousing',
     icon: Archive,
-    imgSrc: '/images/warehouse.png',
+    imgSrc: '/Videos/Warehouse.mp4',
     description: 'High-capacity, temperature-controlled, and ambient storage solutions incorporating modern tracking systems and logistics standards.',
     extended: [
       'Amazon/Walmart grade ERP inventory tracking systems with barcoding integration.',
