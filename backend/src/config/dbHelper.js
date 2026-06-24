@@ -208,4 +208,4 @@ const query = async (req, sql, params) => {
   return db.query(modifiedSql, params);
 };
 
-module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId };
+module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes };
