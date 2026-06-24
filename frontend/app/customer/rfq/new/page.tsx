@@ -6,6 +6,7 @@
 import { useState, useRef, ChangeEvent, DragEvent, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import PortAutoSuggest from "@/components/ui/PortAutoSuggest";
+import ContainerInput from "@/components/ui/ContainerInput";
 import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
@@ -183,6 +184,9 @@ export default function CustomerNewRFQPage() {
 
   const polCountries = Array.from(new Set(MAJOR_PORTS.map(p => p.country))).sort();
 
+  // Container structured UI only for Sea / Road
+  const isContainerMode = ["sea", "road"].includes(form.mode?.toLowerCase() ?? "");
+
   const fields = [
     { label: "MODE", name: "mode" },
     { label: "POL COUNTRY", name: "pol_country" },
@@ -191,7 +195,8 @@ export default function CustomerNewRFQPage() {
     { label: "COMMODITY", name: "commodity" },
     { label: "TERM", name: "term" },
     { label: "DIMENSION", name: "dimension" },
-    { label: "CONTAINER", name: "container" },
+    // Container shown as structured block below for Sea/Road; plain input otherwise
+    ...(isContainerMode ? [] : [{ label: "CONTAINER", name: "container" }]),
     { label: "TOTAL WEIGHT (KG)", name: "weight" },
     { label: "NOTE", name: "note" },
     { label: "REFER BY", name: "refer_by" },
@@ -300,6 +305,19 @@ export default function CustomerNewRFQPage() {
                   )}
                 </div>
               ))}
+
+              {/* ── Structured Container Input (Sea / Road only) ── */}
+              {isContainerMode && (
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                    CONTAINER
+                  </label>
+                  <ContainerInput
+                    onChange={(val) => setForm(prev => ({ ...prev, container: val }))}
+                  />
+                </div>
+              )}
+
               <div className="md:col-span-2">
                 <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
                   PICK-UP ADDRESS

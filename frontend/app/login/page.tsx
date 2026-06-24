@@ -252,7 +252,7 @@ export default function LoginPage() {
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm"
                   style={{ color: "var(--sidebar-avatar-text)", opacity: 0.6 }}
                 >
-                  ◎
+                  
                 </span>
                 <input
                   id="login-username"
@@ -278,7 +278,7 @@ export default function LoginPage() {
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm"
                   style={{ color: "var(--sidebar-avatar-text)", opacity: 0.6 }}
                 >
-                  ⬡
+                  
                 </span>
                 <input
                   id="login-password"

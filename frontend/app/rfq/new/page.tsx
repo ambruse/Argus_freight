@@ -10,6 +10,7 @@ import Modal from "@/components/ui/Modal";
 import EmailAutoSuggest from "@/components/ui/EmailAutoSuggest";
 import CustomerAutoSuggest from "@/components/ui/CustomerAutoSuggest";
 import PortAutoSuggest from "@/components/ui/PortAutoSuggest";
+import ContainerInput from "@/components/ui/ContainerInput";
 import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
@@ -17,19 +18,6 @@ import { Contact, Customer } from "@/types";
 import { MAJOR_PORTS } from "@/lib/ports";
 
 
-const CONTAINER_TYPES = [
-  "Standard Dry Van (DV)",
-  "High Cube (HC)",
-  "Pallet Wide (PW)",
-  "Open Top (OT)",
-  "Flat Rack (FR)",
-  "Platform",
-  "Side Door / Open Side",
-  "Reefer (Refrigerated)",
-  "Insulated / Thermal",
-  "ISO Tank (Tanktainer)",
-  "Bulk / Silo",
-];
 
 type FormState = {
   customer_name: string;
@@ -41,11 +29,6 @@ type FormState = {
   term: string;
   dimension: string;
   container: string;
-  // Structured container sub-fields (Sea / Road only)
-  containerFt40: string;
-  containerFt20: string;
-  containerCustom: string;
-  containerType: string;
   mode: string;
   weight: string;
   pickup_address: string;
@@ -64,24 +47,12 @@ const INITIAL_FORM: FormState = {
   customer_name: "",
   customer_email: "",
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
-  container: "", containerFt40: "", containerFt20: "", containerCustom: "", containerType: "",
+  container: "",
   mode: "", weight: "", pickup_address: "",
   delivery_address: "", note: "", refer_by: "", email: "", dear_who: "",
   cc_emails: []
 };
 
-/** Builds the human-readable container string from the structured sub-fields. */
-const buildContainerString = (ft40: string, ft20: string, custom: string, type: string): string => {
-  const parts: string[] = [];
-  const n40 = parseInt(ft40) || 0;
-  const n20 = parseInt(ft20) || 0;
-  const nCustom = parseInt(custom) || 0;
-  const typeSuffix = type ? ` ${type}` : "";
-  if (n40 > 0) parts.push(`40FT x ${n40}${typeSuffix}`);
-  if (n20 > 0) parts.push(`20FT x ${n20}${typeSuffix}`);
-  if (nCustom > 0) parts.push(`Custom x ${nCustom}${typeSuffix}`);
-  return parts.join(" + ");
-};
 
 export default function NewRFQPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
@@ -127,28 +98,13 @@ export default function NewRFQPage() {
     setForm(prev => {
       const nextForm = { ...prev, [name]: value };
       if (name === "mode" && value.toLowerCase() === "air") {
-        // Clear container fields when switching to Air
+        // Clear container when switching to Air
         nextForm.container = "";
-        nextForm.containerFt40 = "";
-        nextForm.containerFt20 = "";
-        nextForm.containerCustom = "";
-        nextForm.containerType = "";
       }
       return nextForm;
     });
   };
 
-  // Auto-rebuild the container string whenever any structured sub-field changes
-  useEffect(() => {
-    const built = buildContainerString(
-      form.containerFt40,
-      form.containerFt20,
-      form.containerCustom,
-      form.containerType
-    );
-    setForm(prev => ({ ...prev, container: built }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.containerFt40, form.containerFt20, form.containerCustom, form.containerType]);
 
   // ── File Handling ───────────────────────────────────────────
   const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -542,7 +498,7 @@ export default function NewRFQPage() {
   const polCountries = Array.from(new Set(MAJOR_PORTS.map(p => p.country))).sort();
 
   // ── Field Configurations ────────────────────────────────────
-  // Container is handled separately as a structured sub-form for Sea / Road
+  // Container is rendered as a dedicated block for Sea / Road
   const isContainerMode = ["sea", "road"].includes(form.mode?.toLowerCase() ?? "");
 
   const fields = [
@@ -553,8 +509,6 @@ export default function NewRFQPage() {
     { label: "COMMODITY", name: "commodity" },
     { label: "TERM", name: "term" },
     { label: "DIMENSION", name: "dimension" },
-    // CONTAINER is rendered manually below – skip it here for Sea/Road
-    ...(isContainerMode ? [] : [{ label: "CONTAINER", name: "container" }]),
     { label: "TOTAL WEIGHT (KG)", name: "weight" },
     { label: "NOTE", name: "note" },
     { label: "REFER BY", name: "refer_by" },
@@ -708,74 +662,15 @@ export default function NewRFQPage() {
                 </div>
               ))}
 
-              {/* ── Structured Container Input (Sea / Road only) ──────── */}
+              {/* ── Structured Container Input (Sea / Road only) ── */}
               {isContainerMode && (
                 <div className="md:col-span-2">
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
                     CONTAINER
                   </label>
-                  <div className="glass rounded-xl p-4 space-y-3 border border-white/[0.06]">
-                    {/* Count row */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-muted uppercase tracking-wider">40 FT</label>
-                        <input
-                          type="number"
-                          min="0"
-                          name="containerFt40"
-                          value={form.containerFt40}
-                          onChange={handleChange}
-                          placeholder="Count"
-                          className="input w-full font-mono"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-muted uppercase tracking-wider">20 FT</label>
-                        <input
-                          type="number"
-                          min="0"
-                          name="containerFt20"
-                          value={form.containerFt20}
-                          onChange={handleChange}
-                          placeholder="Count"
-                          className="input w-full font-mono"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-muted uppercase tracking-wider">Custom</label>
-                        <input
-                          type="number"
-                          min="0"
-                          name="containerCustom"
-                          value={form.containerCustom}
-                          onChange={handleChange}
-                          placeholder="Count"
-                          className="input w-full font-mono"
-                        />
-                      </div>
-                    </div>
-                    {/* Type dropdown */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-muted uppercase tracking-wider">Container Type</label>
-                      <select
-                        name="containerType"
-                        value={form.containerType}
-                        onChange={handleChange}
-                        className="select w-full"
-                      >
-                        <option value="">— Select Type —</option>
-                        {CONTAINER_TYPES.map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {/* Live preview */}
-                    {form.container && (
-                      <p className="text-[11px] font-mono text-gold bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06]">
-                        Container: {form.container}
-                      </p>
-                    )}
-                  </div>
+                  <ContainerInput
+                    onChange={(val) => setForm(prev => ({ ...prev, container: val }))}
+                  />
                 </div>
               )}
 
