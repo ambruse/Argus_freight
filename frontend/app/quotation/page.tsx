@@ -73,6 +73,7 @@ const INITIAL_FORM: FormState = {
 };
 
 const AIRLINES = [
+  {country: "Qatar", name: "Qatar Airways", code: "QR"},
   { country: "Germany", name: "Lufthansa", code: "LH" },
   { country: "UK", name: "British Airways", code: "BA" },
   { country: "France", name: "Air France", code: "AF" },

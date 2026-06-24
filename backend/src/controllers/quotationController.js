@@ -122,6 +122,8 @@ const generateQuotation = async (req, res, next) => {
         content = content.replace(/\{[^{}]+\}/g, (match) => {
           return match.replace(/<[^>]+>/g, '');
         });
+        // Replace all red color hexadecimal values (FF0000) with black (000000)
+        content = content.replace(/FF0000/gi, '000000');
         zip.file(fileName, content);
       }
     });
