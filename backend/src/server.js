@@ -25,6 +25,7 @@ const customerRoutes     = require('./routes/customers');
 const ccRecipientsRoutes = require('./routes/ccRecipients');
 const compulsoryEmailsRoutes = require('./routes/compulsoryEmails');
 const callEnquiryRoutes  = require('./routes/callEnquiries');
+const quotationRoutes    = require('./routes/quotation');
 const errorHandler       = require('./middleware/errorHandler');
 const { startImapService } = require('./services/imapService');
 
@@ -305,6 +306,29 @@ db.query(`
     created_at TIMESTAMPTZ DEFAULT NOW()
   );
   ALTER TABLE customer_operator_chats ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT false;
+
+  CREATE TABLE IF NOT EXISTS quotations (
+    id                SERIAL PRIMARY KEY,
+    q_no              VARCHAR(50) NOT NULL UNIQUE,
+    pol               VARCHAR(100),
+    pod               VARCHAR(100),
+    commodity         VARCHAR(255),
+    pod_pcode         VARCHAR(50),
+    pol_pcode         VARCHAR(50),
+    freight           NUMERIC(15, 2),
+    zone              VARCHAR(50),
+    trans             NUMERIC(15, 2),
+    total_rate        NUMERIC(15, 2),
+    sales_p           VARCHAR(100),
+    operator          VARCHAR(100),
+    customer_name     VARCHAR(255),
+    transit_time      VARCHAR(100),
+    validity          DATE,
+    created_date      DATE DEFAULT CURRENT_DATE,
+    created_at        TIMESTAMPTZ DEFAULT NOW(),
+    created_by        INTEGER REFERENCES users(id),
+    file_path         VARCHAR(512)
+  );
 `).then(async () => {
   // Auto-migrate credentials from app_settings to admin user if empty
   try {
@@ -485,6 +509,7 @@ app.use('/api/customers',      customerRoutes);
 app.use('/api/cc-recipients',  ccRecipientsRoutes);
 app.use('/api/compulsory-emails', compulsoryEmailsRoutes);
 app.use('/api/call-enquiries', callEnquiryRoutes);
+app.use('/api/quotation',      quotationRoutes);
 
 
 // ── 404 Handler ──────────────────────────────────────────────
