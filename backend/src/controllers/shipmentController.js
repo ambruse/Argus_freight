@@ -1210,39 +1210,41 @@ const sendChatMessage = async (req, res, next) => {
   }
 };
 
-const markRepliesAsRead = async (req, res, next) => {
+// ─────────────────────────────────────────────────────────────
+//  POST /api/shipments/replies/mark-all-read
+//  Marks all unread email replies as read for the logged-in user/operator.
+// ─────────────────────────────────────────────────────────────
+const markAllRepliesAsRead = async (req, res, next) => {
   try {
-    const { ref_no } = req.params;
+    const role = req.user.role;
+    const username = req.user.username;
+    const cleanUsername = username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
     
-    // Resolve myEmail dynamically
-    let myEmail = '';
-    try {
-      const emailRes = await db.query("SELECT email_address FROM users WHERE id = $1", [req.user.id]);
-      if (emailRes.rows.length > 0 && emailRes.rows[0].email_address) {
-        myEmail = emailRes.rows[0].email_address.toLowerCase().trim();
-      }
-    } catch (dbErr) {}
+    const myEmail = process.env.SMTP_USER || '';
 
-    if (req.user && req.user.role === 'customer') {
-      const cleanUsername = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-      const shipRes = await db.query(`SELECT operator FROM shipments_${cleanUsername} WHERE ref_no = $1 LIMIT 1`, [ref_no]);
-      if (shipRes.rows.length > 0) {
-        const operatorName = shipRes.rows[0].operator;
-        const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-        const opRepliesTable = cleanOperator === 'admin' ? 'shipment_replies' : `shipment_replies_${cleanOperator}`;
-
-        await db.query(
-          `UPDATE ${opRepliesTable} SET is_read = true 
-           WHERE ref_no = $1 AND LOWER(from_email) != LOWER($2)`,
-          [ref_no, myEmail]
-        );
+    if (role === 'admin' || role === 'sales') {
+      // Mark standard replies as read
+      await db.query(
+        `UPDATE shipment_replies SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
+        [myEmail]
+      );
+      
+      // If admin, we also mark all operator replies as read
+      if (role === 'admin') {
+        const { getOperatorSuffixes } = require('../config/dbHelper');
+        const suffixes = await getOperatorSuffixes();
+        for (const suffix of suffixes) {
+          await db.query(
+            `UPDATE shipment_replies_${suffix} SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
+            [myEmail]
+          );
+        }
       }
-    } else {
-      // Standard User/Operator/Admin
-      await query(req, 
-        `UPDATE shipment_replies SET is_read = true 
-         WHERE ref_no = $1 AND LOWER(from_email) != LOWER($2)`,
-        [ref_no, myEmail]
+    } else if (role === 'operator') {
+      // Mark operator replies as read
+      await db.query(
+        `UPDATE shipment_replies_${cleanUsername} SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
+        [myEmail]
       );
     }
 
@@ -1266,5 +1268,5 @@ module.exports = {
   sendQuotation,
   getChatMessages,
   sendChatMessage,
-  markRepliesAsRead,
+  markAllRepliesAsRead,
 };

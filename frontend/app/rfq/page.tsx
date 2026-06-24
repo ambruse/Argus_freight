@@ -46,6 +46,22 @@ export default function RFQPage() {
   // Double-click detection
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [markingRead, setMarkingRead] = useState(false);
+
+  const handleMarkAllRead = async () => {
+    setMarkingRead(true);
+    try {
+      await api.post("/shipments/replies/mark-all-read");
+      toast.success("All replies marked as read.");
+      await fetchShipments();
+      window.dispatchEvent(new Event("refresh-unread-replies"));
+    } catch {
+      toast.error("Failed to mark replies as read.");
+    } finally {
+      setMarkingRead(false);
+    }
+  };
+
   const fetchShipments = useCallback(async () => {
     try {
       const { data } = await api.get("/shipments?exclude_direct=true");
@@ -240,6 +256,13 @@ export default function RFQPage() {
           <span className="text-xs text-muted">
             {loading ? "Loading…" : `${filtered.length} records`}
           </span>
+          <button 
+            onClick={handleMarkAllRead} 
+            className="btn-secondary text-xs px-3 py-2 border border-[#F5B037]/20 hover:border-[#F5B037]/50 transition-colors"
+            disabled={markingRead}
+          >
+            {markingRead ? "Marking…" : "✓ Mark as read"}
+          </button>
           <button onClick={fetchShipments} className="btn-secondary text-xs px-3 py-2">
             ↻ Refresh
           </button>

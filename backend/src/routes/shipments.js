@@ -5,13 +5,14 @@ const { authenticateToken } = require('../middleware/auth');
 const {
   getAllShipments, getShipmentByRef, createShipment,
   updateShipment, updateStatus, updateTracking, deleteShipment, getReplies, sendReply, sendFollowUp, sendQuotation,
-  getChatMessages, sendChatMessage, markRepliesAsRead
+  getChatMessages, sendChatMessage, markAllRepliesAsRead
 } = require('../controllers/shipmentController');
 
 // All shipment routes require authentication
 router.use(authenticateToken);
 
 router.get('/',                     getAllShipments);
+router.post('/replies/mark-all-read', markAllRepliesAsRead);
 router.get('/:ref_no',              getShipmentByRef);
 router.post('/',                    createShipment);
 router.put('/:ref_no',              updateShipment);
@@ -20,7 +21,6 @@ router.patch('/:ref_no/tracking',   updateTracking);
 router.delete('/:ref_no',           deleteShipment);
 router.get('/:ref_no/replies',      getReplies);
 router.post('/:ref_no/replies',     sendReply);
-router.patch('/:ref_no/replies/read', markRepliesAsRead);
 router.post('/:ref_no/follow-up',   sendFollowUp);
 router.post('/:ref_no/send-quotation', sendQuotation);
 router.get('/chat/:cust_req_no',    getChatMessages);

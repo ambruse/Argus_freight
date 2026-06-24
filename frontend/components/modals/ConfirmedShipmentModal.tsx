@@ -291,24 +291,6 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
     }
   }, []);
 
-  const handleMarkAsRead = async () => {
-    if (!shipment) return;
-    try {
-      await api.patch(`/shipments/${shipment.ref_no}/replies/read`);
-      setReplies((prev) =>
-        prev.map((r) => ({ ...r, is_read: true }))
-      );
-      onUpdated({
-        ...shipment,
-        unread_replies_count: 0,
-      });
-      toast.success("Replies marked as read.");
-    } catch (err) {
-      console.error("Failed to mark replies as read:", err);
-      toast.error("Failed to mark replies as read.");
-    }
-  };
-
   const fetchFiles = useCallback(async (refNo: string) => {
     try {
       const { data } = await api.get(`/files/${encodeURIComponent(refNo)}`);
@@ -538,16 +520,6 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
       {/* ══════════════════════════════════════════════════ */}
       {tab === "emails" && (
         <div className="space-y-4">
-          {shipment.unread_replies_count && Number(shipment.unread_replies_count) > 0 ? (
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={handleMarkAsRead}
-                className="btn-secondary px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider font-outfit"
-              >
-                Mark as Read
-              </button>
-            </div>
-          ) : null}
           {loadingReplies ? (
             <div className="text-sm text-muted">Loading replies...</div>
           ) : (

@@ -83,7 +83,7 @@ export default function Sidebar() {
 
   /* ── Unread badge polling ───────────────────────────────── */
   useEffect(() => {
-    const fetch = async () => {
+    const fetchUnread = async () => {
       const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
       if (!token) return;
       try {
@@ -98,9 +98,20 @@ export default function Sidebar() {
         setConfirmedUnread(confirmed);
       } catch {}
     };
-    fetch();
-    const id = setInterval(fetch, 5000);
-    return () => clearInterval(id);
+    fetchUnread();
+    
+    const handleRefresh = () => {
+      fetchUnread();
+    };
+    window.addEventListener("rfq-list-update", handleRefresh);
+    window.addEventListener("refresh-unread-replies", handleRefresh);
+
+    const id = setInterval(fetchUnread, 5000);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("rfq-list-update", handleRefresh);
+      window.removeEventListener("refresh-unread-replies", handleRefresh);
+    };
   }, []);
 
   /* ── Filter nav by role ─────────────────────────────────── */
