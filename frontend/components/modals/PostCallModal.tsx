@@ -3,13 +3,14 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 
 interface PostCallModalProps {
+  enquiryId?: number;
   onClose: () => void;
   onSuccess: () => void;
   callNumber: string;
   callDuration: number;
 }
 
-export default function PostCallModal({ onClose, onSuccess, callNumber, callDuration }: PostCallModalProps) {
+export default function PostCallModal({ enquiryId, onClose, onSuccess, callNumber, callDuration }: PostCallModalProps) {
   const [step, setStep] = useState<"is_customer" | "is_lead" | "details">("is_customer");
   const [isCustomer, setIsCustomer] = useState<boolean | null>(null);
   const [isLead, setIsLead] = useState<boolean>(false);
@@ -36,7 +37,7 @@ export default function PostCallModal({ onClose, onSuccess, callNumber, callDura
     }
 
     try {
-      await api.post("/call-enquiries", {
+      const payload = {
         customer_name: formData.customer_name || "Unknown Caller",
         customer_number: formData.customer_number || callNumber || "Unknown",
         company: formData.company,
@@ -46,7 +47,14 @@ export default function PostCallModal({ onClose, onSuccess, callNumber, callDura
         is_lead: isLead,
         call_duration: callDuration,
         type: "Phone Call"
-      });
+      };
+
+      if (enquiryId) {
+        await api.patch(`/call-enquiries/${enquiryId}`, payload);
+      } else {
+        await api.post("/call-enquiries", payload);
+      }
+
       toast.success(isLead ? "Lead successfully logged and assigned!" : "Call logged successfully.");
       onSuccess();
     } catch (err: any) {

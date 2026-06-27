@@ -29,19 +29,35 @@ router.post('/webhook', async (req, res) => {
 
     const username = userRes.rows[0].username;
 
-    // We don't automatically create a call_enquiry here because the modal will do it,
-    // OR we could pre-create it and let the modal update it.
-    // For now, let's just trigger the modal on the frontend!
-    
+    // Auto-create a call log record
+    const insertRes = await db.query(
+      `INSERT INTO call_enquiries 
+       (customer_name, customer_number, details, status, calling_agent, is_lead, call_duration, call_time)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+       RETURNING *`,
+      [
+        'Unknown Customer',
+        customerNumber || 'Unknown',
+        `3CX Call (${CallType || 'Inbound'} - ${Status || 'Answered'})`,
+        'No Lead',
+        username,
+        false,
+        parseInt(Duration, 10) || 0
+      ]
+    );
+
+    const newEnquiry = insertRes.rows[0];
+
     if (global.io) {
       // We expect the frontend to join a room with their username in lowercase
       global.io.to(`user_${username.toLowerCase()}`).emit('call_ended', {
+        enquiry_id: newEnquiry.id,
         customer_number: customerNumber,
         call_duration: parseInt(Duration, 10) || 0,
         call_type: CallType,
         status: Status
       });
-      console.log(`[3CX Webhook] Emitted call_ended to user_${username.toLowerCase()}`);
+      console.log(`[3CX Webhook] Auto-created log ID ${newEnquiry.id} and emitted call_ended to user_${username.toLowerCase()}`);
     }
 
     res.status(200).send('OK');

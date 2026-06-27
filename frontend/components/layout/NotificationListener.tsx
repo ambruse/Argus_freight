@@ -30,7 +30,7 @@ export default function NotificationListener() {
   const isQuotationsPolling = useRef(false);
 
   const [showCallModal, setShowCallModal] = useState(false);
-  const [callData, setCallData] = useState({ number: "", duration: 0 });
+  const [callData, setCallData] = useState({ id: 0, number: "", duration: 0 });
 
   useEffect(() => {
     if (!user || user.role !== "calling_agent") return;
@@ -44,7 +44,11 @@ export default function NotificationListener() {
     socket.emit("joinRoom", `user_${user.username.toLowerCase()}`);
     
     socket.on("call_ended", (data: any) => {
-      setCallData({ number: data.customer_number || "", duration: data.call_duration || 0 });
+      setCallData({
+        id: data.enquiry_id || 0,
+        number: data.customer_number || "",
+        duration: data.call_duration || 0
+      });
       setShowCallModal(true);
     });
     
@@ -443,6 +447,7 @@ export default function NotificationListener() {
     <>
       {showCallModal && (
         <PostCallModal
+          enquiryId={callData.id}
           callNumber={callData.number}
           callDuration={callData.duration}
           onClose={() => setShowCallModal(false)}

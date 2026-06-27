@@ -119,4 +119,58 @@ const updateEnquiryStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { createEnquiry, getEnquiries, updateEnquiryStatus };
+const updateEnquiry = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const fields = req.body;
+
+    const chk = await db.query('SELECT assigned_sales FROM call_enquiries WHERE id = $1', [id]);
+    if (chk.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Enquiry not found.' });
+    }
+
+    let assigned_sales = chk.rows[0].assigned_sales;
+    if (fields.is_lead !== undefined) {
+      if (fields.is_lead && !assigned_sales) {
+        assigned_sales = await getNextSalesUser();
+      } else if (!fields.is_lead) {
+        assigned_sales = null;
+      }
+    }
+
+    const setClauses = [];
+    const values = [];
+    let paramIndex = 1;
+
+    const allowedFields = [
+      'customer_name', 'company', 'customer_email', 'customer_address',
+      'details', 'status', 'is_lead'
+    ];
+
+    allowedFields.forEach(f => {
+      if (fields[f] !== undefined) {
+        setClauses.push(`${f} = $${paramIndex}`);
+        values.push(fields[f]);
+        paramIndex++;
+      }
+    });
+
+    if (fields.is_lead !== undefined) {
+      setClauses.push(`assigned_sales = $${paramIndex}`);
+      values.push(assigned_sales);
+      paramIndex++;
+    }
+
+    setClauses.push(`updated_at = NOW()`);
+
+    values.push(id);
+    const queryStr = `UPDATE call_enquiries SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    
+    const result = await db.query(queryStr, values);
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createEnquiry, getEnquiries, updateEnquiryStatus, updateEnquiry };
