@@ -34,7 +34,9 @@ export default function NotificationListener() {
 
   useEffect(() => {
     if (!user || user.role !== "calling_agent") return;
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001";
+        const socketUrl = typeof window !== "undefined"
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001");
     const socket = io(socketUrl);
     
     socket.emit("joinRoom", `user_${user.username}`);

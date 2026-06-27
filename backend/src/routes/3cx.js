@@ -51,4 +51,11 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
+// ── GET /api/3cx/contact-lookup ──────────────────────────────
+router.get('/contact-lookup', (req, res) => {
+  console.log('[3CX Contact Lookup] Checking number:', req.query.Number);
+  // Return empty array (standard 3CX expectation when no CRM record matched)
+  res.json([]);
+});
+
 module.exports = router;
