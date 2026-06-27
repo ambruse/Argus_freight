@@ -26,25 +26,26 @@ const createEnquiry = async (req, res, next) => {
   try {
     const {
       customer_name, company, type, customer_number, customer_email,
-      customer_address, details, status
+      customer_address, details, status, is_lead, call_duration
     } = req.body;
 
     if (!customer_name || !customer_number || !details || !status) {
       return res.status(400).json({ success: false, message: 'Missing compulsory fields.' });
     }
 
-    const assigned_sales = await getNextSalesUser();
+    // Assign sales person ONLY if it is a lead
+    const assigned_sales = is_lead ? await getNextSalesUser() : null;
     const calling_agent = req.user.username;
 
     const result = await db.query(
       `INSERT INTO call_enquiries 
-       (customer_name, company, type, customer_number, customer_email, customer_address, details, status, calling_agent, assigned_sales)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       (customer_name, company, type, customer_number, customer_email, customer_address, details, status, calling_agent, assigned_sales, is_lead, call_duration)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         customer_name, company || null, type || null, customer_number,
         customer_email || null, customer_address || null, details, status,
-        calling_agent, assigned_sales
+        calling_agent, assigned_sales, is_lead || false, call_duration || null
       ]
     );
 

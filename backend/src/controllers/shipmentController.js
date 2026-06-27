@@ -6,6 +6,7 @@
 const db = require('../config/db');
 const { query } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
+const { PDFDocument } = require('pdf-lib');
 
 const syncShipmentToCustomer = async (shipment) => {
   if (!shipment || !shipment.cust_req_no || !shipment.customer_id) return;
@@ -76,25 +77,7 @@ const generateRefNo = async (req) => {
   return `ARG-${num + 1}`;
 };
 
-// ─────────────────────────────────────────────────────────────
-const cleanupStaleRFQs = async () => {
-  try {
-    const tablesRes = await db.query(
-      `SELECT table_name FROM information_schema.tables 
-       WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
-    );
-    const tables = ['shipments', ...tablesRes.rows.map(r => r.table_name)];
-    for (const table of tables) {
-      await db.query(
-        `DELETE FROM ${table} 
-         WHERE (status = 'Pending' OR status = 'Customer Review') 
-           AND last_follow_up < NOW() - INTERVAL '40 days'`
-      );
-    }
-  } catch (err) {
-    console.error('Error cleaning up stale RFQs:', err);
-  }
-};
+
 
 //  GET /api/shipments
 //  Query params:
@@ -103,7 +86,6 @@ const cleanupStaleRFQs = async () => {
 // ─────────────────────────────────────────────────────────────
 const getAllShipments = async (req, res, next) => {
   try {
-    await cleanupStaleRFQs();
     const { exclude_direct, status } = req.query;
     const myEmail = process.env.SMTP_USER || '';
     const myUsername = req.user.username;
@@ -796,11 +778,17 @@ const sendFollowUp = async (req, res, next) => {
 const sendQuotation = async (req, res, next) => {
   try {
     const { ref_no } = req.params;
-    const { mode, freightRate, exWork, warTime, note, changeTrans, zone, trans, currency, validityDate } = req.body;
-
-    if (!mode || (mode !== 'AIR' && mode !== 'SEA')) {
-      return res.status(400).json({ success: false, message: 'Valid mode (AIR or SEA) is required.' });
-    }
+    const { 
+      freightRate, 
+      trans, 
+      zone, 
+      validityDate, 
+      currency, 
+      carrier_name, 
+      transit_time, 
+      warTime, 
+      note 
+    } = req.body;
 
     // Resolve Dynamic Email Credentials from logged-in user
     let smtpUser = null;
@@ -858,53 +846,45 @@ const sendQuotation = async (req, res, next) => {
     const fs = require('fs');
     const path = require('path');
 
-    const assetsDir = path.resolve(__dirname, '../../../assets');
-    
-    // We check if "SEA TEMPLATE.docx" exists, otherwise fallback to "SEA TEMPLATE NEW.docx"
-    let templateFileName = mode === 'AIR' ? 'AIR TEMPLATE.docx' : 'SEA TEMPLATE.docx';
-    let templatePath = path.join(assetsDir, templateFileName);
-    if (mode === 'SEA' && !fs.existsSync(templatePath)) {
-      templateFileName = 'SEA TEMPLATE NEW.docx';
-      templatePath = path.join(assetsDir, templateFileName);
-    }
+    const assetsDir = path.resolve(__dirname, '../../../public');
+    const templatePath = path.join(assetsDir, 'Argus_Ambient_Premium_Quotation.docx');
 
     if (!fs.existsSync(templatePath)) {
-      return res.status(500).json({ success: false, message: `Template file ${templateFileName} not found in assets directory.` });
+      return res.status(500).json({ success: false, message: 'Argus_Ambient_Premium_Quotation.docx template not found in assets.' });
     }
 
-    // Date formatting
+    // Date formatting (dd-mm-yyyy)
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const yyyy = today.getFullYear();
-    const dateStr = `${dd}/${mm}/${yyyy}`;
+    const dateStr = `${dd}-${mm}-${yyyy}`;
 
     // Format validity date based on input
     let validityStr = '';
+    let validityDbDate = null;
     if (validityDate && validityDate.trim() !== '') {
       try {
         const parts = validityDate.split('-');
         if (parts.length === 3) {
-          // input is YYYY-MM-DD from HTML date input
-          validityStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          validityStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          validityDbDate = validityDate;
         } else {
           validityStr = validityDate;
+          validityDbDate = new Date(today);
+          validityDbDate.setDate(today.getDate() + 3);
         }
       } catch (e) {
         const validityDateDefault = new Date(today);
         validityDateDefault.setDate(today.getDate() + 3);
-        const vDd = String(validityDateDefault.getDate()).padStart(2, '0');
-        const vMm = String(validityDateDefault.getMonth() + 1).padStart(2, '0');
-        const vYyyy = validityDateDefault.getFullYear();
-        validityStr = `${vDd}/${vMm}/${vYyyy}`;
+        validityDbDate = validityDateDefault;
+        validityStr = `${String(validityDateDefault.getDate()).padStart(2, '0')}-${String(validityDateDefault.getMonth() + 1).padStart(2, '0')}-${validityDateDefault.getFullYear()}`;
       }
     } else {
       const validityDateDefault = new Date(today);
       validityDateDefault.setDate(today.getDate() + 3);
-      const vDd = String(validityDateDefault.getDate()).padStart(2, '0');
-      const vMm = String(validityDateDefault.getMonth() + 1).padStart(2, '0');
-      const vYyyy = validityDateDefault.getFullYear();
-      validityStr = `${vDd}/${vMm}/${vYyyy}`;
+      validityDbDate = validityDateDefault;
+      validityStr = `${String(validityDateDefault.getDate()).padStart(2, '0')}-${String(validityDateDefault.getMonth() + 1).padStart(2, '0')}-${validityDateDefault.getFullYear()}`;
     }
 
     const formatCurrency = (val) => {
@@ -913,44 +893,68 @@ const sendQuotation = async (req, res, next) => {
       return isNaN(num) ? val : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
-    // Currency conversion logic
-    let multiplier = 1;
-    if (currency === 'GBP') {
-      multiplier = 5;
-    } else if (currency === 'USD') {
-      multiplier = 3.65;
+    // Financials and currency calculations
+    const freightNum = parseFloat(freightRate) || 0;
+    const transNum = parseFloat(trans) || 0;
+    const isUsd = (currency || 'QAR').toUpperCase() === 'USD';
+
+    let freightQar = 0;
+    let freightUsd = 0;
+
+    if (isUsd) {
+      freightUsd = freightNum;
+      freightQar = freightNum * 3.65;
+    } else {
+      freightQar = freightNum;
+      freightUsd = freightNum / 3.65;
     }
 
-    const freightRateNum = parseFloat(freightRate) || 0;
-    const exWorkNum = parseFloat(exWork) || 0;
-
-    const freightQar = freightRateNum * multiplier;
-    const exWorkQar = exWorkNum * multiplier;
-    const sumQar = freightQar + exWorkQar;
+    const totalRate = 400 + transNum + freightQar;
 
     // Load the DOCX template
     const templateBytes = fs.readFileSync(templatePath);
     const zip = new PizZip(templateBytes);
+
+    // Clean all XML files inside the zip
+    Object.keys(zip.files).forEach(fileName => {
+      if (fileName.endsWith('.xml')) {
+        let content = zip.files[fileName].asText();
+        content = content.replace(/\{[^{}]+\}/g, (match) => {
+          return match.replace(/<[^>]+>/g, '');
+        });
+        
+        // 1. Mark {CARRIER/AIRLINE/TRUCK} font color to white (FFFFFF)
+        content = content.replace(/<w:r\b[^>]*>(?:(?!<\/w:r>)[^])*?CARRIER\/AIRLINE\/TRUCK(?:(?!<\/w:r>)[^])*?<\/w:r>/gi, (match) => {
+          return match.replace(/FF0000/gi, 'FFFFFF');
+        });
+
+        // 2. Replace all remaining red color hexadecimal values (FF0000) with black (000000)
+        content = content.replace(/FF0000/gi, '000000');
+        
+        zip.file(fileName, content);
+      }
+    });
+
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
     });
 
-    // Extract Zone and Trans details (apply defaults if empty)
-    const finalZone = zone && zone.trim() !== '' ? zone.trim() : 'Zone-1';
-    let finalTrans = '900';
-    if (mode === 'AIR') {
-      finalTrans = trans && trans.trim() !== '' ? trans.trim() : '500';
-    } else {
-      finalTrans = trans && trans.trim() !== '' ? trans.trim() : '900';
+    // Resolve mode and placeholders
+    const upperShipmentMode = (shipment.mode || 'SEA').toUpperCase();
+    let modeForTemplate = 'OCEAN';
+    if (upperShipmentMode === 'AIR') {
+      modeForTemplate = 'AIR';
+    } else if (upperShipmentMode === 'ROAD' || upperShipmentMode === 'LAND') {
+      modeForTemplate = 'LAND';
     }
 
-    const transNum = parseFloat(finalTrans) || 0;
+    const finalZone = zone && zone.trim() !== '' ? zone.trim() : 'Zone-1';
 
     // Extract Port Codes helper
     const extractPortCode = (portStr) => {
       if (!portStr) return '';
-      const match = portStr.match(/\(([^)]+)\)\s*$/);
+      const match = portStr.match(/\(([^)]+)\)/);
       if (match && match[1]) {
         return match[1].trim();
       }
@@ -960,25 +964,74 @@ const sendQuotation = async (req, res, next) => {
     const polCode = extractPortCode(shipment.pol);
     const podCode = extractPortCode(shipment.pod);
 
-    // Set docxtemplater variables matching new placeholders
+    const carrierPlaceholderValue = modeForTemplate === 'AIR' ? 'AIRLINE' : (modeForTemplate === 'LAND' ? 'TRUCK' : 'CARRIER');
+
+    // 1. Generate sequential Q.NO (format: yyyymmdd001, yyyymmdd002)
+    const datePrefix = `${yyyy}${mm}${dd}`;
+    const highestQuotRes = await db.query(
+      `SELECT q_no FROM quotations WHERE q_no LIKE $1 ORDER BY q_no DESC LIMIT 1`,
+      [`${datePrefix}%`]
+    );
+
+    let seq = 1;
+    if (highestQuotRes.rows.length > 0) {
+      const highestQNo = highestQuotRes.rows[0].q_no;
+      const seqStr = highestQNo.substring(8);
+      const parsedSeq = parseInt(seqStr, 10);
+      if (!isNaN(parsedSeq)) {
+        seq = parsedSeq + 1;
+      }
+    }
+    const q_no = `${datePrefix}${String(seq).padStart(3, '0')}`;
+
+    // Set variables for template
     const renderVars = {
+      'Q_no': q_no,
+      'q_no': q_no,
       'DATE': dateStr,
+      'Date': dateStr,
       'VALIDITY': validityStr,
+      'Validity': validityStr,
+      'C_NAME': shipment.customer_name || '',
+      'C_name': shipment.customer_name || '',
+      'c_name': shipment.customer_name || '',
+      'SALES_P': shipment.sales_p || shipment.refer_by || '',
+      'Sales_P': shipment.sales_p || shipment.refer_by || '',
+      'sales_p': shipment.sales_p || shipment.refer_by || '',
+      'OPERATOR': shipment.operator || '',
+      'Operator': shipment.operator || '',
+      'operator': shipment.operator || '',
+      'TT': transit_time || '',
+      'tt': transit_time || '',
       'POL': shipment.pol || '',
       'POD': shipment.pod || '',
-      'POL_PCODE': polCode,
-      'POD_PCODE': podCode,
       'COMMODITY': shipment.commodity || '',
-      'FREIGHT': formatCurrency(sumQar),
+      'MODE': modeForTemplate || '',
+      'mode': modeForTemplate || '',
+      'POD_PCODE': podCode || '',
+      'POL_PCODE': polCode || '',
+      'FREIGHT_QAR': formatCurrency(freightQar),
+      'FREIGHT_USD': formatCurrency(freightUsd),
       'Zone': finalZone,
       'TRANS': formatCurrency(transNum),
-      '400+TRANS+FREIGHT': formatCurrency(400 + transNum + sumQar)
+      '400+TRANS+FREIGHT': formatCurrency(totalRate),
+
+      'CARRIER/AIRLINE/TRUCK': carrierPlaceholderValue,
+      'CARRIER/AIRLINE/TRUCK ': carrierPlaceholderValue,
+      'CARRIER_name/AIRLINE_name /TRUCK_name ': carrier_name || '',
+      'CARRIER_name/AIRLINE_name/TRUCK_name ': carrier_name || '',
+      'CARRIER_name/AIRLINE_name /TRUCK_name': carrier_name || '',
+      'CARRIER_name/AIRLINE_name/TRUCK_name': carrier_name || '',
+      
+      'carrier_name': carrier_name || '',
+      'airline_name': carrier_name || '',
+      'truck_name': carrier_name || ''
     };
 
     doc.render(renderVars);
     const docxBuffer = doc.getZip().generate({ type: 'nodebuffer' });
 
-    // 4. Archive PDF to disk (save templated docx, convert to pdf, delete docx)
+    // 4. Archive PDF to disk
     const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../../uploads');
     const refNoClean = ref_no.replace(/[^a-zA-Z0-9\-]/g, '_');
     const targetDir = path.join(UPLOAD_DIR, refNoClean);
@@ -1007,8 +1060,6 @@ const sendQuotation = async (req, res, next) => {
         const psCommand = `$word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open('${escapedDocx}'); $doc.SaveAs('${escapedPdf}', 17); $doc.Close(); $word.Quit();`;
         
         exec(`powershell -NoProfile -Command "${psCommand}"`, (err, stdout, stderr) => {
-          console.log("PS STDOUT:", stdout);
-          console.log("PS STDERR:", stderr);
           if (err) {
             return reject(new Error(stderr || err.message));
           }
@@ -1019,172 +1070,46 @@ const sendQuotation = async (req, res, next) => {
 
     await convertDocxToPdf(tempDocxPath, filePath);
 
+    // Append the static 2nd page PDF
+    try {
+      const generatedPdfBytes = fs.readFileSync(filePath);
+      const generatedDoc = await PDFDocument.load(generatedPdfBytes);
+      
+      const additionalPdfPath = 'C:\\Users\\WORK\\OneDrive\\Documents\\ARGUS\\public\\Argus_Ambient_Premium_Quotation_2.pdf';
+      if (fs.existsSync(additionalPdfPath)) {
+        const additionalPdfBytes = fs.readFileSync(additionalPdfPath);
+        const additionalDoc = await PDFDocument.load(additionalPdfBytes);
+        
+        const copiedPages = await generatedDoc.copyPages(additionalDoc, additionalDoc.getPageIndices());
+        copiedPages.forEach((page) => generatedDoc.addPage(page));
+        
+        const mergedPdfBytes = await generatedDoc.save();
+        fs.writeFileSync(filePath, mergedPdfBytes);
+      } else {
+        console.log("[Shipment PDF Merge] Additional PDF not found at", additionalPdfPath);
+      }
+    } catch (mergeErr) {
+      console.error("[Shipment PDF Merge Error]:", mergeErr);
+    }
+
     // Clean up temporary docx
     try {
-      fs.unlinkSync(tempDocxPath);
+      if (fs.existsSync(tempDocxPath)) {
+        fs.unlinkSync(tempDocxPath);
+      }
     } catch (e) {
       console.error("Failed to delete temporary docx:", e);
     }
 
     const pdfBytes = fs.readFileSync(filePath);
     const relativePath = path.relative(process.cwd(), filePath).replace(/\\/g, '/');
-    const finalProfit = 400 + transNum + sumQar;
 
-    // Check if user is Operator/Sales (requires Admin approval to send email)
-    if (req.user.role !== 'admin') {
-      // 1. Generate Q.NO (format: YYYYMMDDXXX)
-      const today = new Date();
-      const dd = String(today.getDate()).padStart(2, '0');
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const yyyy = today.getFullYear();
-      const datePrefix = `${yyyy}${mm}${dd}`;
-
-      const highestQuotRes = await db.query(
-        `SELECT q_no FROM quotations WHERE q_no LIKE $1 ORDER BY q_no DESC LIMIT 1`,
-        [`${datePrefix}%`]
-      );
-
-      let seq = 1;
-      if (highestQuotRes.rows.length > 0) {
-        const highestQNo = highestQuotRes.rows[0].q_no;
-        const seqStr = highestQNo.substring(8);
-        const parsedSeq = parseInt(seqStr, 10);
-        if (!isNaN(parsedSeq)) {
-          seq = parsedSeq + 1;
-        }
-      }
-      const q_no = `${datePrefix}${String(seq).padStart(3, '0')}`;
-
-      // 2. Construct email subject, text, HTML body
-      let subject = `Quotation for Shipment - Ref: ${shipment.ref_no}`;
-      if (shipment.pol && shipment.pod) {
-        subject += ` (POL: ${shipment.pol} - POD: ${shipment.pod})`;
-      }
-
-      const salutation = shipment.customer_name ? `Dear ${shipment.customer_name},` : (shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,');
-      
-      let emailBodyText = `Find the Quotation given.`;
-      if (note && note.trim()) {
-        emailBodyText += `\n\n${note.trim()}`;
-      }
-      
-      if (mode === 'SEA' && warTime) {
-        emailBodyText += `\n\nShipping line charges, port charges, and customs duties will be charged at actuals.\n` +
-          `* War risk surcharge (WRS) and any emergency surcharges are excluded.\n` +
-          `* Cargo may be rerouted by the carrier due to the ongoing regional crisis.\n` +
-          `* The above rates are subject to the availability of space and equipment.\n` +
-          `* Transit times are for indicative purposes only; the carrier will confirm the exact transit time at departure.\n` +
-          `* In case of end-voyage or discharge at a contingency/alternate port, the consignee will be liable for all additional costs arising.`;
-      }
-
-      const messageText = `${salutation}\n\n${emailBodyText}\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
-
-      const htmlContent = emailBodyText.replace(/\n/g, '<br>');
-      const htmlBody = `
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          ${salutation}<br><br>
-          ${htmlContent}<br><br>
-          Best regards,<br><br>
-          <b>Muhammed Jabir</b><br>
-          PRICING AND OPERATION<br>
-          ARGUS SHIPPING<br><br>
-          📞 +974 30512233<br><br>
-          📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
-          🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
-        </body>
-        </html>
-      `;
-
-      // 3. Package email payload
-      const emailPayload = {
-        smtpUser,
-        smtpPass,
-        recipientEmail,
-        subject,
-        messageText,
-        htmlBody,
-        fileName,
-        originalName,
-        file_path: relativePath,
-        sizeBytes: pdfBytes.length,
-        finalProfit
-      };
-
-      // 4. Save to quotations table with status Pending
-      await db.query(
-        `INSERT INTO quotations (
-          q_no, pol, pod, commodity, pod_pcode, pol_pcode, freight, zone, trans, total_rate,
-          sales_p, operator, customer_name, transit_time, validity, created_by, file_path,
-          mode, carrier_name, currency, approval_status, shipment_ref, email_payload
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
-        [
-          q_no, shipment.pol || null, shipment.pod || null, shipment.commodity || null,
-          extractPortCode(shipment.pod), extractPortCode(shipment.pol),
-          parseFloat(freightRate) || 0, finalZone, transNum, finalProfit,
-          shipment.sales_p || null, shipment.operator || null,
-          shipment.customer_name || null, null, validityStr ? new Date(validityStr.split('/').reverse().join('-')) : null,
-          req.user.id, relativePath, mode, shipment.carrier || null, currency || 'QAR',
-          'Pending', ref_no, JSON.stringify(emailPayload)
-        ]
-      );
-
-      return res.json({
-        success: true,
-        pendingApproval: true,
-        message: 'Quotation generated successfully. Pending Admin approval to send email.'
-      });
-    }
-
-    // Delete previous quotation files for this shipment/RFQ from disk and DB
-    try {
-      const oldQuots = await query(req, 
-        `SELECT id, file_path FROM files 
-         WHERE shipment_ref_no = $1 AND original_name LIKE 'Quotation-%.pdf'`,
-        [ref_no]
-      );
-      for (const oldFile of oldQuots.rows) {
-        const oldAbsPath = path.resolve(process.cwd(), oldFile.file_path);
-        if (fs.existsSync(oldAbsPath)) {
-          fs.unlinkSync(oldAbsPath);
-        }
-        await query(req, 'DELETE FROM files WHERE id = $1', [oldFile.id]);
-      }
-    } catch (err) {
-      console.error('[Quotation Cleanup] Failed to clean up old quotation files:', err);
-    }
-
-    // Save to files table
-    await query(req, 
-      `INSERT INTO files (shipment_ref_no, filename, original_name, file_path, mime_type, size_bytes)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [ref_no, fileName, originalName, relativePath, 'application/pdf', pdfBytes.length]
-    );
-
-    // 5. SMTP Credentials already resolved at top
-
-    // 6. Configure Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      family: 4
-    });
-
-    // 7. Construct Subject
+    // Email content setup
     let subject = `Quotation for Shipment - Ref: ${shipment.ref_no}`;
     if (shipment.pol && shipment.pod) {
       subject += ` (POL: ${shipment.pol} - POD: ${shipment.pod})`;
     }
 
-    // 8. Construct Email Text & HTML
     const salutation = shipment.customer_name ? `Dear ${shipment.customer_name},` : (shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,');
     
     let emailBodyText = `Find the Quotation given.`;
@@ -1192,7 +1117,7 @@ const sendQuotation = async (req, res, next) => {
       emailBodyText += `\n\n${note.trim()}`;
     }
     
-    if (mode === 'SEA' && warTime) {
+    if (upperShipmentMode === 'SEA' && warTime) {
       emailBodyText += `\n\nShipping line charges, port charges, and customs duties will be charged at actuals.\n` +
         `* War risk surcharge (WRS) and any emergency surcharges are excluded.\n` +
         `* Cargo may be rerouted by the carrier due to the ongoing regional crisis.\n` +
@@ -1220,9 +1145,107 @@ const sendQuotation = async (req, res, next) => {
       </html>
     `;
 
-    // 9. Setup Mail Options with Attachment
+    const emailPayload = {
+      smtpUser,
+      smtpPass,
+      recipientEmail,
+      subject,
+      messageText,
+      htmlBody,
+      fileName,
+      originalName,
+      file_path: relativePath,
+      sizeBytes: pdfBytes.length,
+      finalProfit: totalRate
+    };
+
+    // If role is NOT admin, insert as Pending and return
+    if (req.user.role !== 'admin') {
+      await db.query(
+        `INSERT INTO quotations (
+          q_no, pol, pod, commodity, pod_pcode, pol_pcode, freight, zone, trans, total_rate,
+          sales_p, operator, customer_name, transit_time, validity, created_by, file_path,
+          mode, carrier_name, currency, approval_status, shipment_ref, email_payload
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
+        [
+          q_no, shipment.pol || null, shipment.pod || null, shipment.commodity || null,
+          podCode, polCode,
+          freightNum, finalZone, transNum, totalRate,
+          shipment.sales_p || shipment.refer_by || null, shipment.operator || null,
+          shipment.customer_name || null, transit_time || null, validityDbDate,
+          req.user.id, relativePath, upperShipmentMode, carrier_name || null, currency || 'QAR',
+          'Pending', ref_no, JSON.stringify(emailPayload)
+        ]
+      );
+
+      return res.json({
+        success: true,
+        pendingApproval: true,
+        message: 'Quotation generated successfully. Pending Admin approval to send email.'
+      });
+    }
+
+    // Admin flow: Send immediately and save as Approved
+    // Save to quotations table
+    await db.query(
+      `INSERT INTO quotations (
+        q_no, pol, pod, commodity, pod_pcode, pol_pcode, freight, zone, trans, total_rate,
+        sales_p, operator, customer_name, transit_time, validity, created_by, file_path,
+        mode, carrier_name, currency, approval_status, shipment_ref
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+      [
+        q_no, shipment.pol || null, shipment.pod || null, shipment.commodity || null,
+        podCode, polCode,
+        freightNum, finalZone, transNum, totalRate,
+        shipment.sales_p || shipment.refer_by || null, shipment.operator || null,
+        shipment.customer_name || null, transit_time || null, validityDbDate,
+        req.user.id, relativePath, upperShipmentMode, carrier_name || null, currency || 'QAR',
+        'Approved', ref_no
+      ]
+    );
+
+    // Clean up old files
+    try {
+      const oldQuots = await query(req, 
+        `SELECT id, file_path FROM files 
+         WHERE shipment_ref_no = $1 AND original_name LIKE 'Quotation-%.pdf'`,
+        [ref_no]
+      );
+      for (const oldFile of oldQuots.rows) {
+        const oldAbsPath = path.resolve(process.cwd(), oldFile.file_path);
+        if (fs.existsSync(oldAbsPath)) {
+          fs.unlinkSync(oldAbsPath);
+        }
+        await query(req, 'DELETE FROM files WHERE id = $1', [oldFile.id]);
+      }
+    } catch (err) {
+      console.error('[Quotation Cleanup] Failed to clean up old quotation files:', err);
+    }
+
+    // Save to files table
+    await query(req, 
+      `INSERT INTO files (shipment_ref_no, filename, original_name, file_path, mime_type, size_bytes)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [ref_no, fileName, originalName, relativePath, 'application/pdf', pdfBytes.length]
+    );
+
+    // Setup Nodemailer
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      family: 4
+    });
+
     const mailOptions = {
-      from: `"FreightOS" <${smtpUser}>`,
+      from: `ARGUS SHIPPING <${smtpUser}>`,
       to: recipientEmail,
       subject: subject,
       text: messageText,
@@ -1235,21 +1258,28 @@ const sendQuotation = async (req, res, next) => {
       ]
     };
 
-    // 10. Send Email
     await transporter.sendMail(mailOptions);
 
-    // 11. Save to shipment_replies DB
+    // Save to shipment_replies DB
     const insertRes = await query(req, 
       `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [ref_no, smtpUser, subject, messageText]
     );
 
-    // 12. Update last_follow_up, cost and profit (cost defaults to 0, profit holds the total quoted price sum)
+    // Update shipment last_follow_up, cost and profit
     const updatedShipment = await query(req, 
       `UPDATE shipments SET last_follow_up = NOW(), cost = 0, profit = $1 WHERE ref_no = $2 RETURNING last_follow_up, cost, profit`,
-      [finalProfit, ref_no]
+      [totalRate, ref_no]
     );
+
+    // Sync to customer sandbox
+    await syncShipmentToCustomer({
+      ...shipment,
+      last_follow_up: updatedShipment.rows[0].last_follow_up,
+      cost: 0,
+      profit: totalRate
+    });
 
     res.json({
       success: true,

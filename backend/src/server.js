@@ -26,6 +26,7 @@ const ccRecipientsRoutes = require('./routes/ccRecipients');
 const compulsoryEmailsRoutes = require('./routes/compulsoryEmails');
 const callEnquiryRoutes  = require('./routes/callEnquiries');
 const quotationRoutes    = require('./routes/quotation');
+const cxRoutes           = require('./routes/3cx');
 const errorHandler       = require('./middleware/errorHandler');
 const { startImapService } = require('./services/imapService');
 
@@ -70,7 +71,7 @@ app.use(cors({
 // ── Security Headers ─────────────────────────────────────────
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -119,6 +120,7 @@ db.query(`
     role          user_role    NOT NULL DEFAULT 'operator',
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
   );
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS agent_extension VARCHAR(50);
 
   CREATE TABLE IF NOT EXISTS shipments (
     id                SERIAL,
@@ -228,9 +230,13 @@ db.query(`
     status VARCHAR(50) NOT NULL,
     calling_agent VARCHAR(255) NOT NULL,
     assigned_sales VARCHAR(255),
+    call_duration INTEGER,
+    is_lead BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+  ALTER TABLE call_enquiries ADD COLUMN IF NOT EXISTS call_duration INTEGER;
+  ALTER TABLE call_enquiries ADD COLUMN IF NOT EXISTS is_lead BOOLEAN DEFAULT false;
 
 
   DO $$ 
@@ -310,13 +316,13 @@ db.query(`
   CREATE TABLE IF NOT EXISTS quotations (
     id                SERIAL PRIMARY KEY,
     q_no              VARCHAR(50) NOT NULL UNIQUE,
-    pol               VARCHAR(100),
-    pod               VARCHAR(100),
+    pol               VARCHAR(255),
+    pod               VARCHAR(255),
     commodity         VARCHAR(255),
-    pod_pcode         VARCHAR(50),
-    pol_pcode         VARCHAR(50),
+    pod_pcode         VARCHAR(255),
+    pol_pcode         VARCHAR(255),
     freight           NUMERIC(15, 2),
-    zone              VARCHAR(50),
+    zone              VARCHAR(255),
     trans             NUMERIC(15, 2),
     total_rate        NUMERIC(15, 2),
     sales_p           VARCHAR(100),
@@ -329,12 +335,21 @@ db.query(`
     created_by        INTEGER REFERENCES users(id),
     file_path         VARCHAR(512)
   );
-  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS mode VARCHAR(50);
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS mode VARCHAR(255);
   ALTER TABLE quotations ADD COLUMN IF NOT EXISTS carrier_name VARCHAR(255);
   ALTER TABLE quotations ADD COLUMN IF NOT EXISTS currency VARCHAR(10);
-  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS approval_status VARCHAR(50) DEFAULT 'Pending';
-  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS shipment_ref VARCHAR(50);
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS approval_status VARCHAR(255) DEFAULT 'Pending';
+  ALTER TABLE quotations ADD COLUMN IF NOT EXISTS shipment_ref VARCHAR(255);
   ALTER TABLE quotations ADD COLUMN IF NOT EXISTS email_payload TEXT;
+  ALTER TABLE quotations ALTER COLUMN pol_pcode TYPE VARCHAR(255);
+  ALTER TABLE quotations ALTER COLUMN pod_pcode TYPE VARCHAR(255);
+  ALTER TABLE quotations ALTER COLUMN pol TYPE VARCHAR(255);
+  ALTER TABLE quotations ALTER COLUMN pod TYPE VARCHAR(255);
+  ALTER TABLE quotations ALTER COLUMN zone TYPE VARCHAR(255);
+  ALTER TABLE quotations ALTER COLUMN mode TYPE VARCHAR(255);
+  ALTER TABLE quotations ALTER COLUMN approval_status TYPE VARCHAR(255);
+  ALTER TABLE quotations ALTER COLUMN shipment_ref TYPE VARCHAR(255);
+
 `).then(async () => {
   // Auto-migrate credentials from app_settings to admin user if empty
   try {
@@ -515,7 +530,8 @@ app.use('/api/customers',      customerRoutes);
 app.use('/api/cc-recipients',  ccRecipientsRoutes);
 app.use('/api/compulsory-emails', compulsoryEmailsRoutes);
 app.use('/api/call-enquiries', callEnquiryRoutes);
-app.use('/api/quotation',      quotationRoutes);
+app.use('/api/quotation', quotationRoutes);
+app.use('/api/3cx', cxRoutes);
 
 
 // ── 404 Handler ──────────────────────────────────────────────

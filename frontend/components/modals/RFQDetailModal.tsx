@@ -23,6 +23,30 @@ interface Props {
   onUpdated: (updated: Shipment) => void;
 }
 
+const AIRLINES = [
+  { country: "Turkey", name: "Turksih Aline", code: "TK" },
+  { country: "Qatar", name: "Qatar Airways", code: "QR" },
+  { country: "Germany", name: "Lufthansa", code: "LH" },
+  { country: "UK", name: "British Airways", code: "BA" },
+  { country: "France", name: "Air France", code: "AF" },
+  { country: "Spain", name: "Iberia", code: "IB" },
+  { country: "Italy", name: "ITA Airways", code: "AZ" },
+  { country: "UAE", name: "Emirates", code: "EK" },
+  { country: "UAE", name: "Etihad Airways", code: "EY" },
+  { country: "UAE", name: "Flydubai", code: "FZ" },
+  { country: "UAE", name: "Air Arabia", code: "G9" },
+  { country: "Saudi Arabia", name: "Saudia", code: "SV" },
+  { country: "Saudi Arabia", name: "Flynas", code: "XY" },
+  { country: "Bahrain", name: "Gulf Air", code: "GF" },
+  { country: "India", name: "Air India", code: "AI" },
+  { country: "India", name: "IndiGo", code: "6E" },
+  { country: "India", name: "Air India Express", code: "IX" },
+  { country: "India", name: "Akasa Air", code: "QP" },
+  { country: "Philippines", name: "Philippine Airlines", code: "PR" },
+  { country: "Indonesia", name: "Garuda Indonesia", code: "GA" },
+  { country: "US", name: "American Airlines", code: "AA" }
+];
+
 // Reusable detail field
 function Field({ label, value }: { label: string; value?: string | number | null }) {
   return (
@@ -59,13 +83,14 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
   const [quotaForm, setQuotaForm] = useState({
     mode: "SEA" as "AIR" | "SEA",
     freightRate: "",
-    exWork: "",
     validityDate: "",
     warTime: false,
     note: "",
     zone: "Zone-1",
-    trans: "900",
-    currency: "QAR"
+    trans: "",
+    currency: "QAR",
+    carrier_name: "",
+    transit_time: ""
   });
 
   const [files, setFiles] = useState<any[]>([]);
@@ -162,21 +187,35 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       toast.error("Freight Rate is required.");
       return;
     }
+    if (!quotaForm.trans.trim()) {
+      toast.error("Trans Rate is required.");
+      return;
+    }
+    if (quotaForm.mode === "AIR" && !quotaForm.carrier_name) {
+      toast.error("Airline selection is required.");
+      return;
+    }
+    if (quotaForm.mode !== "AIR" && !quotaForm.carrier_name) {
+      toast.error("Carrier name is required.");
+      return;
+    }
     setSendingQuotation(true);
     try {
       const { data } = await api.post(`/shipments/${shipment.ref_no}/send-quotation`, {
-        mode: quotaForm.mode,
         freightRate: quotaForm.freightRate,
-        exWork: quotaForm.exWork,
-        warTime: quotaForm.warTime,
-        note: quotaForm.note,
-        zone: quotaForm.zone,
         trans: quotaForm.trans,
+        zone: quotaForm.zone,
+        validityDate: quotaForm.validityDate,
         currency: quotaForm.currency,
-        validityDate: quotaForm.validityDate
+        carrier_name: quotaForm.carrier_name,
+        transit_time: quotaForm.transit_time,
+        warTime: quotaForm.warTime,
+        note: quotaForm.note
       });
-      toast.success("Quotation email sent successfully.");
-      setReplies((prev) => [...prev, data.data]);
+      toast.success(data.message || "Quotation email sent successfully.");
+      if (data.data) {
+        setReplies((prev) => [...prev, data.data]);
+      }
       if (data.last_follow_up) {
         onUpdated({ 
           ...shipment, 
@@ -207,16 +246,26 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         ? (Number(shipment.cost) + Number(shipment.profit || 0)).toString() 
         : "";
       setEditCustPrice(initialCustPrice);
+
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 3);
+      const yyyy = defaultDate.getFullYear();
+      const mm = String(defaultDate.getMonth() + 1).padStart(2, "0");
+      const dd = String(defaultDate.getDate()).padStart(2, "0");
+      const formattedDefaultDate = `${yyyy}-${mm}-${dd}`;
+
+      const isAirMode = shipment.mode?.toUpperCase() === "AIR";
       setQuotaForm({
-        mode: shipment.mode === "AIR" ? "AIR" : "SEA",
+        mode: isAirMode ? "AIR" : "SEA",
         freightRate: "",
-        exWork: "",
-        validityDate: "",
+        validityDate: formattedDefaultDate,
         warTime: false,
         note: "",
         zone: "Zone-1",
-        trans: shipment.mode === "AIR" ? "500" : "900",
-        currency: "QAR"
+        trans: isAirMode ? "500" : "900",
+        currency: "QAR",
+        carrier_name: shipment.carrier || "",
+        transit_time: ""
       });
     }
   }, [isOpen, shipment, user]);
@@ -533,7 +582,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
                 <div className="text-sm text-muted italic">No email replies yet.</div>
               ) : (
                 <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
-                  {replies.map((r) => {
+                  {replies.filter(Boolean).map((r) => {
                     const isOutgoing = !!r.is_outgoing;
                     const senderLabel = isOutgoing ? "YOU" : (shipment.dear_who || "Customer");
                     const cleanedBody = cleanEmailBody(r.body_text);
@@ -838,7 +887,7 @@ ARGUS SHIPPING`}
             <button
               onClick={confirmSendQuotation}
               className="btn-primary text-sm px-5 py-2"
-              disabled={sendingQuotation || !quotaForm.freightRate.trim() || !shipment.customer_email}
+              disabled={sendingQuotation || !quotaForm.freightRate.trim() || !quotaForm.trans.trim() || !shipment.customer_email}
             >
               {sendingQuotation ? "Sending..." : "📨 Send Quotation"}
             </button>
@@ -846,14 +895,30 @@ ARGUS SHIPPING`}
         }
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 rounded-xl bg-surface-4 border border-white/[0.05]">
             <div>
-              <p className="text-[10px] uppercase tracking-widest font-semibold text-muted">Customer Name</p>
-              <p className="text-sm text-primary font-medium">{shipment.customer_name || <span className="text-rose font-bold">Not Configured</span>}</p>
+              <p className="text-[9px] uppercase tracking-wider font-semibold text-muted">Customer Name</p>
+              <p className="text-xs text-primary font-semibold truncate">{shipment.customer_name || <span className="text-rose font-bold">Not Configured</span>}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-widest font-semibold text-muted">Customer Email</p>
-              <p className="text-sm text-primary font-medium">{shipment.customer_email || <span className="text-rose font-bold">Not Configured</span>}</p>
+              <p className="text-[9px] uppercase tracking-wider font-semibold text-muted">Customer Email</p>
+              <p className="text-xs text-primary font-semibold truncate">{shipment.customer_email || <span className="text-rose font-bold">Not Configured</span>}</p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-wider font-semibold text-muted">Transport Mode</p>
+              <p className="text-xs text-primary font-semibold uppercase">{shipment.mode || '—'}</p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-wider font-semibold text-muted">Port of Loading (POL)</p>
+              <p className="text-xs text-primary font-semibold truncate">{shipment.pol || '—'}</p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-wider font-semibold text-muted">Port of Discharge (POD)</p>
+              <p className="text-xs text-primary font-semibold truncate">{shipment.pod || '—'}</p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-wider font-semibold text-muted">Commodity Description</p>
+              <p className="text-xs text-primary font-semibold truncate">{shipment.commodity || '—'}</p>
             </div>
           </div>
 
@@ -865,36 +930,10 @@ ARGUS SHIPPING`}
 
           {shipment.customer_email && (
             <>
-              {/* Row 1: Transport Mode & Currency */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 1: Currency, Carrier/Airline, Transit Time */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
-                    Transport Mode
-                  </label>
-                  <select
-                    value={quotaForm.mode}
-                    onChange={(e) => {
-                      const newMode = e.target.value as "AIR" | "SEA";
-                      setQuotaForm(prev => {
-                        const nextForm = { ...prev, mode: newMode };
-                        if (!prev.trans || prev.trans === "900" || prev.trans === "500") {
-                          nextForm.trans = newMode === "AIR" ? "500" : "900";
-                        }
-                        if (!prev.zone) {
-                          nextForm.zone = "Zone-1";
-                        }
-                        return nextForm;
-                      });
-                    }}
-                    className="select-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2 text-sm text-primary focus:border-blue/50 focus:outline-none"
-                    disabled={sendingQuotation}
-                  >
-                    <option value="SEA">Sea Freight</option>
-                    <option value="AIR">Air Freight</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
+                  <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
                     Currency
                   </label>
                   <select
@@ -905,41 +944,102 @@ ARGUS SHIPPING`}
                   >
                     <option value="QAR">QAR (Qatari Riyal)</option>
                     <option value="USD">USD (US Dollar)</option>
-                    <option value="GBP">GBP (British Pound)</option>
                   </select>
+                </div>
+
+                {quotaForm.mode === "AIR" ? (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
+                      Airline Selection
+                    </label>
+                    <select
+                      value={quotaForm.carrier_name}
+                      onChange={(e) => setQuotaForm(prev => ({ ...prev, carrier_name: e.target.value }))}
+                      className="select-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2 text-sm text-primary focus:border-blue/50 focus:outline-none"
+                      disabled={sendingQuotation}
+                    >
+                      <option value="">-- Select Airline --</option>
+                      {AIRLINES.map((airline, idx) => (
+                        <option key={idx} value={`${airline.name} (${airline.code})`}>
+                          {airline.country}: {airline.name} ({airline.code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
+                      {shipment.mode?.toUpperCase() === "ROAD" || shipment.mode?.toUpperCase() === "LAND" ? "Truck Name / Details" : "Carrier Name"}
+                    </label>
+                    <input
+                      type="text"
+                      value={quotaForm.carrier_name}
+                      onChange={(e) => setQuotaForm(prev => ({ ...prev, carrier_name: e.target.value }))}
+                      placeholder={shipment.mode?.toUpperCase() === "ROAD" || shipment.mode?.toUpperCase() === "LAND" ? "e.g. Volvo Truck" : "e.g. Maersk"}
+                      className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none"
+                      disabled={sendingQuotation}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
+                    Transit Time (TT)
+                  </label>
+                  <input
+                    type="text"
+                    value={quotaForm.transit_time}
+                    onChange={(e) => setQuotaForm(prev => ({ ...prev, transit_time: e.target.value }))}
+                    placeholder="e.g. 15 Days"
+                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none"
+                    disabled={sendingQuotation}
+                  />
                 </div>
               </div>
 
-              {/* Row 2: Freight Rate & Ex-Works & Validity */}
-              <div className="grid grid-cols-3 gap-4">
+              {/* Row 2: Freight Rate, Trans Rate, Zone, Validity */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
+                  <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
                     Freight Rate ({quotaForm.currency})
                   </label>
                   <input
                     type="text"
                     value={quotaForm.freightRate}
                     onChange={(e) => setQuotaForm(prev => ({ ...prev, freightRate: e.target.value }))}
-                    placeholder={`Rate...`}
-                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none"
+                    placeholder="0.00"
+                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none font-mono"
                     disabled={sendingQuotation}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
-                    Ex-Works ({quotaForm.currency})
+                  <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
+                    Trans Rate (QAR)
                   </label>
                   <input
                     type="text"
-                    value={quotaForm.exWork}
-                    onChange={(e) => setQuotaForm(prev => ({ ...prev, exWork: e.target.value }))}
-                    placeholder={`Ex-works...`}
-                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none"
+                    value={quotaForm.trans}
+                    onChange={(e) => setQuotaForm(prev => ({ ...prev, trans: e.target.value }))}
+                    placeholder={quotaForm.mode === "AIR" ? "500" : "900"}
+                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none font-mono"
                     disabled={sendingQuotation}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
+                  <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
+                    Zone
+                  </label>
+                  <input
+                    type="text"
+                    value={quotaForm.zone}
+                    onChange={(e) => setQuotaForm(prev => ({ ...prev, zone: e.target.value }))}
+                    placeholder="Zone-1"
+                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none"
+                    disabled={sendingQuotation}
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-[11px] font-semibold text-muted uppercase mb-1">
                     Validity Date
                   </label>
                   <input
@@ -952,37 +1052,7 @@ ARGUS SHIPPING`}
                 </div>
               </div>
 
-              {/* Row 3: Zone & Trans */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
-                    Zone
-                  </label>
-                  <input
-                    type="text"
-                    value={quotaForm.zone}
-                    onChange={(e) => setQuotaForm(prev => ({ ...prev, zone: e.target.value }))}
-                    placeholder="e.g. Zone-1"
-                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none"
-                    disabled={sendingQuotation}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
-                    Trans (QAR)
-                  </label>
-                  <input
-                    type="text"
-                    value={quotaForm.trans}
-                    onChange={(e) => setQuotaForm(prev => ({ ...prev, trans: e.target.value }))}
-                    placeholder={quotaForm.mode === "AIR" ? "e.g. 500" : "e.g. 900"}
-                    className="input-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2.5 text-sm text-primary focus:border-blue/50 focus:outline-none"
-                    disabled={sendingQuotation}
-                  />
-                </div>
-              </div>
-
-              {/* Row 4: War Time (SEA only) */}
+              {/* Row 3: War Time (SEA only) */}
               {quotaForm.mode === "SEA" && (
                 <div className="flex items-end pb-2 pt-2">
                   <label className="flex items-center gap-2 cursor-pointer text-sm text-muted">
@@ -997,6 +1067,19 @@ ARGUS SHIPPING`}
                   </label>
                 </div>
               )}
+
+              {/* Live Calculations Preview */}
+              <div className="p-4 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-bold text-gold uppercase tracking-wider">Total Rate (QAR)</p>
+                  <p className="text-[11px] text-muted italic">Formula: 400 (Fixed Fee) + TRANS (QAR) + FREIGHT (QAR)</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-gold font-mono font-bold text-lg">
+                    QAR {((parseFloat(quotaForm.freightRate) || 0) * (quotaForm.currency === "USD" ? 3.65 : 1) + (parseFloat(quotaForm.trans) || 0) + 400).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
 
               {/* Note / Message */}
               <div>

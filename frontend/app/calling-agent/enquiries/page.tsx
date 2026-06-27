@@ -35,7 +35,7 @@ export default function CallingAgentEnquiries() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>DATE</th>
+                <th>DATE & TIME</th>
                 <th>CUSTOMER</th>
                 <th>COMPANY</th>
                 <th>NUMBER</th>
@@ -52,7 +52,13 @@ export default function CallingAgentEnquiries() {
               ) : (
                 enquiries.map((e) => (
                   <tr key={e.id}>
-                    <td className="whitespace-nowrap">{new Date(e.created_at).toLocaleDateString()}</td>
+                    <td className="whitespace-nowrap">
+                      {new Date(e.created_at).toLocaleDateString()}
+                      <br />
+                      <span className="text-[10px] text-muted">
+                        {e.call_time ? new Date(e.call_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(e.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
                     <td className="font-semibold text-primary">{e.customer_name}</td>
                     <td>{e.company || "—"}</td>
                     <td>{e.customer_number}</td>

@@ -148,8 +148,10 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
         currency: quotaForm.currency,
         validityDate: quotaForm.validityDate
       });
-      toast.success("Quotation email sent successfully.");
-      setReplies((prev) => [...prev, data.data]);
+      toast.success(data.message || "Quotation email sent successfully.");
+      if (data.data) {
+        setReplies((prev) => [...prev, data.data]);
+      }
       if (data.last_follow_up) {
         onUpdated({ 
           ...shipment, 
@@ -531,7 +533,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                 </div>
               ) : (
                 <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                  {replies.map((r) => {
+                  {replies.filter(Boolean).map((r) => {
                     const isOutgoing = !!r.is_outgoing;
                     const senderLabel = isOutgoing ? "YOU" : (shipment.dear_who || "Customer");
                     const cleanedBody = cleanEmailBody(r.body_text);

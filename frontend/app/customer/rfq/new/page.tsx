@@ -195,8 +195,7 @@ export default function CustomerNewRFQPage() {
     { label: "COMMODITY", name: "commodity" },
     { label: "TERM", name: "term" },
     { label: "DIMENSION", name: "dimension" },
-    // Container shown as structured block below for Sea/Road; plain input otherwise
-    ...(isContainerMode ? [] : [{ label: "CONTAINER", name: "container" }]),
+    // Container only shown as structured block for Sea/Road — hidden for Air
     { label: "TOTAL WEIGHT (KG)", name: "weight" },
     { label: "NOTE", name: "note" },
     { label: "REFER BY", name: "refer_by" },

@@ -10,6 +10,7 @@ const Docxtemplater = require('docxtemplater');
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { PDFDocument } = require('pdf-lib');
 
 // Format currency helper
 const formatCurrency = (val) => {
@@ -142,6 +143,17 @@ const generateQuotation = async (req, res, next) => {
 
     const carrierPlaceholderValue = mode === 'AIR' ? 'AIRLINE' : (mode === 'LAND' ? 'TRUCK' : 'CARRIER');
 
+    const extractPortCode = (portStr) => {
+      if (!portStr) return '';
+      const match = portStr.match(/\(([^)]+)\)/);
+      return match && match[1] ? match[1].trim() : portStr;
+    };
+
+    const finalPol = extractPortCode(pol);
+    const finalPod = extractPortCode(pod);
+    const finalPolPcode = extractPortCode(pol_pcode || pol);
+    const finalPodPcode = extractPortCode(pod_pcode || pod);
+
     const renderVars = {
       // Direct placeholders mapped with casing fallbacks
       'Q_no': q_no,
@@ -166,8 +178,8 @@ const generateQuotation = async (req, res, next) => {
       'COMMODITY': commodity || '',
       'MODE': mode || '',
       'mode': mode || '',
-      'POD_PCODE': pod_pcode || '',
-      'POL_PCODE': pol_pcode || '',
+      'POD_PCODE': finalPodPcode || '',
+      'POL_PCODE': finalPolPcode || '',
       'FREIGHT_QAR': formatCurrency(freightQar),
       'FREIGHT_USD': formatCurrency(freightUsd),
       'Zone': zone || 'Zone-1',
@@ -245,6 +257,29 @@ const generateQuotation = async (req, res, next) => {
 
     try {
       await convertDocxToPdf(tempDocxPath, pdfPath);
+      
+      // Append the static 2nd page PDF
+      try {
+        const generatedPdfBytes = fs.readFileSync(pdfPath);
+        const generatedDoc = await PDFDocument.load(generatedPdfBytes);
+        
+        const additionalPdfPath = 'C:\\Users\\WORK\\OneDrive\\Documents\\ARGUS\\public\\Argus_Ambient_Premium_Quotation_2.pdf';
+        if (fs.existsSync(additionalPdfPath)) {
+          const additionalPdfBytes = fs.readFileSync(additionalPdfPath);
+          const additionalDoc = await PDFDocument.load(additionalPdfBytes);
+          
+          const copiedPages = await generatedDoc.copyPages(additionalDoc, additionalDoc.getPageIndices());
+          copiedPages.forEach((page) => generatedDoc.addPage(page));
+          
+          const mergedPdfBytes = await generatedDoc.save();
+          fs.writeFileSync(pdfPath, mergedPdfBytes);
+        } else {
+          console.log("[Quotation PDF Merge] Additional PDF not found at", additionalPdfPath);
+        }
+      } catch (mergeErr) {
+        console.error("[Quotation PDF Merge Error]:", mergeErr);
+      }
+
       // Clean up temporary docx
       if (fs.existsSync(tempDocxPath)) {
         fs.unlinkSync(tempDocxPath);
@@ -340,7 +375,8 @@ const downloadQuotation = async (req, res, next) => {
     const ext = path.extname(quotation.file_path).toLowerCase();
     const mimeType = ext === '.pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-    res.setHeader('Content-Disposition', `attachment; filename="Quotation_${quotation.q_no}${ext}"`);
+    const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
+    res.setHeader('Content-Disposition', `${disposition}; filename="Quotation_${quotation.q_no}${ext}"`);
     res.setHeader('Content-Type', mimeType);
     res.sendFile(absPath);
   } catch (err) {
@@ -404,6 +440,74 @@ const approveQuotation = async (req, res, next) => {
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [quotation.shipment_ref, payload.fileName, payload.originalName, payload.file_path, 'application/pdf', payload.sizeBytes]
       );
+
+      // If it's linked to an RFQ/shipment, update shipment and replies log
+      if (quotation.shipment_ref) {
+        // Save to shipment_replies DB
+        await db.query(
+          `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
+           VALUES ($1, $2, $3, $4)`,
+          [quotation.shipment_ref, payload.smtpUser, payload.subject, payload.messageText]
+        );
+
+        // Update main shipments table
+        const updateRes = await db.query(
+          `UPDATE shipments SET last_follow_up = NOW(), cost = 0, profit = $1 WHERE ref_no = $2 RETURNING *`,
+          [quotation.total_rate, quotation.shipment_ref]
+        );
+        
+        if (updateRes.rows.length > 0) {
+          const updatedShipment = updateRes.rows[0];
+          // Try to sync to customer sandbox table if customer_id exists
+          if (updatedShipment.customer_id) {
+            try {
+              const custUserRes = await db.query(
+                `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' LIMIT 1`,
+                [updatedShipment.customer_id]
+              );
+              if (custUserRes.rows.length > 0) {
+                const customerUsername = custUserRes.rows[0].username;
+                const cleanUsername = customerUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                
+                await db.query(
+                  `UPDATE shipments_${cleanUsername} SET
+                     status = $1,
+                     do_number = $2,
+                     box_no = $3,
+                     so_number = $4,
+                     bl_number = $5,
+                     track_status = $6,
+                     carrier = $7,
+                     etd = $8,
+                     eta = $9,
+                     cost = $10,
+                     profit = $11,
+                     last_follow_up = $12,
+                     updated_at = NOW()
+                   WHERE ref_no = $13`,
+                  [
+                    updatedShipment.status,
+                    updatedShipment.do_number,
+                    updatedShipment.box_no,
+                    updatedShipment.so_number,
+                    updatedShipment.bl_number,
+                    updatedShipment.track_status,
+                    updatedShipment.carrier,
+                    updatedShipment.etd,
+                    updatedShipment.eta,
+                    updatedShipment.cost,
+                    updatedShipment.profit,
+                    updatedShipment.last_follow_up,
+                    updatedShipment.ref_no
+                  ]
+                );
+              }
+            } catch (syncErr) {
+              console.error('[Quotation Sync Error] Failed to sync shipment status to customer sandbox:', syncErr.message);
+            }
+          }
+        }
+      }
     }
 
     await db.query(

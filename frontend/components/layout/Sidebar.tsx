@@ -30,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/customer/rfq/new",      label: "Request Quote",    icon: "✦",  section: "MY PORTAL" },
   { href: "/customer/rfq",          label: "My Requests",      icon: "◈",  section: "MY PORTAL" },
   // Calling Agent
+  { href: "/calling-agent/phone",   label: "Phone",            icon: "✆",  section: "CALLS" },
   { href: "/calling-agent/new",     label: "Call Enquiry",     icon: "☎",  section: "CALLS" },
   { href: "/calling-agent/enquiries", label: "My Enquiries",   icon: "◐",  section: "CALLS" },
   // Admin
@@ -119,7 +120,7 @@ export default function Sidebar() {
   const visibleItems = NAV_ITEMS.filter(item => {
     if (user?.role === "customer")      return ["/dashboard", "/customer/rfq/new", "/customer/rfq", "/settings"].includes(item.href);
     if (user?.role === "sales")         return ["/rfq/new", "/rfq", "/confirmed", "/summary", "/sales/call-enquiries", "/settings", "/quotation"].includes(item.href);
-    if (user?.role === "calling_agent") return ["/dashboard", "/calling-agent/new", "/calling-agent/enquiries", "/settings"].includes(item.href);
+    if (user?.role === "calling_agent") return ["/dashboard", "/calling-agent/phone", "/calling-agent/new", "/calling-agent/enquiries", "/settings"].includes(item.href);
     if (user?.role === "admin")         return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/customer");
     if (user?.role === "operator")      return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/admin") && !item.href.startsWith("/customer");
     return true;
