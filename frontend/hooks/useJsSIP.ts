@@ -13,7 +13,7 @@ export function useJsSIP() {
   const [incomingNumber, setIncomingNumber] = useState<string | null>(null);
   
   const uaRef = useRef<JsSIP.UA | null>(null);
-  const sessionRef = useRef<JsSIP.RTCSession | null>(null);
+  const sessionRef = useRef<any | null>(null);
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
 
