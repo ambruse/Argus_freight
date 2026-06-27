@@ -34,12 +34,14 @@ export default function NotificationListener() {
 
   useEffect(() => {
     if (!user || user.role !== "calling_agent") return;
-        const socketUrl = typeof window !== "undefined"
-      ? window.location.origin
-      : (process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:3001");
+    const socketUrl = typeof window !== "undefined"
+      ? (process.env.NODE_ENV === "production"
+          ? window.location.origin
+          : `${window.location.protocol}//${window.location.hostname}:3001`)
+      : "http://localhost:3001";
     const socket = io(socketUrl);
     
-    socket.emit("joinRoom", `user_${user.username}`);
+    socket.emit("joinRoom", `user_${user.username.toLowerCase()}`);
     
     socket.on("call_ended", (data: any) => {
       setCallData({ number: data.customer_number || "", duration: data.call_duration || 0 });

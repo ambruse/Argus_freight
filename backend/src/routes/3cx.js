@@ -34,14 +34,14 @@ router.post('/webhook', async (req, res) => {
     // For now, let's just trigger the modal on the frontend!
     
     if (global.io) {
-      // We expect the frontend to join a room with their username: `socket.emit('joinRoom', 'user_john')`
-      global.io.to(`user_${username}`).emit('call_ended', {
+      // We expect the frontend to join a room with their username in lowercase
+      global.io.to(`user_${username.toLowerCase()}`).emit('call_ended', {
         customer_number: customerNumber,
         call_duration: parseInt(Duration, 10) || 0,
         call_type: CallType,
         status: Status
       });
-      console.log(`[3CX Webhook] Emitted call_ended to user_${username}`);
+      console.log(`[3CX Webhook] Emitted call_ended to user_${username.toLowerCase()}`);
     }
 
     res.status(200).send('OK');
