@@ -1055,16 +1055,32 @@ const sendQuotation = async (req, res, next) => {
       return new Promise((resolve, reject) => {
         const absoluteDocx = path.resolve(docxPath);
         const absolutePdf = path.resolve(pdfPath);
-        const escapedDocx = absoluteDocx.replace(/\\/g, '/').replace(/'/g, "''");
-        const escapedPdf = absolutePdf.replace(/\\/g, '/').replace(/'/g, "''");
-        const psCommand = `$word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open('${escapedDocx}'); $doc.SaveAs('${escapedPdf}', 17); $doc.Close(); $word.Quit();`;
-        
-        exec(`powershell -NoProfile -Command "${psCommand}"`, (err, stdout, stderr) => {
-          if (err) {
-            return reject(new Error(stderr || err.message));
-          }
-          resolve();
-        });
+
+        if (process.platform === 'win32') {
+          const escapedDocx = absoluteDocx.replace(/\\/g, '/').replace(/'/g, "''");
+          const escapedPdf = absolutePdf.replace(/\\/g, '/').replace(/'/g, "''");
+          const psCommand = `$word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open('${escapedDocx}'); $doc.SaveAs('${escapedPdf}', 17); $doc.Close(); $word.Quit();`;
+          
+          exec(`powershell -NoProfile -Command "${psCommand}"`, (err, stdout, stderr) => {
+            if (err) {
+              return reject(new Error(stderr || err.message));
+            }
+            resolve();
+          });
+        } else {
+          // Linux / Render fallback using soffice / headless LibreOffice
+          exec(`soffice --headless --convert-to pdf --outdir "${path.dirname(absolutePdf)}" "${absoluteDocx}"`, (err, stdout, stderr) => {
+            if (err) {
+              return reject(new Error(err.message));
+            }
+            const generatedPdfName = path.basename(absoluteDocx).replace(/\.docx$/, '.pdf');
+            const generatedPdfPath = path.join(path.dirname(absolutePdf), generatedPdfName);
+            if (generatedPdfPath !== absolutePdf && fs.existsSync(generatedPdfPath)) {
+              fs.renameSync(generatedPdfPath, absolutePdf);
+            }
+            resolve();
+          });
+        }
       });
     };
 
@@ -1075,7 +1091,7 @@ const sendQuotation = async (req, res, next) => {
       const generatedPdfBytes = fs.readFileSync(filePath);
       const generatedDoc = await PDFDocument.load(generatedPdfBytes);
       
-      const additionalPdfPath = 'C:\\Users\\WORK\\OneDrive\\Documents\\ARGUS\\public\\Argus_Ambient_Premium_Quotation_2.pdf';
+      const additionalPdfPath = path.resolve(__dirname, '../../../public/Argus_Ambient_Premium_Quotation_2.pdf');
       if (fs.existsSync(additionalPdfPath)) {
         const additionalPdfBytes = fs.readFileSync(additionalPdfPath);
         const additionalDoc = await PDFDocument.load(additionalPdfBytes);

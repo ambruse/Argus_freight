@@ -263,7 +263,7 @@ const generateQuotation = async (req, res, next) => {
         const generatedPdfBytes = fs.readFileSync(pdfPath);
         const generatedDoc = await PDFDocument.load(generatedPdfBytes);
         
-        const additionalPdfPath = 'C:\\Users\\WORK\\OneDrive\\Documents\\ARGUS\\public\\Argus_Ambient_Premium_Quotation_2.pdf';
+        const additionalPdfPath = path.resolve(__dirname, '../../../public/Argus_Ambient_Premium_Quotation_2.pdf');
         if (fs.existsSync(additionalPdfPath)) {
           const additionalPdfBytes = fs.readFileSync(additionalPdfPath);
           const additionalDoc = await PDFDocument.load(additionalPdfBytes);
