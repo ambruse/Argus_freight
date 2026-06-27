@@ -144,6 +144,9 @@ export interface CallEnquiry {
   status: 'Lead' | 'No Lead' | 'Confirmed' | 'Lost';
   calling_agent: string;
   assigned_sales: string | null;
+  call_time?: string;
+  call_duration?: number;
+  is_lead?: boolean;
   created_at: string;
   updated_at: string;
 }
