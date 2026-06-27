@@ -14,6 +14,9 @@ export default function AdminRegisterUserPage() {
   const [name, setName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
   const [contactNumber, setContactNumber] = useState("");
+  const [agentExtension, setAgentExtension] = useState("");
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [tempExtension, setTempExtension] = useState("");
 
   // Admin Auth Modal State
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -57,6 +60,17 @@ export default function AdminRegisterUserPage() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleSaveExtension = async (userId: number) => {
+    try {
+      await api.post("/auth/admin/update-extension", { userId, agent_extension: tempExtension });
+      toast.success("Extension updated successfully!");
+      setEditingUserId(null);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update extension.");
+    }
+  };
 
   const handleInitialSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -115,6 +129,7 @@ export default function AdminRegisterUserPage() {
         role,
         adminUsername,
         adminPassword,
+        agent_extension: agentExtension || undefined,
       });
       toast.success("Account created successfully!");
       fetchUsers();
@@ -123,6 +138,7 @@ export default function AdminRegisterUserPage() {
       setNewPassword("");
       setConfirmPassword("");
       setRole("operator");
+      setAgentExtension("");
       setShowAdminModal(false);
       setAdminPassword("");
     } catch (err: any) {
@@ -248,6 +264,19 @@ export default function AdminRegisterUserPage() {
               </select>
             </div>
 
+            {role === "calling_agent" && (
+              <div className="space-y-1.5 animate-slide-up">
+                <label className="text-xs font-medium text-muted uppercase tracking-wider">3CX Extension</label>
+                <input
+                  type="text"
+                  value={agentExtension}
+                  onChange={(e) => setAgentExtension(e.target.value)}
+                  className="input w-full"
+                  placeholder="e.g. 101"
+                />
+              </div>
+            )}
+
             {role === "customer" && (
               <>
                 <div className="space-y-1.5 animate-slide-up">
@@ -333,6 +362,7 @@ export default function AdminRegisterUserPage() {
                     <th>USERNAME</th>
                     <th>ROLE</th>
                     <th>EMAIL / SMTP</th>
+                    <th>3CX EXTENSION</th>
                     <th>STATUS</th>
                     <th className="text-right">ACTIONS</th>
                   </tr>
@@ -381,6 +411,51 @@ export default function AdminRegisterUserPage() {
                               </div>
                             ) : (
                               <span className="text-xs text-muted/50 italic">Not Configured</span>
+                            )}
+                          </td>
+                          <td>
+                            {editingUserId === u.id ? (
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  type="text"
+                                  className="input text-xs py-1 px-2 w-20"
+                                  value={tempExtension}
+                                  onChange={(e) => setTempExtension(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSaveExtension(u.id);
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveExtension(u.id)}
+                                  className="text-xs text-emerald font-semibold hover:text-emerald-bright"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingUserId(null)}
+                                  className="text-xs text-rose hover:text-rose-bright"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 group/ext">
+                                <span className="text-xs">{u.agent_extension || "—"}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingUserId(u.id);
+                                    setTempExtension(u.agent_extension || "");
+                                  }}
+                                  className="text-muted hover:text-primary opacity-0 group-hover/ext:opacity-100 transition-opacity text-xs"
+                                  title="Edit extension"
+                                >
+                                  ✏️
+                                </button>
+                              </div>
                             )}
                           </td>
                           <td>

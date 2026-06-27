@@ -176,7 +176,7 @@ const me = async (req, res, next) => {
  */
 const register = async (req, res, next) => {
   try {
-    const { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword } = req.body;
+    const { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword, agent_extension } = req.body;
 
     if (role === 'customer') {
       if (!newUsername || !newPassword || !name || !email_address || !contact_number) {
@@ -254,8 +254,8 @@ const register = async (req, res, next) => {
     }
 
     const insertRes = await db.query(
-      'INSERT INTO users (username, password_hash, role, name, email_address, contact_number, customer_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, username, role, customer_id',
-      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId]
+      'INSERT INTO users (username, password_hash, role, name, email_address, contact_number, customer_id, agent_extension) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, customer_id',
+      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null]
     );
 
     // 4. Create and seed user-specific tables
@@ -395,8 +395,8 @@ const getAdminUsers = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Forbidden. Admin only.' });
     }
     const result = await db.query(
-      `SELECT id, username, role, email_address, is_stalled,
-              (email_password IS NOT NULL AND email_password != '') AS has_password 
+      `SELECT id, username, role, email_address, is_stalled, agent_extension,
+              (email_password IS NOT NULL AND email_password != '') as has_password
        FROM users 
        ORDER BY role, username`
     );
@@ -660,7 +660,27 @@ const toggleStallUser = async (req, res, next) => {
   }
 };
 
+const updateUserExtension = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Forbidden. Admin only.' });
+    }
+    const { userId, agent_extension } = req.body;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required.' });
+    }
+    await db.query(
+      "UPDATE users SET agent_extension = $1 WHERE id = $2",
+      [agent_extension ? agent_extension.trim() : null, userId]
+    );
+    res.json({ success: true, message: 'Agent extension updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
-  getAdminUsers, updateAdminUserEmail, getOperatorsList, createAdminOperator, deleteAdminUser, toggleStallUser
+  getAdminUsers, updateAdminUserEmail, getOperatorsList, createAdminOperator, deleteAdminUser, toggleStallUser,
+  updateUserExtension
 };

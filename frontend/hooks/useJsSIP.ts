@@ -20,35 +20,42 @@ export function useJsSIP() {
   const register = useCallback((config: SIPConfig) => {
     if (!config.wssUrl || !config.extension || !config.password) return;
     
-    // Extract domain from WSS URL if possible
-    let domain = config.wssUrl.replace('wss://', '').replace('ws://', '').split(':')[0];
-    if (domain.includes('/')) domain = domain.split('/')[0];
-    
-    const uri = `sip:${config.extension}@${domain}`;
-    
-    const socket = new JsSIP.WebSocketInterface(config.wssUrl);
-    const configuration = {
-      sockets: [socket],
-      uri: uri,
-      password: config.password,
-      register: true,
-      session_timers: false,
-    };
-
-    if (uaRef.current) {
-      uaRef.current.stop();
+    if (!config.wssUrl.startsWith('ws://') && !config.wssUrl.startsWith('wss://')) {
+      console.warn('[SIP Client] Invalid WebSocket URL:', config.wssUrl);
+      setStatus('registration_failed');
+      return;
     }
+    
+    try {
+      // Extract domain from WSS URL if possible
+      let domain = config.wssUrl.replace('wss://', '').replace('ws://', '').split(':')[0];
+      if (domain.includes('/')) domain = domain.split('/')[0];
+      
+      const uri = `sip:${config.extension}@${domain}`;
+      
+      const socket = new JsSIP.WebSocketInterface(config.wssUrl);
+      const configuration = {
+        sockets: [socket],
+        uri: uri,
+        password: config.password,
+        register: true,
+        session_timers: false,
+      };
 
-    const ua = new JsSIP.UA(configuration);
-    uaRef.current = ua;
+      if (uaRef.current) {
+        uaRef.current.stop();
+      }
 
-    ua.on('connecting', () => setStatus('connecting'));
-    ua.on('connected', () => setStatus('connected'));
-    ua.on('disconnected', () => setStatus('disconnected'));
-    ua.on('registered', () => setStatus('registered'));
-    ua.on('registrationFailed', () => setStatus('registration_failed'));
+      const ua = new JsSIP.UA(configuration);
+      uaRef.current = ua;
 
-    ua.on('newRTCSession', (data: any) => {
+      ua.on('connecting', () => setStatus('connecting'));
+      ua.on('connected', () => setStatus('connected'));
+      ua.on('disconnected', () => setStatus('disconnected'));
+      ua.on('registered', () => setStatus('registered'));
+      ua.on('registrationFailed', () => setStatus('registration_failed'));
+
+      ua.on('newRTCSession', (data: any) => {
       const { session, originator } = data;
       
       if (sessionRef.current && sessionRef.current !== session) {
@@ -87,7 +94,11 @@ export function useJsSIP() {
       session.on('failed', () => handleCallEnd());
     });
 
-    ua.start();
+      ua.start();
+    } catch (err) {
+      console.error('[SIP Client] Initialization error:', err);
+      setStatus('registration_failed');
+    }
   }, []);
 
   const unregister = useCallback(() => {
