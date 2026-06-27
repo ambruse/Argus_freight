@@ -48,7 +48,7 @@ export function useJsSIP() {
     ua.on('registered', () => setStatus('registered'));
     ua.on('registrationFailed', () => setStatus('registration_failed'));
 
-    ua.on('newRTCSession', (data) => {
+    ua.on('newRTCSession', (data: any) => {
       const { session, originator } = data;
       
       if (sessionRef.current && sessionRef.current !== session) {
@@ -74,7 +74,7 @@ export function useJsSIP() {
         // Setup remote audio
         const connection = session.connection;
         if (connection) {
-          connection.addEventListener('track', (e) => {
+          connection.addEventListener('track', (e: any) => {
             if (remoteAudioRef.current && e.streams[0]) {
               remoteAudioRef.current.srcObject = e.streams[0];
               remoteAudioRef.current.play().catch(console.error);
