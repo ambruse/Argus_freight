@@ -81,11 +81,14 @@ const generateRfq = async (req, res, next) => {
       }
     }
 
+    ref_no = req.body.ref_no;
+
     while (!isLogged && attempts < maxAttempts) {
-      const baseRfq = generateId();
-      
-      // Fallback for collision (mimicking Python logic)
-      ref_no = attempts > 0 ? `${baseRfq}_${attempts}` : baseRfq;
+      if (!ref_no) {
+        const baseRfq = generateId();
+        // Fallback for collision (mimicking Python logic)
+        ref_no = attempts > 0 ? `${baseRfq}_${attempts}` : baseRfq;
+      }
 
       try {
         const result = await query(req,
@@ -167,8 +170,13 @@ const generateRfq = async (req, res, next) => {
           }
         }
       } catch (err) {
+        if (req.body.ref_no) {
+          // If custom reference number failed, return error immediately
+          return res.status(409).json({ success: false, message: `Reference number ${ref_no} already exists.` });
+        }
         // 23505 is PostgreSQL unique violation code
         if (err.code === '23505') {
+          ref_no = '';
           attempts++;
         } else {
           throw err;

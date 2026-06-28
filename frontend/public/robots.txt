@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /services
+Allow: /why-us
+Allow: /team
+Allow: /contact
+Allow: /chairman-message
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /rfq
+Disallow: /confirmed
+Disallow: /admin
+Disallow: /sales
+Disallow: /settings
+
+Sitemap: https://argus-freight.onrender.com/sitemap.xml

@@ -84,7 +84,7 @@ export default function NewRFQPage() {
   const [termSelect, setTermSelect] = useState("");
 
   useEffect(() => {
-    if (["EXW", "FOB", "DDU"].includes(form.term)) {
+    if (["EXW", "FOB", "CIF", "DDP", "FCA"].includes(form.term)) {
       setTermSelect(form.term);
     } else if (form.term === "") {
       setTermSelect("");
@@ -266,10 +266,27 @@ export default function NewRFQPage() {
       resolvedRecipients = [{ email: form.email, dear_who: form.dear_who }];
     }
 
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yy = String(now.getFullYear()).slice(-2);
+    
+    const randomLetters = () => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)];
+    };
+    
+    const xx1 = randomLetters();
+    const xx2 = randomLetters();
+    const basePrefix = `${dd}${xx1}${mm}${xx2}${yy}`;
+
     setSubmitting(true);
     try {
       // Send to each recipient separately so it logs as multiple sends in RFQ sent
+      let index = 0;
       for (const recipient of resolvedRecipients) {
+        const nn = String(index + 1).padStart(2, "0");
+        const customRef = `${basePrefix}-${nn}`;
         // 1. Generate RFQ and Log to Database
         const payload = {
           ...form,
@@ -277,6 +294,7 @@ export default function NewRFQPage() {
           dear_who: recipient.dear_who,
           pol: targetPol,
           operator: isSales && selectedOperator ? selectedOperator.name : undefined,
+          ref_no: customRef,
         };
 
         const genRes = await api.post("/rfq/generate", payload);
@@ -299,6 +317,7 @@ export default function NewRFQPage() {
         await api.post(`/rfq/${ref_no}/send-email`, {
           cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
         });
+        index++;
       }
 
       toast.success(isSales 
@@ -440,15 +459,33 @@ export default function NewRFQPage() {
 
     const targetPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
 
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yy = String(now.getFullYear()).slice(-2);
+    
+    const randomLetters = () => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)];
+    };
+    
+    const xx1 = randomLetters();
+    const xx2 = randomLetters();
+    const basePrefix = `${dd}${xx1}${mm}${xx2}${yy}`;
+
     setSubmitting(true);
     try {
+      let index = 0;
       for (const recipient of unique) {
+        const nn = String(index + 1).padStart(2, "0");
+        const customRef = `${basePrefix}-${nn}`;
         // 1. Generate RFQ and Log to Database
         const payload = {
           ...form,
           email: recipient.email,
           dear_who: recipient.dear_who,
           pol: targetPol,
+          ref_no: customRef,
         };
 
         const genRes = await api.post("/rfq/generate", payload);
@@ -470,6 +507,7 @@ export default function NewRFQPage() {
         await api.post(`/rfq/${ref_no}/send-email`, {
           cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
         });
+        index++;
       }
 
       toast.success(`RFQs successfully generated and emailed to ${unique.length} matching agents.`);
@@ -617,7 +655,7 @@ export default function NewRFQPage() {
                       <option value="Air">Air</option>
                       <option value="Sea">Sea</option>
                     </select>
-                  ) : f.name === "term" && isSales ? (
+                  ) : f.name === "term" ? (
                     <div className="space-y-2">
                       <select
                         value={termSelect}
@@ -634,17 +672,19 @@ export default function NewRFQPage() {
                         className="select w-full"
                       >
                         <option value="">— Select term —</option>
-                        <option value="EXW">EXW</option>
                         <option value="FOB">FOB</option>
-                        <option value="DDU">DDU</option>
-                        <option value="other">Other</option>
+                        <option value="EXW">EXW</option>
+                        <option value="CIF">CIF</option>
+                        <option value="DDP">DDP</option>
+                        <option value="FCA">FCA</option>
+                        <option value="other">Other Terms</option>
                       </select>
                       {termSelect === "other" && (
                         <input
                           type="text"
                           value={form.term}
                           onChange={(e) => setForm(prev => ({ ...prev, term: e.target.value }))}
-                          placeholder="Enter custom term (e.g. CIF, DDP)..."
+                          placeholder="Enter custom term (e.g. DDU, CIP)..."
                           className="input w-full mt-2"
                         />
                       )}
@@ -807,10 +847,17 @@ export default function NewRFQPage() {
                     </label>
 
                     {(() => {
+                      const seenEmails = new Set();
                       const normal = [
                         ...normalOperators,
                         ...ccOptions.filter(r => !r.multi_select)
-                      ];
+                      ].filter(item => {
+                        const emailLower = item.email?.toLowerCase().trim();
+                        if (!emailLower) return false;
+                        if (seenEmails.has(emailLower)) return false;
+                        seenEmails.add(emailLower);
+                        return true;
+                      });
                       const extras = ccOptions.filter(r => r.multi_select);
 
                       const handleChipClick = (recipient: CcRecipient) => {

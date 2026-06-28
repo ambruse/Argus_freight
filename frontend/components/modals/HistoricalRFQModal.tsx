@@ -56,6 +56,18 @@ export default function HistoricalRFQModal({ isOpen, onClose, onCreated }: Props
     }
   }, [isOpen]);
 
+  const [termSelect, setTermSelect] = useState("");
+
+  useEffect(() => {
+    if (form.term && ["FOB", "EXW", "CIF", "DDP", "FCA"].includes(form.term)) {
+      setTermSelect(form.term);
+    } else if (!form.term) {
+      setTermSelect("");
+    } else {
+      setTermSelect("other");
+    }
+  }, [form.term]);
+
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -133,13 +145,48 @@ export default function HistoricalRFQModal({ isOpen, onClose, onCreated }: Props
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
                     {f.label}
                   </label>
-                  <input
-                    name={f.name}
-                    value={(form as any)[f.name]}
-                    onChange={handleChange}
-                    className="input w-full"
-                    placeholder={`Enter ${f.label.toLowerCase()}...`}
-                  />
+                  {f.name === "term" ? (
+                    <div className="space-y-2">
+                      <select
+                        value={termSelect}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTermSelect(val);
+                          if (val !== "other") {
+                            setForm(prev => ({ ...prev, term: val }));
+                          } else {
+                            setForm(prev => ({ ...prev, term: "" }));
+                          }
+                        }}
+                        className="select w-full"
+                      >
+                        <option value="">— Select term —</option>
+                        <option value="FOB">FOB</option>
+                        <option value="EXW">EXW</option>
+                        <option value="CIF">CIF</option>
+                        <option value="DDP">DDP</option>
+                        <option value="FCA">FCA</option>
+                        <option value="other">Other Terms</option>
+                      </select>
+                      {termSelect === "other" && (
+                        <input
+                          type="text"
+                          value={form.term}
+                          onChange={(e) => setForm(prev => ({ ...prev, term: e.target.value }))}
+                          placeholder="Enter custom term (e.g. DDU, CIP)..."
+                          className="input w-full mt-2"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      name={f.name}
+                      value={(form as any)[f.name]}
+                      onChange={handleChange}
+                      className="input w-full"
+                      placeholder={`Enter ${f.label.toLowerCase()}...`}
+                    />
+                  )}
                 </div>
               ))}
               <div className="md:col-span-2">

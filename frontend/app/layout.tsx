@@ -12,7 +12,47 @@ export const metadata: Metadata = {
   title: "ARGUS — Cargo & RFQ Management",
   description:
     "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
-  keywords: ["freight", "RFQ", "cargo", "shipping", "logistics"],
+  keywords: [
+    "Argus Shipping", "ARGUS shipping", "Argus", "AR", "air freight services", 
+    "international air cargo", "express air freight", "air freight forwarder", 
+    "expedited air shipping", "ocean freight forwarding", "sea cargo services", 
+    "international sea freight", "maritime shipping company", "FCL shipping", 
+    "full container load logistics", "FCL freight rates", "FCL export services", 
+    "FCL ocean transport", "LCL shipping", "less than container load", 
+    "LCL consolidation", "groupage shipping", "LCL cargo forwarding", 
+    "shipping from China", "China freight forwarder", "sea freight China to worldwide", 
+    "import from China logistics", "Turkey logistics", "shipping to Turkey", 
+    "Turkey air freight", "export shipping Turkey", "Istanbul freight forwarder", 
+    "Saudi Arabia shipping", "freight forwarding to Saudi", "customs clearance Saudi", 
+    "Jeddah cargo shipping", "Qatar freight forwarder", "shipping to Doha", 
+    "Qatar logistics company", "import services Qatar", "Indonesia shipping", 
+    "Jakarta freight forwarder", "export logistics Indonesia", "sea freight to Indonesia", 
+    "Philippines freight forwarding", "sea cargo Manila", "shipping to Philippines", 
+    "import logistics Philippines", "global shipping company", "worldwide freight forwarder", 
+    "international cargo transport", "global supply chain logistics", "general cargo shipping", 
+    "commercial goods freight", "consumer goods logistics", "B2B commodity shipping", 
+    "hazardous materials shipping", "temperature-controlled freight", "oversized cargo transport", 
+    "heavy lift shipping", "automotive logistics", "electronics freight forwarding", 
+    "textile shipping", "industrial equipment transport", "door-to-door shipping", 
+    "port-to-port freight", "warehousing and distribution", "supply chain management", 
+    "customs brokerage services", "import clearance", "export documentation", 
+    "tariff classification", "DDP shipping services", "EXW freight forwarding", 
+    "FOB shipping rates", "CIF cargo transport", "Logistics Doha Qatar", 
+    "Land Freight", "Relocation Services", "3PL Logistics", "Vehicle Logistics"
+  ],
+  openGraph: {
+    type: "website",
+    url: "https://argus-freight.onrender.com/",
+    title: "ARGUS — Cargo & RFQ Management",
+    description: "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
+    images: [{ url: "https://argus-freight.onrender.com/logo.png" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ARGUS — Cargo & RFQ Management",
+    description: "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
+    images: ["https://argus-freight.onrender.com/logo.png"],
+  }
 };
 
 export default function RootLayout({

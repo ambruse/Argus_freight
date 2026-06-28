@@ -45,7 +45,7 @@ export default function CustomerNewRFQPage() {
   const [termSelect, setTermSelect] = useState("");
 
   useEffect(() => {
-    if (["EXW", "FOB", "DDU"].includes(form.term)) {
+    if (["EXW", "FOB", "CIF", "DDP", "FCA"].includes(form.term)) {
       setTermSelect(form.term);
     } else if (form.term === "") {
       setTermSelect("");
@@ -277,17 +277,19 @@ export default function CustomerNewRFQPage() {
                         className="select w-full"
                       >
                         <option value="">— Select term —</option>
-                        <option value="EXW">EXW</option>
                         <option value="FOB">FOB</option>
-                        <option value="DDU">DDU</option>
-                        <option value="other">Other</option>
+                        <option value="EXW">EXW</option>
+                        <option value="CIF">CIF</option>
+                        <option value="DDP">DDP</option>
+                        <option value="FCA">FCA</option>
+                        <option value="other">Other Terms</option>
                       </select>
                       {termSelect === "other" && (
                         <input
                           type="text"
                           value={form.term}
                           onChange={(e) => setForm(prev => ({ ...prev, term: e.target.value }))}
-                          placeholder="Enter custom term (e.g. CIF, DDP)..."
+                          placeholder="Enter custom term (e.g. DDU, CIP)..."
                           className="input w-full mt-2"
                         />
                       )}

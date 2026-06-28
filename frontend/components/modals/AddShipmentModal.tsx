@@ -4,7 +4,7 @@
 //  Form to create a new shipment (Direct Booking or RFQ).
 //  If REF NO is blank, backend auto-generates ARG-XXXX.
 // ─────────────────────────────────────────────────────────────
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import Modal from "@/components/ui/Modal";
 import api from "@/lib/api";
 import { Shipment } from "@/types";
@@ -17,7 +17,6 @@ interface Props {
 }
 
 const MODES  = ["SEA", "AIR", "LAND", "RAIL"];
-const TERMS  = ["FOB", "CIF", "EXW", "DAP", "DDP", "CFR", "FCA"];
 
 const INITIAL: Partial<Shipment> & { note: string; profit: string } = {
   ref_no: "", refer_by: "", pol: "", pod: "",
@@ -32,6 +31,17 @@ const INITIAL: Partial<Shipment> & { note: string; profit: string } = {
 export default function AddShipmentModal({ isOpen, onClose, onCreated }: Props) {
   const [form,    setForm]    = useState<typeof INITIAL>(INITIAL);
   const [saving,  setSaving]  = useState(false);
+  const [termSelect, setTermSelect] = useState("FOB");
+
+  useEffect(() => {
+    if (form.term && ["FOB", "EXW", "CIF", "DDP", "FCA"].includes(form.term)) {
+      setTermSelect(form.term);
+    } else if (!form.term) {
+      setTermSelect("");
+    } else {
+      setTermSelect("other");
+    }
+  }, [form.term]);
 
   const set = (k: keyof typeof INITIAL) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -120,9 +130,36 @@ export default function AddShipmentModal({ isOpen, onClose, onCreated }: Props) 
           </div>
           <div>
             <Label>Term</Label>
-            <select className="select" value={(form.term as string) || "FOB"} onChange={set("term")}>
-              {TERMS.map((t) => <option key={t}>{t}</option>)}
+            <select
+              className="select"
+              value={termSelect}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTermSelect(val);
+                if (val !== "other") {
+                  setForm(f => ({ ...f, term: val }));
+                } else {
+                  setForm(f => ({ ...f, term: "" }));
+                }
+              }}
+            >
+              <option value="">— Select term —</option>
+              <option value="FOB">FOB</option>
+              <option value="EXW">EXW</option>
+              <option value="CIF">CIF</option>
+              <option value="DDP">DDP</option>
+              <option value="FCA">FCA</option>
+              <option value="other">Other Terms</option>
             </select>
+            {termSelect === "other" && (
+              <input
+                type="text"
+                className="input mt-2 animate-fade-in"
+                value={form.term || ""}
+                onChange={(e) => setForm(f => ({ ...f, term: e.target.value }))}
+                placeholder="Enter custom term (e.g. DDU, CIP)..."
+              />
+            )}
           </div>
           <div>
             <Label>Commodity</Label>

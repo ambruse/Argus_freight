@@ -669,7 +669,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       )}
 
       {/* Chat Box Section */}
-      {shipment.customer_id && (
+      {shipment.customer_id && shipment.cust_req_no && (
         <div className="border-t border-white/[0.06] pt-5 mb-6">
           <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">
             {user?.role === "customer" ? "💬 Chat with Operator" : "💬 Chat with Customer"}

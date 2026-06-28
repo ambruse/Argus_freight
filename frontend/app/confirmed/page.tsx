@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const SkeletonRow = () => (
   <tr className="border-b border-white/[0.04]">
-    {Array.from({ length: 18 }).map((_, i) => (
+    {Array.from({ length: 21 }).map((_, i) => (
       <td key={i} className="px-4 py-3">
         <div className="h-4 rounded-full bg-white/[0.04] animate-pulse" style={{ width: `${50 + (i % 5) * 15}%` }} />
       </td>
@@ -195,6 +195,9 @@ export default function ConfirmedPage() {
             <thead>
               <tr>
                 <th>REF NO</th>
+                <th>RFQ NO</th>
+                <th>CUSTOMER NAME</th>
+                <th>DEAR WHO</th>
                 <th>OPERATOR</th>
                 <th>CUSTOMER ID</th>
                 <th>POL</th>
@@ -220,7 +223,7 @@ export default function ConfirmedPage() {
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={19} className="text-center py-16 text-muted">
+                  <td colSpan={22} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📦</p>
                       <p className="text-sm">No confirmed shipments found.</p>
@@ -245,6 +248,17 @@ export default function ConfirmedPage() {
                         {s.ref_no}
                       </span>
                     </td>
+                    <td>
+                      {s.cust_req_no ? (
+                        <span className="font-mono text-xs text-muted/80 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
+                          {s.cust_req_no}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="text-xs font-medium">{s.customer_name ?? "—"}</td>
+                    <td className="text-xs text-muted/90">{s.dear_who ?? "—"}</td>
                     <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
                     <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{s.customer_id ?? "—"}</td>
                     <td>{s.pol ?? "—"}</td>
