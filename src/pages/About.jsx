@@ -34,7 +34,7 @@ export default function About({ onNavigate }) {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div className="about-features-grid">
               <div className="service-card" style={{ padding: '2rem', textAlign: 'center' }}>
                 <Globe2 size={40} className="logo-gold" style={{ margin: '0 auto 1rem auto' }} />
                 <h4>Global Presence</h4>

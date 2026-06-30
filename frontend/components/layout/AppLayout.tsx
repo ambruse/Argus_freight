@@ -36,7 +36,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
     } else {
       const currentUser = authStorage.getUser();
       if (currentUser?.role === "sales") {
-        if (pathname === "/dashboard" || pathname.startsWith("/contacts")) {
+        if (pathname.startsWith("/contacts")) {
           router.replace("/rfq/new");
         }
       }
@@ -48,7 +48,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }
   ];
 
-  let otherItems: { href: string; label: string; icon: any }[] = [];
+  let otherItems: { href?: string; label: string; icon: any; onClick?: () => void }[] = [];
   const showOtherTab = user?.role === "operator" || user?.role === "admin" || user?.role === "sales";
 
   if (user?.role === "customer") {
@@ -58,19 +58,6 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/customer/rfq", label: "History", icon: ClipboardList },
       { href: "/settings", label: "Settings", icon: Settings },
     ];
-  } else if (user?.role === "sales") {
-    roleItems = [
-      { href: "/rfq/new", label: "New RFQ", icon: PlusCircle },
-      { href: "/rfq", label: "Sent RFQs", icon: ClipboardList },
-      { href: "/confirmed", label: "Confirmed", icon: ClipboardList },
-    ];
-    otherItems = [
-      { href: "/summary", label: "Summary", icon: BarChart2 },
-      { href: "/sales/call-enquiries", label: "Assigned Calls", icon: PhoneCall },
-      { href: "/quotation", label: "Quotation", icon: FileText },
-      { href: "/customers", label: "Customer Book", icon: BookOpen },
-      { href: "/settings", label: "Settings", icon: Settings },
-    ];
   } else if (user?.role === "calling_agent") {
     roleItems = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -78,11 +65,27 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/calling-agent/enquiries", label: "Enquiries", icon: ClipboardList },
       { href: "/settings", label: "Settings", icon: Settings },
     ];
+  } else if (user?.role === "sales") {
+    roleItems = [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/rfq/new", label: "New RFQ", icon: PlusCircle },
+      { href: "/rfq", label: "Sent RFQs", icon: ClipboardList },
+      { href: "/confirmed", label: "Confirmed", icon: CheckSquare },
+    ];
+    otherItems = [
+      { href: "/summary", label: "Summary", icon: BarChart2 },
+      { href: "/sales/call-enquiries", label: "Assigned Calls", icon: PhoneCall },
+      { href: "/quotation", label: "Quotation", icon: FileText },
+      { href: "/customers", label: "Customer Book", icon: BookOpen },
+      { href: "/settings", label: "Settings", icon: Settings },
+      { label: "Logout", icon: LogOut, onClick: logout }
+    ];
   } else if (user?.role === "operator") {
     roleItems = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/rfq/new", label: "New RFQ", icon: PlusCircle },
       { href: "/rfq", label: "Sent RFQs", icon: ClipboardList },
-      { href: "/confirmed", label: "Confirmed", icon: ClipboardList },
+      { href: "/confirmed", label: "Confirmed", icon: CheckSquare },
     ];
     otherItems = [
       { href: "/summary", label: "Summary", icon: BarChart2 },
@@ -90,12 +93,14 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/customers", label: "Customer Book", icon: BookOpen },
       { href: "/quotation", label: "Quotation", icon: FileText },
       { href: "/settings", label: "Settings", icon: Settings },
+      { label: "Logout", icon: LogOut, onClick: logout }
     ];
   } else if (user?.role === "admin") {
     roleItems = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/rfq/new", label: "New RFQ", icon: PlusCircle },
       { href: "/rfq", label: "Sent RFQs", icon: ClipboardList },
-      { href: "/confirmed", label: "Confirmed", icon: ClipboardList },
+      { href: "/confirmed", label: "Confirmed", icon: CheckSquare },
     ];
     otherItems = [
       { href: "/summary", label: "Summary", icon: BarChart2 },
@@ -106,15 +111,16 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/admin/register", label: "Register User", icon: UserPlus },
       { href: "/admin/quotations", label: "Approve Quotes", icon: CheckSquare },
       { href: "/settings", label: "Settings", icon: Settings },
+      { label: "Logout", icon: LogOut, onClick: logout }
     ];
   }
 
-  // Prepend Home and append Logout
+  // Prepend Home and append Logout only for non-other-tab roles (customer, calling_agent)
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     ...roleItems,
     ...(showOtherTab ? [{ label: "Other", icon: MoreHorizontal, onClick: () => setIsOtherOpen(!isOtherOpen) }] : []),
-    { label: "Logout", icon: LogOut, onClick: logout }
+    ...(!showOtherTab ? [{ label: "Logout", icon: LogOut, onClick: logout }] : [])
   ];
 
   return (
@@ -201,11 +207,34 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
           >
             {otherItems.map((item) => {
               const ItemIcon = item.icon;
-              const isItemActive = pathname === item.href;
+              const isItemActive = item.href ? pathname === item.href : false;
+              
+              const itemContent = (
+                <>
+                  <ItemIcon size={16} className={isItemActive ? "text-[#F5B037]" : "text-slate-400"} />
+                  <span className="text-xs font-medium truncate">{item.label}</span>
+                </>
+              );
+
+              if (item.onClick) {
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      setIsOtherOpen(false);
+                      item.onClick?.();
+                    }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04] text-slate-300 transition-all text-left"
+                  >
+                    {itemContent}
+                  </button>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={item.href || "#"}
                   onClick={() => setIsOtherOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
                     isItemActive 
@@ -213,8 +242,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
                       : "bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04] text-slate-300"
                   }`}
                 >
-                  <ItemIcon size={16} className={isItemActive ? "text-[#F5B037]" : "text-slate-400"} />
-                  <span className="text-xs font-medium truncate">{item.label}</span>
+                  {itemContent}
                 </Link>
               );
             })}
@@ -236,7 +264,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
             // Check active state
             let isActive = false;
             if (item.label === "Other") {
-              isActive = otherItems.some((other) => pathname === other.href);
+              isActive = otherItems.some((other) => other.href && pathname === other.href);
             } else if (item.href === "/customer/rfq" || item.href === "/rfq") {
               isActive = pathname === item.href;
             } else {

@@ -2488,3 +2488,74 @@ body.light-theme .footer-location-card:hover {
     display: none !important;
   }
 }
+
+/* ── About Features Grid ───────────────────────────────────── */
+.about-features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+@media (max-width: 580px) {
+  .about-features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+}
+
+/* ── Mobile-First Alignment & Centering Improvements ────────── */
+@media (max-width: 768px) {
+  /* Center Hero logo block */
+  .hero-logo-img {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  /* Center About & Why Us generic text block contents */
+  .about-content,
+  .about-content p,
+  .about-content h2,
+  .about-content h3,
+  .about-content h4 {
+    text-align: center !important;
+  }
+  
+  .about-content .cta-button {
+    align-self: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  .about-stats {
+    justify-content: center !important;
+  }
+
+  /* Center Why Us Feature items */
+  .why-feature-item {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  /* Center Service Cards */
+  .service-card {
+    text-align: center !important;
+    align-items: center !important;
+  }
+  .service-icon-container {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Center Chairman Message Quote Card */
+  .chairman-message-card {
+    text-align: center !important;
+  }
+
+  /* Center Contact detail cards */
+  .contact-detail-item {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+}
+

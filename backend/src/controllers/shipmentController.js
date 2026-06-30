@@ -1068,18 +1068,23 @@ const sendQuotation = async (req, res, next) => {
             resolve();
           });
         } else {
-          // Linux / Render fallback using soffice / headless LibreOffice
-          exec(`soffice --headless --convert-to pdf --outdir "${path.dirname(absolutePdf)}" "${absoluteDocx}"`, (err, stdout, stderr) => {
-            if (err) {
-              return reject(new Error(err.message));
-            }
-            const generatedPdfName = path.basename(absoluteDocx).replace(/\.docx$/, '.pdf');
-            const generatedPdfPath = path.join(path.dirname(absolutePdf), generatedPdfName);
-            if (generatedPdfPath !== absolutePdf && fs.existsSync(generatedPdfPath)) {
-              fs.renameSync(generatedPdfPath, absolutePdf);
-            }
-            resolve();
-          });
+          // Linux / Render conversion using libreoffice-convert
+          const libre = require('libreoffice-convert');
+          const convertToPdfAsync = require('util').promisify(libre.convert);
+          
+          try {
+            const docxFileToConvert = fs.readFileSync(absoluteDocx);
+            convertToPdfAsync(docxFileToConvert, '.pdf', undefined)
+              .then(pdfBuffer => {
+                fs.writeFileSync(absolutePdf, pdfBuffer);
+                resolve();
+              })
+              .catch(err => {
+                reject(err);
+              });
+          } catch (readErr) {
+            reject(readErr);
+          }
         }
       });
     };
@@ -1306,6 +1311,13 @@ const sendQuotation = async (req, res, next) => {
       message: 'Quotation sent successfully.'
     });
   } catch (err) {
+    if (typeof tempDocxPath !== 'undefined' && fs.existsSync(tempDocxPath)) {
+      try {
+        fs.unlinkSync(tempDocxPath);
+      } catch (e) {
+        console.error("Failed to delete temporary docx in catch:", e);
+      }
+    }
     next(err);
   }
 };
