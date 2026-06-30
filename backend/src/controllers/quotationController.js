@@ -239,11 +239,22 @@ const generateQuotation = async (req, res, next) => {
         } else {
           // Linux / Render conversion using libreoffice-convert
           const libre = require('libreoffice-convert');
-          const convertToPdfAsync = require('util').promisify(libre.convert);
+          const convertWithOptionsAsync = require('util').promisify(libre.convertWithOptions);
           
           try {
+            // Find soffice in PATH
+            const sofficePaths = [];
+            const pathEnv = process.env.PATH || '';
+            const dirs = pathEnv.split(':');
+            for (const dir of dirs) {
+              const p = path.join(dir, 'soffice');
+              if (fs.existsSync(p)) {
+                sofficePaths.push(p);
+              }
+            }
+
             const docxFileToConvert = fs.readFileSync(absoluteDocx);
-            convertToPdfAsync(docxFileToConvert, '.pdf', undefined)
+            convertWithOptionsAsync(docxFileToConvert, '.pdf', undefined, { sofficeBinaryPaths: sofficePaths })
               .then(pdfBuffer => {
                 fs.writeFileSync(absolutePdf, pdfBuffer);
                 resolve();
