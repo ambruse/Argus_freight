@@ -127,6 +127,29 @@ export default function NewRFQPage() {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter") {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "SELECT"
+      ) {
+        e.preventDefault();
+        // Find all focusable form controls in this outer container
+        const formElements = Array.from(
+          e.currentTarget.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+            "input:not([disabled]), select:not([disabled]), textarea:not([disabled])"
+          )
+        );
+        
+        const index = formElements.indexOf(target as any);
+        if (index > -1 && index < formElements.length - 1) {
+          formElements[index + 1].focus();
+        }
+      }
+    }
+  };
+
   // ── Form Actions ────────────────────────────────────────────
   const handleClear = () => {
     setForm(INITIAL_FORM);
@@ -571,7 +594,7 @@ export default function NewRFQPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         
         {/* ── Main Form Container ────────────────────────────── */}
-        <div className="glass rounded-2xl p-6 shadow-card space-y-8 animate-fade-in">
+        <div className="glass rounded-2xl p-6 shadow-card space-y-8 animate-fade-in" onKeyDown={handleKeyDown}>
           
           <div className="glass rounded-2xl p-6 shadow-card relative z-30">
             <h3 className="text-sm font-semibold uppercase tracking-widest text-muted border-b border-white/[0.06] pb-2 mb-4">
@@ -623,6 +646,7 @@ export default function NewRFQPage() {
                       placeholder={`Select or type ${f.label.toLowerCase()}...`}
                       mode={form.mode}
                       country={f.name === "pol" ? form.pol_country : undefined}
+                      isPod={f.name === "pod"}
                     />
                   ) : f.name === "pol_country" ? (
                     <select

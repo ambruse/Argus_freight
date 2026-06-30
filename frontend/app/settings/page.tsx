@@ -23,6 +23,16 @@ export default function SettingsPage() {
   const [savingEmail, setSavingEmail] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
 
+  // ── Customer settings fields ──────────────────────────────
+  const [profileName, setProfileName] = useState("");
+  const [profileEmailAddress, setProfileEmailAddress] = useState("");
+  const [profileContactNumber, setProfileContactNumber] = useState("");
+  const [profileAddress, setProfileAddress] = useState("");
+  const [profileCompany, setProfileCompany] = useState("");
+  const [profileCompanyAddress, setProfileCompanyAddress] = useState("");
+  const [profileSecondaryPhone, setProfileSecondaryPhone] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
   // ── CC Recipients (admin only) ─────────────────────────────
   const [ccList, setCcList] = useState<CcRecipient[]>([]);
   const [ccLoading, setCcLoading] = useState(false);
@@ -69,6 +79,19 @@ export default function SettingsPage() {
         setHasPassword(res.data.data.has_password || false);
       })
       .catch(err => { console.error("Failed to load email settings", err); });
+
+    api.get("/auth/profile")
+      .then(res => {
+        const u = res.data.user;
+        setProfileName(u.name || "");
+        setProfileEmailAddress(u.email_address || "");
+        setProfileContactNumber(u.contact_number || "");
+        setProfileAddress(u.address || "");
+        setProfileCompany(u.company || "");
+        setProfileCompanyAddress(u.company_address || "");
+        setProfileSecondaryPhone(u.secondary_phone || "");
+      })
+      .catch(err => { console.error("Failed to load profile details", err); });
 
     if (user?.role === "admin") {
       api.get("/cc-recipients")
@@ -128,6 +151,27 @@ export default function SettingsPage() {
       toast.error(err.response?.data?.message || "Failed to change password.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    try {
+      await api.post("/auth/profile", {
+        name: profileName,
+        email_address: profileEmailAddress,
+        contact_number: profileContactNumber,
+        address: profileAddress,
+        company: profileCompany,
+        company_address: profileCompanyAddress,
+        secondary_phone: profileSecondaryPhone,
+      });
+      toast.success("Profile details updated successfully.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update profile details.");
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -347,6 +391,124 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* Customer Profile Settings Card */}
+        {user?.role === "customer" && (
+          <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">
+            <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
+              <span>📝</span> Profile Settings
+            </h2>
+            <p className="text-sm text-muted mb-6">Update your personal and company details in the Customer Book.</p>
+
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted/60 uppercase tracking-widest mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input w-full"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted/60 uppercase tracking-widest mb-1.5">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="input w-full"
+                    value={profileEmailAddress}
+                    onChange={(e) => setProfileEmailAddress(e.target.value)}
+                    placeholder="Enter email address"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted/60 uppercase tracking-widest mb-1.5">
+                    Primary Contact Phone
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input w-full"
+                    value={profileContactNumber}
+                    onChange={(e) => setProfileContactNumber(e.target.value)}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted/60 uppercase tracking-widest mb-1.5">
+                    Secondary Phone
+                  </label>
+                  <input
+                    type="text"
+                    className="input w-full"
+                    value={profileSecondaryPhone}
+                    onChange={(e) => setProfileSecondaryPhone(e.target.value)}
+                    placeholder="Enter secondary phone"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted/60 uppercase tracking-widest mb-1.5">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    className="input w-full"
+                    value={profileCompany}
+                    onChange={(e) => setProfileCompany(e.target.value)}
+                    placeholder="Enter company name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted/60 uppercase tracking-widest mb-1.5">
+                    Personal Address
+                  </label>
+                  <input
+                    type="text"
+                    className="input w-full"
+                    value={profileAddress}
+                    onChange={(e) => setProfileAddress(e.target.value)}
+                    placeholder="Enter personal address"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted/60 uppercase tracking-widest mb-1.5">
+                  Company Address
+                </label>
+                <textarea
+                  className="input w-full min-h-[80px]"
+                  value={profileCompanyAddress}
+                  onChange={(e) => setProfileCompanyAddress(e.target.value)}
+                  placeholder="Enter complete company address"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="btn-primary w-full justify-center"
+                >
+                  {savingProfile ? "Saving Profile..." : "Save Profile Details"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* Email Settings Card */}
         {user?.role !== "sales" && user?.role !== "customer" && (

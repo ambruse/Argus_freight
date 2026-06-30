@@ -5,7 +5,7 @@ const {
   login, me, verifyPassword, changePassword, register, 
   getEmailSettings, updateEmailSettings, getAdminUsers, 
   updateAdminUserEmail, getOperatorsList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension
+  updateUserExtension, updateProfile, getProfile
 } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { authRateLimiter } = require('../middleware/rateLimiter');
@@ -20,6 +20,10 @@ router.get('/me', authenticateToken, me);
 // Protected — password management (rate-limited)
 router.post('/verify-password', authenticateToken, authRateLimiter, verifyPassword);
 router.post('/change-password', authenticateToken, authRateLimiter, changePassword);
+
+// Protected — profile update management
+router.get('/profile', authenticateToken, getProfile);
+router.post('/profile', authenticateToken, updateProfile);
 
 // Protected — email settings management
 router.get('/email-settings', authenticateToken, getEmailSettings);

@@ -34,7 +34,14 @@ const createEnquiry = async (req, res, next) => {
     }
 
     // Assign sales person ONLY if it is a lead
-    const assigned_sales = is_lead ? await getNextSalesUser() : null;
+    const isLeadVal = is_lead || status === 'Lead';
+    const assigned_sales = isLeadVal ? await getNextSalesUser() : null;
+    if (isLeadVal && !assigned_sales) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active Sales users found in the system to assign this lead to. Please create a Sales user first.'
+      });
+    }
     const calling_agent = req.user.username;
 
     const result = await db.query(
@@ -45,7 +52,7 @@ const createEnquiry = async (req, res, next) => {
       [
         customer_name, company || null, type || null, customer_number,
         customer_email || null, customer_address || null, details, status,
-        calling_agent, assigned_sales, is_lead || false, call_duration || null
+        calling_agent, assigned_sales, isLeadVal, call_duration || null
       ]
     );
 
@@ -130,10 +137,21 @@ const updateEnquiry = async (req, res, next) => {
     }
 
     let assigned_sales = chk.rows[0].assigned_sales;
-    if (fields.is_lead !== undefined) {
-      if (fields.is_lead && !assigned_sales) {
+    let is_lead_val = fields.is_lead;
+    if (is_lead_val === undefined && fields.status !== undefined) {
+      is_lead_val = (fields.status === 'Lead');
+    }
+
+    if (is_lead_val !== undefined) {
+      if (is_lead_val && !assigned_sales) {
         assigned_sales = await getNextSalesUser();
-      } else if (!fields.is_lead) {
+        if (!assigned_sales) {
+          return res.status(400).json({
+            success: false,
+            message: 'No active Sales users found in the system to assign this lead to. Please create a Sales user first.'
+          });
+        }
+      } else if (!is_lead_val) {
         assigned_sales = null;
       }
     }
@@ -144,7 +162,7 @@ const updateEnquiry = async (req, res, next) => {
 
     const allowedFields = [
       'customer_name', 'company', 'customer_email', 'customer_address',
-      'details', 'status', 'is_lead'
+      'details', 'status'
     ];
 
     allowedFields.forEach(f => {
@@ -155,7 +173,11 @@ const updateEnquiry = async (req, res, next) => {
       }
     });
 
-    if (fields.is_lead !== undefined) {
+    if (is_lead_val !== undefined) {
+      setClauses.push(`is_lead = $${paramIndex}`);
+      values.push(is_lead_val);
+      paramIndex++;
+
       setClauses.push(`assigned_sales = $${paramIndex}`);
       values.push(assigned_sales);
       paramIndex++;

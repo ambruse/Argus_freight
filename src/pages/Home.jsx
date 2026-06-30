@@ -61,6 +61,71 @@ export default function Home({ onNavigate, onOpenQuote }) {
 
   return (
     <div>
+      {/* Advanced JSON-LD Schema (Structured Data Component) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: `
+{
+  "@context": "https://schema.org",
+  "@type": "CargoShippingService",
+  "name": "Argus Shipping W.L.L",
+  "url": "https://argusshipping.co/",
+  "logo": "https://argusshipping.co/images/logo.png",
+  "description": "Premium international freight forwarding, ocean & air cargo, 3PL warehousing, and door-to-door console cargo consolidation services based in Doha, Qatar.",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "P.O. Box 31861",
+    "addressLocality": "Doha",
+    "addressCountry": "QA"
+  },
+  "telephone": "+97444116544",
+  "email": "info@argusshipping.co",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Logistics Services",
+    "itemListElement": [
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Sea Freight FCL & LCL Consolidation"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "International Air Cargo Services"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Door to Door Console Shipments (Per-CBM/Per-Carton)"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "3PL Warehousing & Distribution Management"
+        }
+      }
+    ]
+  },
+  "areaServed": [
+    { "@type": "Country", "name": "Qatar" },
+    { "@type": "Country", "name": "United Arab Emirates" },
+    { "@type": "Country", "name": "Bahrain" },
+    { "@type": "Country", "name": "India" }
+  ]
+}
+          `
+        }}
+      />
+
       {/* Hero Banner Section */}
       <section className="hero-section">
         <div className="hero-blob-2" />
@@ -287,6 +352,21 @@ export default function Home({ onNavigate, onOpenQuote }) {
               <img src="/images/globe.png" alt="Integrated Global Network" className="about-img-main" />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* International Warehouse Infrastructure Component */}
+      <section id="global-infrastructure" className="seo-optimized-block">
+        <div className="container">
+          <h2>Our Global Consolidation Hubs & Logistics Infrastructure</h2>
+          <p className="infra-description">To power our signature door-to-door multi-modal distribution models, we operate standardized international warehouses across strategic production cities:</p>
+          
+          <ul className="warehouse-network-list">
+            <li><strong>Guangzhou & Yuwei Hubs (China):</strong> High-capacity consolidation centers optimizing export workflows from the Pearl River Delta.</li>
+            <li><strong>Mumbai & Bangalore Hubs (India):</strong> Strategic inland container packing and port-forwarding terminals.</li>
+            <li><strong>Istanbul Hub (Turkey):</strong> Eurasian multi-modal transshipment and cross-docking facilities.</li>
+            <li><strong>Dubai & Bahrain Hubs (GCC):</strong> Central regional deep-water port access and ambient/temperature-controlled distribution centers.</li>
+          </ul>
         </div>
       </section>
 

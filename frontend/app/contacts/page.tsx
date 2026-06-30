@@ -233,6 +233,7 @@ export default function ContactsPage() {
                 onChange={(val) => setForm(prev => ({ ...prev, pod: val }))}
                 placeholder="Rotterdam"
                 mode={form.mode === "AIR AND SEA" ? "AIR" : form.mode}
+                isPod={true}
               />
             </div>
             <button type="submit" disabled={submitting} className="btn-primary w-full mt-2">

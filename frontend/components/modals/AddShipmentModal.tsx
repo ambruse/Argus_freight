@@ -203,11 +203,11 @@ export default function AddShipmentModal({ isOpen, onClose, onCreated }: Props) 
             <input className="input" type="number" min="0" step="0.01" value={(form.profit as string) || ""} onChange={set("profit")} />
           </div>
           <div>
-            <Label>DO Number</Label>
+            <Label>Job/DO Number</Label>
             <input className="input" value={(form.do_number as string) || ""} onChange={set("do_number" as any)} />
           </div>
           <div>
-            <Label>BL Number</Label>
+            <Label>{form.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number"}</Label>
             <input className="input" value={(form.bl_number as string) || ""} onChange={set("bl_number" as any)} />
           </div>
           <div>

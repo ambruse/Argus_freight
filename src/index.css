@@ -2148,3 +2148,343 @@ body.light-theme .loader-logo {
   text-transform: uppercase;
 }
 
+/* ── SEO Engineered Component Upgrades ─────────────────────── */
+.seo-optimized-block {
+  margin-top: 1.5rem;
+  padding: 1.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.03);
+}
+
+.seo-optimized-block h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.seo-optimized-block h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.5rem;
+}
+
+.seo-optimized-block p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.seo-optimized-block p.lead-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Maritime Lanes Table styling */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 15, 29, 0.3);
+}
+
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8rem;
+  min-width: 500px;
+}
+
+.table-container th {
+  background: rgba(12, 18, 32, 0.8);
+  padding: 0.8rem 1rem;
+  font-weight: 600;
+  color: var(--accent);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+}
+
+.table-container td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.table-container tr:last-child td {
+  border-bottom: none;
+}
+
+.table-container tr:hover td {
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--text-primary);
+}
+
+/* Features Grid for Door-to-Door console styling */
+.seo-optimized-block .features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 480px) {
+  .seo-optimized-block .features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.seo-optimized-block .feature-card {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.seo-optimized-block .feature-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(245, 176, 55, 0.15);
+  transform: translateY(-2px);
+}
+
+.seo-optimized-block .feature-card h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+.seo-optimized-block .feature-card p {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+/* International Warehouse Infrastructure Component styling */
+#global-infrastructure {
+  margin-top: 4rem;
+  margin-bottom: 6rem;
+  padding: 3rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+#global-infrastructure h2 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  text-align: center;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#global-infrastructure p.infra-description {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto 3rem;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.warehouse-network-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .warehouse-network-list {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.warehouse-network-list li {
+  background: rgba(12, 18, 32, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  padding: 2rem;
+  border-radius: 20px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.warehouse-network-list li:hover {
+  transform: translateY(-4px);
+  border-color: rgba(245, 176, 55, 0.2);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.warehouse-network-list li strong {
+  display: block;
+  color: var(--accent);
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Footer Offices Column and Grid */
+.footer-offices-col {
+  grid-column: span 1;
+}
+
+@media (min-width: 1025px) {
+  .footer-grid {
+    grid-template-columns: 1.2fr 0.8fr 2.5fr !important;
+  }
+}
+
+.footer-locations-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 580px) {
+  .footer-locations-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.footer-location-card {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.footer-location-card:hover {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(245, 176, 55, 0.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.footer-location-card:first-child {
+  grid-column: span 2;
+}
+
+@media (max-width: 580px) {
+  .footer-location-card:first-child {
+    grid-column: span 1;
+  }
+}
+
+.location-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.location-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.location-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.location-detail-item svg {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.location-detail-item a {
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.location-detail-item a:hover {
+  color: var(--accent);
+}
+
+/* Light Theme overrides for SEO blocks */
+body.light-theme .seo-optimized-block {
+  background: rgba(0, 0, 0, 0.015);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .table-container {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .table-container th {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .seo-optimized-block .feature-card {
+  background: rgba(0, 0, 0, 0.01);
+  border-color: rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .warehouse-network-list li {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme #global-infrastructure h2 {
+  background: linear-gradient(135deg, #111111 0%, #444444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light-theme .footer-location-card {
+  background: rgba(0, 0, 0, 0.015);
+  border-color: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .footer-location-card:hover {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(245, 176, 55, 0.3);
+}
+
+/* ── Mobile-First Touch Target & Spacing Improvements ────────── */
+@media (max-width: 768px) {
+  .mobile-nav-toggle, 
+  .theme-toggle-btn {
+    width: 44px !important;
+    height: 44px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar .cta-button {
+    display: none !important;
+  }
+}

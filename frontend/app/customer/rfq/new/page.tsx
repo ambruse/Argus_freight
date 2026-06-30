@@ -25,13 +25,13 @@ type FormState = {
   pickup_address: string;
   delivery_address: string;
   note: string;
-  refer_by: string;
+  operator: string;
 };
 
 const INITIAL_FORM: FormState = {
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
   container: "", mode: "", weight: "", pickup_address: "",
-  delivery_address: "", note: "", refer_by: ""
+  delivery_address: "", note: "", operator: ""
 };
 
 export default function CustomerNewRFQPage() {
@@ -63,6 +63,29 @@ export default function CustomerNewRFQPage() {
       }
       return nextForm;
     });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter") {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "SELECT"
+      ) {
+        e.preventDefault();
+        // Find all focusable form controls in this outer container
+        const formElements = Array.from(
+          e.currentTarget.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+            "input:not([disabled]), select:not([disabled]), textarea:not([disabled])"
+          )
+        );
+        
+        const index = formElements.indexOf(target as any);
+        if (index > -1 && index < formElements.length - 1) {
+          formElements[index + 1].focus();
+        }
+      }
+    }
   };
 
   // ── File Handling ───────────────────────────────────────────
@@ -198,7 +221,7 @@ export default function CustomerNewRFQPage() {
     // Container only shown as structured block for Sea/Road — hidden for Air
     { label: "TOTAL WEIGHT (KG)", name: "weight" },
     { label: "NOTE", name: "note" },
-    { label: "REFER BY", name: "refer_by" },
+    { label: "OPERATOR", name: "operator" },
   ];
 
   return (
@@ -209,7 +232,7 @@ export default function CustomerNewRFQPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* ── Main Form Container ────────────────────────────── */}
-        <div className="glass rounded-2xl p-6 shadow-card space-y-8 animate-fade-in">
+        <div className="glass rounded-2xl p-4 sm:p-6 shadow-card space-y-8 animate-fade-in" onKeyDown={handleKeyDown}>
           
           {/* Section 1: Cargo & Shipping Details */}
           <div className="relative z-20">
@@ -229,6 +252,7 @@ export default function CustomerNewRFQPage() {
                       placeholder={`Select or type ${f.label.toLowerCase()}...`}
                       mode={form.mode}
                       country={f.name === "pol" ? form.pol_country : undefined}
+                      isPod={f.name === "pod"}
                     />
                   ) : f.name === "pol_country" ? (
                     <select
@@ -242,7 +266,7 @@ export default function CustomerNewRFQPage() {
                           pol: "" // clear POL when country changes to avoid mismatch
                         }));
                       }}
-                      className="select w-full"
+                      className="select w-full min-h-[44px]"
                     >
                       <option value="">— Select POL Country —</option>
                       {polCountries.map(c => (
@@ -254,7 +278,7 @@ export default function CustomerNewRFQPage() {
                       name="mode"
                       value={form.mode}
                       onChange={handleChange}
-                      className="select w-full"
+                      className="select w-full min-h-[44px]"
                     >
                       <option value="">— Select mode —</option>
                       <option value="Road">Road</option>
@@ -274,7 +298,7 @@ export default function CustomerNewRFQPage() {
                             setForm(prev => ({ ...prev, term: "" }));
                           }
                         }}
-                        className="select w-full"
+                        className="select w-full min-h-[44px]"
                       >
                         <option value="">— Select term —</option>
                         <option value="FOB">FOB</option>
@@ -290,7 +314,7 @@ export default function CustomerNewRFQPage() {
                           value={form.term}
                           onChange={(e) => setForm(prev => ({ ...prev, term: e.target.value }))}
                           placeholder="Enter custom term (e.g. DDU, CIP)..."
-                          className="input w-full mt-2"
+                          className="input w-full mt-2 min-h-[44px]"
                         />
                       )}
                     </div>
@@ -299,7 +323,7 @@ export default function CustomerNewRFQPage() {
                       name={f.name}
                       value={(form as any)[f.name]}
                       onChange={handleChange}
-                      className="input w-full"
+                      className="input w-full min-h-[44px]"
                       placeholder={`Enter ${f.label.toLowerCase()}...`}
                       disabled={f.name === "container" && form.mode?.toLowerCase() === "air"}
                     />
@@ -412,11 +436,11 @@ export default function CustomerNewRFQPage() {
           </div>
 
           {/* ── Action Buttons ────────────────────────────────── */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-white/[0.06]">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-white/[0.06]">
             <button
               type="button"
               onClick={handleClear}
-              className="btn-secondary"
+              className="btn-secondary w-full sm:w-auto justify-center min-h-[44px]"
               disabled={submitting}
             >
               Clear Form
@@ -424,7 +448,7 @@ export default function CustomerNewRFQPage() {
             <button
               type="button"
               onClick={handleSend}
-              className="btn-primary px-8"
+              className="btn-primary w-full sm:w-auto justify-center min-h-[44px] px-8"
               disabled={submitting}
             >
               {submitting ? "Submitting..." : "Submit Quote Request"}

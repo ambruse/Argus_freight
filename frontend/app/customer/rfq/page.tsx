@@ -158,26 +158,26 @@ export default function CustomerRFQListPage() {
       action={
         <button 
           onClick={() => exportShipmentsToExcel(filtered, `My_Requests_${format(new Date(), 'yyyyMMdd')}.xlsx`)} 
-          className="btn-secondary"
+          className="btn-secondary text-xs px-3 py-2 md:text-sm md:px-5 md:py-2.5 min-h-[40px] flex items-center gap-1.5"
         >
-          📊 Export Excel
+          📊 <span className="hidden sm:inline">Export Excel</span><span className="sm:hidden">Export</span>
         </button>
       }
     >
       {/* ── Toolbar ──────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="relative w-72">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
             <input
               type="text"
               placeholder="Search REF NO, POL, POD…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input"
+              className="input w-full min-h-[44px] text-base"
             />
           </div>
           <select 
-            className="select w-48"
+            className="select w-full md:w-48 min-h-[44px] text-base"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -190,18 +190,18 @@ export default function CustomerRFQListPage() {
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto border-t border-white/[0.04] pt-3 md:border-0 md:pt-0">
           <span className="text-xs text-muted">
             {loading ? "Loading…" : `${filtered.length} records`}
           </span>
-          <button onClick={fetchShipments} className="btn-secondary text-xs px-3 py-2">
+          <button onClick={fetchShipments} className="btn-secondary text-xs px-3 py-2 min-h-[38px]">
             ↻ Refresh
           </button>
         </div>
       </div>
 
-      {/* ── Table ────────────────────────────────────────── */}
-      <div className="glass rounded-2xl overflow-hidden shadow-card animate-fade-in">
+      {/* ── Desktop Table View (Hidden on mobile) ────────── */}
+      <div className="hidden md:block glass rounded-2xl overflow-hidden shadow-card animate-fade-in">
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
@@ -302,9 +302,108 @@ export default function CustomerRFQListPage() {
         </div>
       </div>
 
+      {/* ── Mobile Card List View (Shown on mobile) ───────── */}
+      <div className="md:hidden space-y-4">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="glass rounded-2xl p-5 space-y-4 animate-pulse">
+              <div className="flex justify-between items-center">
+                <div className="h-6 w-28 bg-white/[0.04] rounded-lg" />
+                <div className="h-5 w-20 bg-white/[0.04] rounded-full" />
+              </div>
+              <div className="h-4 w-40 bg-white/[0.04] rounded" />
+              <div className="h-4 w-48 bg-white/[0.04] rounded" />
+            </div>
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="glass rounded-2xl p-12 text-center text-muted">
+            <p className="text-4xl mb-2">📭</p>
+            <p className="text-sm">No request records found.</p>
+          </div>
+        ) : (
+          filtered.map((s, idx) => (
+            <div
+              key={s.ref_no}
+              onClick={() => {
+                setSelected(s);
+                setModalOpen(true);
+              }}
+              className="glass rounded-2xl p-4 shadow-card hover:bg-white/[0.01] border border-white/[0.06] flex flex-col gap-3.5 cursor-pointer active:scale-[0.98] transition-all"
+              style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
+            >
+              {/* Top card row */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={(e) => copyRefNo(e, s.ref_no)}
+                  className="font-mono text-xs font-bold text-blue hover:text-blue-bright
+                             px-2.5 py-1 rounded-lg bg-blue/10 hover:bg-blue/20 border border-blue/20
+                             flex items-center gap-1.5 transition-all duration-150 min-h-[36px]"
+                  title="Tap to copy REF NO"
+                >
+                  <span>{s.ref_no}</span>
+                  <span className="text-[11px]">📋</span>
+                </button>
+                <Badge status={s.status} />
+              </div>
+
+              {/* Path and Routing Info */}
+              <div className="py-2 border-y border-white/[0.04] space-y-1">
+                <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                  <span className="truncate max-w-[140px]">{s.pol || "—"}</span>
+                  <span className="text-muted/50 font-normal">→</span>
+                  <span className="truncate max-w-[140px]">{s.pod || "—"}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="px-2 py-0.5 rounded bg-white/[0.04] text-[10px] uppercase font-bold text-slate-300">
+                    {s.mode || "—"}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-white/[0.04] text-[10px] uppercase font-bold text-slate-300">
+                    {s.term || "—"}
+                  </span>
+                  {s.commodity && (
+                    <span className="text-xs text-muted truncate max-w-[200px]" title={s.commodity}>
+                      • {s.commodity}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom card details */}
+              <div className="flex items-center justify-between text-xs pt-0.5">
+                <div className="text-[11px] text-muted">
+                  <span>Operator: </span>
+                  <span className="font-semibold text-emerald">{s.operator ?? "—"}</span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {s.unread_chat_count && Number(s.unread_chat_count) > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
+                      💬 {s.unread_chat_count} msg
+                    </span>
+                  ) : s.unread_replies_count && Number(s.unread_replies_count) > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
+                      📩 {s.unread_replies_count} new
+                    </span>
+                  ) : s.replies_count && Number(s.replies_count) > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
+                      💬 {s.replies_count}
+                    </span>
+                  ) : null}
+
+                  <span className="text-slate-500 text-base leading-none pl-1">›</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       {/* ── Hint ─────────────────────────────────────────── */}
-      <p className="text-xs text-muted mt-3 px-1">
+      <p className="text-xs text-muted mt-3 px-1 hidden md:block">
         💡 Click the <span className="text-blue font-semibold">REF NO</span> to copy · Double-click any row to view full details
+      </p>
+      <p className="text-xs text-muted mt-3 px-1 md:hidden">
+        💡 Tap the copy icon next to <span className="text-blue font-semibold">REF NO</span> to copy · Tap any card to view details
       </p>
 
       {/* ── Detail Modal ─────────────────────────────────── */}

@@ -353,6 +353,7 @@ export default function QuotationPage() {
                       onChange={handlePodChange}
                       placeholder="Search discharge port..."
                       mode={form.mode}
+                      isPod={true}
                     />
                   </div>
                   <div className="space-y-1">

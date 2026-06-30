@@ -455,8 +455,8 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[
                       ["Carrier",      "carrier"],
-                      ["DO Number",    "do_number"],
-                      ["BL Number",    "bl_number"],
+                      ["Job/DO Number", "do_number"],
+                      [shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number", "bl_number"],
                       ["SO Number",    "so_number"],
                       ["Box No.",      "box_no"],
                       ["Cost (QAR)",  "cost"],
@@ -498,8 +498,8 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                 /* ── Read View ──────────────────────────────── */
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
                   <InfoField label="Carrier"      value={shipment.carrier} />
-                  <InfoField label="DO Number"    value={shipment.do_number} />
-                  <InfoField label="BL Number"    value={shipment.bl_number} />
+                  <InfoField label="Job/DO Number"    value={shipment.do_number} />
+                  <InfoField label={shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number"}    value={shipment.bl_number} />
                   <InfoField label="SO Number"    value={shipment.so_number} />
                   <InfoField label="Box No."      value={shipment.box_no} />
                   <InfoField label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />

@@ -63,7 +63,7 @@ const generateCustomerRfq = async (req, res, next) => {
     const {
       pol, pol_country, pod, commodity, term, dimension,
       container, mode, weight, pickup_address, delivery_address,
-      note, refer_by
+      note, operator
     } = req.body;
 
     // 1. Mandatory Validations
@@ -93,40 +93,57 @@ const generateCustomerRfq = async (req, res, next) => {
 
     const cleanUsername = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
 
-    // 2. Round-Robin Operator Assignment
-    const opRes = await db.query(
-      `SELECT id, username, email_address, email_password FROM users 
-       WHERE role = 'operator' 
-         AND email_address IS NOT NULL AND email_address != '' 
-         AND email_password IS NOT NULL AND email_password != '' 
-       ORDER BY id ASC`
-    );
+    let assignedOperator = null;
 
-    if (opRes.rows.length === 0) {
-      return res.status(500).json({
-        success: false,
-        message: 'No operators with configured email credentials found. Please contact the administrator.'
-      });
-    }
-
-    const lastOpRes = await db.query("SELECT value FROM app_settings WHERE key = 'last_assigned_operator_id'");
-    let lastOpId = lastOpRes.rows[0]?.value ? parseInt(lastOpRes.rows[0].value, 10) : 0;
-
-    let selectedOp = opRes.rows[0];
-    if (lastOpId) {
-      const lastIndex = opRes.rows.findIndex(op => op.id === lastOpId);
-      if (lastIndex !== -1 && lastIndex + 1 < opRes.rows.length) {
-        selectedOp = opRes.rows[lastIndex + 1];
+    if (operator && operator.trim()) {
+      const opMatch = await db.query(
+        `SELECT id, username, email_address, email_password FROM users 
+         WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin')`,
+        [operator.trim()]
+      );
+      if (opMatch.rows.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Operator "${operator}" not found in the system. Please check the spelling.` 
+        });
       }
+      assignedOperator = opMatch.rows[0].username;
+    } else {
+      // 2. Round-Robin Operator Assignment
+      const opRes = await db.query(
+        `SELECT id, username, email_address, email_password FROM users 
+         WHERE role = 'operator' 
+           AND email_address IS NOT NULL AND email_address != '' 
+           AND email_password IS NOT NULL AND email_password != '' 
+         ORDER BY id ASC`
+      );
+
+      if (opRes.rows.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: 'No operators with configured email credentials found. Please contact the administrator.'
+        });
+      }
+
+      const lastOpRes = await db.query("SELECT value FROM app_settings WHERE key = 'last_assigned_operator_id'");
+      let lastOpId = lastOpRes.rows[0]?.value ? parseInt(lastOpRes.rows[0].value, 10) : 0;
+
+      let selectedOp = opRes.rows[0];
+      if (lastOpId) {
+        const lastIndex = opRes.rows.findIndex(op => op.id === lastOpId);
+        if (lastIndex !== -1 && lastIndex + 1 < opRes.rows.length) {
+          selectedOp = opRes.rows[lastIndex + 1];
+        }
+      }
+
+      // Update the pointer
+      await db.query(
+        "INSERT INTO app_settings (key, value) VALUES ('last_assigned_operator_id', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+        [selectedOp.id.toString()]
+      );
+
+      assignedOperator = selectedOp.username;
     }
-
-    // Update the pointer
-    await db.query(
-      "INSERT INTO app_settings (key, value) VALUES ('last_assigned_operator_id', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
-      [selectedOp.id.toString()]
-    );
-
-    const assignedOperator = selectedOp.username;
 
     // 3. Resolve Request Number
     const customerId = req.user.customer_id;
@@ -187,7 +204,7 @@ const generateCustomerRfq = async (req, res, next) => {
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        ON CONFLICT (ref_no) DO NOTHING`,
       [
-        ref_no, ref_no, refer_by || null, targetPol, pod, commodity, term, dimension || null,
+        ref_no, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
         container || null, mode, weight || null, pickup_address || null, delivery_address || null,
         'Multiple Agents', 'Broadcast', 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
       ]
@@ -208,7 +225,7 @@ const generateCustomerRfq = async (req, res, next) => {
         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
          ON CONFLICT (ref_no) DO NOTHING`,
         [
-          opRef, ref_no, refer_by || null, targetPol, pod, commodity, term, dimension || null,
+          opRef, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
           container || null, mode, weight || null, pickup_address || null, delivery_address || null,
           recipient.dear_who, recipient.email, 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
         ]

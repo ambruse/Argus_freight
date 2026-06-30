@@ -172,7 +172,7 @@ export default function ConfirmedPage() {
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm"></span>
           <input
             type="text"
-            placeholder="Search REF NO, POL, carrier, BL…"
+            placeholder="Search REF NO, POL, carrier, BL/AWB…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input pl-9"
@@ -208,10 +208,10 @@ export default function ConfirmedPage() {
                 <th>ETA</th>
                 <th>COST</th>
                 <th>CUSTOMER PRICE</th>
-                <th>DO</th>
+                <th>JOB/DO</th>
                 <th>BOX NO</th>
                 <th>SO</th>
-                <th>BL</th>
+                <th>BL/AWB</th>
                 <th>TRACK STATUS</th>
                 <th>REPLIES</th>
                 <th>CHAT</th>

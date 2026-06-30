@@ -35,7 +35,11 @@ export default function CallEnquiryEntry() {
 
     setSubmitting(true);
     try {
-      await api.post("/call-enquiries", form);
+      const payload = {
+        ...form,
+        is_lead: form.status === "Lead"
+      };
+      await api.post("/call-enquiries", payload);
       toast.success("Call Enquiry logged successfully. Assigned to Sales.");
       setForm({
         customer_name: "",

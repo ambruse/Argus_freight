@@ -8,11 +8,14 @@ interface Props {
   placeholder?: string;
   mode?: string;
   country?: string;
+  isPod?: boolean;
 }
 
-export default function PortAutoSuggest({ value, onChange, placeholder, mode, country }: Props) {
+export default function PortAutoSuggest({ value, onChange, placeholder, mode, country, isPod }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -54,8 +57,67 @@ export default function PortAutoSuggest({ value, onChange, placeholder, mode, co
       })
     : filteredPorts;
 
+  // Sort suggestions so that DOH is always at the top when isPod is true
+  const sortedSuggestions = [...suggestions].sort((a, b) => {
+    if (isPod) {
+      if (a.code === "DOH") return -1;
+      if (b.code === "DOH") return 1;
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [value]);
+
+  useEffect(() => {
+    if (activeIndex >= 0 && dropdownRef.current) {
+      const activeEl = dropdownRef.current.children[activeIndex] as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [activeIndex]);
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen) {
+      if (e.key === "ArrowDown") {
+        setIsOpen(true);
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex(prev => {
+        const next = prev + 1;
+        return next >= sortedSuggestions.length ? 0 : next;
+      });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex(prev => {
+        const next = prev - 1;
+        return next < 0 ? sortedSuggestions.length - 1 : next;
+      });
+    } else if (e.key === "Enter") {
+      if (activeIndex >= 0 && activeIndex < sortedSuggestions.length) {
+        e.preventDefault();
+        e.stopPropagation(); // Stop parent keydown handler from moving to next input
+        const p = sortedSuggestions[activeIndex];
+        const selectedVal = country 
+          ? `${p.port} (${p.code})` 
+          : `${p.port}, ${p.country} (${p.code})`;
+        onChange(selectedVal);
+        setIsOpen(false);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+    }
+  };
+
   return (
-    <div className={`relative ${isOpen ? "z-50" : "z-10"}`} ref={wrapperRef}>
+    <div className={`relative ${isOpen ? "z-[9999]" : "z-10"}`} ref={wrapperRef}>
       <input
         type="text"
         value={value}
@@ -64,13 +126,14 @@ export default function PortAutoSuggest({ value, onChange, placeholder, mode, co
           setIsOpen(true);
         }}
         onFocus={() => setIsOpen(true)}
+        onKeyDown={handleInputKeyDown}
         className="input w-full"
         placeholder={placeholder || "Select or type a port..."}
       />
       
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-surface-2 border border-white/10 rounded-lg shadow-xl max-h-56 overflow-y-auto overflow-x-hidden">
-          {suggestions.map((p, idx) => (
+      {isOpen && sortedSuggestions.length > 0 && (
+        <div ref={dropdownRef} className="absolute z-[9999] w-full mt-1 bg-surface-2 border border-white/10 rounded-lg shadow-xl max-h-56 overflow-y-auto overflow-x-hidden">
+          {sortedSuggestions.map((p, idx) => (
             <div
               key={`${p.code}-${idx}`}
               onClick={() => {
@@ -81,7 +144,11 @@ export default function PortAutoSuggest({ value, onChange, placeholder, mode, co
                 onChange(selectedVal);
                 setIsOpen(false);
               }}
-              className="px-4 py-2 hover:bg-white/5 cursor-pointer border-b border-white/[0.02] last:border-0 transition-colors flex justify-between items-center"
+              className={`px-4 py-2 cursor-pointer border-b border-white/[0.02] last:border-0 transition-colors flex justify-between items-center ${
+                idx === activeIndex 
+                  ? "bg-white/10 text-emerald-400 font-semibold" 
+                  : "hover:bg-white/5"
+              }`}
             >
               <div className="flex flex-col">
                 <span className="font-semibold text-primary text-xs">

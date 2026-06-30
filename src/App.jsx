@@ -188,23 +188,84 @@ export default function App() {
               </ul>
             </div>
 
-            {/* Contact details column */}
-            <div>
-              <h3 className="footer-title">Contact Info</h3>
-              <ul className="footer-contact-list">
-                <li className="footer-contact-item">
-                  <Mail size={18} />
-                  <a href="mailto:info@argusshipping.co">info@argusshipping.co</a>
-                </li>
-                <li className="footer-contact-item">
-                  <Phone size={18} />
-                  <a href="tel:+97444116544">+974 44116544</a>
-                </li>
-                <li className="footer-contact-item">
-                  <MapPin size={18} />
-                  <span>Po Box 31861, Doha, Qatar</span>
-                </li>
-              </ul>
+            {/* GCC & Global Offices for Local SEO Footprint */}
+            <div className="footer-offices-col">
+              <h3 className="footer-title">GCC & Global Offices</h3>
+              <div className="footer-locations-grid">
+                <div className="footer-location-card">
+                  <h4 className="location-name">Argus Shipping W.L.L. (Doha HQ)</h4>
+                  <div className="location-details-list">
+                    <span className="location-detail-item">
+                      <MapPin size={13} />
+                      <span>PO Box 31861, Doha, Qatar</span>
+                    </span>
+                    <span className="location-detail-item">
+                      <Phone size={13} />
+                      <a href="tel:+97444116544">+974 44116544</a>
+                    </span>
+                    <span className="location-detail-item">
+                      <Mail size={13} />
+                      <a href="mailto:info@argusshipping.co">info@argusshipping.co</a>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="footer-location-card">
+                  <h4 className="location-name">Argus General Trading (Dubai Hub)</h4>
+                  <div className="location-details-list">
+                    <span className="location-detail-item">
+                      <MapPin size={13} />
+                      <span>Dubai Hub, Dubai, UAE</span>
+                    </span>
+                    <span className="location-detail-item">
+                      <Phone size={13} />
+                      <a href="tel:+971564337699">+971 564337699</a>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="footer-location-card">
+                  <h4 className="location-name">Argus Bahrain</h4>
+                  <div className="location-details-list">
+                    <span className="location-detail-item">
+                      <MapPin size={13} />
+                      <span>Bahrain Hub, Manama, Bahrain</span>
+                    </span>
+                    <span className="location-detail-item">
+                      <Phone size={13} />
+                      <a href="tel:+97377034555">+973 77034555</a>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="footer-location-card">
+                  <h4 className="location-name">Guangzhou Yuwei Hub (China)</h4>
+                  <div className="location-details-list">
+                    <span className="location-detail-item">
+                      <MapPin size={13} />
+                      <span>Yuwei Hub, Guangzhou, China</span>
+                    </span>
+                    <span className="location-detail-item">
+                      <Phone size={13} />
+                      <a href="tel:+8613719125564">+86 13719125564</a>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="footer-location-card">
+                  <h4 className="location-name">Mumbai Hub (India)</h4>
+                  <div className="location-details-list">
+                    <span className="location-detail-item">
+                      <MapPin size={13} />
+                      <span>Mumbai Hub, India</span>
+                    </span>
+                    <span className="location-detail-item">
+                      <Phone size={13} />
+                      <a href="tel:+919742379838">+91 9742379838</a>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

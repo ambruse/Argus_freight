@@ -541,3 +541,32 @@ html.light .login-glass-card {
   border: 1px solid rgba(180, 130, 20, 0.20) !important;
   box-shadow: 0 20px 60px rgba(60, 40, 10, 0.08), inset 0 0 0 1px rgba(255,255,255,0.8) !important;
 }
+
+/* ── Mobile-First Refactoring Additions ────────────────────── */
+
+/* Slide up animation for mobile bottom sheets */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Enforce 16px minimum font size on mobile viewports for inputs/selects/textareas to prevent iOS auto-zooming */
+@media (max-width: 768px) {
+  .input,
+  .input-sm,
+  .select,
+  select,
+  textarea,
+  input:not([type="checkbox"]):not([type="radio"]) {
+    font-size: 16px !important;
+  }
+}
+

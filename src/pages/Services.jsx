@@ -238,6 +238,69 @@ export default function Services() {
                   
                   <p className="premium-service-desc">{service.description}</p>
                   
+                  {service.id === 'sea' && (
+                    <section id="sea-freight-service" className="seo-optimized-block">
+                      <h1>International Sea Freight Forwarding Services</h1>
+                      <p className="lead-text">
+                        Argus Shipping delivers competitive Full Container Load (FCL) and Less than Container Load (LCL) ocean freight solutions globally. We specialize in high-volume cargo orchestration across critical international shipping lanes.
+                      </p>
+
+                      <h2>Our Primary Maritime Trade Lanes & Cargo Routing</h2>
+                      <div className="table-container">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Sourcing Region / Port Hubs</th>
+                              <th>Destination Market</th>
+                              <th>Service Configuration</th>
+                              <th>Average Transit Type</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td><strong>China</strong> (Guangzhou, Shenzhen, Ningbo)</td>
+                              <td>Doha, Qatar (Hamad Port) / GCC</td>
+                              <td>Direct LCL Consolidation & FCL</td>
+                              <td>Scheduled Ocean Transit</td>
+                            </tr>
+                            <tr>
+                              <td><strong>India</strong> (Nhava Sheva, Mumbai, Mundra)</td>
+                              <td>Doha, Qatar / GCC Hubs</td>
+                              <td>Weekly Console Clearance</td>
+                              <td>Express Maritime Freight</td>
+                            </tr>
+                            <tr>
+                              <td><strong>Turkey</strong> (Istanbul, Izmir)</td>
+                              <td>Doha, Qatar / GCC Hubs</td>
+                              <td>End-to-End Consolidated Freight</td>
+                              <td>Multi-modal Sea & Air Solutions</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  )}
+
+                  {service.id === 'door-to-door' && (
+                    <section id="console-shipments-service" className="seo-optimized-block">
+                      <h1>Door-to-Door Console Import & Export (Sea & Air)</h1>
+                      <p>
+                        Eliminate the complexities of customs border friction and port logistics. Argus Shipping provides a client-friendly <strong>per-CARTON / per-CBM</strong> door-to-door consolidation model tailored specifically for small-to-medium enterprises handling smaller freight volumes.
+                      </p>
+                      
+                      <div className="features-grid">
+                        <div className="feature-card">
+                          <h3>Zero-Hassle Customs Clearance</h3>
+                          <p>Our dedicated brokerage teams manage complete customs documentation, duty declarations, and regulatory compliance at the port of destination.</p>
+                        </div>
+                        <div className="feature-card">
+                          <h3>Global Sourcing Consolidation</h3>
+                          <p>Utilize our international mega-warehouses to aggregate partial shipments from various suppliers within the sourcing country before shipping as a unified container entry.</p>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
                   <div className="premium-service-divider" />
                   
                   <ul className="premium-service-feature-list">

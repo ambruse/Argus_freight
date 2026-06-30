@@ -679,8 +679,78 @@ const updateUserExtension = async (req, res, next) => {
   }
 };
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const { name, email_address, contact_number, address, company, company_address, secondary_phone } = req.body;
+    
+    // Update users table
+    const result = await db.query(
+      `UPDATE users 
+       SET name = COALESCE($1, name),
+           email_address = COALESCE($2, email_address),
+           contact_number = COALESCE($3, contact_number),
+           address = $4,
+           company = $5,
+           company_address = $6,
+           secondary_phone = $7
+       WHERE id = $8
+       RETURNING id, username, role, name, email_address, contact_number, customer_id, address, company, company_address, secondary_phone`,
+      [
+        name || null,
+        email_address || null,
+        contact_number || null,
+        address || null,
+        company || null,
+        company_address || null,
+        secondary_phone || null,
+        req.user.id
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const updatedUser = result.rows[0];
+
+    // If it's a customer, we should also update the customers table
+    if (updatedUser.role === 'customer' && updatedUser.customer_id) {
+      await db.query(
+        `UPDATE customers 
+         SET name = $1 
+         WHERE customer_id = $2`,
+        [updatedUser.name, updatedUser.customer_id]
+      );
+    }
+
+    res.json({ success: true, message: 'Profile updated successfully.', user: updatedUser });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getProfile = async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `SELECT id, username, role, name, email_address, contact_number, customer_id, 
+              address, company, company_address, secondary_phone, created_at 
+       FROM users 
+       WHERE id = $1`,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    res.json({ success: true, user: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
   getAdminUsers, updateAdminUserEmail, getOperatorsList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension
+  updateUserExtension, updateProfile, getProfile
 };

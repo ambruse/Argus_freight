@@ -1406,6 +1406,49 @@ const markAllRepliesAsRead = async (req, res, next) => {
   }
 };
 
+const getFollowUpOverdue = async (req, res, next) => {
+  try {
+    if (req.user && req.user.role === 'customer') {
+      return res.json({ success: true, data: [] });
+    }
+
+    const result = await query(req,
+      `SELECT s.ref_no, s.cust_req_no, s.customer_name, s.status, s.last_follow_up, s.created_at, s.pol, s.pod, s.commodity
+       FROM shipments s
+       WHERE s.status IN ('Pending', 'Customer Review', 'Quoted', 'Cancelled')
+         AND (s.last_follow_up < NOW() - INTERVAL '15 days' OR (s.last_follow_up IS NULL AND s.created_at < NOW() - INTERVAL '15 days'))
+       ORDER BY COALESCE(s.last_follow_up, s.created_at) ASC`
+    );
+
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const snoozeFollowUp = async (req, res, next) => {
+  try {
+    const { ref_no } = req.params;
+    
+    // We update last_follow_up to 14 days ago, so it reappears tomorrow (after 1 day)
+    const result = await query(req,
+      `UPDATE shipments 
+       SET last_follow_up = NOW() - INTERVAL '14 days' 
+       WHERE ref_no = $1 
+       RETURNING ref_no, last_follow_up`,
+      [ref_no]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+
+    res.json({ success: true, message: `Shipment ${ref_no} follow-up snoozed until tomorrow.`, data: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllShipments,
   getShipmentByRef,
@@ -1421,4 +1464,6 @@ module.exports = {
   getChatMessages,
   sendChatMessage,
   markAllRepliesAsRead,
+  getFollowUpOverdue,
+  snoozeFollowUp,
 };
