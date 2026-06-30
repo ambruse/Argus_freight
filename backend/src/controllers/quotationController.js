@@ -242,8 +242,23 @@ const generateQuotation = async (req, res, next) => {
           const convertWithOptionsAsync = require('util').promisify(libre.convertWithOptions);
           
           try {
+            console.log("[PDF Conversion Debug] PATH environment:", process.env.PATH);
+            
+            // Check via 'which' command
+            const { execSync } = require('child_process');
+            let whichPath = '';
+            try {
+              whichPath = execSync('which soffice').toString().trim();
+              console.log("[PDF Conversion Debug] 'which soffice' found at:", whichPath);
+            } catch (e) {
+              console.log("[PDF Conversion Debug] 'which soffice' command failed:", e.message);
+            }
+
             // Find soffice in PATH
             const sofficePaths = [];
+            if (whichPath) {
+              sofficePaths.push(whichPath);
+            }
             const pathEnv = process.env.PATH || '';
             const dirs = pathEnv.split(':');
             for (const dir of dirs) {
@@ -251,7 +266,13 @@ const generateQuotation = async (req, res, next) => {
               if (fs.existsSync(p)) {
                 sofficePaths.push(p);
               }
+              const pLibre = path.join(dir, 'libreoffice');
+              if (fs.existsSync(pLibre)) {
+                sofficePaths.push(pLibre);
+              }
             }
+            
+            console.log("[PDF Conversion Debug] Resolved soffice binary search paths:", sofficePaths);
 
             const docxFileToConvert = fs.readFileSync(absoluteDocx);
             convertWithOptionsAsync(docxFileToConvert, '.pdf', undefined, { sofficeBinaryPaths: sofficePaths })
