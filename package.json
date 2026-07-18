@@ -11,7 +11,7 @@
     "build:frontend": "npm run build --prefix frontend",
     "install:backend": "npm install --production --legacy-peer-deps --prefix backend",
     "install:frontend": "npm install --production --legacy-peer-deps --prefix frontend",
-    "build": "npm run install:backend && npm run install:frontend && npm run build:landing && npm run copy:landing && npm run build:frontend",
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build:landing && npm run copy:landing && npm run build:frontend",
     "start:backend": "NODE_ENV=production npm run start --prefix backend",
     "start:frontend": "NODE_ENV=production npm run start --prefix frontend",
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
@@ -36,5 +36,12 @@
     "react-dom": "^19.2.6",
     "vite": "^8.0.12"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "overrides": {
+    "postcss": "^8.5.10",
+    "tmp": "^0.2.6",
+    "uuid": "^14.0.0",
+    "glob": "^10.5.0",
+    "fast-csv": "^4.3.6"
+  }
 }

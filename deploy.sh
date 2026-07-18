@@ -7,7 +7,17 @@
 set -e
 
 DEPLOY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PUBLIC_HTML="${DEPLOY_PATH}/../public_html"
+
+# Robust resolution of public_html directory for cPanel
+if [ -n "$USER" ] && [ -d "/home/$USER/public_html" ]; then
+    PUBLIC_HTML="/home/$USER/public_html"
+elif [ -d "$HOME/public_html" ]; then
+    PUBLIC_HTML="$HOME/public_html"
+elif [ -d "${DEPLOY_PATH}/../public_html" ]; then
+    PUBLIC_HTML="${DEPLOY_PATH}/../public_html"
+else
+    PUBLIC_HTML="${DEPLOY_PATH}/../public_html"
+fi
 
 echo ""
 echo "=================================================="
@@ -40,11 +50,41 @@ npm install --legacy-peer-deps 2>&1 | tail -5
 npm run build:landing 2>&1 | tail -10
 echo "✅  Landing page built → dist/"
 
-# ── 4. Copy .htaccess to public_html ─────────────────────────
+# ── 4. Copy/Merge .htaccess to public_html ───────────────────
 echo ""
-echo "▶ [4/4] Copying .htaccess to public_html..."
-cp "$DEPLOY_PATH/.htaccess" "$PUBLIC_HTML/.htaccess"
-echo "✅  .htaccess deployed."
+echo "▶ [4/4] Deploying .htaccess to public_html..."
+DEST_HTACCESS="$PUBLIC_HTML/.htaccess"
+SRC_HTACCESS="$DEPLOY_PATH/.htaccess"
+
+if [ -f "$DEST_HTACCESS" ]; then
+    # Check if the existing .htaccess contains cPanel Passenger rules
+    if grep -q -i "Passenger" "$DEST_HTACCESS"; then
+        echo "💡 Found Passenger configuration in existing .htaccess. Merging..."
+        # Extract Passenger configuration lines
+        grep -i "Passenger" "$DEST_HTACCESS" > "$DEPLOY_PATH/.htaccess.passenger"
+        
+        # Create a new .htaccess with passenger config at the top
+        cat "$DEPLOY_PATH/.htaccess.passenger" > "$DEPLOY_PATH/.htaccess.temp"
+        echo "" >> "$DEPLOY_PATH/.htaccess.temp"
+        
+        # Add the contents of our repo .htaccess but comment out the port-based proxy lines
+        # since Passenger handles routing internally
+        sed -E 's/^([^#]*RewriteRule .* http:\/\/127\.0\.0\.1:.*)/# \1 # disabled for Passenger/' "$SRC_HTACCESS" >> "$DEPLOY_PATH/.htaccess.temp"
+        
+        # Deploy the merged file
+        cp "$DEPLOY_PATH/.htaccess.temp" "$DEST_HTACCESS"
+        rm -f "$DEPLOY_PATH/.htaccess.passenger" "$DEPLOY_PATH/.htaccess.temp"
+        echo "✅ Merged Passenger configuration and deployed .htaccess."
+    else
+        cp "$SRC_HTACCESS" "$DEST_HTACCESS"
+        echo "✅ .htaccess copied successfully."
+    fi
+else
+    # Make sure parent directory exists if it's a fallback path
+    mkdir -p "$(dirname "$DEST_HTACCESS")"
+    cp "$SRC_HTACCESS" "$DEST_HTACCESS"
+    echo "✅ .htaccess copied successfully (new file)."
+fi
 
 # ── Restart the ONE Node.js app (Passenger signal) ───────────
 echo ""

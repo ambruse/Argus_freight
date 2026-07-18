@@ -1,6 +1,7 @@
 // backend/server.js
 // ─────────────────────────────────────────────────────────────
 //  Freight & RFQ Management System — Express Entry Point
+//  Deployment: cPanel (public_html/Argus)
 // ─────────────────────────────────────────────────────────────
 require('dotenv').config();
 const dns = require('dns');
@@ -81,8 +82,9 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Static File Serving (Production cPanel Routing) ───────────
+// ── Static File Serving (public_html/Argus Path Fixed) ───────
 if (process.env.NODE_ENV === 'production') {
+  // Looks exactly one folder up from /backend to find frontend and dist
   const FRONTEND_OUT = path.join(__dirname, '../frontend/out');
   const LANDING_DIST = path.join(__dirname, '../dist');
 
@@ -190,7 +192,7 @@ const createLike = async (newTable, baseTable) => {
         operator          VARCHAR(100),
         created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) KEY_BLOCK_SIZE=1024
+      )
     `);
 
     await db.query(`

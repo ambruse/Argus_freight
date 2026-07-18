@@ -1,17 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ── Production: export as static HTML/CSS/JS ─────────────────
-  //    The built files go to frontend/out/ and are served by
-  //    Express directly — no second Node.js app needed on cPanel.
-  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
+  // ── Force static HTML export directly for production ─────────
+  output: 'export', 
+  
+  // Disable image optimization because static exports cannot run a live backend image resizer
+  images: {
+    unoptimized: true,
+  },
 
   // Isolate development cache to prevent HMR asset 404 conflicts
-  distDir: process.env.NODE_ENV === "development" ? ".next/dev" : ".next",
+  distDir: ".next",
 
   // ── Development only: proxy API + landing routes to local servers
   //    (rewrites are NOT compatible with output:'export', so they
   //     only apply in development mode)
   ...(process.env.NODE_ENV !== 'production' && {
+    output: undefined, // Bypasses export rule only when actively running 'npm run dev'
     async rewrites() {
       const backendPort = process.env.BACKEND_PORT || "3001";
       return [
