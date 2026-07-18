@@ -82,11 +82,23 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Static File Serving (public_html/Argus Path Fixed) ───────
+// ── Static File Serving (cPanel Dynamic Path Resolution) ───────
 if (process.env.NODE_ENV === 'production') {
-  // Looks exactly one folder up from /backend to find frontend and dist
-  const FRONTEND_OUT = path.join(__dirname, '../frontend/out');
-  const LANDING_DIST = path.join(__dirname, '../dist');
+  let FRONTEND_OUT = path.join(__dirname, '../frontend/out');
+  let LANDING_DIST = path.join(__dirname, '../dist');
+
+  // Helper to dynamically check parent paths if standard paths don't exist
+  const findFolder = (folderName, defaultPath) => {
+    if (fs.existsSync(defaultPath)) return defaultPath;
+    const siblingPath = path.join(__dirname, '../../', folderName);
+    if (fs.existsSync(siblingPath)) return siblingPath;
+    const rootSiblingPath = path.join(__dirname, '../', folderName);
+    if (fs.existsSync(rootSiblingPath)) return rootSiblingPath;
+    return defaultPath;
+  };
+
+  FRONTEND_OUT = findFolder('frontend/out', FRONTEND_OUT);
+  LANDING_DIST = findFolder('dist', LANDING_DIST);
 
   // Serve compiled UI/UX bundle assets
   app.use(express.static(FRONTEND_OUT));
