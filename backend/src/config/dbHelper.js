@@ -164,19 +164,19 @@ const query = async (req, sql, params) => {
          for (const suffix of userSuffixes) {
            sUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM shipments_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser})`;
          }
-         shipmentsUnion = `(SELECT DISTINCT ON (ref_no) * FROM (${sUnion}) sub ORDER BY ref_no, __p ASC)`;
+         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
          let rUnion = `SELECT 2 as __p, * FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
          for (const suffix of userSuffixes) {
            rUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
          }
-         repliesUnion = `(SELECT DISTINCT ON (id) * FROM (${rUnion}) sub ORDER BY id, __p ASC)`;
+         repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
          let fUnion = `SELECT 2 as __p, * FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
          for (const suffix of userSuffixes) {
            fUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
          }
-         filesUnion = `(SELECT DISTINCT ON (id) * FROM (${fUnion}) sub ORDER BY id, __p ASC)`;
+         filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
          
          modifiedSql = sql
            .replace(/\bshipments\b/g, shipmentsUnion)

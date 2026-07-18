@@ -1,0 +1,6 @@
+---
+deployment:
+  tasks:
+    # ── Step 1: Install backend dependencies ─────────────────
+    - export DEPLOYPATH=/home/$USER/
+    - /bin/bash deploy.sh

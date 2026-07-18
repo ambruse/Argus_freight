@@ -22,6 +22,7 @@ export default defineConfig({
       '/register': 'http://127.0.0.1:3002',
       '/dashboard': 'http://127.0.0.1:3002',
       '/quotation': 'http://127.0.0.1:3002',
+      '/calculator': 'http://127.0.0.1:3002',
       '/customer': 'http://127.0.0.1:3002',
       '/admin': 'http://127.0.0.1:3002',
       '/confirmed': 'http://127.0.0.1:3002',

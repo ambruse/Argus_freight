@@ -592,9 +592,21 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
                         key={r.id}
                         className={`flex flex-col ${isOutgoing ? "items-end" : "items-start"}`}
                       >
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted mb-1 px-1">
-                          {senderLabel}
-                        </span>
+                        <div className={`flex flex-col mb-1 px-1 ${isOutgoing ? "items-end" : "items-start"}`}>
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-muted">
+                            {senderLabel} {!isOutgoing && r.from_email && `(${r.from_email})`}
+                          </span>
+                          {r.to_emails && (
+                            <span className="text-[9px] text-muted opacity-60">
+                              To: {r.to_emails}
+                            </span>
+                          )}
+                          {r.cc_emails && (
+                            <span className="text-[9px] text-muted opacity-60">
+                              Cc: {r.cc_emails}
+                            </span>
+                          )}
+                        </div>
                         <div
                           className={`p-3.5 rounded-2xl border text-sm text-primary max-w-[85%] whitespace-pre-wrap transition-all duration-150 ${
                             isOutgoing

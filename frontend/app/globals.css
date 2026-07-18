@@ -304,7 +304,13 @@ html.light input:not([type="checkbox"]):not([type="radio"]):focus {
   box-shadow: 0 0 0 3px rgba(245,176,55,0.10);
 }
 
-/* ── Data Table ─────────────────────────────────────────────── */
+/* Table scrolling container layout */
+.overflow-x-auto:has(.data-table) {
+  overflow: auto !important;
+  max-height: calc(100vh - 280px);
+  min-height: 300px;
+}
+
 .data-table {
   @apply w-full text-sm;
   border-collapse: separate;
@@ -321,6 +327,10 @@ html.light input:not([type="checkbox"]):not([type="radio"]):focus {
          px-4 py-3.5 text-left whitespace-nowrap;
   color: rgba(245,176,55,0.70);
   border-bottom: 1px solid rgba(245,176,55,0.10);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(rgba(245, 176, 55, 0.04), rgba(245, 176, 55, 0.04)), var(--surface-1) !important;
 }
 
 .data-table tbody tr {
@@ -495,6 +505,7 @@ html.light .data-table thead tr {
 html.light .data-table thead th {
   color: rgba(180, 130, 20, 0.80);
   border-bottom-color: rgba(180, 130, 20, 0.12);
+  background: linear-gradient(rgba(180, 130, 20, 0.05), rgba(180, 130, 20, 0.05)), var(--surface-1) !important;
 }
 html.light .data-table tbody tr:hover td {
   background: rgba(180, 130, 20, 0.04);

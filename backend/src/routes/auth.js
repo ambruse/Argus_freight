@@ -4,13 +4,14 @@ const router  = express.Router();
 const { 
   login, me, verifyPassword, changePassword, register, 
   getEmailSettings, updateEmailSettings, getAdminUsers, 
-  updateAdminUserEmail, getOperatorsList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateProfile, getProfile
+  updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
+  updateUserExtension, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
 } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { authRateLimiter } = require('../middleware/rateLimiter');
 
 // Public — no auth required (rate-limited)
+router.get('/public-key', getPublicKey);
 router.post('/login', authRateLimiter, login);
 router.post('/register', authRateLimiter, register);
 
@@ -29,8 +30,15 @@ router.post('/profile', authenticateToken, updateProfile);
 router.get('/email-settings', authenticateToken, getEmailSettings);
 router.post('/email-settings', authenticateToken, updateEmailSettings);
 
+// Protected — signature settings
+router.get('/signature', authenticateToken, getSignature);
+router.post('/signature', authenticateToken, updateSignature);
+
 // Protected — list of active operators (for sales dropdown)
 router.get('/operators', authenticateToken, getOperatorsList);
+
+// Protected — list of active sales users (for customer dropdown)
+router.get('/sales', authenticateToken, getSalesList);
 
 // Admin only — manage other users email settings
 router.get('/admin/users', authenticateToken, getAdminUsers);

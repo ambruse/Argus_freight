@@ -109,7 +109,7 @@ export default function CustomerAutoSuggest({ customers, value, onChange }: Prop
             >
               <div className="font-semibold text-primary text-xs">{c.name}</div>
               <div className="text-[10px] text-muted font-mono bg-white/5 px-2 py-0.5 rounded">
-                ID: {c.customer_id}
+                {c.is_sales ? "Sales Staff" : `ID: ${c.customer_id}`}
               </div>
             </div>
           ))}

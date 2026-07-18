@@ -8,7 +8,8 @@ import OverdueFollowUpOverlay from "./OverdueFollowUpOverlay";
 import Link from "next/link";
 import { 
   LayoutDashboard, PlusCircle, ClipboardList, Settings, Home, LogOut, MoreHorizontal,
-  BarChart2, PhoneCall, FileText, BookOpen, UserPlus, CheckSquare, Phone 
+  BarChart2, PhoneCall, FileText, BookOpen, UserPlus, CheckSquare, Phone, Sun, Moon,
+  Calculator
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -25,6 +26,32 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   const { logout } = useAuth();
   const [user, setUser] = useState<any>(null);
   const [isOtherOpen, setIsOtherOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsDarkMode(
+        document.documentElement.classList.contains('dark') ||
+        localStorage.getItem('theme') === 'dark'
+      );
+    };
+    updateTheme();
+    window.addEventListener('themeChanged', updateTheme);
+    return () => window.removeEventListener('themeChanged', updateTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    const isNowDark = html.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
+    if (isNowDark) {
+      html.classList.remove('dark'); html.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      html.classList.add('dark'); html.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    }
+    window.dispatchEvent(new Event('themeChanged'));
+  };
 
   useEffect(() => {
     setUser(authStorage.getUser());
@@ -76,6 +103,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/summary", label: "Summary", icon: BarChart2 },
       { href: "/sales/call-enquiries", label: "Assigned Calls", icon: PhoneCall },
       { href: "/quotation", label: "Quotation", icon: FileText },
+      { href: "/calculator", label: "Calculator", icon: Calculator },
       { href: "/customers", label: "Customer Book", icon: BookOpen },
       { href: "/settings", label: "Settings", icon: Settings },
       { label: "Logout", icon: LogOut, onClick: logout }
@@ -92,6 +120,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/contacts", label: "Address Book", icon: BookOpen },
       { href: "/customers", label: "Customer Book", icon: BookOpen },
       { href: "/quotation", label: "Quotation", icon: FileText },
+      { href: "/calculator", label: "Calculator", icon: Calculator },
       { href: "/settings", label: "Settings", icon: Settings },
       { label: "Logout", icon: LogOut, onClick: logout }
     ];
@@ -107,6 +136,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/contacts", label: "Address Book", icon: BookOpen },
       { href: "/customers", label: "Customer Book", icon: BookOpen },
       { href: "/quotation", label: "Quotation", icon: FileText },
+      { href: "/calculator", label: "Calculator", icon: Calculator },
       { href: "/admin/call-enquiries", label: "All Calls", icon: Phone },
       { href: "/admin/register", label: "Register User", icon: UserPlus },
       { href: "/admin/quotations", label: "Approve Quotes", icon: CheckSquare },
@@ -193,12 +223,23 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
         >
           <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 flex-shrink-0">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#F5B037]">Other Pages</h3>
-            <button 
-              onClick={() => setIsOtherOpen(false)}
-              className="text-xs text-slate-400 hover:text-white"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Theme toggle inside Other panel */}
+              <button
+                onClick={toggleTheme}
+                aria-label="Toggle Theme"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-slate-300 hover:text-[#F5B037] transition-all text-[10px] font-medium"
+              >
+                {isDarkMode ? <Sun size={13} /> : <Moon size={13} />}
+                <span>{isDarkMode ? 'Light' : 'Dark'}</span>
+              </button>
+              <button 
+                onClick={() => setIsOtherOpen(false)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
           </div>
           
           <div 

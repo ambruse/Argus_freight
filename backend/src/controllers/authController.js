@@ -5,6 +5,52 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const db     = require('../config/db');
+const crypto = require('crypto');
+const { encrypt, decrypt } = require('../utils/crypto');
+
+// Generate ephemeral 2048-bit RSA keypair for password transit encryption
+const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+  publicKeyEncoding: {
+    type: 'spki',
+    format: 'pem'
+  },
+  privateKeyEncoding: {
+    type: 'pkcs8',
+    format: 'pem'
+  }
+});
+
+const getPublicKey = async (req, res, next) => {
+  try {
+    res.json({ success: true, publicKey });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const decryptPassword = (password) => {
+  if (!password) return '';
+  // A 2048-bit RSA encrypted ciphertext encoded in Base64 is exactly 344 characters long.
+  if (password.length !== 344) {
+    return password;
+  }
+  try {
+    const decrypted = crypto.privateDecrypt(
+      {
+        key: privateKey,
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: 'sha256'
+      },
+      Buffer.from(password, 'base64')
+    );
+    return decrypted.toString('utf8');
+  } catch (err) {
+    console.error('Password decryption failed, falling back to raw value:', err.message);
+    return password;
+  }
+};
+
 
 /**
  * POST /api/auth/login
@@ -13,7 +59,8 @@ const db     = require('../config/db');
  */
 const login = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
+    password = decryptPassword(password);
 
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Username and password are required.' });
@@ -61,22 +108,22 @@ const login = async (req, res, next) => {
     const cleanUsername = user.username.toLowerCase();
     if (user.role !== 'admin' && cleanUsername !== 'admin') {
       const suffix = cleanUsername;
-      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} (LIKE shipments INCLUDING ALL)`);
-      await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} (LIKE files INCLUDING ALL)`);
-      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} (LIKE shipment_replies INCLUDING ALL)`);
+      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} LIKE shipments`);
+      await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} LIKE files`);
+      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} LIKE shipment_replies`);
 
-      await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_${suffix}_shipment_ref_no_fkey`);
-      await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_shipment_ref_no_fkey`);
+      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_${suffix}_shipment_ref_no_fkey`); } catch(e) {}
+      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_shipment_ref_no_fkey`); } catch(e) {}
       await db.query(`ALTER TABLE files_${suffix} ADD CONSTRAINT files_${suffix}_shipment_ref_no_fkey FOREIGN KEY (shipment_ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
 
-      await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_${suffix}_ref_no_fkey`);
-      await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_ref_no_fkey`);
+      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_${suffix}_ref_no_fkey`); } catch(e) {}
+      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_ref_no_fkey`); } catch(e) {}
       await db.query(`ALTER TABLE shipment_replies_${suffix} ADD CONSTRAINT shipment_replies_${suffix}_ref_no_fkey FOREIGN KEY (ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
 
       // Seed initial data only for the 'jabir' user if their shipments table is completely empty
       if (cleanUsername === 'jabir') {
-        const checkCount = await db.query(`SELECT COUNT(*) FROM shipments_${suffix}`);
-        if (parseInt(checkCount.rows[0].count, 10) === 0) {
+        const checkCount = await db.query(`SELECT COUNT(*) as cnt FROM shipments_${suffix}`);
+        if (parseInt(checkCount.rows[0].cnt, 10) === 0) {
           await db.query(`INSERT INTO shipments_${suffix} SELECT * FROM shipments ON CONFLICT DO NOTHING`);
           await db.query(`INSERT INTO files_${suffix} SELECT * FROM files ON CONFLICT DO NOTHING`);
           await db.query(`INSERT INTO shipment_replies_${suffix} SELECT * FROM shipment_replies ON CONFLICT DO NOTHING`);
@@ -109,7 +156,8 @@ const login = async (req, res, next) => {
  */
 const verifyPassword = async (req, res, next) => {
   try {
-    const { password } = req.body;
+    let { password } = req.body;
+    password = decryptPassword(password);
     if (!password) return res.status(400).json({ success: false, message: 'Password is required.' });
 
     const result = await db.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
@@ -131,7 +179,9 @@ const verifyPassword = async (req, res, next) => {
  */
 const changePassword = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    let { currentPassword, newPassword } = req.body;
+    currentPassword = decryptPassword(currentPassword);
+    newPassword = decryptPassword(newPassword);
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Current and new password are required.' });
     }
@@ -176,7 +226,9 @@ const me = async (req, res, next) => {
  */
 const register = async (req, res, next) => {
   try {
-    const { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword, agent_extension } = req.body;
+    let { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword, agent_extension } = req.body;
+    newPassword = decryptPassword(newPassword);
+    adminPassword = decryptPassword(adminPassword);
 
     if (role === 'customer') {
       if (!newUsername || !newPassword || !name || !email_address || !contact_number) {
@@ -228,7 +280,7 @@ const register = async (req, res, next) => {
     const newRole = validRoles.includes(role) ? role : 'operator';
 
     let finalCustomerId = null;
-    if (newRole === 'customer') {
+    if (newRole === 'customer' || newRole === 'sales') {
       let uniqueCidFound = false;
       let cAttempts = 0;
       while (!uniqueCidFound && cAttempts < 10) {
@@ -249,7 +301,7 @@ const register = async (req, res, next) => {
       // Also insert into customers table
       await db.query(
         'INSERT INTO customers (customer_id, name) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
-        [finalCustomerId, name]
+        [finalCustomerId, name || newUsername]
       );
     }
 
@@ -264,17 +316,17 @@ const register = async (req, res, next) => {
       const suffix = cleanUsername;
       
       // Create tables
-      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} (LIKE shipments INCLUDING ALL)`);
-      await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} (LIKE files INCLUDING ALL)`);
-      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} (LIKE shipment_replies INCLUDING ALL)`);
+      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} LIKE shipments`);
+      await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} LIKE files`);
+      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} LIKE shipment_replies`);
 
       // Recreate foreign keys
-      await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_${suffix}_shipment_ref_no_fkey`);
-      await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_shipment_ref_no_fkey`);
+      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_${suffix}_shipment_ref_no_fkey`); } catch(e) {}
+      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_shipment_ref_no_fkey`); } catch(e) {}
       await db.query(`ALTER TABLE files_${suffix} ADD CONSTRAINT files_${suffix}_shipment_ref_no_fkey FOREIGN KEY (shipment_ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
 
-      await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_${suffix}_ref_no_fkey`);
-      await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_ref_no_fkey`);
+      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_${suffix}_ref_no_fkey`); } catch(e) {}
+      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_ref_no_fkey`); } catch(e) {}
       await db.query(`ALTER TABLE shipment_replies_${suffix} ADD CONSTRAINT shipment_replies_${suffix}_ref_no_fkey FOREIGN KEY (ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
 
       // Seed initial data only for the 'jabir' user as specifically requested
@@ -337,7 +389,7 @@ const updateEmailSettings = async (req, res, next) => {
       // Fetch existing password from database
       const userRes = await db.query("SELECT email_password FROM users WHERE id = $1", [req.user.id]);
       if (userRes.rows.length > 0) {
-        testPass = userRes.rows[0].email_password || '';
+        testPass = decrypt(userRes.rows[0].email_password || '');
       }
     }
 
@@ -372,7 +424,7 @@ const updateEmailSettings = async (req, res, next) => {
     // Save verified credentials to users table
     await db.query(
       `UPDATE users SET email_address = $1, email_password = $2 WHERE id = $3`,
-      [email_address.trim(), testPass, req.user.id]
+      [email_address.trim(), encrypt(testPass), req.user.id]
     );
 
     // Trigger IMAP Reconnection
@@ -444,7 +496,7 @@ const updateAdminUserEmail = async (req, res, next) => {
 
     let testPass = email_password ? email_password.trim() : '';
     if (!testPass) {
-      testPass = targetUser.email_password || '';
+      testPass = decrypt(targetUser.email_password || '');
     }
 
     if (!testPass) {
@@ -478,7 +530,7 @@ const updateAdminUserEmail = async (req, res, next) => {
 
     await db.query(
       `UPDATE users SET email_address = $1, email_password = $2 WHERE id = $3`,
-      [email_address.trim(), testPass, userId]
+      [email_address.trim(), encrypt(testPass), userId]
     );
 
     const { startImapService } = require('../services/imapService');
@@ -514,7 +566,8 @@ const createAdminOperator = async (req, res, next) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Forbidden. Admin only.' });
     }
-    const { username, password, email_address, email_password } = req.body;
+    let { username, password, email_address, email_password } = req.body;
+    password = decryptPassword(password);
 
     if (!username || !password || !email_address || !email_password) {
       return res.status(400).json({ success: false, message: 'All fields are required.' });
@@ -569,7 +622,7 @@ const createAdminOperator = async (req, res, next) => {
       `INSERT INTO users (username, password_hash, role, email_address, email_password) 
        VALUES ($1, $2, $3, $4, $5) 
        RETURNING id, username, role, email_address`,
-      [username, passwordHash, 'operator', email_address.trim(), email_password.trim()]
+      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim())]
     );
 
     // Create sandbox tables for this new operator
@@ -749,8 +802,70 @@ const getProfile = async (req, res, next) => {
   }
 };
 
+const getSignature = async (req, res, next) => {
+  try {
+    const userRes = await db.query("SELECT email_signature FROM users WHERE id = $1", [req.user.id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    res.json({
+      success: true,
+      signature: userRes.rows[0].email_signature || ""
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateSignature = async (req, res, next) => {
+  try {
+    const { signature } = req.body;
+    await db.query("UPDATE users SET email_signature = $1 WHERE id = $2", [signature || null, req.user.id]);
+    res.json({ success: true, message: 'Signature updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getSalesList = async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `SELECT id, username, name, email_address, contact_number, customer_id FROM users 
+       WHERE role = 'sales' 
+       ORDER BY username`
+    );
+    const users = result.rows;
+    for (let user of users) {
+      if (!user.customer_id) {
+        let uniqueCidFound = false;
+        let cAttempts = 0;
+        let newCid = null;
+        while (!uniqueCidFound && cAttempts < 10) {
+          const generatedCid = Math.floor(10000 + Math.random() * 90000).toString();
+          const checkCid = await db.query('SELECT id FROM users WHERE customer_id = $1', [generatedCid]);
+          const checkCustCid = await db.query('SELECT id FROM customers WHERE customer_id = $1', [generatedCid]);
+          if (checkCid.rows.length === 0 && checkCustCid.rows.length === 0) {
+            newCid = generatedCid;
+            uniqueCidFound = true;
+          } else {
+            cAttempts++;
+          }
+        }
+        if (newCid) {
+          await db.query('UPDATE users SET customer_id = $1 WHERE id = $2', [newCid, user.id]);
+          await db.query('INSERT INTO customers (customer_id, name) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [newCid, user.name || user.username]);
+          user.customer_id = newCid;
+        }
+      }
+    }
+    res.json({ success: true, data: users });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
-  getAdminUsers, updateAdminUserEmail, getOperatorsList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateProfile, getProfile
+  getAdminUsers, updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
+  updateUserExtension, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
 };

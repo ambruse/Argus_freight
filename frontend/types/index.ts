@@ -91,6 +91,8 @@ export interface ShipmentReply {
   body_text:   string;
   received_at: string;
   is_outgoing?: boolean;
+  to_emails?:  string;
+  cc_emails?:  string;
 }
 
 export interface DashboardMetrics {
@@ -130,6 +132,14 @@ export interface Customer {
   customer_id: string;
   name: string;
   created_at: string;
+  username?: string;
+  email_address?: string | null;
+  contact_number?: string | null;
+  address?: string | null;
+  company?: string | null;
+  company_address?: string | null;
+  secondary_phone?: string | null;
+  is_sales?: boolean;
 }
 
 export interface CallEnquiry {

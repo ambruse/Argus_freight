@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { authStorage, AuthUser } from "@/lib/auth";
+import { encryptPassword } from "@/lib/crypto";
 
 export function useAuth() {
   const router = useRouter();
@@ -25,7 +26,8 @@ export function useAuth() {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const { data } = await api.post("/auth/login", { username, password });
+    const securePassword = await encryptPassword(password);
+    const { data } = await api.post("/auth/login", { username, password: securePassword });
     if (data.success) {
       authStorage.setToken(data.token);
       authStorage.setUser(data.user);

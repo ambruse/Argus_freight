@@ -31,7 +31,8 @@ const errorHandler       = require('./middleware/errorHandler');
 const { startImapService } = require('./services/imapService');
 
 const app  = express();
-const PORT = (process.env.RENDER === 'true' || process.env.NODE_ENV === 'production') ? 3009 : (process.env.PORT || 3001);
+// cPanel Passenger injects PORT automatically; fall back to 3001 for local dev
+const PORT = process.env.PORT || 3001;
 const http = require('http');
 const { Server } = require('socket.io');
 const server = http.createServer(app);
@@ -87,10 +88,400 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 //  Static uploads are disabled for security to enforce token authentication.
 //  Files are served securely via GET /api/files/download/:id instead.
 
-// ── Database Initialization ────────────────────────────────────
+// ── Database Initialization (MySQL) ─────────────────────────
 const db = require('./config/db');
-db.query(`
-  CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+// Add a column if it does not already exist (MySQL workaround for IF NOT EXISTS)
+const addCol = async (table, column, definition) => {
+  try {
+    await db.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+  } catch (e) {
+    if (e.code === 'ER_DUP_FIELDNAME') return; // column already exists — that's fine
+    if (e.message && e.message.includes('Duplicate column')) return;
+    throw e;
+  }
+};
+
+// Create a per-operator sandbox table (LIKE base_table) if it does not exist
+const createLike = async (newTable, baseTable) => {
+  try {
+    await db.query(`CREATE TABLE IF NOT EXISTS \`${newTable}\` LIKE \`${baseTable}\``);
+  } catch (e) {
+    console.error(`[DB] Error creating ${newTable}:`, e.message);
+  }
+};
+
+(async () => {
+  try {
+    // ── Core tables ───────────────────────────────────────────
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        username         VARCHAR(100) NOT NULL UNIQUE,
+        password_hash    VARCHAR(255) NOT NULL,
+        role             VARCHAR(50) NOT NULL DEFAULT 'operator',
+        created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS shipments (
+        id                INT NOT NULL AUTO_INCREMENT,
+        ref_no            VARCHAR(50) PRIMARY KEY,
+        customer_id       VARCHAR(5),
+        cust_req_no       VARCHAR(50),
+        refer_by          VARCHAR(100),
+        pol               VARCHAR(100),
+        pod               VARCHAR(100),
+        commodity         VARCHAR(255),
+        term              VARCHAR(50),
+        dimension         VARCHAR(255),
+        container         VARCHAR(100),
+        mode              VARCHAR(50),
+        weight            VARCHAR(100),
+        pickup_address    TEXT,
+        delivery_address  TEXT,
+        dear_who          VARCHAR(255),
+        email             VARCHAR(255),
+        status            VARCHAR(50) NOT NULL DEFAULT 'Pending',
+        last_follow_up    DATETIME DEFAULT CURRENT_TIMESTAMP,
+        do_number         VARCHAR(100),
+        box_no            VARCHAR(100),
+        so_number         VARCHAR(100),
+        bl_number         VARCHAR(100),
+        track_status      VARCHAR(255),
+        carrier           VARCHAR(150),
+        etd               DATE,
+        eta               DATE,
+        cost              DECIMAL(15,2),
+        profit            DECIMAL(15,2),
+        customer_name     VARCHAR(255),
+        customer_email    VARCHAR(255),
+        note              TEXT,
+        operator          VARCHAR(100),
+        created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS files (
+        id              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        shipment_ref_no VARCHAR(50) NOT NULL,
+        filename        VARCHAR(255) NOT NULL,
+        original_name   VARCHAR(255) NOT NULL,
+        file_path       TEXT NOT NULL,
+        mime_type       VARCHAR(100) NOT NULL DEFAULT 'application/pdf',
+        size_bytes      BIGINT,
+        uploaded_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (shipment_ref_no) REFERENCES shipments(ref_no) ON DELETE CASCADE
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS contacts (
+        id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        email       VARCHAR(255) NOT NULL,
+        dear_who    VARCHAR(255),
+        pol         VARCHAR(100) NOT NULL DEFAULT '',
+        pod         VARCHAR(100) NOT NULL DEFAULT '',
+        mode        VARCHAR(50)  NOT NULL DEFAULT '',
+        country     VARCHAR(100),
+        created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY idx_contacts_email_pol_pod_mode (email, pol, pod, mode)
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        customer_id VARCHAR(5) NOT NULL UNIQUE,
+        name        VARCHAR(255) NOT NULL UNIQUE,
+        created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        \`key\` VARCHAR(255) PRIMARY KEY,
+        value   TEXT
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS call_enquiries (
+        id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        customer_name    VARCHAR(255) NOT NULL,
+        company          VARCHAR(255),
+        type             VARCHAR(255),
+        customer_number  VARCHAR(100) NOT NULL,
+        customer_email   VARCHAR(255),
+        customer_address TEXT,
+        details          TEXT NOT NULL,
+        status           VARCHAR(50) NOT NULL,
+        calling_agent    VARCHAR(255) NOT NULL,
+        assigned_sales   VARCHAR(255),
+        call_duration    INT,
+        is_lead          TINYINT(1) DEFAULT 0,
+        created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS shipment_replies (
+        id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        ref_no      VARCHAR(50),
+        from_email  VARCHAR(255),
+        subject     TEXT,
+        body_text   TEXT,
+        received_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_read     TINYINT(1) NOT NULL DEFAULT 0,
+        message_id  VARCHAR(255) UNIQUE,
+        to_emails   TEXT,
+        cc_emails   TEXT,
+        FOREIGN KEY (ref_no) REFERENCES shipments(ref_no) ON DELETE CASCADE
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS cc_recipients (
+        id           INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        name         VARCHAR(100) NOT NULL,
+        email        VARCHAR(255) NOT NULL UNIQUE,
+        multi_select TINYINT(1) NOT NULL DEFAULT 0
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS compulsory_emails (
+        id        INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        email     VARCHAR(255) NOT NULL,
+        dear_who  VARCHAR(255) NOT NULL,
+        mode      VARCHAR(50) NOT NULL,
+        is_active TINYINT(1) DEFAULT 1,
+        UNIQUE KEY unique_email_mode (email, mode)
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS customer_operator_chats (
+        id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        cust_req_no      VARCHAR(50) NOT NULL,
+        sender_username  VARCHAR(100) NOT NULL,
+        message          TEXT NOT NULL,
+        is_read          TINYINT(1) NOT NULL DEFAULT 0,
+        created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS quotations (
+        id              INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        q_no            VARCHAR(50) NOT NULL UNIQUE,
+        pol             VARCHAR(255),
+        pod             VARCHAR(255),
+        commodity       VARCHAR(255),
+        pod_pcode       VARCHAR(255),
+        pol_pcode       VARCHAR(255),
+        freight         DECIMAL(15,2),
+        zone            VARCHAR(255),
+        trans           DECIMAL(15,2),
+        total_rate      DECIMAL(15,2),
+        sales_p         VARCHAR(100),
+        operator        VARCHAR(100),
+        customer_name   VARCHAR(255),
+        transit_time    VARCHAR(100),
+        validity        DATE,
+        created_date    DATE,
+        created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_by      INT,
+        file_path       VARCHAR(512),
+        mode            VARCHAR(255),
+        carrier_name    VARCHAR(255),
+        currency        VARCHAR(10),
+        approval_status VARCHAR(255) DEFAULT 'Pending',
+        shipment_ref    VARCHAR(255),
+        email_payload   TEXT,
+        FOREIGN KEY (created_by) REFERENCES users(id)
+      )
+    `);
+
+    // ── Column migrations (addCol silently skips if already present) ──
+    await addCol('users', 'email_address', 'VARCHAR(255)');
+    await addCol('users', 'email_password', 'VARCHAR(255)');
+    await addCol('users', 'is_stalled', 'TINYINT(1) DEFAULT 0');
+    await addCol('users', 'name', 'VARCHAR(255)');
+    await addCol('users', 'contact_number', 'VARCHAR(100)');
+    await addCol('users', 'customer_id', 'VARCHAR(5)');
+    await addCol('users', 'address', 'TEXT');
+    await addCol('users', 'company', 'VARCHAR(255)');
+    await addCol('users', 'company_address', 'TEXT');
+    await addCol('users', 'secondary_phone', 'VARCHAR(100)');
+    await addCol('users', 'email_signature', 'TEXT');
+    await addCol('users', 'agent_extension', 'VARCHAR(50)');
+    await addCol('shipments', 'customer_id', 'VARCHAR(5)');
+    await addCol('shipments', 'profit', 'DECIMAL(15,2)');
+    await addCol('shipments', 'customer_name', 'VARCHAR(255)');
+    await addCol('shipments', 'customer_email', 'VARCHAR(255)');
+    await addCol('shipments', 'operator', 'VARCHAR(100)');
+    await addCol('shipments', 'cust_req_no', 'VARCHAR(50)');
+    await addCol('shipment_replies', 'is_read', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await addCol('shipment_replies', 'message_id', 'VARCHAR(255)');
+    await addCol('shipment_replies', 'to_emails', 'TEXT');
+    await addCol('shipment_replies', 'cc_emails', 'TEXT');
+    await addCol('cc_recipients', 'multi_select', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await addCol('call_enquiries', 'call_duration', 'INT');
+    await addCol('call_enquiries', 'is_lead', 'TINYINT(1) DEFAULT 0');
+    await addCol('quotations', 'mode', 'VARCHAR(255)');
+    await addCol('quotations', 'carrier_name', 'VARCHAR(255)');
+    await addCol('quotations', 'currency', 'VARCHAR(10)');
+    await addCol('quotations', 'approval_status', "VARCHAR(255) DEFAULT 'Pending'");
+    await addCol('quotations', 'shipment_ref', 'VARCHAR(255)');
+    await addCol('quotations', 'email_payload', 'TEXT');
+
+    // ── Seed CC recipients ─────────────────────────────────────
+    await db.query(`
+      INSERT IGNORE INTO cc_recipients (name, email, multi_select) VALUES
+        ('Nafih',  'op2@argusshipping.co',    0),
+        ('Jabir',  'jabir@argusshipping.co',  0),
+        ('Shamil', 'op1@argusshipping.co',    0),
+        ('Ganesh', 'ganesh@argusshipping.co', 1),
+        ('Jemshy', 'jemshy@argusshipping.co', 1)
+    `);
+
+    // ── Seed compulsory emails ─────────────────────────────────
+    await db.query(`
+      INSERT IGNORE INTO compulsory_emails (email, dear_who, mode, is_active) VALUES
+        ('reshma@aramex.com',            'Reshma',  'Air', 1),
+        ('MelanieR@aramex.com',          'Melanie', 'Air', 1),
+        ('Kumudu.Karunarathna@gwcss.qa', 'Kumudu',  'Sea', 1)
+    `);
+
+    // ── Migrate credentials from app_settings to admin user ───
+    try {
+      const adminCheck = await db.query("SELECT email_address FROM users WHERE LOWER(username) = 'admin'");
+      if (adminCheck.rows.length > 0 && !adminCheck.rows[0].email_address) {
+        const emailRes = await db.query("SELECT value FROM app_settings WHERE `key` = 'email_address'");
+        const passRes  = await db.query("SELECT value FROM app_settings WHERE `key` = 'email_password'");
+        const emailVal = emailRes.rows[0]?.value;
+        const passVal  = passRes.rows[0]?.value;
+        if (emailVal) {
+          await db.query(
+            "UPDATE users SET email_address = ?, email_password = ? WHERE LOWER(username) = 'admin'",
+            [emailVal, passVal || null]
+          );
+          console.log('[Migration] Migrated global app_settings credentials to admin user.');
+        }
+      }
+    } catch (migErr) {
+      console.error('[Migration] Error migrating credentials:', migErr.message);
+    }
+
+    // ── Operator column migration: set NULL operators to jabir ─
+    try {
+      const tablesRes = await db.query(
+        `SELECT table_name FROM information_schema.tables
+         WHERE table_schema = DATABASE() AND table_name LIKE 'shipments_%'`
+      );
+      await addCol('shipments', 'operator', 'VARCHAR(100)');
+      for (const r of tablesRes.rows) {
+        await addCol(r.table_name, 'operator', 'VARCHAR(100)');
+        await addCol(r.table_name, 'cust_req_no', 'VARCHAR(50)');
+      }
+      await db.query("UPDATE shipments SET operator = 'jabir' WHERE operator IS NULL");
+      for (const r of tablesRes.rows) {
+        await db.query(`UPDATE \`${r.table_name}\` SET operator = 'jabir' WHERE operator IS NULL`);
+      }
+      console.log('[Migration] Operator & cust_req_no columns up to date.');
+    } catch (opMigErr) {
+      console.error('[Migration] Operator migration error:', opMigErr.message);
+    }
+
+    // ── Reply-table column migration ───────────────────────────
+    try {
+      const srTablesRes = await db.query(
+        `SELECT table_name FROM information_schema.tables
+         WHERE table_schema = DATABASE() AND table_name LIKE 'shipment_replies_%'`
+      );
+      for (const row of srTablesRes.rows) {
+        await addCol(row.table_name, 'to_emails', 'TEXT');
+        await addCol(row.table_name, 'cc_emails',  'TEXT');
+      }
+    } catch (migErr) {
+      console.error('[Migration] to_emails/cc_emails migration error:', migErr.message);
+    }
+
+    // ── Encrypt plain-text email passwords ────────────────────
+    try {
+      const { encrypt } = require('./utils/crypto');
+      const usersRes = await db.query("SELECT id, email_password FROM users WHERE email_password IS NOT NULL AND email_password != ''");
+      for (const u of usersRes.rows) {
+        if (!u.email_password.includes(':')) {
+          const encrypted = encrypt(u.email_password);
+          await db.query('UPDATE users SET email_password = ? WHERE id = ?', [encrypted, u.id]);
+          console.log(`[Migration] Encrypted password for user ID ${u.id}`);
+        }
+      }
+    } catch (encErr) {
+      console.error('[Migration] Encrypt passwords error:', encErr.message);
+    }
+
+    // ── Auto-seed admin user ───────────────────────────────────
+    try {
+      const adminCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'admin'");
+      if (adminCheck.rows.length === 0) {
+        const bcrypt = require('bcryptjs');
+        const hash = await bcrypt.hash('Admin@1234', 10);
+        await db.query(
+          "INSERT IGNORE INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')",
+          [hash]
+        );
+        console.log("[Seeding] Created default admin user (password: Admin@1234)");
+      }
+    } catch (err) {
+      console.error('[Seeding] Error creating admin:', err.message);
+    }
+
+    // ── Auto-seed jabir operator user ─────────────────────────
+    try {
+      const userCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'jabir'");
+      if (userCheck.rows.length === 0) {
+        const bcrypt = require('bcryptjs');
+        const hash = await bcrypt.hash('Jabir@1234', 10);
+        await db.query(
+          "INSERT IGNORE INTO users (username, password_hash, role) VALUES ('jabir', ?, 'operator')",
+          [hash]
+        );
+        console.log("[Seeding] Created default jabir user (password: Jabir@1234)");
+
+        // Create sandbox tables for jabir
+        await createLike('shipments_jabir', 'shipments');
+        await createLike('files_jabir', 'files');
+        await createLike('shipment_replies_jabir', 'shipment_replies');
+
+        // Add foreign keys to jabir sandbox tables
+        try { await db.query('ALTER TABLE files_jabir DROP FOREIGN KEY files_jabir_shipment_ref_no_fkey'); } catch(e) {}
+        await db.query('ALTER TABLE files_jabir ADD CONSTRAINT files_jabir_shipment_ref_no_fkey FOREIGN KEY (shipment_ref_no) REFERENCES shipments_jabir(ref_no) ON DELETE CASCADE');
+
+        try { await db.query('ALTER TABLE shipment_replies_jabir DROP FOREIGN KEY shipment_replies_jabir_ref_no_fkey'); } catch(e) {}
+        await db.query('ALTER TABLE shipment_replies_jabir ADD CONSTRAINT shipment_replies_jabir_ref_no_fkey FOREIGN KEY (ref_no) REFERENCES shipments_jabir(ref_no) ON DELETE CASCADE');
+
+        // Seed with base data
+        await db.query('INSERT IGNORE INTO shipments_jabir SELECT * FROM shipments');
+        await db.query('INSERT IGNORE INTO files_jabir SELECT * FROM files');
+        await db.query('INSERT IGNORE INTO shipment_replies_jabir SELECT * FROM shipment_replies');
+        console.log('[Seeding] Jabir sandbox tables seeded.');
+      }
+    } catch (err) {
+      console.error('[Seeding] Error creating jabir:', err.message);
+    }
+
+    console.log('[DB] MySQL schema initialisation complete.');
+  } catch (initErr) {
+    console.error('[DB] Fatal DB init error:', initErr);
+  }
+})();
 
   DO $$ BEGIN
     CREATE TYPE shipment_status AS ENUM (
@@ -272,6 +663,7 @@ db.query(`
   ALTER TABLE users ADD COLUMN IF NOT EXISTS company VARCHAR(255);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS company_address TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS secondary_phone VARCHAR(100);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_signature TEXT;
 
   ALTER TABLE shipments ADD COLUMN IF NOT EXISTS operator VARCHAR(100);
 
@@ -397,6 +789,40 @@ db.query(`
     console.log("[Migration] Added operator & cust_req_no columns and set past RFQs operator to 'jabir' across all tables.");
   } catch (opMigErr) {
     console.error("[Migration] Error running operator and cust_req_no column migration:", opMigErr.message);
+  }
+
+  // ── Migration: Add to_emails and cc_emails columns ──
+  try {
+    await db.query(`ALTER TABLE shipment_replies ADD COLUMN IF NOT EXISTS to_emails TEXT`);
+    await db.query(`ALTER TABLE shipment_replies ADD COLUMN IF NOT EXISTS cc_emails TEXT`);
+
+    const srTablesRes = await db.query(
+      `SELECT table_name FROM information_schema.tables 
+       WHERE table_schema = 'public' AND table_name LIKE 'shipment_replies_%'`
+    );
+    for (const row of srTablesRes.rows) {
+      await db.query(`ALTER TABLE ${row.table_name} ADD COLUMN IF NOT EXISTS to_emails TEXT`);
+      await db.query(`ALTER TABLE ${row.table_name} ADD COLUMN IF NOT EXISTS cc_emails TEXT`);
+    }
+    console.log("[Migration] Added to_emails and cc_emails columns to base and user replies tables.");
+  } catch (migErr) {
+    console.error("[Migration] Error running to_emails/cc_emails column migration:", migErr.message);
+  }
+
+  // ── Migration: Encrypt plain text email passwords ──
+  try {
+    const { encrypt } = require('./utils/crypto');
+    const usersRes = await db.query("SELECT id, email_password FROM users WHERE email_password IS NOT NULL AND email_password != ''");
+    for (const u of usersRes.rows) {
+      const pass = u.email_password;
+      if (!pass.includes(':')) {
+        const encrypted = encrypt(pass);
+        await db.query("UPDATE users SET email_password = $1 WHERE id = $2", [encrypted, u.id]);
+        console.log(`[Migration] Encrypted plain-text password for user ID ${u.id}`);
+      }
+    }
+  } catch (encMigErr) {
+    console.error("[Migration] Error encrypting user passwords:", encMigErr.message);
   }
 
   // Auto-register user 'admin' with default password 'Admin@1234' if not exists

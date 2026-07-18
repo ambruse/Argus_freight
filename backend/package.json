@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js"
   },
   "dependencies": {
+    "@matbee/libreoffice-converter": "^2.6.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "docxtemplater": "^3.68.7",
@@ -24,7 +25,7 @@
     "pdf-lib": "^1.17.1",
     "pdf.js-extract": "^1.0.1",
     "pdfkit": "^0.19.1",
-    "pg": "^8.12.0",
+    "mysql2": "^3.11.0",
     "pizzip": "^3.2.0",
     "socket.io": "^4.8.3",
     "twilio": "^6.0.2",

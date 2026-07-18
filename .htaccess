@@ -1,0 +1,48 @@
+# ================================================================
+#  ARGUS Apache .htaccess
+#  Place this file in your public_html/ directory.
+#
+#  Routing logic:
+#    /api/*          → Express backend  (Node.js App, port 3001)
+#    /socket.io/*    → Express backend  (WebSocket)
+#    /login, /dashboard, /rfq, etc. → Next.js frontend (port 3000)
+#    / and landing routes → Static HTML from public_html/
+# ================================================================
+
+Options -Indexes
+RewriteEngine On
+
+# ── Serve static assets directly (CSS, JS, images) ───────────
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# ── Proxy WebSocket (Socket.IO) to Express backend ───────────
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^socket\.io/(.*) http://127.0.0.1:3001/socket.io/$1 [P,L]
+
+# ── Proxy API calls to Express backend ───────────────────────
+RewriteRule ^api/(.*)$ http://127.0.0.1:3001/api/$1 [P,L]
+
+# ── Proxy app routes to Next.js frontend ─────────────────────
+RewriteCond %{REQUEST_URI} ^/(login|register|dashboard|rfq|confirmed|customers|customer|contacts|quotation|calling-agent|sales|settings|summary|admin|calculator)(/.*)?$ [NC]
+RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
+
+# ── All remaining requests → landing page (static SPA) ───────
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# ── Security headers ─────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ── Gzip compression ─────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>

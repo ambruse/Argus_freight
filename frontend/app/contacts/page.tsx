@@ -6,23 +6,10 @@ import { Contact } from "@/types";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import PortAutoSuggest from "@/components/ui/PortAutoSuggest";
+import { ALL_COUNTRIES } from "@/lib/ports";
 
 // ── Country list ─────────────────────────────────────────────
-const COUNTRIES = [
-  "Afghanistan","Albania","Algeria","Angola","Argentina","Armenia","Australia","Austria",
-  "Azerbaijan","Bahrain","Bangladesh","Belgium","Bolivia","Bosnia and Herzegovina","Brazil",
-  "Bulgaria","Cambodia","Cameroon","Canada","Chile","China","Colombia","Congo","Croatia",
-  "Cuba","Cyprus","Czech Republic","Denmark","Ecuador","Egypt","Ethiopia","Finland","France",
-  "Germany","Ghana","Greece","Guatemala","Hong Kong","Hungary","India","Indonesia","Iran",
-  "Iraq","Ireland","Israel","Italy","Ivory Coast","Japan","Jordan","Kazakhstan","Kenya",
-  "Kuwait","Lebanon","Libya","Luxembourg","Malaysia","Mexico","Morocco","Mozambique",
-  "Myanmar","Netherlands","New Zealand","Nigeria","Norway","Oman","Pakistan","Panama",
-  "Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia",
-  "Senegal","Serbia","Singapore","South Africa","South Korea","Spain","Sri Lanka","Sudan",
-  "Sweden","Switzerland","Syria","Taiwan","Tanzania","Thailand","Tunisia","Turkey",
-  "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay",
-  "Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe",
-].sort();
+const COUNTRIES = ALL_COUNTRIES;
 
 const MODE_OPTIONS = ["AIR", "SEA", "ROAD", "AIR AND SEA"];
 

@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output is required for cPanel Passenger deployment
+  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
   // Isolate development cache to prevent HMR asset 404 conflicts
   distDir: process.env.NODE_ENV === "development" ? ".next/dev" : ".next",
   // Allow proxying API requests to backend in development
   async rewrites() {
-    const backendPort = process.env.NODE_ENV === "production" ? "3009" : "3001";
+    const backendPort = process.env.BACKEND_PORT || (process.env.NODE_ENV === "production" ? "3001" : "3001");
     return [
       {
         source: "/socket.io/:path*",

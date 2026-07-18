@@ -6,11 +6,12 @@
 import { useState, useRef, ChangeEvent, DragEvent, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import PortAutoSuggest from "@/components/ui/PortAutoSuggest";
+import CountryAutoSuggest from "@/components/ui/CountryAutoSuggest";
 import ContainerInput from "@/components/ui/ContainerInput";
 import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
-import { MAJOR_PORTS } from "@/lib/ports";
+import { MAJOR_PORTS, ALL_COUNTRIES } from "@/lib/ports";
 
 type FormState = {
   pol: string;
@@ -205,7 +206,7 @@ export default function CustomerNewRFQPage() {
     }
   };
 
-  const polCountries = Array.from(new Set(MAJOR_PORTS.map(p => p.country))).sort();
+  const polCountries = ALL_COUNTRIES;
 
   // Container structured UI only for Sea / Road
   const isContainerMode = ["sea", "road"].includes(form.mode?.toLowerCase() ?? "");
@@ -255,24 +256,11 @@ export default function CustomerNewRFQPage() {
                       isPod={f.name === "pod"}
                     />
                   ) : f.name === "pol_country" ? (
-                    <select
-                      name="pol_country"
+                    <CountryAutoSuggest
                       value={form.pol_country}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setForm(prev => ({ 
-                          ...prev, 
-                          pol_country: val,
-                          pol: "" // clear POL when country changes to avoid mismatch
-                        }));
-                      }}
-                      className="select w-full min-h-[44px]"
-                    >
-                      <option value="">— Select POL Country —</option>
-                      {polCountries.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setForm(prev => ({ ...prev, pol_country: val, pol: "" }))}
+                      placeholder="Search POL Country..."
+                    />
                   ) : f.name === "mode" ? (
                     <select
                       name="mode"
