@@ -84,9 +84,52 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Serve uploaded PDFs ──────────────────────────
-//  Static uploads are disabled for security to enforce token authentication.
-//  Files are served securely via GET /api/files/download/:id instead.
+// ── Static File Serving (Production cPanel only) ─────────────
+//    In production Express serves:
+//      1. Next.js static export  (frontend/out/)  — app pages
+//      2. Vite landing page      (dist/)           — public site
+//    In development the Vite dev server and Next.js dev server
+//    handle their own files; this block is skipped.
+if (process.env.NODE_ENV === 'production') {
+  const FRONTEND_OUT = path.join(__dirname, '../../frontend/out');
+  const LANDING_DIST = path.join(__dirname, '../../dist');
+
+  // Serve Next.js static assets (_next/ folder, images, etc.)
+  app.use(express.static(FRONTEND_OUT));
+
+  // Serve Vite landing page assets
+  app.use(express.static(LANDING_DIST));
+
+  // App page routes — serve the matching Next.js HTML file
+  const appRoutes = [
+    'login', 'register', 'dashboard', 'rfq', 'confirmed',
+    'customers', 'customer', 'contacts', 'quotation',
+    'calling-agent', 'sales', 'settings', 'summary',
+    'admin', 'calculator'
+  ];
+  appRoutes.forEach(route => {
+    app.get(`/${route}`, (req, res) => {
+      const htmlFile = path.join(FRONTEND_OUT, `${route}.html`);
+      if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
+      // Fallback to index if specific file not found
+      res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
+    });
+    // Also handle sub-routes like /customer/[id]
+    app.get(`/${route}/*`, (req, res) => {
+      const htmlFile = path.join(FRONTEND_OUT, `${route}.html`);
+      if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
+      res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
+    });
+  });
+
+  // Landing page routes — served from Vite dist
+  const landingRoutes = ['/', '/about', '/services', '/why-us', '/team', '/contact', '/chairman-message'];
+  landingRoutes.forEach(route => {
+    app.get(route, (_req, res) => {
+      res.sendFile(path.join(LANDING_DIST, 'index.html'));
+    });
+  });
+}
 
 // ── Database Initialization (MySQL) ─────────────────────────
 const db = require('./config/db');

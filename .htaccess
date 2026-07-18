@@ -1,38 +1,30 @@
 # ================================================================
-#  ARGUS Apache .htaccess
+#  ARGUS Apache .htaccess — SINGLE APP setup
 #  Place this file in your public_html/ directory.
 #
-#  Routing logic:
-#    /api/*          → Express backend  (Node.js App, port 3001)
-#    /socket.io/*    → Express backend  (WebSocket)
-#    /login, /dashboard, /rfq, etc. → Next.js frontend (port 3000)
-#    / and landing routes → Static HTML from public_html/
+#  ALL traffic goes to the ONE Express Node.js app (port 3001).
+#  Express itself serves:
+#    - /api/*          → API routes
+#    - /socket.io/*    → WebSocket
+#    - /login, /dashboard, /rfq, etc. → Next.js static HTML
+#    - /               → Vite landing page
 # ================================================================
 
 Options -Indexes
 RewriteEngine On
 
-# ── Serve static assets directly (CSS, JS, images) ───────────
+# ── Serve real files/folders directly (CSS, JS, images) ──────
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# ── Proxy WebSocket (Socket.IO) to Express backend ───────────
+# ── Proxy WebSocket (Socket.IO) ───────────────────────────────
 RewriteCond %{HTTP:Upgrade} websocket [NC]
 RewriteCond %{HTTP:Connection} upgrade [NC]
 RewriteRule ^socket\.io/(.*) http://127.0.0.1:3001/socket.io/$1 [P,L]
 
-# ── Proxy API calls to Express backend ───────────────────────
-RewriteRule ^api/(.*)$ http://127.0.0.1:3001/api/$1 [P,L]
-
-# ── Proxy app routes to Next.js frontend ─────────────────────
-RewriteCond %{REQUEST_URI} ^/(login|register|dashboard|rfq|confirmed|customers|customer|contacts|quotation|calling-agent|sales|settings|summary|admin|calculator)(/.*)?$ [NC]
-RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
-
-# ── All remaining requests → landing page (static SPA) ───────
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.html [L]
+# ── Proxy EVERYTHING else to Express ─────────────────────────
+RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 
 # ── Security headers ─────────────────────────────────────────
 <IfModule mod_headers.c>
