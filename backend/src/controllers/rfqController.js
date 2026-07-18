@@ -6,6 +6,7 @@
 const db = require('../config/db');
 const { query } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
+const { decrypt } = require('../utils/crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -170,9 +171,14 @@ const generateRfq = async (req, res, next) => {
           }
         }
       } catch (err) {
+        console.error("Error inserting RFQ:", err);
         if (req.body.ref_no) {
-          // If custom reference number failed, return error immediately
-          return res.status(409).json({ success: false, message: `Reference number ${ref_no} already exists.` });
+          if (err.code === '23505') {
+            // If custom reference number failed, return error immediately
+            return res.status(409).json({ success: false, message: `Reference number ${ref_no} already exists.` });
+          } else {
+            throw err;
+          }
         }
         // 23505 is PostgreSQL unique violation code
         if (err.code === '23505') {
@@ -228,28 +234,34 @@ const sendRfqEmail = async (req, res, next) => {
     // 3. Resolve Dynamic Email Credentials
     let smtpUser = null;
     let smtpPass = null;
+    let targetUserId = req.user.id;
     try {
       if (req.user.role === 'sales') {
         // Sales sends through the selected operator's email address or username
         const userRes = await db.query(
-          "SELECT email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+          "SELECT id, email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
           [shipment.operator]
         );
         if (userRes.rows.length > 0) {
           smtpUser = userRes.rows[0].email_address;
-          smtpPass = userRes.rows[0].email_password;
+          smtpPass = decrypt(userRes.rows[0].email_password);
+          targetUserId = userRes.rows[0].id;
         }
       } else {
         // Admin/Operator sends through their own credentials
-        const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+        const userRes = await db.query("SELECT id, email_address, email_password FROM users WHERE id = $1", [req.user.id]);
         if (userRes.rows.length > 0) {
           smtpUser = userRes.rows[0].email_address;
-          smtpPass = userRes.rows[0].email_password;
+          smtpPass = decrypt(userRes.rows[0].email_password);
+          targetUserId = userRes.rows[0].id;
         }
       }
     } catch (dbErr) {
       console.error('Error loading credentials from DB:', dbErr.message);
     }
+
+    const { getSignatureForUser } = require('../utils/signature');
+    const signature = await getSignatureForUser(targetUserId);
 
     // Fallback to global env variables if not set in DB
     if (!smtpUser) {
@@ -352,35 +364,19 @@ const sendRfqEmail = async (req, res, next) => {
     // Signature
     htmlBody += `
       <br><br>
-      <p>Best regards,</p>
-
-      <p style="color:#3b78c8;">
-      <b>Muhammed Jabir</b><br>
-      PRICING AND OPERATION<br>
-      ARGUS SHIPPING
-      </p>
-
-      <p>📞 +974 30512233</p>
-
-      <p>
-      📧 <a href="mailto:jabir@argusshipping.co">
-      jabir@argusshipping.co
-      </a>
-      </p>
-
-      <p>
-      🌐 <a href="https://www.argusshipping.co">
-      www.argusshipping.co
-      </a>
-      </p>
-      <br>
-
-      <p style="background-color:yellow;color:red;padding:8px;">
-      Confidentiality Notice: This email and any attachments are confidential and may contain legally privileged information intended solely for the named recipient(s). Any unauthorized review, use, disclosure, copying, or distribution is strictly prohibited. If received in error, please notify the sender immediately and permanently delete the message.
-      </p>
+      ${signature.html}
       </body>
       </html>
     `;
+
+    // Construct plain-text messageText for saving in replies (chat history view)
+    let messageText = `Dear ${shipment.dear_who || 'Sir/Madam'},\n\nKindly provide a Quotation for the following Shipment.\n\n`;
+    labels.forEach(([label, value]) => {
+      if (value && String(value).trim() !== '') {
+        messageText += `${label}: ${value}\n`;
+      }
+    });
+    messageText += `\n\n${signature.text}`;
 
     // 6. Setup Mail Options
     const mailOptions = {
@@ -412,7 +408,15 @@ const sendRfqEmail = async (req, res, next) => {
     }
 
     // 7. Send
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    const sentMessageId = info.messageId || null;
+
+    // 8. Save to shipment_replies DB
+    await query(req, 
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [ref_no, smtpUser, subject, messageText, shipment.email, cc || '', sentMessageId]
+    );
 
     res.json({ success: true, message: `Email sent successfully to ${shipment.email}` });
   } catch (err) {

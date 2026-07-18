@@ -1,13 +1,141 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { encryptPassword } from "@/lib/crypto";
 
 type CcRecipient = { id: number; name: string; email: string; multi_select: boolean };
 type AdminUser = { id: number; username: string; role: string; email_address: string | null; has_password: boolean };
 type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; is_active: boolean };
+
+interface RichTextEditorProps {
+  value: string;
+  onChange: (val: string) => void;
+}
+
+function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const isLoaded = useRef(false);
+  const savedSelection = useRef<Range | null>(null);
+
+  // Sync initial content from prop exactly once
+  useEffect(() => {
+    if (editorRef.current && !isLoaded.current && value) {
+      editorRef.current.innerHTML = value;
+      isLoaded.current = true;
+    }
+  }, [value]);
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedSelection.current = sel.getRangeAt(0);
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelection.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelection.current);
+      }
+    }
+  };
+
+  const execCmd = (command: string, arg?: string) => {
+    restoreSelection();
+    document.execCommand(command, false, arg);
+    handleInput();
+    // Re-focus the editor and restore selection
+    setTimeout(() => {
+      restoreSelection();
+      editorRef.current?.focus();
+    }, 10);
+  };
+
+  return (
+    <div className="border border-white/10 rounded-xl bg-white/[0.02] overflow-hidden focus-within:border-gold/50 transition-colors">
+      <div className="flex flex-wrap items-center gap-1.5 p-2 bg-white/[0.04] border-b border-white/10 select-none">
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }}
+          className="px-2.5 py-1 text-xs font-bold bg-white/5 border border-white/10 hover:border-gold/50 rounded hover:bg-white/10 transition-colors text-primary"
+          title="Bold"
+        >
+          B
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }}
+          className="px-2.5 py-1 text-xs italic bg-white/5 border border-white/10 hover:border-gold/50 rounded hover:bg-white/10 transition-colors text-primary"
+          title="Italic"
+        >
+          I
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }}
+          className="px-2.5 py-1 text-xs underline bg-white/5 border border-white/10 hover:border-gold/50 rounded hover:bg-white/10 transition-colors text-primary"
+          title="Underline"
+        >
+          U
+        </button>
+        
+        <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded text-primary">
+          <label className="text-[10px] text-muted uppercase font-semibold mr-1">Text</label>
+          <input
+            type="color"
+            onFocus={saveSelection}
+            onChange={(e) => execCmd("foreColor", e.target.value)}
+            className="w-5 h-5 bg-transparent border-0 cursor-pointer p-0"
+            title="Text Color"
+          />
+        </div>
+
+        <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded text-primary">
+          <label className="text-[10px] text-muted uppercase font-semibold mr-1">Bg</label>
+          <input
+            type="color"
+            defaultValue="#ffff00"
+            onFocus={saveSelection}
+            onChange={(e) => execCmd("hiliteColor", e.target.value)}
+            className="w-5 h-5 bg-transparent border-0 cursor-pointer p-0"
+            title="Background Color"
+          />
+        </div>
+
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); execCmd("removeFormat"); }}
+          className="px-2 py-1 text-xs bg-white/5 border border-white/10 hover:border-rose/50 rounded hover:bg-white/10 transition-colors text-muted"
+          title="Clear Format"
+        >
+          🧹
+        </button>
+      </div>
+
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        onBlur={handleInput}
+        onMouseUp={saveSelection}
+        onKeyUp={saveSelection}
+        className="p-4 min-h-[150px] max-h-[300px] overflow-y-auto outline-none text-sm text-primary font-sans leading-relaxed select-text bg-black/20"
+        style={{ caretColor: "var(--gold)" }}
+      />
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -32,6 +160,9 @@ export default function SettingsPage() {
   const [profileCompanyAddress, setProfileCompanyAddress] = useState("");
   const [profileSecondaryPhone, setProfileSecondaryPhone] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+
+  const [signature, setSignature] = useState("");
+  const [savingSignature, setSavingSignature] = useState(false);
 
   // ── CC Recipients (admin only) ─────────────────────────────
   const [ccList, setCcList] = useState<CcRecipient[]>([]);
@@ -66,6 +197,8 @@ export default function SettingsPage() {
   const [newOpAppPassword, setNewOpAppPassword] = useState("");
   const [addingNewOp, setAddingNewOp] = useState(false);
   const [showAddOpForm, setShowAddOpForm] = useState(false);
+  const [draftGloballyEnabled, setDraftGloballyEnabled] = useState(false);
+  const [togglingDraft, setTogglingDraft] = useState(false);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
@@ -103,6 +236,15 @@ export default function SettingsPage() {
       api.get("/compulsory-emails")
         .then(res => setCompulsoryList(res.data.data))
         .catch(() => {});
+      api.get("/quotation/draft-settings")
+        .then(res => setDraftGloballyEnabled(res.data.enabled))
+        .catch(() => {});
+    }
+
+    if (user?.role === "admin" || user?.role === "operator") {
+      api.get("/auth/signature")
+        .then(res => setSignature(res.data.signature || ""))
+        .catch(err => { console.error("Failed to load signature", err); });
     }
   }, [user?.role]);
 
@@ -139,9 +281,11 @@ export default function SettingsPage() {
 
     setLoading(true);
     try {
+      const secureCurrentPassword = await encryptPassword(currentPassword);
+      const secureNewPassword = await encryptPassword(newPassword);
       await api.post("/auth/change-password", {
-        currentPassword,
-        newPassword,
+        currentPassword: secureCurrentPassword,
+        newPassword: secureNewPassword,
       });
       toast.success("Password changed successfully.");
       setCurrentPassword("");
@@ -172,6 +316,19 @@ export default function SettingsPage() {
       toast.error(err.response?.data?.message || "Failed to update profile details.");
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleUpdateSignature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSignature(true);
+    try {
+      await api.post("/auth/signature", { signature });
+      toast.success("Email signature updated successfully.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update email signature.");
+    } finally {
+      setSavingSignature(false);
     }
   };
 
@@ -359,7 +516,21 @@ export default function SettingsPage() {
       toast.error(err.response?.data?.message || "Failed to delete user account.");
     }
   };
-
+  const handleToggleDraftMode = async () => {
+    setTogglingDraft(true);
+    try {
+      const nextVal = !draftGloballyEnabled;
+      const res = await api.post("/quotation/draft-settings", { enabled: nextVal });
+      if (res.data.success) {
+        setDraftGloballyEnabled(res.data.enabled);
+        toast.success(`Quotation Draft Mode is now globally ${res.data.enabled ? "ENABLED" : "DISABLED"}.`);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update draft mode setting.");
+    } finally {
+      setTogglingDraft(false);
+    }
+  };
   return (
     <AppLayout
       title="Settings"
@@ -650,6 +821,30 @@ export default function SettingsPage() {
             </div>
           </form>
         </div>
+
+        {/* Email Signature Card — admin & operator only */}
+        {(user?.role === "admin" || user?.role === "operator") && (
+          <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">
+            <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
+              <span>✍️</span> Email Signature
+            </h2>
+            <p className="text-sm text-muted mb-6">Customize the HTML signature appended to your outgoing emails.</p>
+            
+            <form onSubmit={handleUpdateSignature} className="space-y-4">
+              <RichTextEditor value={signature} onChange={setSignature} />
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={savingSignature}
+                  className="btn-primary w-full justify-center"
+                >
+                  {savingSignature ? "Updating..." : "Update Signature"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
         {/* CC Recipients Card — admin only */}
         {user?.role === "admin" && (
           <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">
@@ -1079,6 +1274,37 @@ export default function SettingsPage() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quotation Settings Card — admin only */}
+        {user?.role === "admin" && (
+          <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">
+            <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
+              <span>📄</span> Quotation Settings
+            </h2>
+            <p className="text-sm text-muted mb-6">Manage global configuration for quotation generation.</p>
+            
+            <div className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+              <div>
+                <p className="text-sm font-semibold text-primary">Enable Draft Mode</p>
+                <p className="text-xs text-muted mt-0.5 max-w-[80%]">Allow Sales, Operators, and Admins to generate draft quotations without saving to DB.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleDraftMode}
+                disabled={togglingDraft}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none flex-shrink-0 ${
+                  draftGloballyEnabled ? "bg-[#F5B037]" : "bg-white/10"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                    draftGloballyEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
           </div>
         )}

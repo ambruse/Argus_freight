@@ -99,13 +99,31 @@ const AIRLINES = [
   
 ];
 
+const base64ToBlob = (base64: string, type: string) => {
+  if (typeof window === "undefined") return new Blob();
+  const binStr = window.atob(base64);
+  const len = binStr.length;
+  const arr = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    arr[i] = binStr.charCodeAt(i);
+  }
+  return new Blob([arr], { type });
+};
+
 export default function QuotationPage() {
   const { user } = useAuth();
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [quotations, setQuotations] = useState<QuotationRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
+  const [draftGloballyEnabled, setDraftGloballyEnabled] = useState(false);
   const [fetching, setFetching] = useState(true);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [polFilter, setPolFilter] = useState("all");
+  const [podFilter, setPodFilter] = useState("all");
+  const [userFilter, setUserFilter] = useState("all");
 
   // Set default validity date to 3 days from now (YYYY-MM-DD)
   useEffect(() => {
@@ -130,6 +148,10 @@ export default function QuotationPage() {
     Promise.all([
       api.get("/customers").then((res) => setCustomers(res.data.data)).catch(() => {}),
       api.get("/quotation").then((res) => setQuotations(res.data.data)).catch(() => {}),
+      api.get("/quotation/draft-settings").then((res) => {
+        setDraftGloballyEnabled(res.data.enabled);
+        if (!res.data.enabled) setIsDraft(false);
+      }).catch(() => {}),
     ]).finally(() => {
       setFetching(false);
     });
@@ -211,13 +233,45 @@ export default function QuotationPage() {
 
     setLoading(true);
     try {
-      const { data } = await api.post("/quotation/generate", form);
+      const { data } = await api.post("/quotation/generate", {
+        ...form,
+        is_draft: isDraft
+      });
       if (data.success) {
         toast.success(data.message || "Quotation generated successfully!");
         
-        // Refresh quotations list
-        const listRes = await api.get("/quotation");
-        setQuotations(listRes.data.data);
+        if (data.isDraft && data.pdfBase64) {
+          const blob = base64ToBlob(data.pdfBase64, "application/pdf");
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = data.fileName || "Quotation_Draft_xxxxx.pdf";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success("Draft quotation PDF downloaded automatically...");
+        } else {
+          // Refresh quotations list for regular mode
+          const listRes = await api.get("/quotation");
+          setQuotations(listRes.data.data);
+
+          // Auto-download PDF if approved
+          const newQuot = data.data;
+          if (newQuot && newQuot.id) {
+            const isApproved = newQuot.approval_status === "Approved";
+            if (user.role === "admin" || isApproved) {
+              const token = localStorage.getItem("freight_token");
+              if (token) {
+                const link = document.createElement("a");
+                link.href = `/api/quotation/download/${newQuot.id}?token=${encodeURIComponent(token)}&download=true`;
+                link.download = `Quotation_${newQuot.q_no}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success("Downloading quotation PDF automatically...");
+              }
+            }
+          }
+        }
 
         // Reset form except defaults
         const defaultDate = new Date();
@@ -255,6 +309,32 @@ export default function QuotationPage() {
     }));
   };
 
+  // Get unique options for filters
+  const uniquePOLs = Array.from(new Set(quotations.map(q => q.pol_pcode || q.pol).filter(Boolean))) as string[];
+  const uniquePODs = Array.from(new Set(quotations.map(q => q.pod_pcode || q.pod).filter(Boolean))) as string[];
+  const uniqueUsers = Array.from(new Set(quotations.map(q => q.creator_username).filter(Boolean))) as string[];
+
+  const filteredQuotations = quotations.filter((q) => {
+    const term = searchQuery.toLowerCase();
+    
+    // Search matching: check Q.NO, Customer, POL, POD, and Creator
+    const matchesSearch =
+      q.q_no.toLowerCase().includes(term) ||
+      (q.customer_name || "").toLowerCase().includes(term) ||
+      (q.pol_pcode || "").toLowerCase().includes(term) ||
+      (q.pol || "").toLowerCase().includes(term) ||
+      (q.pod_pcode || "").toLowerCase().includes(term) ||
+      (q.pod || "").toLowerCase().includes(term) ||
+      (q.creator_username || "").toLowerCase().includes(term);
+
+    // Dropdown filter matching
+    const matchesPol = polFilter === "all" || (q.pol_pcode || q.pol) === polFilter;
+    const matchesPod = podFilter === "all" || (q.pod_pcode || q.pod) === podFilter;
+    const matchesUser = userFilter === "all" || q.creator_username === userFilter;
+
+    return matchesSearch && matchesPol && matchesPod && matchesUser;
+  });
+
   return (
     <AppLayout>
       <div className="px-6 py-6 max-w-7xl mx-auto space-y-6">
@@ -269,8 +349,31 @@ export default function QuotationPage() {
               Generate premium PDF Quotations from standard word templates automatically.
             </p>
           </div>
-          <div className="text-xs px-3 py-1 bg-white/5 rounded-full border border-white/10 font-mono text-[#F5B037]">
-            Authorized Role: <span className="capitalize font-semibold">{user.role}</span>
+          <div className="flex items-center gap-4">
+            {/* Draft Mode Toggle */}
+            {draftGloballyEnabled && (
+              <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                <span className="text-xs font-semibold text-muted uppercase tracking-wider font-outfit">Draft Mode</span>
+                <button
+                  type="button"
+                  onClick={() => setIsDraft(!isDraft)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                    isDraft ? "bg-[#F5B037]" : "bg-white/15"
+                  }`}
+                  title="Toggle Draft Mode (No database saving, instant download)"
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ${
+                      isDraft ? "translate-x-5" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+            
+            <div className="text-xs px-3 py-1.5 bg-white/5 rounded-full border border-white/10 font-mono text-[#F5B037]">
+              Authorized Role: <span className="capitalize font-semibold">{user.role}</span>
+            </div>
           </div>
         </div>
 
@@ -543,7 +646,7 @@ export default function QuotationPage() {
                 <div className="flex justify-between items-center py-1.5 border-b border-white/[0.03]">
                   <span>Q.NO Sequence:</span>
                   <span className="text-primary font-semibold">
-                    {new Date().getFullYear()}{String(new Date().getMonth() + 1).padStart(2, '0')}{String(new Date().getDate()).padStart(2, '0')}XXX
+                    {isDraft ? "xxxxx" : `${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}XXX`}
                   </span>
                 </div>
 
@@ -621,13 +724,61 @@ export default function QuotationPage() {
 
         {/* Historical List Table */}
         <div className="glass rounded-2xl p-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5B037] border-b border-white/5 pb-2">
-            Quotation History
-          </h2>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#F5B037]">
+                Quotation History
+              </h2>
+              <p className="text-xs text-muted mt-0.5">
+                View and filter previous quotation entries
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input text-xs py-1.5 px-3 w-full md:w-44"
+              />
+              <select
+                value={polFilter}
+                onChange={(e) => setPolFilter(e.target.value)}
+                className="select text-xs py-1.5 px-3 bg-[#1A1A1A] border border-white/10 rounded-lg text-primary focus:border-[#F5B037]/50 outline-none"
+              >
+                <option value="all">All POLs</option>
+                {uniquePOLs.map(pol => (
+                  <option key={pol} value={pol}>{pol}</option>
+                ))}
+              </select>
+              <select
+                value={podFilter}
+                onChange={(e) => setPodFilter(e.target.value)}
+                className="select text-xs py-1.5 px-3 bg-[#1A1A1A] border border-white/10 rounded-lg text-primary focus:border-[#F5B037]/50 outline-none"
+              >
+                <option value="all">All PODs</option>
+                {uniquePODs.map(pod => (
+                  <option key={pod} value={pod}>{pod}</option>
+                ))}
+              </select>
+              {user.role === 'admin' && (
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value)}
+                  className="select text-xs py-1.5 px-3 bg-[#1A1A1A] border border-white/10 rounded-lg text-primary focus:border-[#F5B037]/50 outline-none"
+                >
+                  <option value="all">All Users</option>
+                  {uniqueUsers.map(uName => (
+                    <option key={uName} value={uName}>{uName}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
           <div className="overflow-x-auto">
-            {quotations.length === 0 ? (
+            {filteredQuotations.length === 0 ? (
               <p className="text-center text-muted text-xs py-8">
-                No quotations have been generated yet.
+                {quotations.length === 0 ? "No quotations have been generated yet." : "No quotations found matching your filters."}
               </p>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
@@ -642,12 +793,13 @@ export default function QuotationPage() {
                     <th className="py-3 px-4 text-right">Freight</th>
                     <th className="py-3 px-4 text-right">Trans</th>
                     <th className="py-3 px-4 text-right">Total (QAR)</th>
+                    {user.role === 'admin' && <th className="py-3 px-4">Creator</th>}
                     <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {quotations.map((q) => {
+                  {filteredQuotations.map((q) => {
                     const isDownloadAllowed = user.role === 'admin' || q.approval_status === 'Approved';
                     return (
                       <tr key={q.id} className="hover:bg-white/[0.02] transition-colors">
@@ -674,6 +826,11 @@ export default function QuotationPage() {
                         <td className="py-3 px-4 text-right font-bold text-gold">
                           {previewFormat(parseFloat(q.total_rate))}
                         </td>
+                        {user.role === 'admin' && (
+                          <td className="py-3 px-4 text-muted font-outfit">
+                            {q.creator_username || "—"}
+                          </td>
+                        )}
                         <td className="py-3 px-4 text-center font-outfit">
                           {q.approval_status === 'Approved' ? (
                             <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">

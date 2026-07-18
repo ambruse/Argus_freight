@@ -39,6 +39,22 @@ export default function CustomerBookPage() {
   });
   const [saving, setSaving] = useState(false);
 
+  // Modal states for Adding Customer
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: "",
+    email_address: "",
+    contact_number: "",
+    address: "",
+    company: "",
+    company_address: "",
+    secondary_phone: "",
+    create_account: false,
+    username: "",
+    password: ""
+  });
+  const [adding, setAdding] = useState(false);
+
   // Modal states for Customer Details View
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [detailedCustomer, setDetailedCustomer] = useState<Customer | null>(null);
@@ -93,6 +109,39 @@ export default function CustomerBookPage() {
     }
   };
 
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdding(true);
+    try {
+      const payload = { ...addForm };
+      if (!payload.create_account) {
+        delete (payload as any).username;
+        delete (payload as any).password;
+      }
+      const { data } = await api.post("/customers", payload);
+      setCustomers(prev => [data.data, ...prev]);
+      toast.success("Customer added successfully.");
+      setIsAddModalOpen(false);
+      // Reset form
+      setAddForm({
+        name: "",
+        email_address: "",
+        contact_number: "",
+        address: "",
+        company: "",
+        company_address: "",
+        secondary_phone: "",
+        create_account: false,
+        username: "",
+        password: ""
+      });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to add customer.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const handleDelete = async (c: Customer) => {
     if (!confirm(`Are you sure you want to permanently delete the customer account for "${c.name}"? This will also remove their sandbox tables.`)) return;
     try {
@@ -127,15 +176,25 @@ export default function CustomerBookPage() {
         
         {/* Controls Bar */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white/5 border border-white/10 p-4 rounded-2xl">
-          <div className="relative w-full sm:max-w-md">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">🔍</span>
-            <input
-              type="text"
-              placeholder="Search by name, company, mail, customer ID..."
-              className="input w-full pl-10"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:max-w-xl">
+            <div className="relative w-full">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">🔍</span>
+              <input
+                type="text"
+                placeholder="Search by name, company, mail, customer ID..."
+                className="input w-full pl-10"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            {user && ["admin", "operator", "sales"].includes(user.role) && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="btn-primary w-full sm:w-auto justify-center whitespace-nowrap text-xs flex items-center gap-2 transition-all"
+              >
+                <span>➕</span> Add Customer
+              </button>
+            )}
           </div>
           <div className="text-xs text-muted/80 tracking-wide font-medium">
             Showing {filteredCustomers.length} of {customers.length} customer records
@@ -322,11 +381,10 @@ export default function CustomerBookPage() {
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                      Email Address *
+                      Email Address
                     </label>
                     <input
                       type="email"
-                      required
                       className="input w-full"
                       value={editForm.email_address}
                       onChange={(e) => setEditForm(prev => ({ ...prev, email_address: e.target.value }))}
@@ -337,11 +395,10 @@ export default function CustomerBookPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                      Primary Phone *
+                      Primary Phone
                     </label>
                     <input
                       type="text"
-                      required
                       className="input w-full"
                       value={editForm.contact_number}
                       onChange={(e) => setEditForm(prev => ({ ...prev, contact_number: e.target.value }))}
@@ -415,6 +472,186 @@ export default function CustomerBookPage() {
                     className="btn-primary flex-1 justify-center"
                   >
                     {saving ? "Saving Changes..." : "Save Overrides"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── Add Customer Modal ─────────────────────────────────── */}
+        {isAddModalOpen && user && ["admin", "operator", "sales"].includes(user.role) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative animate-zoom-in space-y-6">
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="absolute top-4 right-4 text-muted hover:text-primary transition-colors text-lg"
+              >
+                ✕
+              </button>
+              <div>
+                <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <span>👤</span> Add New Customer
+                </h3>
+                <p className="text-xs text-muted mt-1">Create a new customer profile and setup their address details.</p>
+              </div>
+
+              <form onSubmit={handleAddSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                      Customer Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className="input w-full"
+                      value={addForm.name}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      className="input w-full"
+                      value={addForm.email_address}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, email_address: e.target.value }))}
+                      placeholder="e.g. john@example.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                      Primary Phone
+                    </label>
+                    <input
+                      type="text"
+                      className="input w-full"
+                      value={addForm.contact_number}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, contact_number: e.target.value }))}
+                      placeholder="e.g. +12345678"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                      Secondary Phone
+                    </label>
+                    <input
+                      type="text"
+                      className="input w-full"
+                      value={addForm.secondary_phone}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, secondary_phone: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                      Company Name
+                    </label>
+                    <input
+                      type="text"
+                      className="input w-full"
+                      value={addForm.company}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, company: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                      Personal Address
+                    </label>
+                    <input
+                      type="text"
+                      className="input w-full"
+                      value={addForm.address}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                    Company Address
+                  </label>
+                  <textarea
+                    className="input w-full min-h-[60px]"
+                    value={addForm.company_address}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, company_address: e.target.value }))}
+                    placeholder="Optional company address"
+                  />
+                </div>
+
+                {/* Create Account Checkbox */}
+                <div className="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center justify-between">
+                  <div>
+                    <span className="block text-xs font-semibold text-primary">Create System User Account</span>
+                    <span className="block text-[10px] text-muted">Allow this customer to log in to the portal.</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-white/10 bg-white/5 text-gold focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                    checked={addForm.create_account}
+                    onChange={(e) => setAddForm(prev => ({ ...prev, create_account: e.target.checked }))}
+                  />
+                </div>
+
+                {/* Username / Password input fields (Conditional) */}
+                {addForm.create_account && (
+                  <div className="grid grid-cols-2 gap-4 animate-fade-in bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                        Username *
+                      </label>
+                      <input
+                        type="text"
+                        required={addForm.create_account}
+                        className="input w-full"
+                        value={addForm.username}
+                        onChange={(e) => setAddForm(prev => ({ ...prev, username: e.target.value }))}
+                        placeholder="e.g. johndoe"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                        Password *
+                      </label>
+                      <input
+                        type="password"
+                        required={addForm.create_account}
+                        className="input w-full"
+                        value={addForm.password}
+                        onChange={(e) => setAddForm(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="••••••••"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-3">
+                  <button
+                    type="button"
+                    disabled={adding}
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="btn-secondary flex-1 justify-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={adding}
+                    className="btn-primary flex-1 justify-center"
+                  >
+                    {adding ? "Adding Customer..." : "Add Customer"}
                   </button>
                 </div>
               </form>

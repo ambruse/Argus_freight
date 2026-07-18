@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import api from "@/lib/api";
 import { authStorage } from "@/lib/auth";
+import { encryptPassword } from "@/lib/crypto";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -70,7 +71,8 @@ export default function RegisterPage() {
     if (role === "customer") {
       setLoading(true);
       try {
-        await api.post("/auth/register", { newUsername, newPassword, role, name, email_address: emailAddress, contact_number: contactNumber });
+        const securePassword = await encryptPassword(newPassword);
+        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress, contact_number: contactNumber });
         toast.success("Account created successfully!");
         router.push("/login");
       } catch (err: any) {
@@ -88,7 +90,9 @@ export default function RegisterPage() {
     if (!adminUsername || !adminPassword) { toast.error("Admin credentials are required."); return; }
     setLoading(true);
     try {
-      await api.post("/auth/register", { newUsername, newPassword, role, adminUsername, adminPassword });
+      const secureNewPassword = await encryptPassword(newPassword);
+      const secureAdminPassword = await encryptPassword(adminPassword);
+      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, adminUsername, adminPassword: secureAdminPassword });
       toast.success("Account created successfully!");
       router.push("/login");
     } catch (err: any) {

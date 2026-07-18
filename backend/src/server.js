@@ -272,6 +272,7 @@ db.query(`
   ALTER TABLE users ADD COLUMN IF NOT EXISTS company VARCHAR(255);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS company_address TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS secondary_phone VARCHAR(100);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS email_signature TEXT;
 
   ALTER TABLE shipments ADD COLUMN IF NOT EXISTS operator VARCHAR(100);
 
@@ -397,6 +398,40 @@ db.query(`
     console.log("[Migration] Added operator & cust_req_no columns and set past RFQs operator to 'jabir' across all tables.");
   } catch (opMigErr) {
     console.error("[Migration] Error running operator and cust_req_no column migration:", opMigErr.message);
+  }
+
+  // ── Migration: Add to_emails and cc_emails columns ──
+  try {
+    await db.query(`ALTER TABLE shipment_replies ADD COLUMN IF NOT EXISTS to_emails TEXT`);
+    await db.query(`ALTER TABLE shipment_replies ADD COLUMN IF NOT EXISTS cc_emails TEXT`);
+
+    const srTablesRes = await db.query(
+      `SELECT table_name FROM information_schema.tables 
+       WHERE table_schema = 'public' AND table_name LIKE 'shipment_replies_%'`
+    );
+    for (const row of srTablesRes.rows) {
+      await db.query(`ALTER TABLE ${row.table_name} ADD COLUMN IF NOT EXISTS to_emails TEXT`);
+      await db.query(`ALTER TABLE ${row.table_name} ADD COLUMN IF NOT EXISTS cc_emails TEXT`);
+    }
+    console.log("[Migration] Added to_emails and cc_emails columns to base and user replies tables.");
+  } catch (migErr) {
+    console.error("[Migration] Error running to_emails/cc_emails column migration:", migErr.message);
+  }
+
+  // ── Migration: Encrypt plain text email passwords ──
+  try {
+    const { encrypt } = require('./utils/crypto');
+    const usersRes = await db.query("SELECT id, email_password FROM users WHERE email_password IS NOT NULL AND email_password != ''");
+    for (const u of usersRes.rows) {
+      const pass = u.email_password;
+      if (!pass.includes(':')) {
+        const encrypted = encrypt(pass);
+        await db.query("UPDATE users SET email_password = $1 WHERE id = $2", [encrypted, u.id]);
+        console.log(`[Migration] Encrypted plain-text password for user ID ${u.id}`);
+      }
+    }
+  } catch (encMigErr) {
+    console.error("[Migration] Error encrypting user passwords:", encMigErr.message);
   }
 
   // Auto-register user 'admin' with default password 'Admin@1234' if not exists

@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────
 const fs   = require('fs');
 const path = require('path');
-const { query } = require('../config/dbHelper');
+const { query, findUsernameForRefNo } = require('../config/dbHelper');
 const db = require('../config/db');
 
 // ─────────────────────────────────────────────────────────────
@@ -62,7 +62,8 @@ const uploadFile = async (req, res, next) => {
       }
     }
 
-    if (opUsername && opUsername !== req.user.username.toLowerCase()) {
+    const targetUser = (await findUsernameForRefNo(ref_no)) || 'admin';
+    if (opUsername && opUsername !== req.user.username.toLowerCase() && opUsername !== targetUser) {
       const opFilesTable = opUsername === 'admin' ? 'files' : `files_${opUsername}`;
       const opShipmentsTable = opUsername === 'admin' ? 'shipments' : `shipments_${opUsername}`;
 

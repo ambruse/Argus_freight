@@ -6,6 +6,28 @@ export interface MajorPort {
   code: string;
   type: "Air Port" | "Sea Port";
 }
+export const ALL_COUNTRIES: string[] = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+  "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
+  "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia",
+  "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica",
+  "Croatia", "Cuba", "Cyprus", "Czechia (Czech Republic)", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador",
+  "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
+  "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+  "Guyana", "Haiti", "Holy See", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
+  "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
+  "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania",
+  "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
+  "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar (formerly Burma)", "Namibia",
+  "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland",
+  "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino",
+  "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands",
+  "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland",
+  "Syria", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey",
+  "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States of America", "Uruguay", "Uzbekistan", "Vanuatu",
+  "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+];
 
 export const MAJOR_PORTS: MajorPort[] = [
   {
@@ -15,6 +37,22 @@ export const MAJOR_PORTS: MajorPort[] = [
     "port": "Khalifa Bin Salman Port",
     "code": "BHKBS",
     "type": "Sea Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Basque Country",
+    "city": "Vitoria-Gasteiz",
+    "port": "Vitoria-Gasteiz Airport (Foronda)",
+    "code": "VIT",
+    "type": "Air Port"
+  },
+  {
+    "country": "Spain",
+    "region": "Basque Country",
+    "city": "Bilbao",
+    "port": "Bilbao Airport (Loiu)",
+    "code": "BIO",
+    "type": "Air Port"
   },
   {
     "country": "Bahrain",
@@ -290,20 +328,310 @@ export const MAJOR_PORTS: MajorPort[] = [
   },
   {
     "country": "India",
-    "region": "South Asia",
-    "city": "Delhi",
+    "region": "National Capital Region",
+    "city": "New Delhi",
     "port": "Indira Gandhi International Airport",
     "code": "DEL",
     "type": "Air Port"
   },
   {
     "country": "India",
-    "region": "South Asia",
+    "region": "Maharashtra",
     "city": "Mumbai",
-    "port": "Chhatrapati Shivaji Maharaj Airport",
+    "port": "Chhatrapati Shivaji Maharaj International Airport",
     "code": "BOM",
     "type": "Air Port"
   },
+  {
+    "country": "India",
+    "region": "Karnataka",
+    "city": "Bengaluru",
+    "port": "Kempegowda International Airport",
+    "code": "BLR",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "Tamil Nadu",
+    "city": "Chennai",
+    "port": "Chennai International Airport",
+    "code": "MAA",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "Telangana",
+    "city": "Hyderabad",
+    "port": "Rajiv Gandhi International Airport",
+    "code": "HYD",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "West Bengal",
+    "city": "Kolkata",
+    "port": "Netaji Subhas Chandra Bose International Airport",
+    "code": "CCU",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "Gujarat",
+    "city": "Ahmedabad",
+    "port": "Sardar Vallabhbhai Patel International Airport",
+    "code": "AMD",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "Kerala",
+    "city": "Kochi",
+    "port": "Cochin International Airport",
+    "code": "COK",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "Kerala",
+    "city": "Kozhikode",
+    "port": "Calicut International Airport",
+    "code": "CCJ",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "Tamil Nadu",
+    "city": "Coimbatore",
+    "port": "Coimbatore International Airport",
+    "code": "CJB",
+    "type": "Air Port"
+  },
+  {
+    "country": "India",
+    "region": "Maharashtra",
+    "city": "Navi Mumbai",
+    "port": "Jawaharlal Nehru Port (Nhava Sheva)",
+    "code": "INNSA",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Gujarat",
+    "city": "Mundra",
+    "port": "Mundra Port",
+    "code": "INMUN",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Gujarat",
+    "city": "Kandla",
+    "port": "Deendayal Port",
+    "code": "INIXY",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Tamil Nadu",
+    "city": "Chennai",
+    "port": "Chennai Port",
+    "code": "INMAA",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "West Bengal",
+    "city": "Haldia",
+    "port": "Haldia Dock Complex",
+    "code": "INHDC",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Kerala",
+    "city": "Kochi",
+    "port": "Cochin Port (Vallarpadam)",
+    "code": "INCOK",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Odisha",
+    "city": "Paradip",
+    "port": "Paradip Port",
+    "code": "INPRT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Andhra Pradesh",
+    "city": "Visakhapatnam",
+    "port": "Visakhapatnam Port",
+    "code": "INVTZ",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Tamil Nadu",
+    "city": "Thoothukudi",
+    "port": "V.O. Chidambaranar Port (Tuticorin)",
+    "code": "INTUT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Karnataka",
+    "city": "Mangaluru",
+    "port": "New Mangalore Port",
+    "code": "INNMPT",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Goa",
+    "city": "Mormugao",
+    "port": "Mormugao Port",
+    "code": "INMRM",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Tehran",
+    "city": "Tehran",
+    "port": "Tehran Imam Khomeini International Airport",
+    "code": "IKA",
+    "type": "Air Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Tehran",
+    "city": "Tehran",
+    "port": "Mehrabad International Airport",
+    "code": "THR",
+    "type": "Air Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Razavi Khorasan",
+    "city": "Mashhad",
+    "port": "Mashhad Shahid Hasheminejad International Airport",
+    "code": "MHD",
+    "type": "Air Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Fars",
+    "city": "Shiraz",
+    "port": "Shiraz Shahid Dastghaib International Airport",
+    "code": "SYZ",
+    "type": "Air Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Isfahan",
+    "city": "Isfahan",
+    "port": "Isfahan Shahid Beheshti International Airport",
+    "code": "IFN",
+    "type": "Air Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Hormozgan",
+    "city": "Bandar Abbas",
+    "port": "Bandar Abbas Shahid Rajaee Port",
+    "code": "IRBND",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Khuzestan",
+    "city": "Bandar Imam Khomeini",
+    "port": "Bandar Imam Khomeini Port",
+    "code": "IRBKI",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Sistan and Baluchestan",
+    "city": "Chabahar",
+    "port": "Chabahar Port (Shahid Beheshti)",
+    "code": "IRCHB",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Bushehr",
+    "city": "Bushehr",
+    "port": "Port of Bushehr",
+    "code": "IRBUZ",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Khuzestan",
+    "city": "Khorramshahr",
+    "port": "Port of Khorramshahr",
+    "code": "IRKHO",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Gilan",
+    "city": "Bandar Anzali",
+    "port": "Anzali Port (Caspian Sea Hub)",
+    "code": "IRBZA",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Mazandaran",
+    "city": "Amirabad",
+    "port": "Amirabad Port Complex",
+    "code": "IRAMI",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Hormozgan",
+    "city": "Qeshm Island",
+    "port": "Port of Qeshm",
+    "code": "IRQSM",
+    "type": "Sea Port"
+  },
+  {
+    "country": "Iran",
+    "region": "Hormozgan",
+    "city": "Kish Island",
+    "port": "Port of Kish",
+    "code": "IRKIH",
+    "type": "Sea Port"
+  }
+,
+  {
+    "country": "India",
+    "region": "Gujarat",
+    "city": "Pipavav",
+    "port": "Port Pipavav",
+    "code": "INPAV",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Andhra Pradesh",
+    "city": "Krishnapatnam",
+    "port": "Krishnapatnam Port",
+    "code": "INKRI",
+    "type": "Sea Port"
+  },
+  {
+    "country": "India",
+    "region": "Tamil Nadu",
+    "city": "Ennore",
+    "port": "Kamarajar Port (Ennore)",
+    "code": "INENR",
+    "type": "Sea Port"
+  }
+,
   {
     "country": "Indonesia",
     "region": "Southeast Asia",
@@ -1368,4 +1696,6 @@ export const MAJOR_PORTS: MajorPort[] = [
     "code": "SEA",
     "type": "Air Port"
   }
+
+
 ];

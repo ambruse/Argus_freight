@@ -10,12 +10,13 @@ import Modal from "@/components/ui/Modal";
 import EmailAutoSuggest from "@/components/ui/EmailAutoSuggest";
 import CustomerAutoSuggest from "@/components/ui/CustomerAutoSuggest";
 import PortAutoSuggest from "@/components/ui/PortAutoSuggest";
+import CountryAutoSuggest from "@/components/ui/CountryAutoSuggest";
 import ContainerInput from "@/components/ui/ContainerInput";
 import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 import { Contact, Customer } from "@/types";
-import { MAJOR_PORTS } from "@/lib/ports";
+import { MAJOR_PORTS, ALL_COUNTRIES } from "@/lib/ports";
 
 
 
@@ -55,6 +56,7 @@ const INITIAL_FORM: FormState = {
 
 
 export default function NewRFQPage() {
+  const { user } = useAuth();
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [files, setFiles] = useState<File[]>([]);
   
@@ -75,11 +77,41 @@ export default function NewRFQPage() {
 
   useEffect(() => {
     api.get("/contacts").then(res => setContacts(res.data.data)).catch(() => {});
-    api.get("/customers").then(res => setCustomers(res.data.data)).catch(() => {});
     api.get("/cc-recipients").then(res => setCcOptions(res.data.data)).catch(() => {});
     api.get("/auth/operators").then(res => setOperators(res.data.data)).catch(() => {});
     api.get("/compulsory-emails").then(res => setCompulsoryEmails(res.data.data)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    api.get("/customers").then(async (res) => {
+      let custs = res.data.data || [];
+      if (["admin", "operator"].includes(user.role)) {
+        try {
+          const salesRes = await api.get("/auth/sales");
+          const salesUsers = salesRes.data.data || [];
+          const mappedSales = salesUsers.map((s: any) => ({
+            id: s.id,
+            username: s.username,
+            name: s.name || s.username,
+            email_address: s.email_address || null,
+            contact_number: s.contact_number || null,
+            customer_id: s.customer_id || "SALES",
+            address: null,
+            company: null,
+            company_address: null,
+            secondary_phone: null,
+            is_sales: true,
+            created_at: new Date().toISOString()
+          }));
+          custs = [...custs, ...mappedSales];
+        } catch (e) {
+          console.error("Failed to load sales users", e);
+        }
+      }
+      setCustomers(custs);
+    }).catch(() => {});
+  }, [user]);
 
   const [termSelect, setTermSelect] = useState("");
 
@@ -157,7 +189,6 @@ export default function NewRFQPage() {
     setSelectedOperator(null);
   };
 
-  const { user } = useAuth();
   const isSales = user?.role === "sales";
 
   const normalOperators = operators.map((op, idx) => ({
@@ -356,7 +387,6 @@ export default function NewRFQPage() {
           dear_who: ""
         }));
       }
-      setFiles([]);
 
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "An error occurred while sending the RFQ.");
@@ -545,7 +575,6 @@ export default function NewRFQPage() {
         email: "",
         dear_who: ""
       }));
-      setFiles([]);
 
     } catch (err: any) {
       console.error(err);
@@ -556,7 +585,7 @@ export default function NewRFQPage() {
   };
 
   // Get unique countries dynamically sorted alphabetically
-  const polCountries = Array.from(new Set(MAJOR_PORTS.map(p => p.country))).sort();
+  const polCountries = ALL_COUNTRIES;
 
   // ── Field Configurations ────────────────────────────────────
   // Container is rendered as a dedicated block for Sea / Road
@@ -608,7 +637,14 @@ export default function NewRFQPage() {
                 <CustomerAutoSuggest
                   customers={customers}
                   value={form.customer_name}
-                  onChange={(val) => setForm(prev => ({ ...prev, customer_name: val }))}
+                  onChange={(val) => {
+                    const matched = customers.find(c => c.name === val);
+                    setForm(prev => ({
+                      ...prev,
+                      customer_name: val,
+                      customer_email: matched && matched.email_address ? matched.email_address : prev.customer_email
+                    }));
+                  }}
                 />
                 <p className="text-[10px] text-muted mt-1">Assigns a unique 5-digit ID to group this RFQ.</p>
               </div>
@@ -649,24 +685,11 @@ export default function NewRFQPage() {
                       isPod={f.name === "pod"}
                     />
                   ) : f.name === "pol_country" ? (
-                    <select
-                      name="pol_country"
+                    <CountryAutoSuggest
                       value={form.pol_country}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setForm(prev => ({ 
-                          ...prev, 
-                          pol_country: val,
-                          pol: "" // clear POL when country changes to avoid mismatch
-                        }));
-                      }}
-                      className="select w-full"
-                    >
-                      <option value="">— Select POL Country —</option>
-                      {polCountries.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setForm(prev => ({ ...prev, pol_country: val, pol: "" }))}
+                      placeholder="Search POL Country..."
+                    />
                   ) : f.name === "mode" ? (
                     <select
                       name="mode"

@@ -8,6 +8,7 @@
   --text-on-accent: #ffffff;
   --accent: #ac8450;            /* Gold Accent */
   --accent-hover: #8f6c3f;      /* Darker Gold */
+  --accent-muted: rgba(172, 132, 80, 0.09); /* Accent Muted Light */
   --charcoal: #4d4d4d;
   
   --border-color: rgba(77, 77, 77, 0.12);
@@ -29,6 +30,7 @@
   --bg-card: rgba(77, 77, 77, 0.15); /* Charcoal Translucent Cards */
   --text-primary: #ffffff;       /* White text for readability */
   --text-secondary: #b0b0b0;     /* Muted Light Gray */
+  --accent-muted: rgba(245, 176, 55, 0.12); /* Accent Muted Dark */
   --border-color: rgba(172, 132, 80, 0.3); /* Gold border lines */
   --glass-bg: rgba(10, 15, 30, 0.45);
   --glass-border: rgba(245, 176, 55, 0.25);
@@ -259,4 +261,216 @@
   .mobile-nav-toggle {
     display: block;
   }
+}
+
+/* Mobile theme toggle: hidden on desktop, shown inside mobile nav */
+.mobile-theme-toggle-item {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .mobile-theme-toggle-item {
+    display: list-item;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .mobile-theme-toggle-btn {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    font-family: var(--font-main);
+    transition: var(--transition-fast);
+    padding: 0.4rem 0;
+  }
+
+  .mobile-theme-toggle-btn:hover {
+    color: var(--accent);
+  }
+}
+
+/* ── Navbar Top Bar ────────────────────────────────────────── */
+.navbar-top-bar {
+  background: rgba(244, 241, 235, 0.95);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 10;
+  overflow: visible;
+}
+
+.dark .navbar-top-bar {
+  background: rgba(8, 12, 20, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Light Theme overrides */
+.navbar-wrapper:not(.scrolled) {
+  background: transparent;
+}
+
+/* Hide top-bar when header is scrolled */
+.navbar-wrapper.scrolled .navbar-top-bar {
+  height: 0;
+  opacity: 0;
+  border-bottom: none;
+  overflow: hidden;
+}
+
+.top-bar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.top-bar-left, .top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.top-bar-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: var(--transition-fast);
+  cursor: pointer;
+  font-family: var(--font-main);
+}
+
+.top-bar-link:hover {
+  color: var(--accent);
+}
+
+.top-bar-separator {
+  color: rgba(0, 0, 0, 0.08);
+  user-select: none;
+  font-size: 0.75rem;
+}
+
+.dark .top-bar-separator {
+  color: rgba(255, 255, 255, 0.12);
+}
+
+.top-bar-text {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: var(--font-main);
+}
+
+.top-bar-socials {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.top-bar-social-link {
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+}
+
+.top-bar-social-link:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Phone Dropdown Wrapper */
+.phone-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.phone-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.chevron-icon {
+  transition: transform 0.25s ease;
+}
+
+.phone-dropdown-wrapper:hover .chevron-icon {
+  transform: rotate(180deg);
+}
+
+/* Phone Dropdown Menu */
+.phone-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: -10px;
+  background: rgba(255, 252, 245, 0.95);
+  border: 1px solid rgba(180, 130, 20, 0.15);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
+  padding: 0.6rem 0;
+  min-width: 220px;
+  z-index: 1010;
+  
+  /* Smooth Fade & Slide transitions */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+}
+
+.dark .phone-dropdown-menu {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+}
+
+.phone-dropdown-wrapper:hover .phone-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.phone-dropdown-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 1.2rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: var(--transition-fast);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.dark .phone-dropdown-item {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.phone-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.phone-dropdown-item:hover {
+  background: var(--accent-muted);
+}
+
+.phone-dropdown-item .country-name {
+  font-size: 0.65rem;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.phone-dropdown-item .phone-number {
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }

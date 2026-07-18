@@ -10,6 +10,10 @@ export const exportShipmentsToExcel = async (shipments: Shipment[], filename: st
   // Define columns
   worksheet.columns = [
     { header: "REF NO", key: "ref_no", width: 15 },
+    { header: "RFQ NO", key: "cust_req_no", width: 15 },
+    { header: "CUSTOMER NAME", key: "customer_name", width: 25 },
+    { header: "DEAR WHO", key: "dear_who", width: 20 },
+    { header: "OPERATOR", key: "operator", width: 15 },
     { header: "CUSTOMER ID", key: "customer_id", width: 15 },
     { header: "POL", key: "pol", width: 20 },
     { header: "POD", key: "pod", width: 20 },
@@ -17,8 +21,13 @@ export const exportShipmentsToExcel = async (shipments: Shipment[], filename: st
     { header: "CONTAINER", key: "container", width: 15 },
     { header: "COMMODITY", key: "commodity", width: 20 },
     { header: "CARRIER", key: "carrier", width: 20 },
-    { header: "BL NUMBER", key: "bl_number", width: 18 },
+    { header: "JOB/DO", key: "do_number", width: 15 },
+    { header: "BOX NO", key: "box_no", width: 15 },
+    { header: "SO", key: "so_number", width: 15 },
+    { header: "BL/AWB", key: "bl_number", width: 18 },
+    { header: "TRACK STATUS", key: "track_status", width: 25 },
     { header: "COST (QAR)", key: "cost", width: 15 },
+    { header: "CUSTOMER PRICE (QAR)", key: "customer_price", width: 20 },
     { header: "PROFIT (QAR)", key: "profit", width: 15 },
     { header: "ETD", key: "etd", width: 15 },
     { header: "ETA", key: "eta", width: 15 },
@@ -28,8 +37,16 @@ export const exportShipmentsToExcel = async (shipments: Shipment[], filename: st
 
   // Add rows
   shipments.forEach((s) => {
+    const costNum = s.cost != null ? Number(s.cost) : null;
+    const profitNum = s.profit != null ? Number(s.profit) : null;
+    const custPrice = costNum != null && profitNum != null ? costNum + profitNum : null;
+
     worksheet.addRow({
       ref_no: s.ref_no,
+      cust_req_no: s.cust_req_no || "—",
+      customer_name: s.customer_name || "—",
+      dear_who: s.dear_who || "—",
+      operator: s.operator || "—",
       customer_id: s.customer_id || "—",
       pol: s.pol || "—",
       pod: s.pod || "—",
@@ -37,9 +54,14 @@ export const exportShipmentsToExcel = async (shipments: Shipment[], filename: st
       container: s.container || "—",
       commodity: s.commodity || "—",
       carrier: s.carrier || "—",
+      do_number: s.do_number || "—",
+      box_no: s.box_no || "—",
+      so_number: s.so_number || "—",
       bl_number: s.bl_number || "—",
-      cost: s.cost != null ? `QAR ${Number(s.cost).toFixed(2)}` : "—",
-      profit: s.profit != null ? `QAR ${Number(s.profit).toFixed(2)}` : "—",
+      track_status: s.track_status || "—",
+      cost: costNum != null ? `QAR ${costNum.toFixed(2)}` : "—",
+      customer_price: custPrice != null ? `QAR ${custPrice.toFixed(2)}` : "—",
+      profit: profitNum != null ? `QAR ${profitNum.toFixed(2)}` : "—",
       etd: s.etd ? format(new Date(s.etd), "dd MMM yyyy") : "—",
       eta: s.eta ? format(new Date(s.eta), "dd MMM yyyy") : "—",
       status: s.status,

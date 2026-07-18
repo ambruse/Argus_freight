@@ -4,6 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { encryptPassword } from "@/lib/crypto";
 
 export default function AdminRegisterUserPage() {
   const { user: currentUser } = useAuth();
@@ -86,9 +87,10 @@ export default function AdminRegisterUserPage() {
     if (role === "customer") {
       setLoading(true);
       try {
+        const securePassword = await encryptPassword(newPassword);
         await api.post("/auth/register", {
           newUsername,
-          newPassword,
+          newPassword: securePassword,
           role,
           name,
           email_address: emailAddress,
@@ -123,12 +125,14 @@ export default function AdminRegisterUserPage() {
 
     setLoading(true);
     try {
+      const secureNewPassword = await encryptPassword(newPassword);
+      const secureAdminPassword = await encryptPassword(adminPassword);
       await api.post("/auth/register", {
         newUsername,
-        newPassword,
+        newPassword: secureNewPassword,
         role,
         adminUsername,
-        adminPassword,
+        adminPassword: secureAdminPassword,
         agent_extension: agentExtension || undefined,
       });
       toast.success("Account created successfully!");

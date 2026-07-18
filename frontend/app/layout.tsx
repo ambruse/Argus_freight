@@ -7,6 +7,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import NotificationListener from "@/components/layout/NotificationListener";
 import ArgusNavbar from "@/components/layout/ArgusNavbar";
+import GlobalPageLoader from "@/components/layout/GlobalPageLoader";
 
 export const metadata: Metadata = {
   title: "ARGUS — Cargo & RFQ Management",
@@ -83,6 +84,7 @@ export default function RootLayout({
         <ArgusNavbar />
         {children}
         <NotificationListener />
+        <GlobalPageLoader />
         {/* Global toast notifications */}
         <Toaster
           position="bottom-right"

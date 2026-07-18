@@ -7,6 +7,53 @@ const db = require('../config/db');
 const { query } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
 const { PDFDocument } = require('pdf-lib');
+const { decrypt } = require('../utils/crypto');
+
+const parseEmailList = (str) => {
+  if (!str) return [];
+  const regex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+  const matches = str.match(regex) || [];
+  return matches.map(email => email.toLowerCase().trim());
+};
+
+const resolveReplyRecipients = (shipment, latestMessage, myEmail) => {
+  const cleanMyEmail = myEmail ? myEmail.toLowerCase().trim() : '';
+  
+  if (!latestMessage) {
+    const to = shipment.email || '';
+    return { to, cc: '' };
+  }
+
+  const msgFrom = (latestMessage.from_email || '').toLowerCase().trim();
+  const toList = parseEmailList(latestMessage.to_emails || latestMessage.from_email);
+  const ccList = parseEmailList(latestMessage.cc_emails || '');
+
+  if (msgFrom !== cleanMyEmail) {
+    // Latest message was INCOMING: reply to sender, CC others
+    const to = latestMessage.from_email;
+    
+    const allRecipients = new Set([...toList, ...ccList]);
+    allRecipients.delete(cleanMyEmail);
+    allRecipients.delete(to.toLowerCase().trim());
+    
+    const cc = [...allRecipients].join(', ');
+    return { to, cc };
+  } else {
+    // Latest message was OUTGOING: send to same recipients
+    const finalToSet = new Set(toList);
+    finalToSet.delete(cleanMyEmail);
+    const to = [...finalToSet].join(', ') || shipment.email || '';
+
+    const finalCcSet = new Set(ccList);
+    finalCcSet.delete(cleanMyEmail);
+    for (const t of finalToSet) {
+      finalCcSet.delete(t);
+    }
+    const cc = [...finalCcSet].join(', ');
+
+    return { to, cc };
+  }
+};
 
 const syncShipmentToCustomer = async (shipment) => {
   if (!shipment || !shipment.cust_req_no || !shipment.customer_id) return;
@@ -341,14 +388,19 @@ const updateTracking = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 const deleteShipment = async (req, res, next) => {
   try {
+    const checkRes = await query(req, 'SELECT status FROM shipments WHERE ref_no = $1', [req.params.ref_no]);
+    if (checkRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
+    
+    if (checkRes.rows[0].status === 'Confirmed') {
+      return res.status(400).json({ success: false, message: 'Confirmed shipments cannot be deleted.' });
+    }
+
     const result = await query(req, 
       'DELETE FROM shipments WHERE ref_no = $1 RETURNING ref_no',
       [req.params.ref_no]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Shipment not found.' });
-    }
 
     res.json({ success: true, message: `Shipment ${req.params.ref_no} deleted.` });
   } catch (err) {
@@ -480,14 +532,17 @@ const sendReply = async (req, res, next) => {
     let smtpUser = null;
     let smtpPass = null;
     try {
-      const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+      const userRes = await db.query("SELECT id, email_address, email_password FROM users WHERE id = $1", [req.user.id]);
       if (userRes.rows.length > 0) {
         smtpUser = userRes.rows[0].email_address;
-        smtpPass = userRes.rows[0].email_password;
+        smtpPass = decrypt(userRes.rows[0].email_password);
       }
     } catch (dbErr) {
       console.error('Error loading credentials from DB:', dbErr.message);
     }
+
+    const { getSignatureForUser } = require('../utils/signature');
+    const signature = await getSignatureForUser(req.user.id);
 
     // Fallback to global env variables if not set in DB
     if (!smtpUser) {
@@ -519,20 +574,24 @@ const sendReply = async (req, res, next) => {
     }
     const shipment = shipRes.rows[0];
 
-    // 2. Find Recipient Email
-    let recipientEmail = shipment.email;
-
-    // Look for the latest incoming reply (not from ourselves) to reply to
-    const myEmail = process.env.SMTP_USER;
+    // 2. Find Recipient Email & CC (Reply to All)
+    const myEmail = smtpUser || process.env.SMTP_USER;
     const latestReplyRes = await query(req, 
-      `SELECT from_email FROM shipment_replies 
-       WHERE ref_no = $1 AND from_email != $2 
+      `SELECT * FROM shipment_replies 
+       WHERE ref_no = $1 
        ORDER BY received_at DESC LIMIT 1`,
-      [ref_no, myEmail]
+      [ref_no]
     );
 
+    let recipientEmail = shipment.email;
+    let ccEmails = '';
+    let latestMessage = null;
+
     if (latestReplyRes.rows.length > 0) {
-      recipientEmail = latestReplyRes.rows[0].from_email;
+      latestMessage = latestReplyRes.rows[0];
+      const resolved = resolveReplyRecipients(shipment, latestMessage, myEmail);
+      recipientEmail = resolved.to;
+      ccEmails = resolved.cc;
     }
 
     if (!recipientEmail) {
@@ -564,7 +623,7 @@ const sendReply = async (req, res, next) => {
 
     // 6. Construct Email Text & HTML
     const salutation = shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,';
-    const messageText = `${salutation}\n\n${message.trim()}\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
+    const messageText = `${salutation}\n\n${message.trim()}\n\n${signature.text}`;
 
     const formattedInput = message.trim().replace(/\n/g, '<br>');
     const htmlBody = `
@@ -572,13 +631,7 @@ const sendReply = async (req, res, next) => {
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         ${salutation}<br><br>
         ${formattedInput}<br><br>
-        Best regards,<br><br>
-        <b>Muhammed Jabir</b><br>
-        PRICING AND OPERATION<br>
-        ARGUS SHIPPING<br><br>
-        📞 +974 30512233<br><br>
-        📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
-        🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
+        ${signature.html}
       </body>
       </html>
     `;
@@ -592,14 +645,26 @@ const sendReply = async (req, res, next) => {
       html: htmlBody,
     };
 
+    if (ccEmails && ccEmails.trim()) {
+      mailOptions.cc = ccEmails.trim();
+    }
+
+    if (latestMessage && latestMessage.message_id) {
+      mailOptions.headers = {
+        'In-Reply-To': latestMessage.message_id,
+        'References': latestMessage.message_id
+      };
+    }
+
     // 8. Send Email
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    const sentMessageId = info.messageId || null;
 
     // 9. Save to shipment_replies DB
     const insertRes = await query(req, 
-      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [ref_no, smtpUser, subject, messageText]
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [ref_no, smtpUser, subject, messageText, recipientEmail, ccEmails, sentMessageId]
     );
 
     // 8. Update last_follow_up
@@ -630,14 +695,17 @@ const sendFollowUp = async (req, res, next) => {
     let smtpUser = null;
     let smtpPass = null;
     try {
-      const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+      const userRes = await db.query("SELECT id, email_address, email_password FROM users WHERE id = $1", [req.user.id]);
       if (userRes.rows.length > 0) {
         smtpUser = userRes.rows[0].email_address;
-        smtpPass = userRes.rows[0].email_password;
+        smtpPass = decrypt(userRes.rows[0].email_password);
       }
     } catch (dbErr) {
       console.error('Error loading credentials from DB:', dbErr.message);
     }
+
+    const { getSignatureForUser } = require('../utils/signature');
+    const signature = await getSignatureForUser(req.user.id);
 
     // Fallback to global env variables if not set in DB
     if (!smtpUser) {
@@ -669,20 +737,24 @@ const sendFollowUp = async (req, res, next) => {
     }
     const shipment = shipRes.rows[0];
 
-    // 2. Find Recipient Email
-    let recipientEmail = shipment.email;
-
-    // Look for the latest incoming reply (not from ourselves) to reply to
-    const myEmail = process.env.SMTP_USER;
+    // 2. Find Recipient Email & CC (Reply to All)
+    const myEmail = smtpUser || process.env.SMTP_USER;
     const latestReplyRes = await query(req, 
-      `SELECT from_email FROM shipment_replies 
-       WHERE ref_no = $1 AND from_email != $2 
+      `SELECT * FROM shipment_replies 
+       WHERE ref_no = $1 
        ORDER BY received_at DESC LIMIT 1`,
-      [ref_no, myEmail]
+      [ref_no]
     );
 
+    let recipientEmail = shipment.email;
+    let ccEmails = '';
+    let latestMessage = null;
+
     if (latestReplyRes.rows.length > 0) {
-      recipientEmail = latestReplyRes.rows[0].from_email;
+      latestMessage = latestReplyRes.rows[0];
+      const resolved = resolveReplyRecipients(shipment, latestMessage, myEmail);
+      recipientEmail = resolved.to;
+      ccEmails = resolved.cc;
     }
 
     if (!recipientEmail) {
@@ -714,7 +786,7 @@ const sendFollowUp = async (req, res, next) => {
 
     // 6. Construct Email Text & HTML
     const salutation = shipment.dear_who ? `Dear ${shipment.dear_who},` : 'Dear Sir/Madam,';
-    const messageText = `${salutation}\n\nI hope this email finds you well.\n\nI am writing to gently follow up on my previous message regarding the pending shipment. Could you please provide an update on its current status at your earliest convenience?\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
+    const messageText = `${salutation}\n\nI hope this email finds you well.\n\nI am writing to gently follow up on my previous message regarding the pending shipment. Could you please provide an update on its current status at your earliest convenience?\n\n${signature.text}`;
 
     const htmlBody = `
       <html>
@@ -722,13 +794,7 @@ const sendFollowUp = async (req, res, next) => {
         ${salutation}<br><br>
         I hope this email finds you well.<br><br>
         I am writing to gently follow up on my previous message regarding the pending shipment. Could you please provide an update on its current status at your earliest convenience?<br><br>
-        Best regards,<br><br>
-        <b>Muhammed Jabir</b><br>
-        PRICING AND OPERATION<br>
-        ARGUS SHIPPING<br><br>
-        📞 +974 30512233<br><br>
-        📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
-        🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
+        ${signature.html}
       </body>
       </html>
     `;
@@ -741,14 +807,26 @@ const sendFollowUp = async (req, res, next) => {
       html: htmlBody,
     };
 
+    if (ccEmails && ccEmails.trim()) {
+      mailOptions.cc = ccEmails.trim();
+    }
+
+    if (latestMessage && latestMessage.message_id) {
+      mailOptions.headers = {
+        'In-Reply-To': latestMessage.message_id,
+        'References': latestMessage.message_id
+      };
+    }
+
     // 8. Send Email
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    const sentMessageId = info.messageId || null;
 
     // 9. Save to shipment_replies DB
     const insertRes = await query(req, 
-      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [ref_no, smtpUser, subject, messageText]
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [ref_no, smtpUser, subject, messageText, recipientEmail, ccEmails, sentMessageId]
     );
 
     // 9. Update last_follow_up
@@ -794,14 +872,17 @@ const sendQuotation = async (req, res, next) => {
     let smtpUser = null;
     let smtpPass = null;
     try {
-      const userRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+      const userRes = await db.query("SELECT id, email_address, email_password FROM users WHERE id = $1", [req.user.id]);
       if (userRes.rows.length > 0) {
         smtpUser = userRes.rows[0].email_address;
-        smtpPass = userRes.rows[0].email_password;
+        smtpPass = decrypt(userRes.rows[0].email_password);
       }
     } catch (dbErr) {
       console.error('Error loading credentials from DB:', dbErr.message);
     }
+
+    const { getSignatureForUser } = require('../utils/signature');
+    const signature = await getSignatureForUser(req.user.id);
 
     // Fallback to global env variables if not set in DB
     if (!smtpUser) {
@@ -819,7 +900,7 @@ const sendQuotation = async (req, res, next) => {
       smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
     }
 
-    if (!smtpUser || !smtpPass) {
+    if (req.user.role === 'admin' && (!smtpUser || !smtpPass)) {
       return res.status(400).json({ 
         success: false, 
         message: 'Your email settings are not configured. Please configure your email address and app password in Settings.' 
@@ -1032,7 +1113,7 @@ const sendQuotation = async (req, res, next) => {
     const docxBuffer = doc.getZip().generate({ type: 'nodebuffer' });
 
     // 4. Archive PDF to disk
-    const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../../uploads');
+    const UPLOAD_DIR = path.resolve(process.cwd(), process.env.UPLOAD_DIR || 'uploads');
     const refNoClean = ref_no.replace(/[^a-zA-Z0-9\-]/g, '_');
     const targetDir = path.join(UPLOAD_DIR, refNoClean);
     if (!fs.existsSync(targetDir)) {
@@ -1056,68 +1137,23 @@ const sendQuotation = async (req, res, next) => {
         const absoluteDocx = path.resolve(docxPath);
         const absolutePdf = path.resolve(pdfPath);
 
-        if (process.platform === 'win32') {
-          const escapedDocx = absoluteDocx.replace(/\\/g, '/').replace(/'/g, "''");
-          const escapedPdf = absolutePdf.replace(/\\/g, '/').replace(/'/g, "''");
-          const psCommand = `$word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open('${escapedDocx}'); $doc.SaveAs('${escapedPdf}', 17); $doc.Close(); $word.Quit();`;
-          
-          exec(`powershell -NoProfile -Command "${psCommand}"`, (err, stdout, stderr) => {
-            if (err) {
-              return reject(new Error(stderr || err.message));
-            }
-            resolve();
-          });
-        } else {
-          // Linux / Render conversion using libreoffice-convert
-          const libre = require('libreoffice-convert');
-          const convertWithOptionsAsync = require('util').promisify(libre.convertWithOptions);
-          
-          try {
-            console.log("[PDF Conversion Debug] PATH environment:", process.env.PATH);
-            
-            // Check via 'which' command
-            const { execSync } = require('child_process');
-            let whichPath = '';
+        const lib = require('@matbee/libreoffice-converter');
+        const wasmLoader = require('@matbee/libreoffice-converter/wasm/loader');
+        
+        lib.createConverter({ wasmLoader })
+          .then(async (converter) => {
             try {
-              whichPath = execSync('which soffice').toString().trim();
-              console.log("[PDF Conversion Debug] 'which soffice' found at:", whichPath);
-            } catch (e) {
-              console.log("[PDF Conversion Debug] 'which soffice' command failed:", e.message);
+              const docxFileToConvert = fs.readFileSync(absoluteDocx);
+              const resultObj = await converter.convert(docxFileToConvert, { outputFormat: 'pdf' });
+              fs.writeFileSync(absolutePdf, resultObj.data);
+              await converter.destroy();
+              resolve();
+            } catch (err) {
+              await converter.destroy().catch(() => {});
+              reject(err);
             }
-
-            // Find soffice in PATH
-            const sofficePaths = [];
-            if (whichPath) {
-              sofficePaths.push(whichPath);
-            }
-            const pathEnv = process.env.PATH || '';
-            const dirs = pathEnv.split(':');
-            for (const dir of dirs) {
-              const p = path.join(dir, 'soffice');
-              if (fs.existsSync(p)) {
-                sofficePaths.push(p);
-              }
-              const pLibre = path.join(dir, 'libreoffice');
-              if (fs.existsSync(pLibre)) {
-                sofficePaths.push(pLibre);
-              }
-            }
-            
-            console.log("[PDF Conversion Debug] Resolved soffice binary search paths:", sofficePaths);
-
-            const docxFileToConvert = fs.readFileSync(absoluteDocx);
-            convertWithOptionsAsync(docxFileToConvert, '.pdf', undefined, { sofficeBinaryPaths: sofficePaths })
-              .then(pdfBuffer => {
-                fs.writeFileSync(absolutePdf, pdfBuffer);
-                resolve();
-              })
-              .catch(err => {
-                reject(err);
-              });
-          } catch (readErr) {
-            reject(readErr);
-          }
-        }
+          })
+          .catch(reject);
       });
     };
 
@@ -1179,7 +1215,7 @@ const sendQuotation = async (req, res, next) => {
         `* In case of end-voyage or discharge at a contingency/alternate port, the consignee will be liable for all additional costs arising.`;
     }
 
-    const messageText = `${salutation}\n\n${emailBodyText}\n\nBest regards,\n\nMuhammed Jabir\nPRICING AND OPERATION\nARGUS SHIPPING\n\n📞 +974 30512233\n\n📧 jabir@argusshipping.co\n\n🌐 www.argusshipping.co`;
+    const messageText = `${salutation}\n\n${emailBodyText}\n\n${signature.text}`;
 
     const htmlContent = emailBodyText.replace(/\n/g, '<br>');
     const htmlBody = `
@@ -1187,13 +1223,7 @@ const sendQuotation = async (req, res, next) => {
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         ${salutation}<br><br>
         ${htmlContent}<br><br>
-        Best regards,<br><br>
-        <b>Muhammed Jabir</b><br>
-        PRICING AND OPERATION<br>
-        ARGUS SHIPPING<br><br>
-        📞 +974 30512233<br><br>
-        📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a><br><br>
-        🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a>
+        ${signature.html}
       </body>
       </html>
     `;
@@ -1311,13 +1341,14 @@ const sendQuotation = async (req, res, next) => {
       ]
     };
 
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    const sentMessageId = info.messageId || null;
 
     // Save to shipment_replies DB
     const insertRes = await query(req, 
-      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [ref_no, smtpUser, subject, messageText]
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [ref_no, smtpUser, subject, messageText, recipientEmail, '', sentMessageId]
     );
 
     // Update shipment last_follow_up, cost and profit

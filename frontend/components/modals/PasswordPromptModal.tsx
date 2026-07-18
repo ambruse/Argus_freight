@@ -2,6 +2,7 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
+import { encryptPassword } from "@/lib/crypto";
 
 interface PasswordPromptModalProps {
   isOpen: boolean;
@@ -30,7 +31,8 @@ export default function PasswordPromptModal({
 
     setLoading(true);
     try {
-      await api.post("/auth/verify-password", { password });
+      const securePassword = await encryptPassword(password);
+      await api.post("/auth/verify-password", { password: securePassword });
       toast.success("Identity verified.");
       setPassword("");
       onSuccess();

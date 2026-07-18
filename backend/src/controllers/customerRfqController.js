@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { query } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
+const { decrypt } = require('../utils/crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -293,12 +294,16 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     const shipments = opShipmentsRes.rows;
 
     const userRes = await db.query(
-      "SELECT email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) ORDER BY role = 'operator' DESC, id ASC LIMIT 1",
+      "SELECT id, email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) ORDER BY role = 'operator' DESC, id ASC LIMIT 1",
       [operatorName]
     );
 
     let smtpUser = userRes.rows.length > 0 ? userRes.rows[0].email_address : null;
-    let smtpPass = userRes.rows.length > 0 ? userRes.rows[0].email_password : null;
+    let smtpPass = userRes.rows.length > 0 ? decrypt(userRes.rows[0].email_password) : null;
+    const operatorUserId = userRes.rows.length > 0 ? userRes.rows[0].id : null;
+
+    const { getSignatureForUser } = require('../utils/signature');
+    const signature = await getSignatureForUser(operatorUserId);
 
     // Fallback to global env variables if not set in DB
     if (!smtpUser) {
@@ -399,19 +404,7 @@ const sendCustomerRfqEmail = async (req, res, next) => {
 
       htmlBody += `
         <br><br>
-        <p>Best regards,</p>
-        <p style="color:#3b78c8;">
-        <b>Muhammed Jabir</b><br>
-        PRICING AND OPERATION<br>
-        ARGUS SHIPPING
-        </p>
-        <p>📞 +974 30512233</p>
-        <p>📧 <a href="mailto:jabir@argusshipping.co">jabir@argusshipping.co</a></p>
-        <p>🌐 <a href="https://www.argusshipping.co">www.argusshipping.co</a></p>
-        <br>
-        <p style="background-color:yellow;color:red;padding:8px;">
-        Confidentiality Notice: This email and any attachments are confidential and may contain legally privileged information intended solely for the named recipient(s). Any unauthorized review, use, disclosure, copying, or distribution is strictly prohibited. If received in error, please notify the sender immediately and permanently delete the message.
-        </p>
+        ${signature.html}
         </body>
         </html>
       `;

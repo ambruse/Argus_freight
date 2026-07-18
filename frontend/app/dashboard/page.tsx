@@ -139,10 +139,11 @@ const ACCENTS = {
 };
 
 export default function DashboardPage() {
-  const [metrics,        setMetrics]        = useState<DashboardMetrics | null>(null);
-  const [loading,        setLoading]        = useState(true);
-  const [isCallingAgent, setIsCallingAgent] = useState(false);
-  const [isCustomer,     setIsCustomer]     = useState(false);
+  const [metrics,            setMetrics]            = useState<DashboardMetrics | null>(null);
+  const [confirmedShipments, setConfirmedShipments] = useState<any[]>([]);
+  const [loading,            setLoading]            = useState(true);
+  const [isCallingAgent,     setIsCallingAgent]     = useState(false);
+  const [isCustomer,         setIsCustomer]         = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -159,6 +160,9 @@ export default function DashboardPage() {
     try {
       const { data } = await api.get("/dashboard/metrics");
       setMetrics(data.data);
+
+      const { data: shipData } = await api.get("/shipments?status=Confirmed");
+      setConfirmedShipments(shipData.data || []);
     } catch {
       toast.error("Failed to load dashboard metrics.");
     } finally {
@@ -248,6 +252,112 @@ export default function DashboardPage() {
     );
   }
 
+  const formatLocation = (loc: string | null | undefined) => {
+    if (!loc) return "—";
+    const firstCommaIndex = loc.indexOf(",");
+    if (firstCommaIndex === -1) return loc.trim();
+    return loc.substring(0, firstCommaIndex).trim();
+  };
+
+  const isEtaUrgent = (eta: string | null | undefined, mode: string) => {
+    if (!eta) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const etaDate = new Date(eta);
+    etaDate.setHours(0, 0, 0, 0);
+
+    const diffTime = etaDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (mode.toUpperCase() === "AIR") {
+      return diffDays <= 2;
+    } else if (mode.toUpperCase() === "SEA") {
+      return diffDays <= 7;
+    }
+    return false;
+  };
+
+  const airShipments = confirmedShipments
+    .filter(s => {
+      if (s.mode?.toUpperCase() !== "AIR") return false;
+      if (!s.eta) return true;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const etaDate = new Date(s.eta);
+      etaDate.setHours(0, 0, 0, 0);
+
+      const diffTime = etaDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      return diffDays > -7;
+    })
+    .sort((a, b) => {
+      if (!a.eta) return 1;
+      if (!b.eta) return -1;
+      return new Date(a.eta).getTime() - new Date(b.eta).getTime();
+    });
+
+  const seaShipments = confirmedShipments
+    .filter(s => s.mode?.toUpperCase() === "SEA")
+    .sort((a, b) => {
+      if (!a.eta) return 1;
+      if (!b.eta) return -1;
+      return new Date(a.eta).getTime() - new Date(b.eta).getTime();
+    });
+
+  const renderShipmentTable = (title: string, icon: string, list: any[]) => {
+    return (
+      <section className="space-y-4">
+        <SectionHeader label={title} icon={icon} />
+        {loading ? (
+          <div className="text-center py-8 text-muted">Loading shipments...</div>
+        ) : list.length === 0 ? (
+          <div className="text-center py-8 text-muted bg-white/5 rounded-2xl border border-white/5">
+            No confirmed {title.toLowerCase()} found.
+          </div>
+        ) : (
+          <div className="glass rounded-2xl border border-white/5 overflow-hidden shadow-card">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white/5 border-b border-white/10 text-muted uppercase text-[10px] tracking-widest font-semibold">
+                    <th className="py-3 px-5">Ref No</th>
+                    <th className="py-3 px-5">POL</th>
+                    <th className="py-3 px-5">POD</th>
+                    <th className="py-3 px-5">Commodity</th>
+                    <th className="py-3 px-5">ETD</th>
+                    <th className="py-3 px-5">ETA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05] text-[13px] font-medium text-primary">
+                  {list.map((s) => {
+                    const urgent = isEtaUrgent(s.eta, s.mode || "");
+                    return (
+                      <tr 
+                        key={s.ref_no} 
+                        className={`transition-colors ${urgent ? "text-rose-500 animate-pulse font-bold bg-rose-500/[0.02]" : "hover:bg-white/[0.02]"}`}
+                      >
+                        <td className={`py-3 px-5 ${urgent ? "text-rose-500" : "text-gold font-bold"}`}>{s.ref_no}</td>
+                        <td className="py-3 px-5">{formatLocation(s.pol)}</td>
+                        <td className="py-3 px-5">{formatLocation(s.pod)}</td>
+                        <td className="py-3 px-5">{s.commodity || "—"}</td>
+                        <td className="py-3 px-5">{s.etd ? new Date(s.etd).toLocaleDateString() : "—"}</td>
+                        <td className={`py-3 px-5 ${urgent ? "text-rose-500" : "text-emerald-400 font-semibold"}`}>{s.eta ? new Date(s.eta).toLocaleDateString() : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  };
+
   // ── Default (Operator / Admin) view ───────────────────────────
   return (
     <AppLayout title="Operational Dashboard" subtitle="Live overview of all freight operations and RFQ pipeline.">
@@ -271,33 +381,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* ── Execution ────────────────────────────────────── */}
-        <section>
-          <SectionHeader label="Execution — Shipment Status" icon="◉" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {loading ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />) :
-              metrics && (
-                <>
-                  <MetricCard label="Files Pending"  value={metrics.filesPending}  icon="📄" accent={ACCENTS.sky.color}     accentRgb={ACCENTS.sky.rgb}     delay={0}   />
-                  <MetricCard label="Completed"      value={metrics.completed}      icon="🏁" accent={ACCENTS.emerald.color} accentRgb={ACCENTS.emerald.rgb} delay={60}  />
-                  <MetricCard label="Return Pending" value={metrics.returnPending}  icon="↩" accent={ACCENTS.amber.color}   accentRgb={ACCENTS.amber.rgb}   delay={120} />
-                  <MetricCard label="Cancelled"      value={metrics.cancelled}      icon="✕" accent={ACCENTS.rose.color}    accentRgb={ACCENTS.rose.rgb}    delay={180} />
-                  <MetricCard
-                    label="Follow Ups Due"
-                    value={metrics.followUpsDue}
-                    icon="🔔"
-                    accent={metrics.followUpsDue > 0 ? ACCENTS.gold.color : ACCENTS.amber.color}
-                    accentRgb={metrics.followUpsDue > 0 ? ACCENTS.gold.rgb : ACCENTS.amber.rgb}
-                    delay={240}
-                    highlight={metrics.followUpsDue > 0}
-                  />
-                </>
-              )
-            }
-          </div>
-        </section>
-
-        <InfoBar note="📍 Follow Ups Due = active shipments with last update > 4 hours ago" />
+        {renderShipmentTable("AIR Confirmed Shipments", "✈", airShipments)}
+        {renderShipmentTable("SEA Confirmed Shipments", "🚢", seaShipments)}
       </div>
     </AppLayout>
   );

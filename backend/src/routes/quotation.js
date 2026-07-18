@@ -7,7 +7,9 @@ const {
   getQuotations, 
   downloadQuotation,
   approveQuotation,
-  disapproveQuotation
+  disapproveQuotation,
+  getDraftSettings,
+  updateDraftSettings
 } = require('../controllers/quotationController');
 
 // All quotation routes require authentication
@@ -19,6 +21,10 @@ router.use(requireRole('admin', 'operator', 'sales'));
 router.post('/generate',       generateQuotation);
 router.get('/',               getQuotations);
 router.get('/download/:id',   downloadQuotation);
+
+// Draft Settings routes
+router.get('/draft-settings',  getDraftSettings);
+router.post('/draft-settings', requireRole('admin'), updateDraftSettings);
 
 // Admin-only approval routes
 router.post('/approve/:id',     requireRole('admin'), approveQuotation);

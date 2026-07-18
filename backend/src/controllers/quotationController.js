@@ -28,34 +28,46 @@ const generateQuotation = async (req, res, next) => {
     const {
       pol, pod, pol_pcode, pod_pcode, commodity,
       freight, zone, trans, sales_p, operator, customer_name,
-      transit_time, validity, mode, carrier_name, currency
+      transit_time, validity, mode, carrier_name, currency,
+      is_draft
     } = req.body;
 
     const creatorId = req.user.id;
 
-    // 1. Generate sequential Q.NO (format: yyyymmdd001, yyyymmdd002)
+    // 1. Generate sequential Q.NO (format: yyyymmdd001, yyyymmdd002) or static 'xxxxx' for draft
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const yyyy = today.getFullYear();
     const datePrefix = `${yyyy}${mm}${dd}`;
 
-    // Get the highest Q.NO created today
-    const highestQuotRes = await db.query(
-      `SELECT q_no FROM quotations WHERE q_no LIKE $1 ORDER BY q_no DESC LIMIT 1`,
-      [`${datePrefix}%`]
-    );
-
-    let seq = 1;
-    if (highestQuotRes.rows.length > 0) {
-      const highestQNo = highestQuotRes.rows[0].q_no;
-      const seqStr = highestQNo.substring(8);
-      const parsedSeq = parseInt(seqStr, 10);
-      if (!isNaN(parsedSeq)) {
-        seq = parsedSeq + 1;
+    let q_no = '';
+    if (is_draft) {
+      // Check if draft mode is globally enabled
+      const draftSettingRes = await db.query("SELECT value FROM app_settings WHERE key = $1", ['quotation_draft_mode_enabled']);
+      const isDraftGloballyEnabled = draftSettingRes.rows.length > 0 && draftSettingRes.rows[0].value === 'true';
+      if (!isDraftGloballyEnabled) {
+        return res.status(400).json({ success: false, message: 'Draft mode is currently disabled globally by the Admin.' });
       }
+      q_no = 'xxxxx';
+    } else {
+      // Get the highest Q.NO created today
+      const highestQuotRes = await db.query(
+        `SELECT q_no FROM quotations WHERE q_no LIKE $1 ORDER BY q_no DESC LIMIT 1`,
+        [`${datePrefix}%`]
+      );
+
+      let seq = 1;
+      if (highestQuotRes.rows.length > 0) {
+        const highestQNo = highestQuotRes.rows[0].q_no;
+        const seqStr = highestQNo.substring(8);
+        const parsedSeq = parseInt(seqStr, 10);
+        if (!isNaN(parsedSeq)) {
+          seq = parsedSeq + 1;
+        }
+      }
+      q_no = `${datePrefix}${String(seq).padStart(3, '0')}`;
     }
-    const q_no = `${datePrefix}${String(seq).padStart(3, '0')}`;
 
     // 2. Financials and currency conversion calculations
     const freightNum = parseFloat(freight) || 0;
@@ -107,10 +119,11 @@ const generateQuotation = async (req, res, next) => {
 
     // 3. Render DOCX using docxtemplater
     const assetsDir = path.resolve(__dirname, '../../../public');
-    const templatePath = path.join(assetsDir, 'Argus_Ambient_Premium_Quotation.docx');
+    const templateFileName = is_draft ? 'Argus_Ambient_Premium_Quotation(Draft).docx' : 'Argus_Ambient_Premium_Quotation.docx';
+    const templatePath = path.join(assetsDir, templateFileName);
 
     if (!fs.existsSync(templatePath)) {
-      return res.status(500).json({ success: false, message: 'Argus_Ambient_Premium_Quotation.docx template not found in assets.' });
+      return res.status(500).json({ success: false, message: `${templateFileName} template not found in assets.` });
     }
 
     const templateBytes = fs.readFileSync(templatePath);
@@ -131,6 +144,13 @@ const generateQuotation = async (req, res, next) => {
 
         // 2. Replace all remaining red color hexadecimal values (FF0000) with black (000000)
         content = content.replace(/FF0000/gi, '000000');
+
+        // 3. Replace QAS Charges with Do Charges when mode is OCEAN or ROAD/LAND
+        if (mode === 'OCEAN' || mode === 'LAND' || mode === 'ROAD') {
+          content = content.replace(/QAS\s+Charges/g, 'Do Charges');
+          content = content.replace(/QAS\s+charges/g, 'Do charges');
+          content = content.replace(/QAS\s+CHARGES/g, 'DO CHARGES');
+        }
         
         zip.file(fileName, content);
       }
@@ -204,7 +224,7 @@ const generateQuotation = async (req, res, next) => {
     const docxBuffer = doc.getZip().generate({ type: 'nodebuffer' });
 
     // 4. Archive PDF/DOCX to disk
-    const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../../uploads');
+    const UPLOAD_DIR = path.resolve(process.cwd(), process.env.UPLOAD_DIR || 'uploads');
     const targetDir = path.join(UPLOAD_DIR, 'quotations');
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
@@ -225,68 +245,23 @@ const generateQuotation = async (req, res, next) => {
         const absoluteDocx = path.resolve(dPath);
         const absolutePdf = path.resolve(pPath);
 
-        if (process.platform === 'win32') {
-          const escapedDocx = absoluteDocx.replace(/\\/g, '/').replace(/'/g, "''");
-          const escapedPdf = absolutePdf.replace(/\\/g, '/').replace(/'/g, "''");
-          const psCommand = `$word = New-Object -ComObject Word.Application; $word.Visible = $false; $doc = $word.Documents.Open('${escapedDocx}'); $doc.SaveAs('${escapedPdf}', 17); $doc.Close(); $word.Quit();`;
-          
-          exec(`powershell -NoProfile -Command "${psCommand}"`, (err, stdout, stderr) => {
-            if (err) {
-              return reject(new Error(stderr || err.message));
-            }
-            resolve();
-          });
-        } else {
-          // Linux / Render conversion using libreoffice-convert
-          const libre = require('libreoffice-convert');
-          const convertWithOptionsAsync = require('util').promisify(libre.convertWithOptions);
-          
-          try {
-            console.log("[PDF Conversion Debug] PATH environment:", process.env.PATH);
-            
-            // Check via 'which' command
-            const { execSync } = require('child_process');
-            let whichPath = '';
+        const lib = require('@matbee/libreoffice-converter');
+        const wasmLoader = require('@matbee/libreoffice-converter/wasm/loader');
+        
+        lib.createConverter({ wasmLoader })
+          .then(async (converter) => {
             try {
-              whichPath = execSync('which soffice').toString().trim();
-              console.log("[PDF Conversion Debug] 'which soffice' found at:", whichPath);
-            } catch (e) {
-              console.log("[PDF Conversion Debug] 'which soffice' command failed:", e.message);
+              const docxFileToConvert = fs.readFileSync(absoluteDocx);
+              const resultObj = await converter.convert(docxFileToConvert, { outputFormat: 'pdf' });
+              fs.writeFileSync(absolutePdf, resultObj.data);
+              await converter.destroy();
+              resolve();
+            } catch (err) {
+              await converter.destroy().catch(() => {});
+              reject(err);
             }
-
-            // Find soffice in PATH
-            const sofficePaths = [];
-            if (whichPath) {
-              sofficePaths.push(whichPath);
-            }
-            const pathEnv = process.env.PATH || '';
-            const dirs = pathEnv.split(':');
-            for (const dir of dirs) {
-              const p = path.join(dir, 'soffice');
-              if (fs.existsSync(p)) {
-                sofficePaths.push(p);
-              }
-              const pLibre = path.join(dir, 'libreoffice');
-              if (fs.existsSync(pLibre)) {
-                sofficePaths.push(pLibre);
-              }
-            }
-            
-            console.log("[PDF Conversion Debug] Resolved soffice binary search paths:", sofficePaths);
-
-            const docxFileToConvert = fs.readFileSync(absoluteDocx);
-            convertWithOptionsAsync(docxFileToConvert, '.pdf', undefined, { sofficeBinaryPaths: sofficePaths })
-              .then(pdfBuffer => {
-                fs.writeFileSync(absolutePdf, pdfBuffer);
-                resolve();
-              })
-              .catch(err => {
-                reject(err);
-              });
-          } catch (readErr) {
-            reject(readErr);
-          }
-        }
+          })
+          .catch(reject);
       });
     };
 
@@ -328,10 +303,39 @@ const generateQuotation = async (req, res, next) => {
       if (fs.existsSync(tempDocxPath)) {
         fs.unlinkSync(tempDocxPath);
       }
+      if (fs.existsSync(pdfPath)) {
+        fs.unlinkSync(pdfPath);
+      }
       return res.status(500).json({
         success: false,
         message: `PDF generation failed: ${err.message}`
       });
+    }
+
+    if (is_draft) {
+      try {
+        const finalPdfBytes = fs.readFileSync(pdfPath);
+        // Clean up temporary PDF file on disk
+        if (fs.existsSync(pdfPath)) {
+          fs.unlinkSync(pdfPath);
+        }
+        return res.status(200).json({
+          success: true,
+          isDraft: true,
+          message: 'Draft Quotation PDF generated successfully.',
+          pdfBase64: finalPdfBytes.toString('base64'),
+          fileName: `Quotation_Draft_${Date.now()}.pdf`
+        });
+      } catch (readErr) {
+        console.error("[Draft PDF Read Error]:", readErr);
+        if (fs.existsSync(pdfPath)) {
+          fs.unlinkSync(pdfPath);
+        }
+        return res.status(500).json({
+          success: false,
+          message: `Failed to read generated draft PDF: ${readErr.message}`
+        });
+      }
     }
 
     // 5. Insert record into database
@@ -369,12 +373,24 @@ const generateQuotation = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 const getQuotations = async (req, res, next) => {
   try {
-    const result = await db.query(
-      `SELECT q.*, u.username as creator_username 
-       FROM quotations q
-       LEFT JOIN users u ON q.created_by = u.id
-       ORDER BY q.created_at DESC`
-    );
+    let result;
+    if (req.user.role === 'admin') {
+      result = await db.query(
+        `SELECT q.*, u.username as creator_username 
+         FROM quotations q
+         LEFT JOIN users u ON q.created_by = u.id
+         ORDER BY q.created_at DESC`
+      );
+    } else {
+      result = await db.query(
+        `SELECT q.*, u.username as creator_username 
+         FROM quotations q
+         LEFT JOIN users u ON q.created_by = u.id
+         WHERE q.created_by = $1
+         ORDER BY q.created_at DESC`,
+        [req.user.id]
+      );
+    }
 
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -398,6 +414,11 @@ const downloadQuotation = async (req, res, next) => {
     }
 
     const quotation = result.rows[0];
+
+    // Enforce creator lock: non-admins can only download their own quotations
+    if (req.user.role !== 'admin' && quotation.created_by !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied. You can only download your own quotations.' });
+    }
 
     // Enforce approval lock: only admins can download unapproved quotations
     if (req.user.role !== 'admin' && quotation.approval_status !== 'Approved') {
@@ -443,14 +464,50 @@ const approveQuotation = async (req, res, next) => {
     if (quotation.email_payload) {
       const payload = JSON.parse(quotation.email_payload);
       
+      let smtpUser = payload.smtpUser;
+      let smtpPass = payload.smtpPass;
+
+      if (!smtpUser || !smtpPass) {
+        // Try to load the approving admin's SMTP credentials
+        const { decrypt } = require('../utils/crypto');
+        try {
+          const adminRes = await db.query("SELECT email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+          if (adminRes.rows.length > 0) {
+            smtpUser = adminRes.rows[0].email_address;
+            smtpPass = decrypt(adminRes.rows[0].email_password);
+          }
+        } catch (dbErr) {
+          console.error('Error loading admin credentials from DB:', dbErr.message);
+        }
+      }
+
+      // Fallback to global env variables
+      if (!smtpUser) {
+        smtpUser = process.env.SMTP_USER || null;
+      }
+      if (!smtpPass) {
+        smtpPass = process.env.SMTP_PASS || null;
+      }
+
+      // Sanitize
+      if (smtpUser) smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
+      if (smtpPass) smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
+
+      if (!smtpUser || !smtpPass) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Admin SMTP credentials are not configured. Please configure your email address and app password in Settings to approve this quotation.' 
+        });
+      }
+
       const nodemailer = require('nodemailer');
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT || '587'),
         secure: process.env.SMTP_PORT === '465',
         auth: {
-          user: payload.smtpUser,
-          pass: payload.smtpPass,
+          user: smtpUser,
+          pass: smtpPass,
         },
         tls: {
           rejectUnauthorized: false
@@ -459,7 +516,7 @@ const approveQuotation = async (req, res, next) => {
       });
 
       await transporter.sendMail({
-        from: `ARGUS SHIPPING <${payload.smtpUser}>`,
+        from: `ARGUS SHIPPING <${smtpUser}>`,
         to: payload.recipientEmail,
         subject: payload.subject,
         text: payload.messageText,
@@ -581,10 +638,53 @@ const disapproveQuotation = async (req, res, next) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+//  GET /api/quotation/draft-settings
+//  Retrieves global Draft Mode status.
+// ─────────────────────────────────────────────────────────────
+const getDraftSettings = async (req, res, next) => {
+  try {
+    const result = await db.query("SELECT value FROM app_settings WHERE key = $1", ['quotation_draft_mode_enabled']);
+    let enabled = false;
+    if (result.rows.length > 0) {
+      enabled = result.rows[0].value === 'true';
+    }
+    res.json({ success: true, enabled });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  POST /api/quotation/draft-settings
+//  Updates global Draft Mode status (Admin only).
+// ─────────────────────────────────────────────────────────────
+const updateDraftSettings = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Access denied. Admins only.' });
+    }
+    const { enabled } = req.body;
+    const val = enabled === true || enabled === 'true' ? 'true' : 'false';
+    await db.query(
+      `INSERT INTO app_settings (key, value) 
+       VALUES ('quotation_draft_mode_enabled', $1) 
+       ON CONFLICT (key) 
+       DO UPDATE SET value = EXCLUDED.value`,
+      [val]
+    );
+    res.json({ success: true, message: 'Draft mode setting updated successfully.', enabled: val === 'true' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   generateQuotation, 
   getQuotations, 
   downloadQuotation,
   approveQuotation,
-  disapproveQuotation
+  disapproveQuotation,
+  getDraftSettings,
+  updateDraftSettings
 };

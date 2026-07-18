@@ -1,6 +1,27 @@
 const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
 const db = require('../config/db');
+const { decrypt } = require('../utils/crypto');
+
+const extractEmails = (headerObj) => {
+  if (!headerObj) return '';
+  let list = [];
+  if (Array.isArray(headerObj)) {
+    list = headerObj;
+  } else if (headerObj.value && Array.isArray(headerObj.value)) {
+    list = headerObj.value;
+  } else if (typeof headerObj === 'object') {
+    list = [headerObj];
+  }
+  const emails = list
+    .map(item => {
+      if (typeof item === 'string') return item;
+      return item.address || item.value;
+    })
+    .filter(email => typeof email === 'string' && email.includes('@'))
+    .map(email => email.toLowerCase().trim());
+  return [...new Set(emails)].join(', ');
+};
 
 // Map to store active user sessions: username (lowercase) -> session details
 const activeSessions = new Map();
@@ -94,6 +115,8 @@ const syncInboxForUser = async (session, limit = 40) => {
         }
 
         let bodyText = null;
+        let toEmails = '';
+        let ccEmails = '';
 
         for (const linkedRefNo of matchedRefNos) {
           try {
@@ -123,6 +146,8 @@ const syncInboxForUser = async (session, limit = 40) => {
                   if (rawSource) {
                     const parsed = await simpleParser(rawSource);
                     bodyText = parsed.text || parsed.html || '';
+                    toEmails = extractEmails(parsed.to);
+                    ccEmails = extractEmails(parsed.cc);
                   } else {
                     bodyText = '';
                   }
@@ -131,9 +156,9 @@ const syncInboxForUser = async (session, limit = 40) => {
                 if (bodyText && bodyText !== '') {
                   console.log(`[IMAP Service - ${username}] Importing reply to ${linkedRefNo} in ${tables.replies} from ${fromEmail} (Message-ID: ${messageId})`);
                   await db.query(
-                    `INSERT INTO ${tables.replies} (ref_no, from_email, subject, body_text, received_at, is_read, message_id)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                    [linkedRefNo, fromEmail, subject, bodyText, date, isReadInImap, messageId]
+                    `INSERT INTO ${tables.replies} (ref_no, from_email, subject, body_text, received_at, is_read, message_id, to_emails, cc_emails)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                    [linkedRefNo, fromEmail, subject, bodyText, date, isReadInImap, messageId, toEmails, ccEmails]
                   );
 
                   // Update last_follow_up and sync to customer sandbox if associated
@@ -202,7 +227,7 @@ const startUserSession = async (user) => {
   const host = process.env.IMAP_HOST || 'imap.gmail.com';
   const port = parseInt(process.env.IMAP_PORT || '993', 10);
   const email = user.email_address;
-  const pass = user.email_password;
+  const pass = decrypt(user.email_password);
 
   const client = new ImapFlow({
     host,
@@ -217,7 +242,7 @@ const startUserSession = async (user) => {
     username,
     role: user.role,
     email,
-    pass,
+    pass: user.email_password,
     isFetching: false,
     intervalId: null
   };
