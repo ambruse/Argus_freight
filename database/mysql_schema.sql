@@ -72,9 +72,9 @@ CREATE TABLE IF NOT EXISTS shipments (
   UNIQUE KEY (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_shipments_status         ON shipments(status);
-CREATE INDEX IF NOT EXISTS idx_shipments_last_follow_up ON shipments(last_follow_up);
-CREATE INDEX IF NOT EXISTS idx_shipments_created_at     ON shipments(created_at);
+CREATE INDEX idx_shipments_status         ON shipments(status);
+CREATE INDEX idx_shipments_last_follow_up ON shipments(last_follow_up);
+CREATE INDEX idx_shipments_created_at     ON shipments(created_at);
 
 -- =============================================================
 --  TABLE: shipment_replies
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS files (
   FOREIGN KEY (shipment_ref_no) REFERENCES shipments(ref_no) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_files_ref_no ON files(shipment_ref_no);
+CREATE INDEX idx_files_ref_no ON files(shipment_ref_no);
 
 -- =============================================================
 --  TABLE: contacts
