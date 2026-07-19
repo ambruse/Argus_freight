@@ -38,7 +38,6 @@ type FormState = {
   container: string;
   mode: string;
   weight: string;
-  weight_val: string;
   weight_unit: string;
   pickup_address: string;
   delivery_address: string;
@@ -58,7 +57,7 @@ const INITIAL_FORM: FormState = {
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
   dim_length: "", dim_width: "", dim_height: "", dim_qty: "1", dim_unit: "cm", dim_cbm: "",
   container: "",
-  mode: "", weight: "", weight_val: "", weight_unit: "kg", pickup_address: "",
+  mode: "", weight: "", weight_unit: "KG", pickup_address: "",
   delivery_address: "", note: "", refer_by: "", email: "", dear_who: "",
   cc_emails: []
 };
@@ -257,11 +256,12 @@ export default function NewRFQPage() {
           ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${form.dim_qty || 1})`
           : "");
 
-    const weightVal = parseFloat(form.weight_val) || 0;
-    const qty = parseFloat(form.dim_qty) || 1;
-    const wUnit = form.weight_unit || "kg";
-    const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
-    const calculatedWeightKg = weightVal * factor * qty;
+    const weightVal = parseFloat(form.weight) || 0;
+    const qtyVal = parseFloat(form.dim_qty) || 1;
+    const isLb = ["LB", "Pound"].includes(form.weight_unit || "KG");
+    const weightInKg = weightVal
+      ? (isLb ? (weightVal * qtyVal * 0.45359237).toFixed(2) : (weightVal * qtyVal).toFixed(2))
+      : "";
 
     if (isSales) {
       // 1. Validations
@@ -298,7 +298,7 @@ export default function NewRFQPage() {
       // Dimension, Container, Weight logic
       const isContainerEmpty = !form.container?.trim();
       const isDimensionEmpty = !dimensionStr.trim();
-      const isWeightEmpty = !form.weight_val?.trim();
+      const isWeightEmpty = !weightInKg;
 
       if (isContainerEmpty) {
         if (isDimensionEmpty) {
@@ -306,7 +306,7 @@ export default function NewRFQPage() {
           return;
         }
         if (isWeightEmpty) {
-          toast.error("Weight is compulsory when Container is empty.");
+          toast.error("Total Weight is compulsory when Container is empty.");
           return;
         }
       }
@@ -367,7 +367,7 @@ export default function NewRFQPage() {
         const payload = {
           ...form,
           dimension: dimensionStr,
-          weight: calculatedWeightKg ? calculatedWeightKg.toFixed(2) : "",
+          weight: weightInKg,
           email: recipient.email,
           dear_who: recipient.dear_who,
           pol: targetPol,
@@ -497,15 +497,16 @@ export default function NewRFQPage() {
           ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${form.dim_qty || 1})`
           : "");
 
-    const weightVal = parseFloat(form.weight_val) || 0;
-    const qty = parseFloat(form.dim_qty) || 1;
-    const wUnit = form.weight_unit || "kg";
-    const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
-    const calculatedWeightKg = weightVal * factor * qty;
+    const weightVal = parseFloat(form.weight) || 0;
+    const qtyVal = parseFloat(form.dim_qty) || 1;
+    const isLb = ["LB", "Pound"].includes(form.weight_unit || "KG");
+    const weightInKg = weightVal
+      ? (isLb ? (weightVal * qtyVal * 0.45359237).toFixed(2) : (weightVal * qtyVal).toFixed(2))
+      : "";
 
     const isContainerEmpty = !form.container?.trim();
     const isDimensionEmpty = !dimensionStr.trim();
-    const isWeightEmpty = !form.weight_val?.trim();
+    const isWeightEmpty = !weightInKg;
 
     if (isContainerEmpty) {
       if (isDimensionEmpty) {
@@ -513,7 +514,7 @@ export default function NewRFQPage() {
         return;
       }
       if (isWeightEmpty) {
-        toast.error("Weight is compulsory when Container is empty.");
+        toast.error("Total Weight is compulsory when Container is empty.");
         return;
       }
     }
@@ -555,11 +556,12 @@ export default function NewRFQPage() {
           ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${form.dim_qty || 1})`
           : "");
 
-    const weightVal = parseFloat(form.weight_val) || 0;
-    const qty = parseFloat(form.dim_qty) || 1;
-    const wUnit = form.weight_unit || "kg";
-    const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
-    const calculatedWeightKg = weightVal * factor * qty;
+    const weightVal = parseFloat(form.weight) || 0;
+    const qtyVal = parseFloat(form.dim_qty) || 1;
+    const isLb = ["LB", "Pound"].includes(form.weight_unit || "KG");
+    const weightInKg = weightVal
+      ? (isLb ? (weightVal * qtyVal * 0.45359237).toFixed(2) : (weightVal * qtyVal).toFixed(2))
+      : "";
 
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, "0");
@@ -585,7 +587,7 @@ export default function NewRFQPage() {
         const payload = {
           ...form,
           dimension: dimensionStr,
-          weight: calculatedWeightKg ? calculatedWeightKg.toFixed(2) : "",
+          weight: weightInKg,
           email: recipient.email,
           dear_who: recipient.dear_who,
           pol: targetPol,
@@ -650,7 +652,7 @@ export default function NewRFQPage() {
     { label: "COMMODITY", name: "commodity" },
     { label: "TERM", name: "term" },
     { label: "DIMENSION", name: "dimension" },
-    { label: "Weight", name: "weight" },
+    { label: "WEIGHT", name: "weight" },
     { label: "NOTE", name: "note" },
     { label: "REFER BY", name: "refer_by" },
   ];
@@ -895,11 +897,12 @@ export default function NewRFQPage() {
                         }
                         const volWeightCalc = cbmCalc * 167;
                         
-                        const weightVal = parseFloat(form.weight_val) || 0;
-                        const qty = parseFloat(form.dim_qty) || 1;
-                        const wUnit = form.weight_unit || "kg";
-                        const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
-                        const actWeight = weightVal * factor * qty;
+                        const wVal = parseFloat(form.weight) || 0;
+                        const qtyVal = parseFloat(form.dim_qty) || 1;
+                        const isLbWeight = ["LB", "Pound"].includes(form.weight_unit || "KG");
+                        const actWeight = wVal 
+                          ? (isLbWeight ? (wVal * qtyVal * 0.45359237) : (wVal * qtyVal))
+                          : 0;
 
                         const chgWeightCalc = Math.max(actWeight, volWeightCalc);
 
@@ -924,54 +927,48 @@ export default function NewRFQPage() {
                     </div>
                   ) : f.name === "weight" ? (
                     <div className="space-y-2">
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          name="weight"
+                          value={form.weight || ""}
+                          onChange={handleChange}
+                          className="input w-full col-span-2"
+                          placeholder="Weight"
+                        />
                         <select
                           name="weight_unit"
-                          value={form.weight_unit || "kg"}
+                          value={form.weight_unit || "KG"}
                           onChange={handleChange}
-                          className="select text-xs min-h-[36px] flex-1"
+                          className="select w-full text-xs min-h-[36px]"
                         >
-                          <option value="kg">KG</option>
-                          <option value="lb">LB</option>
+                          <option value="KG">KG</option>
+                          <option value="LB">LB</option>
+                          <option value="Pound">Pound</option>
                         </select>
-
-                        {/* RIGHT SIDE: Now narrow (w-20 or w-auto) */}
-                        <div className="relative w-20">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            name="weight_val"
-                            value={form.weight_val || ""}
-                            onChange={handleChange}
-                            className="input w-full"
-                            placeholder="Value"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none uppercase">
-                            {form.weight_unit}
-                          </span>
-                        </div>
                       </div>
 
                       {(() => {
-                        const weightVal = parseFloat(form.weight_val) || 0;
+                        const wVal = parseFloat(form.weight) || 0;
                         const qty = parseFloat(form.dim_qty) || 1;
-                        const wUnit = form.weight_unit || "kg";
-                        const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
-                        const totalWeightKg = weightVal * factor * qty;
+                        const unit = form.weight_unit || "KG";
+                        const totalWeight = wVal * qty;
+                        
+                        // Convert to KG for calculation preview
+                        let totalWeightKg = totalWeight;
+                        if (unit === "LB" || unit === "Pound") {
+                          totalWeightKg = totalWeight * 0.45359237;
+                        }
 
-                        if (!weightVal) return null;
+                        if (!wVal) return null;
 
                         return (
-                          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs space-y-0.5 animate-fade-in">
-                            <span className="text-[10px] uppercase tracking-wider font-semibold text-muted">Total weight (KG)</span>
-                            <p className="font-mono font-bold text-emerald text-sm">
-                              {totalWeightKg.toFixed(2)} kg
-                            </p>
-                            {wUnit !== "kg" && (
-                              <p className="text-[9px] text-muted italic">
-                                Converted from {(weightVal * qty).toFixed(2)} {wUnit}s
-                              </p>
+                          <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[10px] text-muted flex justify-between">
+                            <span>Total Weight: <strong className="text-primary">{totalWeight.toFixed(2)} {unit}</strong></span>
+                            {(unit === "LB" || unit === "Pound") && (
+                              <span>(<strong className="text-gold">{totalWeightKg.toFixed(2)} KG</strong>)</span>
                             )}
                           </div>
                         );
