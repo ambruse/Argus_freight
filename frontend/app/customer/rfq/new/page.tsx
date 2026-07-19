@@ -20,6 +20,9 @@ type FormState = {
   commodity: string;
   term: string;
   dimension: string;
+  dim_length: string;
+  dim_width: string;
+  dim_height: string;
   container: string;
   mode: string;
   weight: string;
@@ -31,6 +34,7 @@ type FormState = {
 
 const INITIAL_FORM: FormState = {
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
+  dim_length: "", dim_width: "", dim_height: "",
   container: "", mode: "", weight: "", pickup_address: "",
   delivery_address: "", note: "", operator: ""
 };
@@ -146,8 +150,13 @@ export default function CustomerNewRFQPage() {
     }
 
     // Dimension, Container, Weight logic
+    const hasDimensions = form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim();
+    const dimensionStr = hasDimensions 
+      ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0}`
+      : "";
+
     const isContainerEmpty = !form.container?.trim();
-    const isDimensionEmpty = !form.dimension?.trim();
+    const isDimensionEmpty = !dimensionStr.trim();
     const isWeightEmpty = !form.weight?.toString().trim();
 
     if (isContainerEmpty) {
@@ -176,7 +185,8 @@ export default function CustomerNewRFQPage() {
     try {
       // 1. Generate RFQ in DB
       const payload = {
-        ...form
+        ...form,
+        dimension: dimensionStr
       };
 
       const genRes = await api.post("/rfq/customer-generate", payload);
@@ -305,6 +315,45 @@ export default function CustomerNewRFQPage() {
                           className="input w-full mt-2 min-h-[44px]"
                         />
                       )}
+                    </div>
+                  ) : f.name === "dimension" ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          name="dim_length"
+                          value={form.dim_length || ""}
+                          onChange={handleChange}
+                          className="input w-full pr-7 text-center font-mono min-h-[44px]"
+                          placeholder="L"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          name="dim_width"
+                          value={form.dim_width || ""}
+                          onChange={handleChange}
+                          className="input w-full pr-7 text-center font-mono min-h-[44px]"
+                          placeholder="W"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          name="dim_height"
+                          value={form.dim_height || ""}
+                          onChange={handleChange}
+                          className="input w-full pr-7 text-center font-mono min-h-[44px]"
+                          placeholder="H"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
+                      </div>
                     </div>
                   ) : (
                     <input

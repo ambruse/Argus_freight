@@ -29,6 +29,9 @@ type FormState = {
   commodity: string;
   term: string;
   dimension: string;
+  dim_length: string;
+  dim_width: string;
+  dim_height: string;
   container: string;
   mode: string;
   weight: string;
@@ -48,6 +51,7 @@ const INITIAL_FORM: FormState = {
   customer_name: "",
   customer_email: "",
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
+  dim_length: "", dim_width: "", dim_height: "",
   container: "",
   mode: "", weight: "", pickup_address: "",
   delivery_address: "", note: "", refer_by: "", email: "", dear_who: "",
@@ -241,6 +245,11 @@ export default function NewRFQPage() {
     const targetPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
     let resolvedRecipients: { email: string; dear_who: string }[] = [];
 
+    const hasDimensions = form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim();
+    const dimensionStr = hasDimensions 
+      ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0}`
+      : "";
+
     if (isSales) {
       // 1. Validations
       if (!form.customer_name?.trim()) {
@@ -275,7 +284,7 @@ export default function NewRFQPage() {
 
       // Dimension, Container, Weight logic
       const isContainerEmpty = !form.container?.trim();
-      const isDimensionEmpty = !form.dimension?.trim();
+      const isDimensionEmpty = !dimensionStr.trim();
       const isWeightEmpty = !form.weight?.toString().trim();
 
       if (isContainerEmpty) {
@@ -344,6 +353,7 @@ export default function NewRFQPage() {
         // 1. Generate RFQ and Log to Database
         const payload = {
           ...form,
+          dimension: dimensionStr,
           email: recipient.email,
           dear_who: recipient.dear_who,
           pol: targetPol,
@@ -466,8 +476,13 @@ export default function NewRFQPage() {
     }
 
     // Dimension, Container, Weight logic
+    const hasDimensions = form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim();
+    const dimensionStr = hasDimensions 
+      ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0}`
+      : "";
+
     const isContainerEmpty = !form.container?.trim();
-    const isDimensionEmpty = !form.dimension?.trim();
+    const isDimensionEmpty = !dimensionStr.trim();
     const isWeightEmpty = !form.weight?.toString().trim();
 
     if (isContainerEmpty) {
@@ -511,6 +526,10 @@ export default function NewRFQPage() {
     if (unique.length === 0) return;
 
     const targetPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
+    const hasDimensions = form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim();
+    const dimensionStr = hasDimensions 
+      ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0}`
+      : "";
 
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, "0");
@@ -535,6 +554,7 @@ export default function NewRFQPage() {
         // 1. Generate RFQ and Log to Database
         const payload = {
           ...form,
+          dimension: dimensionStr,
           email: recipient.email,
           dear_who: recipient.dear_who,
           pol: targetPol,
@@ -735,6 +755,45 @@ export default function NewRFQPage() {
                           className="input w-full mt-2"
                         />
                       )}
+                    </div>
+                  ) : f.name === "dimension" ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          name="dim_length"
+                          value={form.dim_length || ""}
+                          onChange={handleChange}
+                          className="input w-full pr-7 text-center font-mono"
+                          placeholder="L"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          name="dim_width"
+                          value={form.dim_width || ""}
+                          onChange={handleChange}
+                          className="input w-full pr-7 text-center font-mono"
+                          placeholder="W"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          name="dim_height"
+                          value={form.dim_height || ""}
+                          onChange={handleChange}
+                          className="input w-full pr-7 text-center font-mono"
+                          placeholder="H"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
+                      </div>
                     </div>
                   ) : (
                     <input
