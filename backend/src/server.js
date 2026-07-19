@@ -165,6 +165,7 @@ const createLike = async (newTable, baseTable) => {
 (async () => {
   try {
     // MySQL Normalized Tables Schema Execution
+    await db.query('ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,

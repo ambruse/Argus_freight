@@ -5,6 +5,7 @@
 -- =============================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
+ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- =============================================================
 --  TABLE: users
