@@ -29,6 +29,10 @@ echo "=================================================="
 echo ""
 echo "▶ [1/4] Installing backend dependencies..."
 cd "$DEPLOY_PATH/backend"
+if [ -f ".env.cpanel" ]; then
+    echo "💡 Ensuring .env file is configured from .env.cpanel..."
+    cp ".env.cpanel" ".env"
+fi
 npm install --legacy-peer-deps 2>&1 | tail -5
 echo "✅  Backend deps done."
 
