@@ -260,7 +260,7 @@ export default function NewRFQPage() {
     const weightVal = parseFloat(form.weight_val) || 0;
     const qty = parseFloat(form.dim_qty) || 1;
     const wUnit = form.weight_unit || "kg";
-    const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+    const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
     const calculatedWeightKg = weightVal * factor * qty;
 
     if (isSales) {
@@ -500,7 +500,7 @@ export default function NewRFQPage() {
     const weightVal = parseFloat(form.weight_val) || 0;
     const qty = parseFloat(form.dim_qty) || 1;
     const wUnit = form.weight_unit || "kg";
-    const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+    const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
     const calculatedWeightKg = weightVal * factor * qty;
 
     const isContainerEmpty = !form.container?.trim();
@@ -558,7 +558,7 @@ export default function NewRFQPage() {
     const weightVal = parseFloat(form.weight_val) || 0;
     const qty = parseFloat(form.dim_qty) || 1;
     const wUnit = form.weight_unit || "kg";
-    const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+    const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
     const calculatedWeightKg = weightVal * factor * qty;
 
     const now = new Date();
@@ -898,7 +898,7 @@ export default function NewRFQPage() {
                         const weightVal = parseFloat(form.weight_val) || 0;
                         const qty = parseFloat(form.dim_qty) || 1;
                         const wUnit = form.weight_unit || "kg";
-                        const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+                        const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
                         const actWeight = weightVal * factor * qty;
 
                         const chgWeightCalc = Math.max(actWeight, volWeightCalc);
@@ -948,7 +948,7 @@ export default function NewRFQPage() {
                         >
                           <option value="kg">KG</option>
                           <option value="lb">LB</option>
-                          <option value="pound">Pound</option>
+                      
                         </select>
                       </div>
 
@@ -956,7 +956,7 @@ export default function NewRFQPage() {
                         const weightVal = parseFloat(form.weight_val) || 0;
                         const qty = parseFloat(form.dim_qty) || 1;
                         const wUnit = form.weight_unit || "kg";
-                        const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+                        const factor = (wUnit === "lb" ) ? 0.45359237 : 1.0;
                         const totalWeightKg = weightVal * factor * qty;
 
                         if (!weightVal) return null;
