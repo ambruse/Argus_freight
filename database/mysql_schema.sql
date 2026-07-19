@@ -239,17 +239,3 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =============================================================
 INSERT IGNORE INTO users (username, password_hash, role)
 VALUES ('admin', '$2a$10$7UTU5wTWz33woLXv32cEHuo6M3a6UNBGGvTVngmMczNSd8aLb5Cn2', 'admin');
-
--- CC recipients
-INSERT IGNORE INTO cc_recipients (name, email, multi_select) VALUES
-  ('Nafih',  'op2@argusshipping.co',    0),
-  ('Jabir',  'jabir@argusshipping.co',  0),
-  ('Shamil', 'op1@argusshipping.co',    0),
-  ('Ganesh', 'ganesh@argusshipping.co', 1),
-  ('Jemshy', 'jemshy@argusshipping.co', 1);
-
--- Compulsory emails
-INSERT IGNORE INTO compulsory_emails (email, dear_who, mode, is_active) VALUES
-  ('reshma@aramex.com',               'Reshma',  'Air', 1),
-  ('MelanieR@aramex.com',             'Melanie', 'Air', 1),
-  ('Kumudu.Karunarathna@gwcss.qa',    'Kumudu',  'Sea', 1);

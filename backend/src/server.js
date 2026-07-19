@@ -392,23 +392,6 @@ const createLike = async (newTable, baseTable) => {
     await addCol('quotations', 'shipment_ref', 'VARCHAR(255)');
     await addCol('quotations', 'email_payload', 'TEXT');
 
-    // ── Seed CC recipients ─────────────────────────────────────
-    await db.query(`
-      INSERT IGNORE INTO cc_recipients (name, email, multi_select) VALUES
-        ('Nafih',  'op2@argusshipping.co',    0),
-        ('Jabir',  'jabir@argusshipping.co',  0),
-        ('Shamil', 'op1@argusshipping.co',    0),
-        ('Ganesh', 'ganesh@argusshipping.co', 1),
-        ('Jemshy', 'jemshy@argusshipping.co', 1)
-    `);
-
-    // ── Seed compulsory emails ─────────────────────────────────
-    await db.query(`
-      INSERT IGNORE INTO compulsory_emails (email, dear_who, mode, is_active) VALUES
-        ('reshma@aramex.com',            'Reshma',  'Air', 1),
-        ('MelanieR@aramex.com',          'Melanie', 'Air', 1),
-        ('Kumudu.Karunarathna@gwcss.qa', 'Kumudu',  'Sea', 1)
-    `);
 
     // ── Credentials Migration ──────────────────────────────────
     try {

@@ -113,7 +113,6 @@ const parseOperation = (sql) => {
   return { op: 'SELECT', table: null };
 };
 
-// ── Primary query function (pg-compatible interface) ──────────
 const query = async (text, params = []) => {
   // Strip RETURNING clause before transforming
   const { sql: rawSQL, hasReturning } = stripReturning(text);
@@ -123,8 +122,11 @@ const query = async (text, params = []) => {
 
   const opInfo = parseOperation(mysqlSQL);
 
+  // Replace undefined values in bind parameters with null to prevent MySQL2 driver errors
+  const cleanParams = (params || []).map(p => p === undefined ? null : p);
+
   try {
-    const [result] = await pool.execute(mysqlSQL, params || []);
+    const [result] = await pool.execute(mysqlSQL, cleanParams);
 
     if (!hasReturning) {
       return { rows: Array.isArray(result) ? result : [] };

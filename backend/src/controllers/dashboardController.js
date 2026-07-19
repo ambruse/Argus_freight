@@ -15,10 +15,10 @@ const getMetrics = async (req, res, next) => {
       const result = await db.query(`
         SELECT
           COUNT(*) AS total_enquiries,
-          COUNT(*) FILTER (WHERE status = 'Lost') AS lost,
-          COUNT(*) FILTER (WHERE status = 'Lead') AS lead,
-          COUNT(*) FILTER (WHERE status = 'No Lead') AS no_lead,
-          COUNT(*) FILTER (WHERE status = 'Confirmed') AS confirmed
+          SUM(CASE WHEN status = 'Lost' THEN 1 ELSE 0 END) AS lost,
+          SUM(CASE WHEN status = 'Lead' THEN 1 ELSE 0 END) AS lead,
+          SUM(CASE WHEN status = 'No Lead' THEN 1 ELSE 0 END) AS no_lead,
+          SUM(CASE WHEN status = 'Confirmed' THEN 1 ELSE 0 END) AS confirmed
         FROM call_enquiries
         WHERE calling_agent = $1
       `, [req.user.username]);
@@ -40,45 +40,41 @@ const getMetrics = async (req, res, next) => {
     const result = await query(req, `
       SELECT
         -- ── Row 1: Pipeline ──────────────────────────────────
-        COUNT(*) FILTER (WHERE note IS NULL OR note != 'Direct Booking') AS total_rfqs,
-        COUNT(*) FILTER (WHERE status = 'Pending' AND (note IS NULL OR note != 'Direct Booking')) AS quotation_pending,
-        COUNT(*) FILTER (WHERE status = 'Quoted' AND (note IS NULL OR note != 'Direct Booking')) AS quoted,
-        COUNT(*) FILTER (WHERE status = 'Customer Review' AND (note IS NULL OR note != 'Direct Booking')) AS customer_review,
-        COUNT(*) FILTER (WHERE status = 'Confirmed')                  AS confirmed,
+        SUM(CASE WHEN note IS NULL OR note != 'Direct Booking' THEN 1 ELSE 0 END) AS total_rfqs,
+        SUM(CASE WHEN status = 'Pending' AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END) AS quotation_pending,
+        SUM(CASE WHEN status = 'Quoted' AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END) AS quoted,
+        SUM(CASE WHEN status = 'Customer Review' AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END) AS customer_review,
+        SUM(CASE WHEN status = 'Confirmed' THEN 1 ELSE 0 END)                  AS confirmed,
 
         -- ── Row 2: Execution ─────────────────────────────────
-        COUNT(*) FILTER (WHERE status = 'Files Pending')              AS files_pending,
-        COUNT(*) FILTER (WHERE status = 'Completed')                  AS completed,
-        COUNT(*) FILTER (WHERE status = 'Return Pending')             AS return_pending,
-        COUNT(*) FILTER (WHERE status = 'Cancelled')                  AS cancelled,
+        SUM(CASE WHEN status = 'Files Pending' THEN 1 ELSE 0 END)              AS files_pending,
+        SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END)                  AS completed,
+        SUM(CASE WHEN status = 'Return Pending' THEN 1 ELSE 0 END)             AS return_pending,
+        SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END)                  AS cancelled,
 
         -- ── Follow Ups Due ───────────────────────────────────
-        --  Shipments in active pipeline statuses whose last follow-up
-        --  was more than 4 hours ago.
-        COUNT(*) FILTER (
-          WHERE status = ANY($1::shipment_status[])
+        SUM(CASE WHEN status IN ('Pending', 'Quoted', 'Customer Review')
             AND last_follow_up < NOW() - INTERVAL '4 hours'
-            AND (note IS NULL OR note != 'Direct Booking')
-        )                                                             AS follow_ups_due
+            AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END)   AS follow_ups_due
 
       FROM shipments
-    `, [ACTIVE_STATUSES]);
+    `);
 
     // All values come back as strings from pg — cast to integers
     const raw = result.rows[0];
     const metrics = {
       // Pipeline
-      totalRFQs:        parseInt(raw.total_rfqs),
-      quotationPending: parseInt(raw.quotation_pending),
-      quoted:           parseInt(raw.quoted),
-      customerReview:   parseInt(raw.customer_review),
-      confirmed:        parseInt(raw.confirmed),
+      totalRFQs:        parseInt(raw.total_rfqs || 0),
+      quotationPending: parseInt(raw.quotation_pending || 0),
+      quoted:           parseInt(raw.quoted || 0),
+      customerReview:   parseInt(raw.customer_review || 0),
+      confirmed:        parseInt(raw.confirmed || 0),
       // Execution
-      filesPending:     parseInt(raw.files_pending),
-      completed:        parseInt(raw.completed),
-      returnPending:    parseInt(raw.return_pending),
-      cancelled:        parseInt(raw.cancelled),
-      followUpsDue:     parseInt(raw.follow_ups_due),
+      filesPending:     parseInt(raw.files_pending || 0),
+      completed:        parseInt(raw.completed || 0),
+      returnPending:    parseInt(raw.return_pending || 0),
+      cancelled:        parseInt(raw.cancelled || 0),
+      followUpsDue:     parseInt(raw.follow_ups_due || 0),
     };
 
     res.json({ success: true, data: metrics });
@@ -106,13 +102,13 @@ const getMonthlySummary = async (req, res, next) => {
 
     let sql = `
       SELECT
-        COUNT(*) FILTER (WHERE note IS NULL OR note != 'Direct Booking') AS total_rfqs,
-        COUNT(*) FILTER (WHERE status = 'Confirmed') AS total_confirmed,
-        SUM(cost) FILTER (WHERE status = 'Confirmed') AS total_cost,
-        SUM(profit) FILTER (WHERE status = 'Confirmed') AS total_profit
+        SUM(CASE WHEN note IS NULL OR note != 'Direct Booking' THEN 1 ELSE 0 END) AS total_rfqs,
+        SUM(CASE WHEN status = 'Confirmed' THEN 1 ELSE 0 END) AS total_confirmed,
+        SUM(CASE WHEN status = 'Confirmed' THEN cost ELSE 0 END) AS total_cost,
+        SUM(CASE WHEN status = 'Confirmed' THEN profit ELSE 0 END) AS total_profit
       FROM shipments
-      WHERE EXTRACT(YEAR FROM created_at) = $1
-        AND EXTRACT(MONTH FROM created_at) = $2
+      WHERE YEAR(created_at) = $1
+        AND MONTH(created_at) = $2
     `;
 
     const params = [year, month];
@@ -172,13 +168,13 @@ const getMonthlySummary = async (req, res, next) => {
     let enquiriesSql = `
       SELECT
         COUNT(*) AS total_call_enquiries,
-        COUNT(*) FILTER (WHERE is_lead = true OR status = 'Lead') AS total_leads,
-        COUNT(*) FILTER (WHERE status = 'Confirmed') AS total_enquiries_won,
-        COUNT(*) FILTER (WHERE assigned_sales IS NOT NULL) AS total_assigned_call_enquiries,
-        COUNT(*) FILTER (WHERE assigned_sales IS NOT NULL AND status = 'Confirmed') AS total_assigned_enquiries_won
+        SUM(CASE WHEN is_lead = true OR status = 'Lead' THEN 1 ELSE 0 END) AS total_leads,
+        SUM(CASE WHEN status = 'Confirmed' THEN 1 ELSE 0 END) AS total_enquiries_won,
+        SUM(CASE WHEN assigned_sales IS NOT NULL THEN 1 ELSE 0 END) AS total_assigned_call_enquiries,
+        SUM(CASE WHEN assigned_sales IS NOT NULL AND status = 'Confirmed' THEN 1 ELSE 0 END) AS total_assigned_enquiries_won
       FROM call_enquiries
-      WHERE EXTRACT(YEAR FROM created_at) = $1
-        AND EXTRACT(MONTH FROM created_at) = $2
+      WHERE YEAR(created_at) = $1
+        AND MONTH(created_at) = $2
     `;
 
     const enquiriesParams = [year, month];

@@ -205,12 +205,7 @@ CREATE TABLE IF NOT EXISTS cc_recipients (
   email  VARCHAR(255) NOT NULL UNIQUE
 );
 
--- Default CC recipients
-INSERT INTO cc_recipients (name, email) VALUES
-  ('Nafih',  'op2@argusshipping.co'),
-  ('Jabir',  'jabir@argusshipping.co'),
-  ('Shamil', 'op1@argusshipping.co')
-ON CONFLICT (email) DO NOTHING;
+
 
 
 -- =============================================================
