@@ -100,30 +100,42 @@ const query = async (req, sql, params) => {
     if (isAdmin && req?.query?.user) {
       targetUser = req.query.user;
     } else if (ref_no || id) {
-      // Find the specific operator for the shipment or file
-      const foundUser = (await findUsernameForRefNo(ref_no)) || (await findUsernameForFileId(id));
-      if (foundUser) {
-        // If sales or customer, ensure they actually have access to this ref_no/id
-        if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
-           const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-           let hasAccess = false;
-           if (ref_no) {
-              const chk = await db.query(`SELECT 1 FROM shipments_${cleanRoleUser} WHERE ref_no = $1`, [ref_no]);
-              if (chk.rows.length > 0) hasAccess = true;
-           } else if (id) {
-              const chk = await db.query(`SELECT 1 FROM files_${cleanRoleUser} WHERE id = $1`, [id]);
-              if (chk.rows.length > 0) hasAccess = true;
-           }
-           if (hasAccess) {
-              targetUser = foundUser;
-           } else {
-              targetUser = req.user.username; // fallback to their own sandbox
-           }
-        } else {
-           targetUser = foundUser;
-        }
+      // For non-SELECT (INSERT/UPDATE/DELETE) queries by sales/customer users,
+      // the record may not yet exist in the DB (e.g. fresh INSERT with a custom ref_no).
+      // Skip the lookup and route directly to their own sandbox.
+      if (!isSelect && (req?.user?.role === 'sales' || req?.user?.role === 'customer')) {
+        targetUser = req.user.username; // route to sales/customer's own sandbox
       } else {
-        targetUser = 'admin';
+        // For SELECT/WITH queries, find the specific operator for the shipment or file
+        const foundUser = (await findUsernameForRefNo(ref_no)) || (await findUsernameForFileId(id));
+        if (foundUser) {
+          // If sales or customer, ensure they actually have access to this ref_no/id
+          if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+             const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+             let hasAccess = false;
+             if (ref_no) {
+                const chk = await db.query(`SELECT 1 FROM shipments_${cleanRoleUser} WHERE ref_no = $1`, [ref_no]);
+                if (chk.rows.length > 0) hasAccess = true;
+             } else if (id) {
+                const chk = await db.query(`SELECT 1 FROM files_${cleanRoleUser} WHERE id = $1`, [id]);
+                if (chk.rows.length > 0) hasAccess = true;
+             }
+             if (hasAccess) {
+                targetUser = foundUser;
+             } else {
+                targetUser = req.user.username; // fallback to their own sandbox
+             }
+          } else {
+             targetUser = foundUser;
+          }
+        } else {
+          // For admin, fall back to admin table if no owner found
+          if (!isAdmin) {
+            targetUser = req.user.username; // sales/customer fallback to own sandbox
+          } else {
+            targetUser = 'admin';
+          }
+        }
       }
     } else if (isSelect) {
       // Global SELECT query: Query UNION ALL across all tables

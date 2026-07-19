@@ -27,7 +27,7 @@ const createContact = async (req, res, next) => {
          dear_who = VALUES(dear_who),
          country = VALUES(country)
        RETURNING *`,
-      [email, dear_who || null, pol || null, pod || null, mode || null, country || null]
+      [email, dear_who || null, pol || '', pod || '', mode || '', country || null]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });

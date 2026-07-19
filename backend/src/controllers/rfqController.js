@@ -185,7 +185,7 @@ const generateRfq = async (req, res, next) => {
                   ON DUPLICATE KEY UPDATE
                     dear_who = VALUES(dear_who),
                     country = VALUES(country)
-                `, [email, dear_who || null, pol || null, pod || null, mode || null, resolvedCountry || null]);
+                `, [email, dear_who || null, pol || '', pod || '', mode || '', resolvedCountry || null]);
               }
             }
           } catch (contactErr) {
