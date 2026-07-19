@@ -161,7 +161,7 @@ const getAllShipments = async (req, res, next) => {
               ) AS operator,
               (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no) AS replies_count,
               (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no AND r.is_read = false AND LOWER(r.from_email) != LOWER($1)) AS unread_replies_count,
-              (SELECT COUNT(*)::int FROM customer_operator_chats c WHERE (c.cust_req_no = s.cust_req_no OR c.cust_req_no = s.ref_no) AND c.is_read = false AND LOWER(c.sender_username) != LOWER($2)) AS unread_chat_count
+              (SELECT COUNT(*) FROM customer_operator_chats c WHERE (c.cust_req_no = s.cust_req_no OR c.cust_req_no = s.ref_no) AND c.is_read = false AND LOWER(c.sender_username) != LOWER($2)) AS unread_chat_count
        FROM shipments s ${where} ORDER BY s.created_at DESC`,
       params
     );

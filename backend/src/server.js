@@ -121,6 +121,12 @@ if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
         res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
       });
       app.get(`/${route}/*`, (req, res) => {
+        const subPath = req.path.replace(/\/$/, '');
+        const exactHtmlFile = path.join(FRONTEND_OUT, `${subPath}.html`);
+        if (fs.existsSync(exactHtmlFile)) {
+          return res.sendFile(exactHtmlFile);
+        }
+
         const htmlFile = path.join(FRONTEND_OUT, `${route}.html`);
         if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
         res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
