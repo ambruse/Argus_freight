@@ -2,61 +2,36 @@
 // components/modals/HistoricalRFQModal.tsx
 // ─────────────────────────────────────────────────────────────
 //  Modal to log historical RFQs without triggering emails.
-//  Uses the same ID generation logic (/api/rfq/generate).
+//  Behaves/looks exactly like AddShipmentModal but without
+//  the Tracking Info section.
 // ─────────────────────────────────────────────────────────────
-import { useState, ChangeEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import Modal from "@/components/ui/Modal";
-import EmailAutoSuggest from "@/components/ui/EmailAutoSuggest";
-import CustomerAutoSuggest from "@/components/ui/CustomerAutoSuggest";
 import api from "@/lib/api";
+import { Shipment } from "@/types";
 import toast from "react-hot-toast";
-import { Shipment, Contact, Customer } from "@/types";
-
-type FormState = {
-  customer_name: string;
-  pol: string;
-  pod: string;
-  commodity: string;
-  term: string;
-  dimension: string;
-  container: string;
-  mode: string;
-  weight: string;
-  pickup_address: string;
-  delivery_address: string;
-  note: string;
-  refer_by: string;
-  email: string;
-  dear_who: string;
-};
-
-const INITIAL_FORM: FormState = {
-  customer_name: "",
-  pol: "", pod: "", commodity: "", term: "", dimension: "",
-  container: "", mode: "", weight: "", pickup_address: "",
-  delivery_address: "", note: "", refer_by: "", email: "", dear_who: ""
-};
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen:    boolean;
+  onClose:   () => void;
   onCreated: (s: Shipment) => void;
 }
 
+const MODES  = ["SEA", "AIR", "LAND", "RAIL"];
+
+const INITIAL = {
+  ref_no: "", refer_by: "", pol: "", pod: "",
+  commodity: "", term: "FOB", mode: "SEA",
+  container: "", weight: "", dimension: "",
+  dear_who: "", email: "",
+  pickup_address: "", delivery_address: "",
+  note: "",
+};
+
 export default function HistoricalRFQModal({ isOpen, onClose, onCreated }: Props) {
-  const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [submitting, setSubmitting] = useState(false);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-
-  useEffect(() => {
-    if (isOpen) {
-      api.get("/contacts").then(res => setContacts(res.data.data)).catch(() => {});
-      api.get("/customers").then(res => setCustomers(res.data.data)).catch(() => {});
-    }
-  }, [isOpen]);
-
-  const [termSelect, setTermSelect] = useState("");
+  const [form,    setForm]    = useState<typeof INITIAL>(INITIAL);
+  const [saving,  setSaving]  = useState(false);
+  const [termSelect, setTermSelect] = useState("FOB");
 
   useEffect(() => {
     if (form.term && ["FOB", "EXW", "CIF", "DDP", "FCA"].includes(form.term)) {
@@ -68,205 +43,158 @@ export default function HistoricalRFQModal({ isOpen, onClose, onCreated }: Props
     }
   }, [form.term]);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  const set = (k: keyof typeof INITIAL) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const handleClear = () => setForm(INITIAL_FORM);
-
-  const handleSave = async () => {
-    setSubmitting(true);
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
     try {
-      // 1. Generate RFQ and Log to Database ONLY (no email call)
-      const genRes = await api.post("/rfq/generate", form);
-      const newShipment = genRes.data.data;
-
-      toast.success(`Historical RFQ ${newShipment.ref_no} saved successfully.`);
-      
-      onCreated(newShipment);
-      handleClear();
+      const { data } = await api.post("/rfq/generate", form);
+      toast.success(`Historical RFQ ${data.data.ref_no} saved successfully.`);
+      onCreated(data.data);
+      setForm(INITIAL);
       onClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "An error occurred while saving.");
+      toast.error(err?.response?.data?.message ?? "Failed to save historical RFQ.");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  const fields = [
-    { label: "POL", name: "pol" },
-    { label: "POD", name: "pod" },
-    { label: "COMMODITY", name: "commodity" },
-    { label: "TERM", name: "term" },
-    { label: "DIMENSION", name: "dimension" },
-    { label: "CONTAINER", name: "container" },
-    { label: "MODE", name: "mode" },
-    { label: "TOTAL WEIGHT (KG)", name: "weight" },
-    { label: "NOTE", name: "note" },
-    { label: "REFER BY", name: "refer_by" },
-  ];
+  const Label = ({ children }: { children: React.ReactNode }) => (
+    <label className="text-[10px] uppercase tracking-widest font-semibold text-muted block mb-1">
+      {children}
+    </label>
+  );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Log Historical RFQ" size="xl">
-      <div className="space-y-6">
-        <p className="text-xs text-muted">
-          Use this form to log an RFQ that was already sent via email in the past. 
-          This will generate a reference number and save it to the database, but <b>will not send any emails</b>.
-        </p>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Log Historical RFQ"
+      size="xl"
+      footer={
+        <>
+          <button onClick={onClose} className="btn-secondary" type="button">Cancel</button>
+          <button form="add-historical-form" type="submit" className="btn-emerald" disabled={saving}>
+            {saving ? "Saving…" : "✓ Save Historical RFQ"}
+          </button>
+        </>
+      }
+    >
+      <form id="add-historical-form" onSubmit={handleSubmit}>
+        {/* REF NO hint */}
+        <div className="mb-5 p-3 rounded-xl bg-blue/5 border border-blue/10 text-xs text-blue/80">
+          💡 Leave <strong>REF NO</strong> blank to auto-generate (e.g. ARG-1011).
+        </div>
 
-        {/* ── Main Form Container ────────────────────────────── */}
-        <div className="space-y-8">
-          
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted border-b border-white/[0.06] pb-2 mb-4">
-              CUSTOMER GROUPING
-            </h3>
-            <div className="mb-4">
-              <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                CUSTOMER NAME (Select existing or type new)
-              </label>
-              <CustomerAutoSuggest
-                customers={customers}
-                value={form.customer_name}
-                onChange={(val) => setForm(prev => ({ ...prev, customer_name: val }))}
+        {/* ── Section: Identity ─────────────────────────── */}
+        <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-3">Identity</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <Label>REF NO (optional)</Label>
+            <input className="input" value={form.ref_no || ""} onChange={set("ref_no")} placeholder="Auto-generate" />
+          </div>
+          <div>
+            <Label>Referred By</Label>
+            <input className="input" value={form.refer_by || ""} onChange={set("refer_by")} />
+          </div>
+          <div>
+            <Label>Dear Who</Label>
+            <input className="input" value={form.dear_who || ""} onChange={set("dear_who")} />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Email</Label>
+            <input className="input" type="email" value={form.email || ""} onChange={set("email")} />
+          </div>
+        </div>
+
+        {/* ── Section: Route ────────────────────────────── */}
+        <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-3 pt-3 border-t border-white/[0.05]">Route & Cargo</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <Label>POL *</Label>
+            <input className="input" required value={form.pol || ""} onChange={set("pol")} placeholder="Port of Loading" />
+          </div>
+          <div>
+            <Label>POD *</Label>
+            <input className="input" required value={form.pod || ""} onChange={set("pod")} placeholder="Port of Discharge" />
+          </div>
+          <div>
+            <Label>Mode</Label>
+            <select className="select" value={form.mode || "SEA"} onChange={set("mode")}>
+              {MODES.map((m) => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label>Term</Label>
+            <select
+              className="select"
+              value={termSelect}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTermSelect(val);
+                if (val !== "other") {
+                  setForm(f => ({ ...f, term: val }));
+                } else {
+                  setForm(f => ({ ...f, term: "" }));
+                }
+              }}
+            >
+              <option value="">— Select term —</option>
+              <option value="FOB">FOB</option>
+              <option value="EXW">EXW</option>
+              <option value="CIF">CIF</option>
+              <option value="DDP">DDP</option>
+              <option value="FCA">FCA</option>
+              <option value="other">Other Terms</option>
+            </select>
+            {termSelect === "other" && (
+              <input
+                type="text"
+                className="input mt-2 animate-fade-in"
+                value={form.term || ""}
+                onChange={(e) => setForm(f => ({ ...f, term: e.target.value }))}
+                placeholder="Enter custom term (e.g. DDU, CIP)..."
               />
-              <p className="text-[10px] text-muted mt-1">Assigns a unique 5-digit ID to group this RFQ.</p>
-            </div>
+            )}
           </div>
-
-          {/* Section 1: Cargo & Shipping Details */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted mb-4 border-b border-white/[0.06] pb-2">
-              Shipping Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              {fields.map((f) => (
-                <div key={f.name}>
-                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                    {f.label}
-                  </label>
-                  {f.name === "term" ? (
-                    <div className="space-y-2">
-                      <select
-                        value={termSelect}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setTermSelect(val);
-                          if (val !== "other") {
-                            setForm(prev => ({ ...prev, term: val }));
-                          } else {
-                            setForm(prev => ({ ...prev, term: "" }));
-                          }
-                        }}
-                        className="select w-full"
-                      >
-                        <option value="">— Select term —</option>
-                        <option value="FOB">FOB</option>
-                        <option value="EXW">EXW</option>
-                        <option value="CIF">CIF</option>
-                        <option value="DDP">DDP</option>
-                        <option value="FCA">FCA</option>
-                        <option value="other">Other Terms</option>
-                      </select>
-                      {termSelect === "other" && (
-                        <input
-                          type="text"
-                          value={form.term}
-                          onChange={(e) => setForm(prev => ({ ...prev, term: e.target.value }))}
-                          placeholder="Enter custom term (e.g. DDU, CIP)..."
-                          className="input w-full mt-2"
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <input
-                      name={f.name}
-                      value={(form as any)[f.name]}
-                      onChange={handleChange}
-                      className="input w-full"
-                      placeholder={`Enter ${f.label.toLowerCase()}...`}
-                    />
-                  )}
-                </div>
-              ))}
-              <div className="md:col-span-2">
-                <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                  PICK-UP ADDRESS
-                </label>
-                <textarea
-                  name="pickup_address"
-                  value={form.pickup_address}
-                  onChange={handleChange}
-                  className="input w-full h-20 resize-none py-2"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                  DELIVERY ADDRESS
-                </label>
-                <textarea
-                  name="delivery_address"
-                  value={form.delivery_address}
-                  onChange={handleChange}
-                  className="input w-full h-20 resize-none py-2"
-                />
-              </div>
-            </div>
+            <Label>Commodity</Label>
+            <input className="input" value={form.commodity || ""} onChange={set("commodity")} />
           </div>
-
-          {/* Section 2: Contact & Email Details */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted mb-4 border-b border-white/[0.06] pb-2">
-              Recipient Contact (For Logging Only)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                  DEAR WHO (Name/Salutation)
-                </label>
-                <input
-                  name="dear_who"
-                  value={form.dear_who}
-                  onChange={handleChange}
-                  className="input w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                  RECEIVER EMAIL
-                </label>
-                <EmailAutoSuggest
-                  contacts={contacts}
-                  currentPolCountry=""
-                  currentMode={form.mode}
-                  value={form.email}
-                  onChange={(email, dearWho) => {
-                    setForm(prev => ({
-                      ...prev,
-                      email,
-                      dear_who: dearWho || prev.dear_who
-                    }));
-                  }}
-                />
-              </div>
-            </div>
+            <Label>Container</Label>
+            <input className="input" value={form.container || ""} onChange={set("container")} placeholder="e.g. 20ft GP" />
+          </div>
+          <div>
+            <Label>Weight (kg)</Label>
+            <input className="input" type="number" min="0" value={form.weight || ""} onChange={set("weight")} />
+          </div>
+          <div>
+            <Label>Dimension</Label>
+            <input className="input" value={form.dimension || ""} onChange={set("dimension")} />
           </div>
         </div>
 
-        {/* ── Action Buttons ────────────────────────────────── */}
-        <div className="flex items-center justify-end gap-4 pt-4 border-t border-white/[0.06]">
-          <button onClick={onClose} className="btn-secondary px-6">
-            Cancel
-          </button>
-          <button 
-            onClick={handleSave} 
-            disabled={submitting} 
-            className="btn-primary px-8"
-          >
-            {submitting ? "Saving..." : "Save Historical RFQ"}
-          </button>
+        {/* ── Addresses & Note ──────────────────────────── */}
+        <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-3 pt-3 border-t border-white/[0.05]">Addresses & Notes</p>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <Label>Pickup Address</Label>
+            <textarea className="input min-h-[60px]" value={form.pickup_address || ""} onChange={set("pickup_address")} />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Delivery Address</Label>
+            <textarea className="input min-h-[60px]" value={form.delivery_address || ""} onChange={set("delivery_address")} />
+          </div>
         </div>
-      </div>
+        <div>
+          <Label>Note</Label>
+          <textarea className="input resize-none" rows={2} value={form.note || ""} onChange={set("note")} />
+        </div>
+      </form>
     </Modal>
   );
 }
