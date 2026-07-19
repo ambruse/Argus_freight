@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS shipments (
   note              TEXT,
   operator          VARCHAR(100),
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_shipments_status         ON shipments(status);
