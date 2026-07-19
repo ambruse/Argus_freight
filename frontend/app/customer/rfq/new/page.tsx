@@ -29,6 +29,8 @@ type FormState = {
   container: string;
   mode: string;
   weight: string;
+  weight_val: string;
+  weight_unit: string;
   pickup_address: string;
   delivery_address: string;
   note: string;
@@ -38,7 +40,7 @@ type FormState = {
 const INITIAL_FORM: FormState = {
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
   dim_length: "", dim_width: "", dim_height: "", dim_qty: "1", dim_unit: "cm", dim_cbm: "",
-  container: "", mode: "", weight: "", pickup_address: "",
+  container: "", mode: "", weight: "", weight_val: "", weight_unit: "kg", pickup_address: "",
   delivery_address: "", note: "", operator: ""
 };
 
@@ -160,9 +162,15 @@ export default function CustomerNewRFQPage() {
           ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${form.dim_qty || 1})`
           : "");
 
+    const weightVal = parseFloat(form.weight_val) || 0;
+    const qty = parseFloat(form.dim_qty) || 1;
+    const wUnit = form.weight_unit || "kg";
+    const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+    const calculatedWeightKg = weightVal * factor * qty;
+
     const isContainerEmpty = !form.container?.trim();
     const isDimensionEmpty = !dimensionStr.trim();
-    const isWeightEmpty = !form.weight?.toString().trim();
+    const isWeightEmpty = !form.weight_val?.trim();
 
     if (isContainerEmpty) {
       if (isDimensionEmpty) {
@@ -170,7 +178,7 @@ export default function CustomerNewRFQPage() {
         return;
       }
       if (isWeightEmpty) {
-        toast.error("Total Weight is compulsory when Container is empty.");
+        toast.error("Weight is compulsory when Container is empty.");
         return;
       }
     }
@@ -191,7 +199,8 @@ export default function CustomerNewRFQPage() {
       // 1. Generate RFQ in DB
       const payload = {
         ...form,
-        dimension: dimensionStr
+        dimension: dimensionStr,
+        weight: calculatedWeightKg ? calculatedWeightKg.toFixed(2) : ""
       };
 
       const genRes = await api.post("/rfq/customer-generate", payload);
@@ -235,7 +244,7 @@ export default function CustomerNewRFQPage() {
     { label: "TERM", name: "term" },
     { label: "DIMENSION", name: "dimension" },
     // Container only shown as structured block for Sea/Road — hidden for Air
-    { label: "TOTAL WEIGHT (KG)", name: "weight" },
+    { label: "Weight", name: "weight" },
     { label: "NOTE", name: "note" },
     { label: "OPERATOR", name: "operator" },
   ];
@@ -428,7 +437,13 @@ export default function CustomerNewRFQPage() {
                           }
                         }
                         const volWeightCalc = cbmCalc * 167;
-                        const actWeight = parseFloat(form.weight) || 0;
+                        
+                        const weightVal = parseFloat(form.weight_val) || 0;
+                        const qty = parseFloat(form.dim_qty) || 1;
+                        const wUnit = form.weight_unit || "kg";
+                        const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+                        const actWeight = weightVal * factor * qty;
+
                         const chgWeightCalc = Math.max(actWeight, volWeightCalc);
 
                         if (!cbmCalc && !actWeight) return null;
@@ -446,6 +461,60 @@ export default function CustomerNewRFQPage() {
                             <div className="col-span-2 text-[9px] text-muted italic border-t border-white/[0.04] pt-1.5 mt-0.5">
                               Volumetric Weight: {volWeightCalc.toFixed(2)} kg | Actual Weight: {actWeight.toFixed(2)} kg
                             </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : f.name === "weight" ? (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            name="weight_val"
+                            value={form.weight_val || ""}
+                            onChange={handleChange}
+                            className="input w-full pr-14 min-h-[44px]"
+                            placeholder="Enter weight per pc"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none uppercase">
+                            {form.weight_unit}
+                          </span>
+                        </div>
+                        <select
+                          name="weight_unit"
+                          value={form.weight_unit || "kg"}
+                          onChange={handleChange}
+                          className="select text-xs min-h-[44px] w-32"
+                        >
+                          <option value="kg">KG</option>
+                          <option value="lb">LB</option>
+                          <option value="pound">Pound</option>
+                        </select>
+                      </div>
+
+                      {(() => {
+                        const weightVal = parseFloat(form.weight_val) || 0;
+                        const qty = parseFloat(form.dim_qty) || 1;
+                        const wUnit = form.weight_unit || "kg";
+                        const factor = (wUnit === "lb" || wUnit === "pound") ? 0.45359237 : 1.0;
+                        const totalWeightKg = weightVal * factor * qty;
+
+                        if (!weightVal) return null;
+
+                        return (
+                          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs space-y-0.5 animate-fade-in">
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-muted">Total weight (KG)</span>
+                            <p className="font-mono font-bold text-emerald text-sm">
+                              {totalWeightKg.toFixed(2)} kg
+                            </p>
+                            {wUnit !== "kg" && (
+                              <p className="text-[9px] text-muted italic">
+                                Converted from {(weightVal * qty).toFixed(2)} {wUnit}s
+                              </p>
+                            )}
                           </div>
                         );
                       })()}
