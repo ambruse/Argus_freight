@@ -3,14 +3,14 @@
 //  Freight & RFQ Management System — Express Entry Point
 //  Deployment: cPanel (public_html/Argus)
 // ─────────────────────────────────────────────────────────────
-require('dotenv').config();
+const path         = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const dns = require('dns');
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
 const express      = require('express');
 const cors         = require('cors');
-const path         = require('path');
 const fs           = require('fs');
 
 const authRoutes         = require('./routes/auth');

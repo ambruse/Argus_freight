@@ -11,7 +11,8 @@
 //    • CAST(x AS INTEGER)   → CAST(x AS UNSIGNED)
 //    • INTERVAL 'N hours'   → INTERVAL N HOUR
 // ─────────────────────────────────────────────────────────────
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
