@@ -925,6 +925,15 @@ export default function NewRFQPage() {
                   ) : f.name === "weight" ? (
                     <div className="space-y-2">
                       <div className="flex gap-2">
+                        <select
+                          name="weight_unit"
+                          value={form.weight_unit || "kg"}
+                          onChange={handleChange}
+                          className="select text-xs min-h-[36px] w-20"
+                        >
+                          <option value="kg">KG</option>
+                          <option value="lb">LB</option>
+                        </select>
                         <div className="relative flex-1">
                           <input
                             type="number"
@@ -940,16 +949,6 @@ export default function NewRFQPage() {
                             {form.weight_unit}
                           </span>
                         </div>
-                        <select
-                          name="weight_unit"
-                          value={form.weight_unit || "kg"}
-                          onChange={handleChange}
-                          className="select text-xs min-h-[36px] w-20"
-                        >
-                          <option value="kg">KG</option>
-                          <option value="lb">LB</option>
-                      
-                        </select>
                       </div>
 
                       {(() => {
