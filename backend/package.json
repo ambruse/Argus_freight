@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "reset-admin": "node scripts/reset-admin.js"
   },
   "dependencies": {
     "@matbee/libreoffice-converter": "^2.6.0",
