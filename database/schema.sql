@@ -149,7 +149,7 @@ CREATE INDEX IF NOT EXISTS idx_files_ref_no ON files(shipment_ref_no);
 INSERT INTO users (username, password_hash, role)
 VALUES (
   'admin',
-  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lFQi',  -- Admin@1234
+  '$2a$10$7UTU5wTWz33woLXv32cEHuo6M3a6UNBGGvTVngmMczNSd8aLb5Cn2',  -- Admin@1234
   'admin'
 )
 ON CONFLICT (username) DO NOTHING;

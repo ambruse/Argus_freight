@@ -238,7 +238,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 --  Default admin — password: Admin@1234  (bcrypt, 10 rounds)
 -- =============================================================
 INSERT IGNORE INTO users (username, password_hash, role)
-VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lFQi', 'admin');
+VALUES ('admin', '$2a$10$7UTU5wTWz33woLXv32cEHuo6M3a6UNBGGvTVngmMczNSd8aLb5Cn2', 'admin');
 
 -- CC recipients
 INSERT IGNORE INTO cc_recipients (name, email, multi_select) VALUES

@@ -275,7 +275,7 @@ ALTER TABLE shipment_replies_test
 INSERT INTO users (username, password_hash, role)
 VALUES (
   'admin',
-  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lFQi',
+  '$2a$10$7UTU5wTWz33woLXv32cEHuo6M3a6UNBGGvTVngmMczNSd8aLb5Cn2',
   'admin'
 )
 ON CONFLICT (username) DO NOTHING;
