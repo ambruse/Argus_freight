@@ -244,24 +244,36 @@ const generateQuotation = async (req, res, next) => {
       return new Promise((resolve, reject) => {
         const absoluteDocx = path.resolve(dPath);
         const absolutePdf = path.resolve(pPath);
+        const { exec } = require('child_process');
 
-        const lib = require('@matbee/libreoffice-converter');
-        const wasmLoader = require('@matbee/libreoffice-converter/wasm/loader');
-        
-        lib.createConverter({ wasmLoader })
-          .then(async (converter) => {
-            try {
-              const docxFileToConvert = fs.readFileSync(absoluteDocx);
-              const resultObj = await converter.convert(docxFileToConvert, { outputFormat: 'pdf' });
-              fs.writeFileSync(absolutePdf, resultObj.data);
-              await converter.destroy();
-              resolve();
-            } catch (err) {
-              await converter.destroy().catch(() => {});
-              reject(err);
-            }
-          })
-          .catch(reject);
+        // 1. Try system-installed LibreOffice CLI first (memory-efficient & fast)
+        exec(`soffice --headless --convert-to pdf --outdir "${path.dirname(absolutePdf)}" "${absoluteDocx}"`, (cliErr) => {
+          if (!cliErr && fs.existsSync(absolutePdf)) {
+            console.log("✅ PDF converted successfully using system LibreOffice (soffice) CLI.");
+            return resolve();
+          }
+
+          console.log("ℹ️ System soffice CLI not available or failed. Falling back to WebAssembly converter...");
+
+          // 2. Fallback to heavy WebAssembly converter
+          const lib = require('@matbee/libreoffice-converter');
+          const wasmLoader = require('@matbee/libreoffice-converter/wasm/loader');
+
+          lib.createConverter({ wasmLoader })
+            .then(async (converter) => {
+              try {
+                const docxFileToConvert = fs.readFileSync(absoluteDocx);
+                const resultObj = await converter.convert(docxFileToConvert, { outputFormat: 'pdf' });
+                fs.writeFileSync(absolutePdf, resultObj.data);
+                await converter.destroy();
+                resolve();
+              } catch (err) {
+                await converter.destroy().catch(() => {});
+                reject(err);
+              }
+            })
+            .catch(reject);
+        });
       });
     };
 
