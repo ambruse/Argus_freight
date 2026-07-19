@@ -165,7 +165,11 @@ const createLike = async (newTable, baseTable) => {
 (async () => {
   try {
     // MySQL Normalized Tables Schema Execution
-    await db.query('ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    try {
+      await db.query('ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    } catch (dbColErr) {
+      console.warn('[DB] Warning: Could not alter database collation:', dbColErr.message);
+    }
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
