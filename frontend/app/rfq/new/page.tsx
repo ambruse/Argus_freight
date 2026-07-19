@@ -929,12 +929,14 @@ export default function NewRFQPage() {
                           name="weight_unit"
                           value={form.weight_unit || "kg"}
                           onChange={handleChange}
-                          className="select text-xs min-h-[36px] w-5"
+                          className="select text-xs min-h-[36px] flex-1"
                         >
                           <option value="kg">KG</option>
                           <option value="lb">LB</option>
                         </select>
-                        <div className="relative flex-1">
+
+                        {/* RIGHT SIDE: Now narrow (w-20 or w-auto) */}
+                        <div className="relative w-20">
                           <input
                             type="number"
                             step="0.01"
@@ -942,8 +944,8 @@ export default function NewRFQPage() {
                             name="weight_val"
                             value={form.weight_val || ""}
                             onChange={handleChange}
-                            className="input w-full pr-14"
-                            placeholder="Enter weight per pc"
+                            className="input w-full"
+                            placeholder="Value"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none uppercase">
                             {form.weight_unit}
