@@ -83,54 +83,62 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ── Static File Serving (cPanel Dynamic Path Resolution) ───────
-if (process.env.NODE_ENV === 'production') {
-  let FRONTEND_OUT = path.join(__dirname, '../frontend/out');
-  let LANDING_DIST = path.join(__dirname, '../dist');
+let FRONTEND_OUT = path.join(__dirname, '../frontend/out');
+let LANDING_DIST = path.join(__dirname, '../dist');
 
-  // Helper to dynamically check parent paths if standard paths don't exist
-  const findFolder = (folderName, defaultPath) => {
-    if (fs.existsSync(defaultPath)) return defaultPath;
-    const siblingPath = path.join(__dirname, '../../', folderName);
-    if (fs.existsSync(siblingPath)) return siblingPath;
-    const rootSiblingPath = path.join(__dirname, '../', folderName);
-    if (fs.existsSync(rootSiblingPath)) return rootSiblingPath;
-    return defaultPath;
-  };
+// Helper to dynamically check parent paths if standard paths don't exist
+const findFolder = (folderName, defaultPath) => {
+  if (fs.existsSync(defaultPath)) return defaultPath;
+  const siblingPath = path.join(__dirname, '../../', folderName);
+  if (fs.existsSync(siblingPath)) return siblingPath;
+  const rootSiblingPath = path.join(__dirname, '../', folderName);
+  if (fs.existsSync(rootSiblingPath)) return rootSiblingPath;
+  return defaultPath;
+};
 
-  FRONTEND_OUT = findFolder('frontend/out', FRONTEND_OUT);
-  LANDING_DIST = findFolder('dist', LANDING_DIST);
+FRONTEND_OUT = findFolder('frontend/out', FRONTEND_OUT);
+LANDING_DIST = findFolder('dist', LANDING_DIST);
 
-  // Serve compiled UI/UX bundle assets
-  app.use(express.static(FRONTEND_OUT));
-  app.use(express.static(LANDING_DIST));
+const hasFrontend = fs.existsSync(FRONTEND_OUT);
+const hasLanding = fs.existsSync(LANDING_DIST);
 
-  // Dashboard Application Core Client routes
-  const appRoutes = [
-    'login', 'register', 'dashboard', 'rfq', 'confirmed',
-    'customers', 'customer', 'contacts', 'quotation',
-    'calling-agent', 'sales', 'settings', 'summary',
-    'admin', 'calculator'
-  ];
-  appRoutes.forEach(route => {
-    app.get(`/${route}`, (req, res) => {
-      const htmlFile = path.join(FRONTEND_OUT, `${route}.html`);
-      if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
-      res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
+// Serve static assets and routes if they exist on the server (or in production)
+if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
+  if (hasFrontend) {
+    app.use(express.static(FRONTEND_OUT));
+    
+    // Dashboard Application Core Client routes
+    const appRoutes = [
+      'login', 'register', 'dashboard', 'rfq', 'confirmed',
+      'customers', 'customer', 'contacts', 'quotation',
+      'calling-agent', 'sales', 'settings', 'summary',
+      'admin', 'calculator'
+    ];
+    appRoutes.forEach(route => {
+      app.get(`/${route}`, (req, res) => {
+        const htmlFile = path.join(FRONTEND_OUT, `${route}.html`);
+        if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
+        res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
+      });
+      app.get(`/${route}/*`, (req, res) => {
+        const htmlFile = path.join(FRONTEND_OUT, `${route}.html`);
+        if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
+        res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
+      });
     });
-    app.get(`/${route}/*`, (req, res) => {
-      const htmlFile = path.join(FRONTEND_OUT, `${route}.html`);
-      if (fs.existsSync(htmlFile)) return res.sendFile(htmlFile);
-      res.sendFile(path.join(FRONTEND_OUT, 'index.html'));
-    });
-  });
+  }
 
-  // Marketing Landing page routes
-  const landingRoutes = ['/', '/about', '/services', '/why-us', '/team', '/contact', '/chairman-message'];
-  landingRoutes.forEach(route => {
-    app.get(route, (_req, res) => {
-      res.sendFile(path.join(LANDING_DIST, 'index.html'));
+  if (hasLanding) {
+    app.use(express.static(LANDING_DIST));
+    
+    // Marketing Landing page routes
+    const landingRoutes = ['/', '/about', '/services', '/why-us', '/team', '/contact', '/chairman-message'];
+    landingRoutes.forEach(route => {
+      app.get(route, (_req, res) => {
+        res.sendFile(path.join(LANDING_DIST, 'index.html'));
+      });
     });
-  });
+  }
 }
 
 // ── Database Initialization (MySQL Standard Driver Instance) ──
