@@ -10,6 +10,28 @@ const { decrypt } = require('../utils/crypto');
 const fs = require('fs');
 const path = require('path');
 
+const calculateCbm = (dimensionStr) => {
+  if (!dimensionStr) return 0;
+  const cbmMatch = dimensionStr.match(/([\d.]+)\s*CBM/i);
+  if (cbmMatch) {
+    return parseFloat(cbmMatch[1]) || 0;
+  }
+  const dimMatch = dimensionStr.match(/([\d.]+)\s*x\s*([\d.]+)\s*x\s*([\d.]+)\s*(cm|m)?(?:\s*\(Qty:\s*(\d+)\))?/i);
+  if (dimMatch) {
+    const l = parseFloat(dimMatch[1]) || 0;
+    const w = parseFloat(dimMatch[2]) || 0;
+    const h = parseFloat(dimMatch[3]) || 0;
+    const unit = (dimMatch[4] || 'cm').toLowerCase();
+    const qty = parseInt(dimMatch[5] || '1', 10) || 1;
+    if (unit === 'm') {
+      return l * w * h * qty;
+    } else {
+      return (l * w * h * qty) / 1000000;
+    }
+  }
+  return 0;
+};
+
 // ── ID Generator ─────────────────────────────────────────────
 // Pattern: xxyyxyxx (x = digit, y = letter)
 const generateId = () => {
@@ -311,6 +333,11 @@ const sendRfqEmail = async (req, res, next) => {
     subject += `/${shipment.ref_no}/CID : ${shipment.customer_id || ''}`;
 
     // 5. Construct HTML Body
+    const cbmVal = calculateCbm(shipment.dimension);
+    const volWeight = cbmVal * 167;
+    const actWeight = parseFloat(shipment.weight) || 0;
+    const chgWeight = Math.max(actWeight, volWeight);
+
     const labels = [
       ['POL', shipment.pol],
       ['POD', shipment.pod],
@@ -320,6 +347,7 @@ const sendRfqEmail = async (req, res, next) => {
       ['CONTAINER', shipment.container],
       ['MODE', shipment.mode],
       ['TOTAL WEIGHT', shipment.weight ? (String(shipment.weight).toLowerCase().includes('kg') ? shipment.weight : `${shipment.weight} Kg`) : null],
+      ['CHARGEABLE WEIGHT', chgWeight ? `${chgWeight.toFixed(2)} Kg` : null],
       ['PICK-UP ADDRESS', shipment.pickup_address],
       ['DELIVERY ADDRESS', shipment.delivery_address],
       ['NOTE', shipment.note]
