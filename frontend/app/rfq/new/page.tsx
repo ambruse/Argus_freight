@@ -32,6 +32,8 @@ type FormState = {
   dim_length: string;
   dim_width: string;
   dim_height: string;
+  dim_unit: string;
+  dim_cbm: string;
   container: string;
   mode: string;
   weight: string;
@@ -51,7 +53,7 @@ const INITIAL_FORM: FormState = {
   customer_name: "",
   customer_email: "",
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
-  dim_length: "", dim_width: "", dim_height: "",
+  dim_length: "", dim_width: "", dim_height: "", dim_unit: "cm", dim_cbm: "",
   container: "",
   mode: "", weight: "", pickup_address: "",
   delivery_address: "", note: "", refer_by: "", email: "", dear_who: "",
@@ -245,10 +247,12 @@ export default function NewRFQPage() {
     const targetPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
     let resolvedRecipients: { email: string; dear_who: string }[] = [];
 
-    const hasDimensions = form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim();
-    const dimensionStr = hasDimensions 
-      ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0}`
-      : "";
+    const isCbm = form.dim_unit === "cbm";
+    const dimensionStr = isCbm
+      ? (form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "")
+      : (form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim()
+          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"}`
+          : "");
 
     if (isSales) {
       // 1. Validations
@@ -476,10 +480,12 @@ export default function NewRFQPage() {
     }
 
     // Dimension, Container, Weight logic
-    const hasDimensions = form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim();
-    const dimensionStr = hasDimensions 
-      ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0}`
-      : "";
+    const isCbm = form.dim_unit === "cbm";
+    const dimensionStr = isCbm
+      ? (form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "")
+      : (form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim()
+          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"}`
+          : "");
 
     const isContainerEmpty = !form.container?.trim();
     const isDimensionEmpty = !dimensionStr.trim();
@@ -526,10 +532,12 @@ export default function NewRFQPage() {
     if (unique.length === 0) return;
 
     const targetPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
-    const hasDimensions = form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim();
-    const dimensionStr = hasDimensions 
-      ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0}`
-      : "";
+    const isCbmConfirm = form.dim_unit === "cbm";
+    const dimensionStr = isCbmConfirm
+      ? (form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "")
+      : (form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim()
+          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"}`
+          : "");
 
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, "0");
@@ -757,43 +765,80 @@ export default function NewRFQPage() {
                       )}
                     </div>
                   ) : f.name === "dimension" ? (
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min="0"
-                          name="dim_length"
-                          value={form.dim_length || ""}
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <select
+                          name="dim_unit"
+                          value={form.dim_unit || "cm"}
                           onChange={handleChange}
-                          className="input w-full pr-7 text-center font-mono"
-                          placeholder="L"
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
+                          className="select w-full text-xs min-h-[36px]"
+                        >
+                          <option value="cm">cm (Centimeter)</option>
+                          <option value="m">m (Meter)</option>
+                          <option value="cbm">CBM (Cubic Meter)</option>
+                        </select>
                       </div>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min="0"
-                          name="dim_width"
-                          value={form.dim_width || ""}
-                          onChange={handleChange}
-                          className="input w-full pr-7 text-center font-mono"
-                          placeholder="W"
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min="0"
-                          name="dim_height"
-                          value={form.dim_height || ""}
-                          onChange={handleChange}
-                          className="input w-full pr-7 text-center font-mono"
-                          placeholder="H"
-                        />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">cm</span>
-                      </div>
+
+                      {form.dim_unit === "cbm" ? (
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            name="dim_cbm"
+                            value={form.dim_cbm || ""}
+                            onChange={handleChange}
+                            className="input w-full pr-12 font-mono"
+                            placeholder="Enter total CBM (e.g. 1.5)"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted pointer-events-none">CBM</span>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              name="dim_length"
+                              value={form.dim_length || ""}
+                              onChange={handleChange}
+                              className="input w-full pr-7 text-center font-mono"
+                              placeholder="L"
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">
+                              {form.dim_unit}
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              name="dim_width"
+                              value={form.dim_width || ""}
+                              onChange={handleChange}
+                              className="input w-full pr-7 text-center font-mono"
+                              placeholder="W"
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">
+                              {form.dim_unit}
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              name="dim_height"
+                              value={form.dim_height || ""}
+                              onChange={handleChange}
+                              className="input w-full pr-7 text-center font-mono"
+                              placeholder="H"
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">
+                              {form.dim_unit}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <input
