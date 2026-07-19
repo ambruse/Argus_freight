@@ -319,7 +319,7 @@ const sendRfqEmail = async (req, res, next) => {
       ['DIMENSION', shipment.dimension],
       ['CONTAINER', shipment.container],
       ['MODE', shipment.mode],
-      ['TOTAL WEIGHT', shipment.weight],
+      ['TOTAL WEIGHT', shipment.weight ? (String(shipment.weight).toLowerCase().includes('kg') ? shipment.weight : `${shipment.weight} Kg`) : null],
       ['PICK-UP ADDRESS', shipment.pickup_address],
       ['DELIVERY ADDRESS', shipment.delivery_address],
       ['NOTE', shipment.note]
