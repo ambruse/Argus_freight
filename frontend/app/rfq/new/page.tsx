@@ -929,7 +929,7 @@ export default function NewRFQPage() {
                           name="weight_unit"
                           value={form.weight_unit || "kg"}
                           onChange={handleChange}
-                          className="select text-xs min-h-[36px] w-20"
+                          className="select text-xs min-h-[36px] w-5"
                         >
                           <option value="kg">KG</option>
                           <option value="lb">LB</option>
