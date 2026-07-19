@@ -144,7 +144,7 @@ const query = async (text, params = []) => {
 
     if (opInfo.op === 'UPDATE' && opInfo.table && opInfo.whereClause) {
       // Re-fetch using the same WHERE clause (params for WHERE are the last N params)
-      const whereParams = (params || []).slice(-opInfo.wherePlaceholders);
+      const whereParams = cleanParams.slice(-opInfo.wherePlaceholders);
       const [rows] = await pool.execute(
         `SELECT * FROM \`${opInfo.table}\` WHERE ${opInfo.whereClause}`,
         whereParams
