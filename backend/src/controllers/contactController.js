@@ -23,9 +23,9 @@ const createContact = async (req, res, next) => {
     const result = await db.query(
       `INSERT INTO contacts (email, dear_who, pol, pod, mode, country) 
        VALUES ($1, $2, $3, $4, $5, $6) 
-       ON CONFLICT (email, COALESCE(pol, ''), COALESCE(pod, ''), COALESCE(mode, '')) DO UPDATE SET
-         dear_who = EXCLUDED.dear_who,
-         country = EXCLUDED.country
+       ON DUPLICATE KEY UPDATE
+         dear_who = VALUES(dear_who),
+         country = VALUES(country)
        RETURNING *`,
       [email, dear_who || null, pol || null, pod || null, mode || null, country || null]
     );

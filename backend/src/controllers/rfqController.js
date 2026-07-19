@@ -182,8 +182,9 @@ const generateRfq = async (req, res, next) => {
                 await db.query(`
                   INSERT INTO contacts (email, dear_who, pol, pod, mode, country)
                   VALUES ($1, $2, $3, $4, $5, $6)
-                  ON CONFLICT (email, COALESCE(pol, ''), COALESCE(pod, ''), COALESCE(mode, '')) 
-                  DO UPDATE SET dear_who = EXCLUDED.dear_who, country = EXCLUDED.country
+                  ON DUPLICATE KEY UPDATE
+                    dear_who = VALUES(dear_who),
+                    country = VALUES(country)
                 `, [email, dear_who || null, pol || null, pod || null, mode || null, resolvedCountry || null]);
               }
             }
