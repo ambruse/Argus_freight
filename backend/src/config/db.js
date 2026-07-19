@@ -122,8 +122,18 @@ const query = async (text, params = []) => {
 
   const opInfo = parseOperation(mysqlSQL);
 
-  // Replace undefined values in bind parameters with null to prevent MySQL2 driver errors
-  const cleanParams = (params || []).map(p => p === undefined ? null : p);
+  // Map parameters to match positional placeholders if rawSQL uses $1, $2 etc.
+  let cleanParams;
+  if (/\$\d+/.test(rawSQL)) {
+    const matches = rawSQL.match(/\$\d+/g) || [];
+    cleanParams = matches.map(placeholder => {
+      const idx = parseInt(placeholder.slice(1)) - 1;
+      const val = params[idx];
+      return val === undefined ? null : val;
+    });
+  } else {
+    cleanParams = (params || []).map(p => p === undefined ? null : p);
+  }
 
   try {
     const [result] = await pool.execute(mysqlSQL, cleanParams);
