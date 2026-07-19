@@ -32,6 +32,7 @@ type FormState = {
   dim_length: string;
   dim_width: string;
   dim_height: string;
+  dim_qty: string;
   dim_unit: string;
   dim_cbm: string;
   container: string;
@@ -53,7 +54,7 @@ const INITIAL_FORM: FormState = {
   customer_name: "",
   customer_email: "",
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
-  dim_length: "", dim_width: "", dim_height: "", dim_unit: "cm", dim_cbm: "",
+  dim_length: "", dim_width: "", dim_height: "", dim_qty: "1", dim_unit: "cm", dim_cbm: "",
   container: "",
   mode: "", weight: "", pickup_address: "",
   delivery_address: "", note: "", refer_by: "", email: "", dear_who: "",
@@ -251,7 +252,7 @@ export default function NewRFQPage() {
     const dimensionStr = isCbm
       ? (form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "")
       : (form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim()
-          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"}`
+          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${form.dim_qty || 1})`
           : "");
 
     if (isSales) {
@@ -484,7 +485,7 @@ export default function NewRFQPage() {
     const dimensionStr = isCbm
       ? (form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "")
       : (form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim()
-          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"}`
+          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${form.dim_qty || 1})`
           : "");
 
     const isContainerEmpty = !form.container?.trim();
@@ -536,7 +537,7 @@ export default function NewRFQPage() {
     const dimensionStr = isCbmConfirm
       ? (form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "")
       : (form.dim_length?.trim() || form.dim_width?.trim() || form.dim_height?.trim()
-          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"}`
+          ? `${form.dim_length?.trim() || 0} x ${form.dim_width?.trim() || 0} x ${form.dim_height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${form.dim_qty || 1})`
           : "");
 
     const now = new Date();
@@ -765,7 +766,7 @@ export default function NewRFQPage() {
                       )}
                     </div>
                   ) : f.name === "dimension" ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center">
                         <select
                           name="dim_unit"
@@ -794,7 +795,7 @@ export default function NewRFQPage() {
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted pointer-events-none">CBM</span>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                           <div className="relative">
                             <input
                               type="number"
@@ -805,7 +806,7 @@ export default function NewRFQPage() {
                               className="input w-full pr-7 text-center font-mono"
                               placeholder="L"
                             />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
                               {form.dim_unit}
                             </span>
                           </div>
@@ -819,7 +820,7 @@ export default function NewRFQPage() {
                               className="input w-full pr-7 text-center font-mono"
                               placeholder="W"
                             />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
                               {form.dim_unit}
                             </span>
                           </div>
@@ -833,12 +834,65 @@ export default function NewRFQPage() {
                               className="input w-full pr-7 text-center font-mono"
                               placeholder="H"
                             />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted pointer-events-none">
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
                               {form.dim_unit}
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="1"
+                              name="dim_qty"
+                              value={form.dim_qty || ""}
+                              onChange={handleChange}
+                              className="input w-full pr-7 text-center font-mono"
+                              placeholder="Qty"
+                            />
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
+                              pcs
                             </span>
                           </div>
                         </div>
                       )}
+
+                      {(() => {
+                        const unit = form.dim_unit || "cm";
+                        let cbmCalc = 0;
+                        if (unit === "cbm") {
+                          cbmCalc = parseFloat(form.dim_cbm) || 0;
+                        } else {
+                          const l = parseFloat(form.dim_length) || 0;
+                          const w = parseFloat(form.dim_width) || 0;
+                          const h = parseFloat(form.dim_height) || 0;
+                          const qty = parseFloat(form.dim_qty) || 1;
+                          if (unit === "m") {
+                            cbmCalc = l * w * h * qty;
+                          } else {
+                            cbmCalc = (l * w * h * qty) / 1000000;
+                          }
+                        }
+                        const volWeightCalc = cbmCalc * 167;
+                        const actWeight = parseFloat(form.weight) || 0;
+                        const chgWeightCalc = Math.max(actWeight, volWeightCalc);
+
+                        if (!cbmCalc && !actWeight) return null;
+
+                        return (
+                          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] grid grid-cols-2 gap-3 text-xs">
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted">CBM</span>
+                              <p className="font-mono font-bold text-gold text-sm">{cbmCalc.toFixed(4)} m³</p>
+                            </div>
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted">Chargeable Weight</span>
+                              <p className="font-mono font-bold text-blue text-sm">{chgWeightCalc.toFixed(2)} kg</p>
+                            </div>
+                            <div className="col-span-2 text-[9px] text-muted italic border-t border-white/[0.04] pt-1.5 mt-0.5">
+                              Volumetric Weight: {volWeightCalc.toFixed(2)} kg | Actual Weight: {actWeight.toFixed(2)} kg
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <input
