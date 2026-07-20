@@ -663,3 +663,105 @@ input[type="number"] {
   }
 }
 
+/* ── Hero Grid Fit-in-Center Constraints & Margin Containment ─ */
+.hero-section {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.hero-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 2.5rem 0 !important;
+  box-sizing: border-box !important;
+}
+
+.hero-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 1rem !important;
+  align-items: center !important;
+  max-width: 100% !important;
+}
+
+.hero-description {
+  max-width: 580px !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.hero-stats {
+  max-width: 100% !important;
+  flex-wrap: wrap !important;
+}
+
+@media (max-width: 900px) {
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    text-align: center !important;
+    justify-items: center !important;
+    align-items: center !important;
+    gap: 2rem !important;
+    padding: 2rem 0 !important;
+  }
+  
+  .hero-subtitle {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .hero-description {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
+  }
+
+  .hero-actions {
+    justify-content: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
+  }
+
+  .hero-stats {
+    justify-content: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    gap: 1.5rem !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-grid {
+    padding: 1.5rem 0 !important;
+  }
+
+  .hero-actions {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  .hero-actions .cta-button,
+  .hero-actions .btn-secondary {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .hero-stats {
+    gap: 1.25rem !important;
+    justify-content: space-around !important;
+  }
+
+  .hero-stat-value {
+    font-size: 1.5rem !important;
+  }
+}
+
