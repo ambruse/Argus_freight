@@ -2509,23 +2509,6 @@ body.light-theme .footer-location-card:hover {
     margin-left: auto !important;
     margin-right: auto !important;
   }
-
-  /* Center hero logo container and description */
-  .hero-logo-container {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    text-align: center !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-
-  .hero-description {
-    text-align: center !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    max-width: 100% !important;
-  }
   
   /* Center About & Why Us generic text block contents */
   .about-content,
@@ -2575,5 +2558,4 @@ body.light-theme .footer-location-card:hover {
     text-align: center !important;
   }
 }
-
 

@@ -2,12 +2,20 @@
 // ─────────────────────────────────────────────────────────────
 //  Root layout — applies global styles, fonts, toast provider.
 // ─────────────────────────────────────────────────────────────
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import NotificationListener from "@/components/layout/NotificationListener";
 import ArgusNavbar from "@/components/layout/ArgusNavbar";
 import GlobalPageLoader from "@/components/layout/GlobalPageLoader";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "ARGUS — Cargo & RFQ Management",
@@ -55,15 +63,6 @@ export const metadata: Metadata = {
     images: ["https://argus-freight.onrender.com/logo.png"],
   }
 };
-
-// ── Viewport (Next.js 14+ way — prevents mobile zoom-out) ──────
-export const viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-};
-
 
 export default function RootLayout({
   children,

@@ -248,21 +248,25 @@ html:not(.light) .logo-light { display: none;  }
 }
 
 @media (max-width: 992px) {
+  .argus-container {
+    padding: 0 1rem;
+  }
   .nav-menu {
     position: fixed;
-    top: 90px;
+    top: 70px;
     left: 0;
     width: 100%;
-    height: calc(100vh - 90px);
+    height: calc(100vh - 70px);
     background: var(--bg-primary);
     flex-direction: column;
-    padding: 2rem;
-    gap: 1.5rem;
+    padding: 2rem 1.5rem;
+    gap: 1.25rem;
     transform: translateY(-100%);
     opacity: 0;
     visibility: hidden;
     transition: var(--transition-smooth);
     z-index: 999;
+    overflow-y: auto;
   }
   .nav-menu.open {
     transform: translateY(0);
@@ -271,6 +275,35 @@ html:not(.light) .logo-light { display: none;  }
   }
   .mobile-nav-toggle {
     display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .argus-navbar {
+    height: 70px;
+  }
+  .top-bar-right {
+    display: none;
+  }
+  .top-bar-left {
+    gap: 0.6rem;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .navbar-top-bar {
+    display: none;
+  }
+  .argus-navbar {
+    height: 60px;
+  }
+  .nav-menu {
+    top: 60px;
+    height: calc(100vh - 60px);
+  }
+  .logo-container img {
+    height: 38px !important;
   }
 }
 

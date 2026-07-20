@@ -154,7 +154,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   ];
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden" style={{ background: "var(--surface)" }}>
+    <div className="flex h-[100dvh] max-w-full overflow-hidden" style={{ background: "var(--surface)" }}>
       {/* Conditionally hide sidebar on mobile screens for all logged-in roles */}
       <div className="hidden md:flex flex-shrink-0">
         <Sidebar />
@@ -162,12 +162,12 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
 
       {/* Main content */}
       <main 
-        className="flex-1 flex flex-col h-[100dvh] overflow-hidden transition-all duration-300 ml-0 md:ml-64"
+        className="flex-1 flex flex-col h-[100dvh] max-w-full overflow-x-hidden transition-all duration-300 ml-0 md:ml-64"
       >
         {/* Page header */}
         {title && (
           <header 
-            className="flex-shrink-0 flex items-center justify-between px-4 py-4 md:px-8 md:py-5 relative pt-[calc(env(safe-area-inset-top)+14px)] md:pt-5"
+            className="flex-shrink-0 flex items-center justify-between px-4 py-3.5 md:px-8 md:py-5 relative pt-[calc(env(safe-area-inset-top)+12px)] md:pt-5"
             style={{
               background: "linear-gradient(180deg, rgba(12,18,32,0.95) 0%, rgba(8,12,20,0.80) 100%)",
               borderBottom: "1px solid rgba(245,176,55,0.08)",
@@ -180,13 +180,13 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
             />
 
             <div>
-              <h1 className="text-lg md:text-xl font-bold leading-tight"
+              <h1 className="text-base md:text-xl font-bold leading-tight"
                 style={{ color: "#EEF2FF", fontFamily: "'Outfit', sans-serif" }}
               >
                 {title}
               </h1>
               {subtitle && (
-                <p className="text-[11px] md:text-[13px] mt-0.5" style={{ color: "rgba(100,116,139,0.80)" }}>
+                <p className="text-[10px] md:text-[13px] mt-0.5" style={{ color: "rgba(100,116,139,0.80)" }}>
                   {subtitle}
                 </p>
               )}
@@ -198,7 +198,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
 
         {/* Scrollable content */}
         <div 
-          className="flex-1 overflow-y-auto bg-grid px-4 py-6 md:p-8 pb-[calc(env(safe-area-inset-bottom)+76px)] md:pb-8"
+          className="flex-1 overflow-y-auto overflow-x-hidden max-w-full bg-grid px-3 py-4 sm:px-4 sm:py-6 md:p-8 pb-[calc(env(safe-area-inset-bottom)+84px)] md:pb-8"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {children}
