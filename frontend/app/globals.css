@@ -615,3 +615,51 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* ── Responsive Hero Logo Sizing & Centering ────────────────── */
+.hero-logo-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  width: 100% !important;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.hero-logo-img {
+  object-fit: contain !important;
+  width: clamp(220px, 45vw, 460px) !important;
+  max-width: 90vw !important;
+  height: auto !important;
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  transition: all 0.3s ease !important;
+}
+
+@media (max-width: 1200px) {
+  .hero-logo-img {
+    width: clamp(200px, 42vw, 400px) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero-logo-img {
+    width: clamp(180px, 60vw, 340px) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-logo-img {
+    width: clamp(140px, 75vw, 260px) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero-logo-img {
+    width: clamp(120px, 80vw, 210px) !important;
+  }
+}
+
