@@ -464,7 +464,7 @@ export default function RFQPage() {
                 <th>CUST REQ NO</th>
                 <th>OPERATOR</th>
                 <th>CUSTOMER ID</th>
-                <th>REFER BY</th>
+                <th>DEAR WHO</th>
                 <th>POL</th>
                 <th>POD</th>
                 <th>COMMODITY</th>
@@ -540,7 +540,7 @@ export default function RFQPage() {
                           </td>
                           <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
                           <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{firstShipment.customer_id ?? "—"}</td>
-                          <td>{firstShipment.refer_by ?? "—"}</td>
+                          <td>{firstShipment.dear_who ?? "—"}</td>
                           <td>{firstShipment.pol ?? "—"}</td>
                           <td>{firstShipment.pod ?? "—"}</td>
                           <td className="max-w-[140px] truncate">{firstShipment.commodity ?? "—"}</td>
@@ -617,7 +617,7 @@ export default function RFQPage() {
                             </td>
                             <td className="text-xs text-muted">{child.operator ?? "—"}</td>
                             <td className="text-muted font-mono text-xs">{child.customer_id ?? "—"}</td>
-                            <td className="text-muted text-xs">{child.refer_by ?? "—"}</td>
+                            <td className="text-muted text-xs">{child.dear_who ?? "—"}</td>
                             <td className="text-muted text-xs">{child.pol ?? "—"}</td>
                             <td className="text-muted text-xs">{child.pod ?? "—"}</td>
                             <td className="max-w-[140px] truncate text-muted text-xs">{child.commodity ?? "—"}</td>
@@ -696,7 +696,7 @@ export default function RFQPage() {
                         </td>
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{s.customer_id ?? "—"}</td>
-                        <td>{s.refer_by ?? "—"}</td>
+                        <td>{s.dear_who ?? "—"}</td>
                         <td>{s.pol ?? "—"}</td>
                         <td>{s.pod ?? "—"}</td>
                         <td className="max-w-[140px] truncate">{s.commodity ?? "—"}</td>
