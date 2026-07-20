@@ -593,3 +593,147 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVENESS — fits all pages within the phone screen
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Viewport meta fix: prevent overflow on the root ─────────── */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* ── Main content: prevent it from ever exceeding the viewport ── */
+main {
+  min-width: 0;
+  max-width: 100vw;
+}
+
+@media (max-width: 767px) {
+
+  /* ── Page content padding ─────────────────────────────────── */
+  .px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+
+  /* ── Tables: scroll horizontally inside a box, never push page ─ */
+  .data-table {
+    min-width: 600px; /* keep columns readable, scroll the wrapper */
+  }
+  .overflow-x-auto:has(.data-table) {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100dvh - 220px);
+  }
+  /* For table wrappers that don't use :has (older browsers) */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  /* ── Grids: collapse to 1 or 2 columns on mobile ──────────── */
+  .grid-cols-3,
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6,
+  .md\:grid-cols-3,
+  .md\:grid-cols-4,
+  .lg\:grid-cols-3,
+  .lg\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* ── Flex rows → stack vertically ─────────────────────────── */
+  .flex-row-mobile-stack {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  /* ── Glass cards: full width, no excess horizontal padding ─── */
+  .glass {
+    border-radius: 1rem !important;
+  }
+
+  /* ── Modal: fit within phone screen ───────────────────────── */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-overlay > div,
+  .modal-overlay > .glass {
+    border-radius: 1.5rem 1.5rem 0 0 !important;
+    max-height: 90dvh !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 1.5rem 1rem !important;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* ── Buttons: full-width on mobile when inside a form ─────── */
+  .btn-primary-full-mobile,
+  .btn-secondary-full-mobile {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── Stats grid: 2-col on mobile ──────────────────────────── */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  /* ── Form grid: collapse multi-col form rows ──────────────── */
+  .form-grid-cols-2,
+  .form-grid-cols-3,
+  .form-grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Prevent any fixed-width elements from overflowing ─────── */
+  * {
+    max-width: 100%;
+  }
+  img, video, iframe, embed, object {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ── Section headings font size ────────────────────────────── */
+  h1 { font-size: 1.125rem !important; }
+  h2 { font-size: 1rem !important; }
+  h3 { font-size: 0.9rem !important; }
+
+  /* ── Stat card: smaller padding ───────────────────────────── */
+  .stat-card {
+    padding: 1rem !important;
+  }
+
+  /* ── Drop zone: reduce padding on mobile ──────────────────── */
+  .drop-zone {
+    padding: 1.25rem !important;
+  }
+
+  /* ── Ensure the bottom nav doesn't overlap content ─────────── */
+  /* (Already handled in AppLayout via pb-[76px] + safe-area)   */
+
+  /* ── Pill / badge text: keep readable ─────────────────────── */
+  .badge { font-size: 10px !important; }
+
+  /* ── Page action buttons area: wrap on mobile ─────────────── */
+  header .flex { flex-wrap: wrap; gap: 0.5rem; }
+}
+
+/* ── Very small phones (< 380px) ──────────────────────────────── */
+@media (max-width: 379px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  h1 { font-size: 1rem !important; }
+}

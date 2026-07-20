@@ -56,6 +56,15 @@ export const metadata: Metadata = {
   }
 };
 
+// ── Viewport (Next.js 14+ way — prevents mobile zoom-out) ──────
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
+
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
