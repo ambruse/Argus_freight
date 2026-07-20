@@ -140,14 +140,14 @@ export default function ArgusNavbar() {
                   src="/images/light-logo.png"
                   alt="Argus Shipping WLL Logo" 
                   className="logo-dark"
-                  style={{ height: '48px', width: 'auto', display: 'block', transition: 'all 0.2s ease' }} 
+                  style={{ height: '48px', width: 'auto', transition: 'all 0.2s ease' }} 
                 />
                 {/* Light mode logo (shown when html.light) */}
                 <img 
                   src="/images/logo.png"
                   alt="Argus Shipping WLL Logo" 
                   className="logo-light"
-                  style={{ height: '48px', width: 'auto', display: 'block', transition: 'all 0.2s ease' }} 
+                  style={{ height: '48px', width: 'auto', transition: 'all 0.2s ease' }} 
                 />
               </a>
 

@@ -120,7 +120,7 @@ export default function RegisterPage() {
               style={{ background: "radial-gradient(circle, rgba(245,176,55,0.60) 0%, transparent 70%)" }}
             />
             <img
-              src={theme === "light" ? "/logo.png" : "/light-logo.png"}
+              src={theme === "light" ? "/images/logo.png" : "/images/light-logo.png"}
               alt="ARGUS Shipping"
               className="relative w-auto h-14 object-contain"
             />
