@@ -92,6 +92,17 @@
   cursor: pointer;
 }
 
+/* CSS-based logo switching — works instantly without JS/hydration delay */
+/* Dark mode: show light-logo.png, hide logo.png */
+html.dark  .logo-dark  { display: block; }
+html.dark  .logo-light { display: none;  }
+/* Light mode: show logo.png, hide light-logo.png */
+html.light .logo-dark  { display: none;  }
+html.light .logo-light { display: block; }
+/* Default (no class yet): assume dark */
+html:not(.light) .logo-dark  { display: block; }
+html:not(.light) .logo-light { display: none;  }
+
 .nav-menu {
   display: flex;
   align-items: center;

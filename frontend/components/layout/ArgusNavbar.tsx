@@ -135,9 +135,18 @@ export default function ArgusNavbar() {
             <nav className="argus-navbar">
               {/* Logo Brand */}
               <a href="/" className="logo-container" style={{ textDecoration: 'none' }}>
+                {/* Dark mode logo (shown when html.dark) */}
                 <img 
-                  src={isDarkMode ? "/images/light-logo.png" : "/images/logo.png"} 
+                  src="/images/light-logo.png"
                   alt="Argus Shipping WLL Logo" 
+                  className="logo-dark"
+                  style={{ height: '48px', width: 'auto', display: 'block', transition: 'all 0.2s ease' }} 
+                />
+                {/* Light mode logo (shown when html.light) */}
+                <img 
+                  src="/images/logo.png"
+                  alt="Argus Shipping WLL Logo" 
+                  className="logo-light"
                   style={{ height: '48px', width: 'auto', display: 'block', transition: 'all 0.2s ease' }} 
                 />
               </a>
