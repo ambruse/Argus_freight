@@ -24,21 +24,14 @@ export default function About({ onNavigate }) {
                 Leading Freight Management in the Region
               </h2>
               <p>
-                The existence of **ARGUS SHIPPING WLL** as a leading freight management and logistics service provider in the region, with a global presence of network partners, has established a benchmark in this industry.
-              </p>
-              <p>
-                With vast experience, we offer precisely what the international market requires. We are finely tuned to identify specific customer requirements and provide timely, effective solutions that guarantee customer satisfaction.
-              </p>
-              <p>
-                Our logistical capabilities cover ocean cargo forwarding, air export/import coordination, border clearance, free zone distribution, relocation services, and customized heavy lift transport. Our experts advise customers on optimal configurations to achieve cost-effective or time-bound deliveries.
-              </p>
+               ARGUS SHIPPING WLL stands at the forefront of regional logistics, connecting a robust global network to redefine industry benchmarks. We match international market demands with intuitive, agile service, turning complex logistics challenges into seamless solutions that drive customer satisfaction. From ocean cargo and air logistics to border clearance, free zone distribution, relocations, and heavy-lift transport, our end-to-end capabilities cover every angle. Partner with our experts to optimize your supply chain routes and achieve the ideal balance of speed and cost-effectiveness.</p>
             </div>
 
             <div className="about-features-grid">
               <div className="service-card" style={{ padding: '2rem', textAlign: 'center' }}>
                 <Globe2 size={40} className="logo-gold" style={{ margin: '0 auto 1rem auto' }} />
                 <h4>Global Presence</h4>
-                <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>Associated networks stretching across China, India, Turkey, UAE, and Bahrain.</p>
+                <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>Associated networks stretching across China, India, KSA, Turkey, UAE, and Bahrain.</p>
               </div>
 
               <div className="service-card" style={{ padding: '2rem', textAlign: 'center' }}>

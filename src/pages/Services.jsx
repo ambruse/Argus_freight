@@ -54,7 +54,7 @@ const DETAILED_SERVICES = [
     shortTitle: 'Door-to-Door',
     icon: Compass,
     imgSrc: '/Videos/Door_to_Door.mp4',
-    description: 'A client-friendly shipping model tailored for low-volume cargo. We handle the entire supply chain from collection at the factory doorstep to final delivery.',
+    description: ' Designed specifically for businesses managing low-volume shipments, our streamlined shipping model offers a completely hassle-free logistics experience. We take full ownership of your supply chain right from the start, managing every intricate detail from factory doorstep collection to final destination delivery. By eliminating the complexities typically associated with smaller consignments, we provide a unified, end-to-end pathway that saves you both time and operational overhead. ',
     extended: [
       'Per-CARTON / Per-CBM console freight rates to optimize shipping costs.',
       'Mega consolidation hubs operating in Guangzhou, Yiwu, Mumbai, Bangalore, Istanbul, Dubai, and Bahrain.',
@@ -280,6 +280,92 @@ export default function Services() {
                       </div>
                     </section>
                   )}
+
+                  {service.id === 'air' && (
+                  <section id="air-freight-service" className="seo-optimized-block">
+                    <h1>International Air Freight Forwarding Services</h1>
+                    <p className="lead-text">
+                      Argus Shipping delivers high-speed charter solutions and consolidated air cargo services globally. We specialize in time-critical freight orchestration across primary international aviation corridors.
+                    </p>
+
+                    <h2>Our Primary Aviation Corridors & Handling Capabilities</h2>
+                    <div className="table-container">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Origin Hub / Gateway</th>
+                            <th>Destination Market</th>
+                            <th>Service Configuration</th>
+                            <th>Average Transit Type</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td><strong>China</strong> (Shanghai PVG, Shenzhen SZX)</td>
+                            <td>Doha, Qatar (Hamad International / DOH)</td>
+                            <td>Express Charter & Airline Consolidation</td>
+                            <td>Priority Air Express</td>
+                          </tr>
+                          <tr>
+                            <td><strong>Europe</strong> (Frankfurt FRA, Amsterdam AMS)</td>
+                            <td>Doha, Qatar / GCC Hubs</td>
+                            <td>Specialized Handling & Controlled Temp</td>
+                            <td>Direct Flight Allocation</td>
+                          </tr>
+                          <tr>
+                            <td><strong>India</strong> (Mumbai BOM, Delhi DEL)</td>
+                            <td>Doha, Qatar / GCC Hubs</td>
+                            <td>Rapid Transit Freight & Dangerous Goods</td>
+                            <td>Next-Flight-Out (NFO)</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                )}
+
+                {service.id === 'road' && (
+                  <section id="land-freight-service" className="seo-optimized-block">
+                    <h1>Cross-Border Land Freight & Road Transport Services</h1>
+                    <p className="lead-text">
+                      Argus Shipping delivers reliable full-truckload (FTL) and less-than-truckload (LTL) overland transport solutions across the region. We specialize in seamless cross-border freight orchestration and regional distribution networks.
+                    </p>
+
+                    <h2>Our Primary Overland Routes & Transport Capabilities</h2>
+                    <div className="table-container">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Origin Hub / Gateway</th>
+                            <th>Destination Market</th>
+                            <th>Service Configuration</th>
+                            <th>Average Transit Type</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td><strong>UAE</strong> (Jebel Ali, Dubai, Abu Dhabi)</td>
+                            <td>Doha, Qatar / GCC Hubs</td>
+                            <td>Direct FTL & LTL Consolidation</td>
+                            <td>Express Road Freight</td>
+                          </tr>
+                          <tr>
+                            <td><strong>Saudi Arabia</strong> (Dammam, Riyadh, Jeddah)</td>
+                            <td>Doha, Qatar / GCC Hubs</td>
+                            <td>Cross-Border Transit & Customs Clearance</td>
+                            <td>Scheduled Overland Trucking</td>
+                          </tr>
+                          <tr>
+                            <td><strong>Oman</strong> (Muscat, Sohar)</td>
+                            <td>Doha, Qatar / GCC Hubs</td>
+                            <td>Factory-to-Consignee Direct Logistics</td>
+                            <td>Interstate Road Transport</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                )}
 
                   {service.id === 'door-to-door' && (
                     <section id="console-shipments-service" className="seo-optimized-block">

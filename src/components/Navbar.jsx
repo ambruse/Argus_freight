@@ -71,6 +71,10 @@ export default function Navbar({ currentPath, setCurrentPath, onOpenQuote, isDar
                   <span className="country-name">China</span>
                   <span className="phone-number">+86 13719125564</span>
                 </a>
+                <a href="tel:+966507370604" className="phone-dropdown-item">
+                  <span className="country-name">Saudi</span>
+                  <span className="phone-number">+86 13719125564</span>
+                </a>
                 <a href="tel:+971564337699" className="phone-dropdown-item">
                   <span className="country-name">UAE</span>
                   <span className="phone-number">+971 564337699</span>

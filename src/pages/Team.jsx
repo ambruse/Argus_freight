@@ -10,21 +10,20 @@ const TEAM_MEMBERS = [
   },
   {
     id: 2,
-    name: 'Sarah Connor',
-    role: 'Chief of Customs & Compliance',
-    bio: 'An expert in border clearances, Sarah oversees relations with environment and safety ministries to ensure smooth processing of incoming cargo.'
-  },
+    name: 'Jemshy Keloth',
+    role: 'CEOr',
+    bio: 'A visionary leader who steers the company through global market complexities with the same precision and foresight that our vessels navigate the open sea. '},
   {
     id: 3,
-    name: 'David Miller',
-    role: 'FIATA & IATA Cargo Engineer',
-    bio: 'David manages air cargo dispatches, coordinating DGR (Dangerous Goods) handling procedures and expedited container scheduling.'
+    name: 'Team Sales',
+    role: 'Sales',
+    bio: "A great sales team doesn't just sell space on a vessel or aircraft—they build the trust that keeps cargo moving and turns logistical challenges into long-term partnerships."
   },
   {
     id: 4,
-    name: 'Rajesh Nair',
-    role: 'Warehouse Operations Lead',
-    bio: 'Rajesh oversees our mega-warehouses, ensuring ERP tracking systems and barcoding processes run efficiently for all client goods.'
+    name: 'Finos',
+    role: 'Operatiion Manager',
+    bio: 'When the port gets congested and schedules blow up, Finos is the one person who can look at a tangled mess of manifests and turn it into a smooth, seamless operation.'
   }
 ];
 
@@ -37,7 +36,7 @@ export default function Team() {
           <span className="section-subtitle font-gold">Professional Assets</span>
           <h1 className="section-title" style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>Our Expert Team</h1>
           <p style={{ maxWidth: '680px', margin: '0 auto', fontSize: '1.1rem' }}>
-            Our employees are the most valuable asset in our company. Customers trust us because we employ the brightest minds in the logistics industry.
+            The expertise of our team is our greatest strength. Our clients rely on us because we house the industry's sharpest logistics professionals.
           </p>
         </div>
       </section>

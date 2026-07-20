@@ -7,14 +7,14 @@ const LOGISTICS_MODES = [
     title: 'AIR FREIGHT',
     tagline: 'Time-Critical Air Shipments Worldwide',
     icon: Plane,
-    description: 'We know that the main priority of clients requiring air freight services is getting their cargo delivered within a short time limit. Time-sensitive cargo demands FIATA and IATA-certified logistics specialists.'
+    description: 'In high-stakes logistics, every minute counts. We understand that speed is your primary metric—which is why our FIATA and IATA-accredited specialists deliver rapid, reliable air freight solutions engineered for ultimate time-sensitivity."'
   },
   {
     id: 'road',
     title: 'LAND FREIGHT',
     tagline: 'GCC-Wide Secure Road Transport network',
     icon: Truck,
-    description: 'Our land transport solutions cover full truckloads (FTL) and less-than-truckloads (LTL) between GCC countries, backed by active customs coordination and border clearance expertise.'
+    description: 'Navigate regional logistics with confidence. From full truckloads (FTL) to less-than-truckloads (LTL) across the GCC, our land transport network is powered by hands-on customs coordination and rapid border clearance to keep your freight on schedule.'
   },
   {
     id: 'sea',
@@ -132,7 +132,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
         <div className="container">
           <div className="hero-grid">
             <div style={{ animation: 'slideUp 0.8s ease', position: 'relative', zIndex: 5 }}>
-              <span className="hero-subtitle">Premium Logistics Management</span>
+              <span className="hero-subtitle">Logistics Management</span>
               <div className="hero-logo-container">
                 <img 
                   src="/images/argus_shipping_logo_hero.png" 
@@ -141,7 +141,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
                 />
               </div>
               <p className="hero-description">
-                ARGUS SHIPPING WLL is a premier freight management and logistics service provider. We offer global network capabilities, tailored transport schedules, and border clearance expertise to keep your supply chain seamless.
+                ARGUS SHIPPING WLL delivers end-to-end freight and logistics solutions designed for today’s fast-paced global market. By combining worldwide reach, flexible scheduling, and deep border-clearance proficiency, we take the friction out of your supply chain.
               </p>
               <div className="hero-actions">
                 <button className="cta-button" onClick={onOpenQuote}>
