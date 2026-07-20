@@ -397,10 +397,20 @@ const deleteShipment = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Confirmed shipments cannot be deleted.' });
     }
 
-    const result = await query(req, 
-      'DELETE FROM shipments WHERE ref_no = $1 RETURNING ref_no',
-      [req.params.ref_no]
-    );
+    const { getOperatorSuffixes } = require('../config/dbHelper');
+    const suffixes = await getOperatorSuffixes();
+
+    // Delete from main table
+    await db.query('DELETE FROM shipments WHERE ref_no = $1', [req.params.ref_no]);
+
+    // Delete from all sandboxes
+    for (const suffix of suffixes) {
+      try {
+        await db.query(`DELETE FROM shipments_${suffix} WHERE ref_no = $1`, [req.params.ref_no]);
+      } catch (err) {
+        console.error(`[Delete] Failed to delete from shipments_${suffix}:`, err.message);
+      }
+    }
 
     res.json({ success: true, message: `Shipment ${req.params.ref_no} deleted.` });
   } catch (err) {

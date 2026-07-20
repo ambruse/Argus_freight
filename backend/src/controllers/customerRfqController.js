@@ -395,7 +395,18 @@ const sendCustomerRfqEmail = async (req, res, next) => {
 
       const cbmVal = calculateCbm(shipment.dimension);
       const volWeight = cbmVal * 167;
-      const actWeight = parseFloat(shipment.weight) || 0;
+      let actWeight = 0;
+      if (shipment.weight) {
+        const totalMatch = shipment.weight.match(/total\s*(?:KG|LB|Pound)?\s*=\s*([\d.]+)/i);
+        if (totalMatch) {
+          actWeight = parseFloat(totalMatch[1]) || 0;
+        } else {
+          actWeight = parseFloat(shipment.weight) || 0;
+        }
+        if (/LB|Pound/i.test(shipment.weight)) {
+          actWeight = actWeight * 0.45359237;
+        }
+      }
       const chgWeight = Math.max(actWeight, volWeight);
 
       const labels = [

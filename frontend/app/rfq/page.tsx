@@ -237,8 +237,9 @@ export default function RFQPage() {
           await api.delete(`/shipments/${refNo}`);
           toast.success(`RFQ ${refNo} deleted successfully.`);
           setShipments((prev) => prev.filter((s) => s.ref_no !== refNo));
-        } catch {
-          toast.error("Failed to delete RFQ.");
+        } catch (err: any) {
+          const errMsg = err.response?.data?.message || "Failed to delete RFQ.";
+          toast.error(errMsg);
         }
       }
     });
@@ -257,8 +258,9 @@ export default function RFQPage() {
           }
           toast.success(`Group ${groupLabel} deleted successfully.`);
           setShipments((prev) => prev.filter((s) => !groupShipments.some(gs => gs.ref_no === s.ref_no)));
-        } catch {
-          toast.error("Failed to delete some RFQs in the group.");
+        } catch (err: any) {
+          const errMsg = err.response?.data?.message || "Failed to delete some RFQs in the group.";
+          toast.error(errMsg);
         }
       }
     });
@@ -733,13 +735,17 @@ export default function RFQPage() {
                           )}
                         </td>
                         <td>
-                          <button
-                            onClick={(e) => handleDelete(e, s.ref_no)}
-                            className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
-                            title="Delete RFQ"
-                          >
-                            🗑
-                          </button>
+                          {s.status !== 'Confirmed' ? (
+                            <button
+                              onClick={(e) => handleDelete(e, s.ref_no)}
+                              className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
+                              title="Delete RFQ"
+                            >
+                              🗑
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted italic">Locked</span>
+                          )}
                         </td>
                       </tr>
                     );

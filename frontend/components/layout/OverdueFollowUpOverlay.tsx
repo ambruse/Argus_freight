@@ -94,9 +94,10 @@ export default function OverdueFollowUpOverlay() {
         await Promise.all(promises);
         toast.success("All overdue RFQs deleted successfully.");
         setOverdueList([]);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to delete all:", err);
-        toast.error("Failed to delete some RFQs. Please reload.");
+        const errMsg = err.response?.data?.message || "Failed to delete some RFQs. Please reload.";
+        toast.error(errMsg);
         fetchOverdue();
       } finally {
         setActioningAll(false);
@@ -108,8 +109,9 @@ export default function OverdueFollowUpOverlay() {
         await api.delete(`/shipments/${selectedRefNo}`);
         toast.success(`RFQ ${selectedRefNo} deleted successfully.`);
         setOverdueList(prev => prev.filter(s => s.ref_no !== selectedRefNo));
-      } catch {
-        toast.error("Failed to delete RFQ.");
+      } catch (err: any) {
+        const errMsg = err.response?.data?.message || "Failed to delete RFQ.";
+        toast.error(errMsg);
       } finally {
         setSelectedRefNo(null);
         setPasswordPromptOpen(false);
