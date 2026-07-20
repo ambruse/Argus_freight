@@ -61,11 +61,8 @@ export default function ArgusNavbar() {
   const currentPath = pathname as string; // Next.js is only serving login/register public paths
 
   return (
-    <>
-      {/* Spacer to prevent content from hiding behind the fixed navbar */}
-      <div style={{ height: '130px' }} />
-      <div className="argus-navbar-vars">
-        <header className={`navbar-wrapper ${isScrolled ? 'scrolled' : ''}`}>
+    <div className="argus-navbar-vars">
+      <header className={`navbar-wrapper ${isScrolled ? 'scrolled' : ''}`}>
           {/* Top Contact Bar */}
           <div className="navbar-top-bar">
             <div className="argus-container top-bar-container">
@@ -242,6 +239,5 @@ export default function ArgusNavbar() {
           </div>
         </header>
       </div>
-    </>
-  );
-}
+    );
+  }
