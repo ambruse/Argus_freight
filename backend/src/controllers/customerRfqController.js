@@ -55,7 +55,7 @@ const getNextOperatorRefNos = async (cleanOperator, count) => {
   const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
   const result = await db.query(
     `SELECT ref_no FROM ${opTableName}
-     WHERE ref_no ~ '^ARG-[0-9]+$'
+     WHERE ref_no REGEXP '^ARG-[0-9]+$'
      ORDER BY CAST(SUBSTRING(ref_no FROM 5) AS INTEGER) DESC
      LIMIT 1`
   );

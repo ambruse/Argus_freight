@@ -38,6 +38,9 @@ const transformSQL = (text) => {
   // 2. information_schema public → DATABASE()
   sql = sql.replace(/table_schema\s*=\s*'public'/gi, 'table_schema = DATABASE()');
 
+  // 2b. PostgreSQL ~ regex operator → MySQL REGEXP
+  sql = sql.replace(/\b(\w+)\s+~\s+('([^']*)'|"([^"]*)")/gi, '$1 REGEXP $2');
+
   // 3. SUBSTRING(col FROM n) → SUBSTRING(col, n)
   sql = sql.replace(/SUBSTRING\(([^,)]+)\s+FROM\s+(\d+)\)/gi, 'SUBSTRING($1, $2)');
 
