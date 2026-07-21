@@ -217,15 +217,6 @@ export default function ConfirmedPage() {
     }
   });
 
-  // Inside your component function, before the return:
-  const renderFirstWord = (value: string | null | undefined) => {
-    if (!value) return "—";
-    
-    // Convert to string, trim spaces, and split by whitespace
-    const words = String(value).trim().split(/\s+/);
-    return words.length > 0 && words[0] !== "" ? words[0] : "—";
-  };
-
   const fmtDate = (v: string | null) => v ? format(new Date(v), "dd MMM yy") : "—";
 
   return (
@@ -361,7 +352,7 @@ export default function ConfirmedPage() {
                       <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
                       <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(s.customer_id, s.customer_name)}</td>
                       <td className="text-xs text-muted/90">{s.dear_who ?? "—"}</td>
-                      {/* <td>{renderFirstWord(s.pol)}</td> */}
+                      <td>{s.pol ?? "—"}</td>
                       <td>{s.pod ?? "—"}</td>
                       <td>{s.commodity ?? "—"}</td>
                       <td>{s.carrier ?? "—"}</td>

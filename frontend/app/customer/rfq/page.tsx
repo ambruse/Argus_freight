@@ -141,15 +141,6 @@ export default function CustomerRFQListPage() {
       .some((v) => v?.toLowerCase().includes(q));
   });
 
-    // Inside your component function, before the return:
-  const renderFirstWord = (value: string | null | undefined) => {
-    if (!value) return "—";
-    
-    // Convert to string, trim spaces, and split by whitespace
-    const words = String(value).trim().split(/\s+/);
-    return words.length > 0 && words[0] !== "" ? words[0] : "—";
-  };
-
   const fmtFollowUp = (val: string) => {
     try {
       const d = parseISO(val);
@@ -266,7 +257,7 @@ export default function CustomerRFQListPage() {
                       </button>
                     </td>
                     <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
-                    {/* <td>{renderFirstWord(s.pol)}</td> */}
+                    <td>{s.pol ?? "—"}</td>
                     <td>{s.pod ?? "—"}</td>
                     <td className="max-w-[140px] truncate">{s.commodity ?? "—"}</td>
                     <td>
@@ -358,7 +349,7 @@ export default function CustomerRFQListPage() {
               {/* Path and Routing Info */}
               <div className="py-2 border-y border-white/[0.04] space-y-1">
                 <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                  <span className="truncate max-w-[140px]">{s.pod || "—"}</span>
+                  <span className="truncate max-w-[140px]">{s.pol || "—"}</span>
                   <span className="text-muted/50 font-normal">→</span>
                   <span className="truncate max-w-[140px]">{s.pod || "—"}</span>
                 </div>

@@ -6,7 +6,7 @@
 //  • Click REF NO → clipboard copy + toast
 //  • Double-click row → detail modal with status editor
 // ─────────────────────────────────────────────────────────────
-import { useEffect, useState, useCallback, useRef, Fragment } from "react";
+import { useEffect, useState, useCallback, Fragment } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Badge from "@/components/ui/Badge";
 import RFQDetailModal from "@/components/modals/RFQDetailModal";
@@ -67,11 +67,6 @@ export default function RFQPage() {
   useEffect(() => { setUserHydrated(true); }, [user]);
 
   const isAdminOrOperator = userHydrated && (user?.role === 'admin' || user?.role === 'operator');
-
-  // Double-click detection
-  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastClickedRef = useRef<string | null>(null);
-  const lastClickedGroupRef = useRef<string | null>(null);
 
   // Expanded groups state (tracks base prefixes that are expanded)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -203,46 +198,14 @@ export default function RFQPage() {
     }
   };
 
-  // ── Row click / double-click handler ───────────────────────
-  const handleRowClick = (shipment: Shipment) => {
-    if (clickTimerRef.current && lastClickedRef.current === shipment.ref_no) {
-      // Double-click detected
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
-      lastClickedRef.current = null;
-      setSelected(shipment);
-      setModalOpen(true);
-    } else {
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
-      lastClickedRef.current = shipment.ref_no;
-      clickTimerRef.current = setTimeout(() => {
-        clickTimerRef.current = null;
-        lastClickedRef.current = null;
-        // Single click — no-op (double click opens modal)
-      }, 250);
-    }
+  // ── Row double-click handlers (using native onDoubleClick) ──
+  const handleRowDoubleClick = (shipment: Shipment) => {
+    setSelected(shipment);
+    setModalOpen(true);
   };
 
-  const handleGroupRowClick = (basePrefix: string) => {
-    if (clickTimerRef.current && lastClickedGroupRef.current === basePrefix) {
-      // Double-click detected
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
-      lastClickedGroupRef.current = null;
-      toggleGroup(basePrefix);
-    } else {
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
-      lastClickedGroupRef.current = basePrefix;
-      clickTimerRef.current = setTimeout(() => {
-        clickTimerRef.current = null;
-        lastClickedGroupRef.current = null;
-        // Single click — no-op
-      }, 250);
-    }
+  const handleGroupRowDoubleClick = (basePrefix: string) => {
+    toggleGroup(basePrefix);
   };
 
   // ── Status update from modal ────────────────────────────────
@@ -408,14 +371,6 @@ export default function RFQPage() {
     } catch { return "—"; }
   };
 
-    // Inside your component function, before the return:
-  const renderFirstWord = (value: string | null | undefined) => {
-    if (!value) return "—";
-    
-    // Convert to string, trim spaces, and split by whitespace
-    const words = String(value).trim().split(/\s+/);
-    return words.length > 0 && words[0] !== "" ? words[0] : "—";
-  };
   return (
     <AppLayout
       title="Sent RFQs"
@@ -545,7 +500,7 @@ export default function RFQPage() {
                     return (
                       <Fragment key={item.basePrefix}>
                       <tr
-                        onClick={() => handleGroupRowClick(item.basePrefix)}
+                        onDoubleClick={() => handleGroupRowDoubleClick(item.basePrefix)}
                         className="cursor-pointer bg-amber/[0.04] hover:bg-amber/[0.07] transition-colors border-l-2 border-amber/40"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title="Double-click to expand/collapse group"
@@ -625,7 +580,7 @@ export default function RFQPage() {
                       {isExpanded && item.shipments.map((cs, cidx) => (
                         <tr
                           key={cs.ref_no}
-                          onClick={() => handleRowClick(cs)}
+                          onDoubleClick={() => handleRowDoubleClick(cs)}
                           className="cursor-pointer bg-white/[0.01] hover:bg-white/[0.04] transition-colors border-l-4 border-amber/20"
                           title="Double-click to open details"
                         >
@@ -698,7 +653,7 @@ export default function RFQPage() {
                     return (
                       <tr
                         key={s.ref_no}
-                        onClick={() => handleRowClick(s)}
+                        onDoubleClick={() => handleRowDoubleClick(s)}
                         className="cursor-pointer"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title="Double-click to open details"
@@ -729,7 +684,7 @@ export default function RFQPage() {
                         {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{s.refer_by || "—"}</td>
                         )}
-                        {/* <td>{renderFirstWord(s.pol)}</td> */}
+                        <td title={s.pol ?? "—"}>{getFirstWord(s.pol)}</td>
                         <td title={s.pod ?? "—"}>{getFirstWord(s.pod)}</td>
                         <td className="max-w-[140px] truncate">{s.commodity ?? "—"}</td>
                         <td>
