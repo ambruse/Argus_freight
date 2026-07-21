@@ -264,7 +264,7 @@ export default function RFQPage() {
   const groupedItems = (() => {
     const groups: { [key: string]: Shipment[] } = {};
     shipments.forEach(s => {
-      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
+      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(.*)$/);
       if (match) {
         const base = match[1];
         if (!groups[base]) {
@@ -278,7 +278,7 @@ export default function RFQPage() {
     const processedGroups = new Set<string>();
 
     shipments.forEach(s => {
-      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
+      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(.*)$/);
       if (match) {
         const base = match[1];
         if (groups[base].length > 1) {

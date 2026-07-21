@@ -211,11 +211,11 @@ export default function App() {
                 </div>
 
                 <div className="footer-location-card">
-                  <h4 className="location-name">Argus General Trading (Dubai Hub)</h4>
+                  <h4 className="location-name">ARGUS SHIPPING LLC (Dubai Hub)</h4>
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>Dubai Hub, Dubai, UAE</span>
+                      <span>Argus shipping LLC, Al Qusais industrial area 4, Warehouse no4, Dubai , UAE</span>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
@@ -225,18 +225,34 @@ export default function App() {
                 </div>
 
                 <div className="footer-location-card">
-                  <h4 className="location-name">Argus Bahrain</h4>
+                  <h4 className="location-name">ARGUS SHIPPING (China , Yiwu)</h4>
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>Bahrain Hub, Manama, Bahrain</span>
+                      <span>ARGUS SHIPPING, Yiwu Xinalingke International Trade Co., Ltd. Room 1616, Jinmao Building, No. 699 Chouzhou North Road, Yiwu City, Zhejiang Province, China </span>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
-                      <a href="tel:+97377034555">+973 77034555</a>
+                      <a href="tel:+971564337699">+86579 85299672</a>
                     </span>
                   </div>
                 </div>
+
+                <div className="footer-location-card">
+                  <h4 className="location-name">Argus shipping W.L.L Bahrain</h4>
+                  <div className="location-details-list">
+                    <span className="location-detail-item">
+                      <MapPin size={13} />
+                      <span>Office 21, Building 2464, Road 2663, Block 226, Busaiteen , Bahrain</span>
+                    </span>
+                    <span className="location-detail-item">
+                      <Phone size={13} />
+                      <a href="tel:+97377034555">+97313641234</a>
+                    </span>
+                  </div>
+                </div>
+
+                
 
                 <div className="footer-location-card">
                   <h4 className="location-name">Guangzhou Yuwei Hub (China)</h4>

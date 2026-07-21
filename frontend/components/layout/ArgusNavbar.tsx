@@ -88,7 +88,7 @@ export default function ArgusNavbar() {
                     </a>
                     <a href="tel:97377034555" className="phone-dropdown-item">
                       <span className="country-name">Bahrain</span>
-                      <span className="phone-number">+973 77034555</span>
+                      <span className="phone-number">+97313641234</span>
                     </a>
                     <a href="tel:+9197423798388" className="phone-dropdown-item">
                       <span className="country-name">India</span>
@@ -191,8 +191,8 @@ export default function ArgusNavbar() {
                   <div className="dropdown-menu">
                     <a href="http://www.argusme.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus Middle East Doha</a>
                     <a href="http://www.arguscomputers.net/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus Computers Doha</a>
-                    <a href="http://www.argusmeast.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus Bahrain</a>
-                    <a href="http://www.argus-me.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus General Trading Dubai</a>
+                    <a href="http://www.argusmeast.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus shipping W.L.L Bahrain</a>
+                    <a href="http://www.argus-me.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">ARGUS SHIPPING LLC Dubai</a>
                     <a href="http://fanartech.me/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Fanar Tech Contracting</a>
                     <a href="http://www.thezippco.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Zippco Trading WLL</a>
                     <a href="http://www.wemacglobal.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Wemac Global Ltd Malaysia</a>

@@ -40,7 +40,7 @@ const LOGISTICS_MODES = [
 ];
 
 const CLIENT_COMPANIES = [
-  "Argus Middle East", "Argus Computers", "Argus Bahrain", 
+  "Argus Middle East", "Argus Computers", "Argus shipping W.L.L Bahrain", 
   "Argus Dubai", "Shop N Freight", "Porters Trading", "Boxndoc.com", "Sourseco Global"
 ];
 
