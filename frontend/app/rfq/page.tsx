@@ -260,8 +260,11 @@ export default function RFQPage() {
   };
 
   // ── Grouping & Filtering ─────────────────────────────────────
-  // 1. Group the raw shipments
+  // 1. Group the raw shipments (only for Admin and Operator roles)
   const groupedItems = (() => {
+    if (!isAdminOrOperator) {
+      return shipments;
+    }
     const groups: { [key: string]: Shipment[] } = {};
     shipments.forEach(s => {
       const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(.*)$/);
