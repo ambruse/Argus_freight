@@ -505,7 +505,17 @@ export default function RFQPage() {
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title="Double-click to expand/collapse group"
                       >
-                        <td>
+                        <td className="inline-flex items-center gap-1.5 py-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleGroup(item.basePrefix);
+                            }}
+                            className="p-1 text-xs text-amber hover:text-amber-bright rounded bg-amber/10 hover:bg-amber/20 border border-amber/20 transition-all"
+                            title={isExpanded ? "Collapse Group" : "Expand Group"}
+                          >
+                            {isExpanded ? "▲" : "▼"}
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -516,7 +526,6 @@ export default function RFQPage() {
                                        transition-all duration-150 group relative inline-flex items-center gap-1.5"
                             title="Click to copy REF NO"
                           >
-                            <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>
                             <span>{groupLabel}</span>
                           </button>
                         </td>
