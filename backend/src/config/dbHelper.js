@@ -31,7 +31,13 @@ const ensureUserTables = async (username) => {
   ensuredTables.add(clean);
 };
 
+let cachedAllSuffixes = null;
+let cachedOperatorSuffixes = null;
+let lastCacheTime = 0;
+
 const getAllSuffixes = async () => {
+  const now = Date.now();
+  if (cachedAllSuffixes && (now - lastCacheTime < 10000)) return cachedAllSuffixes;
   try {
     const res = await db.query(
       `SELECT LOWER(username) AS suffix FROM users`
@@ -40,16 +46,20 @@ const getAllSuffixes = async () => {
       `SELECT table_name FROM information_schema.tables 
        WHERE table_name LIKE 'shipments_%'`
     ).catch(() => ({ rows: [] }));
-    const dbSuffixes = (dbTablesRes.rows || []).map(r => r.table_name.replace('shipments_', ''));
-    const userSuffixes = res.rows.map(r => r.suffix.replace(/[^a-zA-Z0-9_]/g, ''));
-    return Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
+    const dbSuffixes = (dbTablesRes.rows || []).map(r => ((r.table_name || '').replace('shipments_', '')));
+    const userSuffixes = res.rows.map(r => ((r.suffix || '').replace(/[^a-zA-Z0-9_]/g, '')));
+    cachedAllSuffixes = Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
+    lastCacheTime = now;
+    return cachedAllSuffixes;
   } catch (err) {
     console.error('Error fetching all suffixes:', err);
-    return [];
+    return cachedAllSuffixes || [];
   }
 };
 
 const getOperatorSuffixes = async () => {
+  const now = Date.now();
+  if (cachedOperatorSuffixes && (now - lastCacheTime < 10000)) return cachedOperatorSuffixes;
   try {
     const res = await db.query(
       `SELECT LOWER(username) AS suffix FROM users WHERE role = 'operator'`
@@ -59,13 +69,15 @@ const getOperatorSuffixes = async () => {
        WHERE table_name LIKE 'shipments_%'`
     ).catch(() => ({ rows: [] }));
     const dbSuffixes = (dbTablesRes.rows || [])
-      .map(r => r.table_name.replace('shipments_', ''))
+      .map(r => ((r.table_name || '').replace('shipments_', '')))
       .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats'));
-    const userSuffixes = res.rows.map(r => r.suffix.replace(/[^a-zA-Z0-9_]/g, ''));
-    return Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
+    const userSuffixes = res.rows.map(r => ((r.suffix || '').replace(/[^a-zA-Z0-9_]/g, '')));
+    cachedOperatorSuffixes = Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
+    lastCacheTime = now;
+    return cachedOperatorSuffixes;
   } catch (err) {
     console.error('Error fetching operator suffixes:', err);
-    return [];
+    return cachedOperatorSuffixes || [];
   }
 };
 
@@ -137,16 +149,11 @@ const query = async (req, sql, params) => {
     if (isAdmin && req?.query?.user) {
       targetUser = req.query.user;
     } else if (ref_no || id) {
-      // For non-SELECT (INSERT/UPDATE/DELETE) queries by sales/customer users,
-      // the record may not yet exist in the DB (e.g. fresh INSERT with a custom ref_no).
-      // Skip the lookup and route directly to their own sandbox.
       if (!isSelect && (req?.user?.role === 'sales' || req?.user?.role === 'customer')) {
-        targetUser = req.user.username; // route to sales/customer's own sandbox
+        targetUser = req.user.username;
       } else {
-        // For SELECT/WITH queries, find the specific operator for the shipment or file
         const foundUser = (await findUsernameForRefNo(ref_no)) || (await findUsernameForFileId(id));
         if (foundUser) {
-          // If sales or customer, ensure they actually have access to this ref_no/id
           if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
              const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
              let hasAccess = false;
@@ -160,22 +167,20 @@ const query = async (req, sql, params) => {
              if (hasAccess) {
                 targetUser = foundUser;
              } else {
-                targetUser = req.user.username; // fallback to their own sandbox
+                targetUser = req.user.username;
              }
           } else {
              targetUser = foundUser;
           }
         } else {
-          // For admin, fall back to admin table if no owner found
           if (!isAdmin) {
-            targetUser = req.user.username; // sales/customer fallback to own sandbox
+            targetUser = req.user.username;
           } else {
             targetUser = 'admin';
           }
         }
       }
     } else if (isSelect) {
-      // Global SELECT query: Query UNION ALL across all tables
       const suffixes = await getOperatorSuffixes();
       for (const suffix of suffixes) {
         await ensureUserTables(suffix);
@@ -198,46 +203,44 @@ const query = async (req, sql, params) => {
            LOWER(refer_by) = LOWER('${safeName}')
          )`;
 
-         // Prioritize operator sandboxes (1), then admin (2), then sales/customer fallback (3)
-         let sUnion = `SELECT 2 as __p, * FROM shipments WHERE ${userFilter}`;
+         let sUnion = `SELECT 2 as __p, shipments.* FROM shipments WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
            await ensureUserTables(suffix);
-           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM shipments_${suffix} WHERE ${userFilter}`;
+           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipments_${suffix}.* FROM shipments_${suffix} WHERE ${userFilter}`;
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
-         let rUnion = `SELECT 2 as __p, * FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+         let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
-         let fUnion = `SELECT 2 as __p, * FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+         let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
-         shipmentsUnion = `(SELECT * FROM shipments`;
+         shipmentsUnion = `(SELECT shipments.* FROM shipments`;
          for (const suffix of suffixes) {
-           shipmentsUnion += ` UNION ALL SELECT * FROM shipments_${suffix}`;
+           shipmentsUnion += ` UNION ALL SELECT shipments_${suffix}.* FROM shipments_${suffix}`;
          }
          shipmentsUnion += `)`;
 
-         repliesUnion = `(SELECT * FROM shipment_replies`;
+         repliesUnion = `(SELECT shipment_replies.* FROM shipment_replies`;
          for (const suffix of suffixes) {
-           repliesUnion += ` UNION ALL SELECT * FROM shipment_replies_${suffix}`;
+           repliesUnion += ` UNION ALL SELECT shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
          }
          repliesUnion += `)`;
 
-         filesUnion = `(SELECT * FROM files`;
+         filesUnion = `(SELECT files.* FROM files`;
          for (const suffix of suffixes) {
-           filesUnion += ` UNION ALL SELECT * FROM files_${suffix}`;
+           filesUnion += ` UNION ALL SELECT files_${suffix}.* FROM files_${suffix}`;
          }
          filesUnion += `)`;
       }
 
-      // Safe placeholder substitution to prevent recursive regex loops
       let modifiedSql = sql
         .replace(/\bshipment_replies\b/g, '___REPLIES___')
         .replace(/\bfiles\b/g, '___FILES___')
