@@ -539,7 +539,7 @@ export default function RFQPage() {
                                        transition-all duration-150 group relative inline-flex items-center gap-1.5"
                             title="Click to copy REF NO"
                           >
-                            <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>
+                            {isAdminOrOperator && <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>}
                             <span>{groupLabel}</span>
                           </button>
                         </td>
@@ -599,8 +599,8 @@ export default function RFQPage() {
                           </button>
                         </td>
                       </tr>
-                      {/* ── Expanded child rows ── */}
-                      {isExpanded && item.shipments.map((cs, cidx) => (
+                      {/* ── Expanded child rows (Admin & Operator only) ── */}
+                      {isAdminOrOperator && isExpanded && item.shipments.map((cs, cidx) => (
                         <tr
                           key={cs.ref_no}
                           onClick={() => handleRowClick(cs)}
