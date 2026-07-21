@@ -230,23 +230,8 @@ export default function RFQPage() {
   };
 
   const handleGroupRowClick = (basePrefix: string) => {
-    if (clickTimerRef.current && lastClickedGroupRef.current === basePrefix) {
-      // Double-click detected
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
-      lastClickedGroupRef.current = null;
-      toggleGroup(basePrefix);
-    } else {
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
-      lastClickedGroupRef.current = basePrefix;
-      clickTimerRef.current = setTimeout(() => {
-        clickTimerRef.current = null;
-        lastClickedGroupRef.current = null;
-        // Single click — no-op
-      }, 250);
-    }
+    // Toggles expansion immediately without opening detail modal
+    toggleGroup(basePrefix);
   };
 
   // ── Status update from modal ────────────────────────────────
@@ -541,7 +526,7 @@ export default function RFQPage() {
                         onClick={() => handleGroupRowClick(item.basePrefix)}
                         className="cursor-pointer bg-amber/[0.04] hover:bg-amber/[0.07] transition-colors border-l-2 border-amber/40"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
-                        title="Double-click to expand/collapse group"
+                        title="Click to expand/collapse group"
                       >
                         <td>
                           <button
