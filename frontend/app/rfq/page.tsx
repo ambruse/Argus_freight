@@ -66,7 +66,8 @@ export default function RFQPage() {
   // Hydration guard: mark user as loaded
   useEffect(() => { setUserHydrated(true); }, [user]);
 
-  const isAdminOrOperator = userHydrated && (user?.role === 'admin' || user?.role === 'operator');
+  const userRole = user?.role?.toLowerCase();
+  const isAdminOrOperator = userHydrated && (userRole === 'admin' || userRole === 'operator');
 
   // Expanded groups state (tracks base prefixes that are expanded)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -508,29 +509,31 @@ export default function RFQPage() {
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title="Double-click to expand/collapse group"
                       >
-                        <td className="inline-flex items-center gap-1.5 py-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleGroup(item.basePrefix);
-                            }}
-                            className="p-1 text-xs text-amber hover:text-amber-bright rounded bg-amber/10 hover:bg-amber/20 border border-amber/20 transition-all"
-                            title={isExpanded ? "Collapse Group" : "Expand Group"}
-                          >
-                            {isExpanded ? "▲" : "▼"}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyRefNo(e, groupLabel);
-                            }}
-                            className="font-mono text-xs font-bold text-amber hover:text-amber-bright
-                                       px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
-                                       transition-all duration-150 group relative inline-flex items-center gap-1.5"
-                            title="Click to copy REF NO"
-                          >
-                            <span>{groupLabel}</span>
-                          </button>
+                        <td>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleGroup(item.basePrefix);
+                              }}
+                              className="px-1.5 py-0.5 text-[11px] font-bold text-amber hover:text-amber-bright rounded bg-amber/10 hover:bg-amber/20 border border-amber/20 transition-all shrink-0"
+                              title={isExpanded ? "Collapse Group" : "Expand Group"}
+                            >
+                              {isExpanded ? "▲" : "▼"}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyRefNo(e, groupLabel);
+                              }}
+                              className="font-mono text-xs font-bold text-amber hover:text-amber-bright
+                                         px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
+                                         transition-all duration-150 group relative inline-flex items-center gap-1.5"
+                              title="Click to copy REF NO"
+                            >
+                              <span>{groupLabel}</span>
+                            </button>
+                          </div>
                         </td>
                         <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
                           {firstShipment.cust_req_no ?? "—"}
