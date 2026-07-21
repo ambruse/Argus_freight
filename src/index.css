@@ -2611,6 +2611,15 @@ body.light-theme .footer-location-card:hover {
     margin-left: auto !important;
     margin-right: auto !important;
   }
+
+  .hero-blob-2 {
+    left: 50% !important;
+    right: auto !important;
+    top: 50% !important;
+    bottom: auto !important;
+    margin-left: -250px !important;
+    margin-top: -250px !important;
+  }
   
   /* Center About & Why Us generic text block contents */
   .about-content,
