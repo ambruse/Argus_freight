@@ -358,7 +358,7 @@ export default function CustomerRFQListPage() {
               {/* Path and Routing Info */}
               <div className="py-2 border-y border-white/[0.04] space-y-1">
                 <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                  <span className="truncate max-w-[140px]">{s.pol || "—"}</span>
+                  <span className="truncate max-w-[140px]">{s.pod || "—"}</span>
                   <span className="text-muted/50 font-normal">→</span>
                   <span className="truncate max-w-[140px]">{s.pod || "—"}</span>
                 </div>
