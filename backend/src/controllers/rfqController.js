@@ -4,7 +4,7 @@
 //  collision retries, and sending emails via nodemailer.
 // ─────────────────────────────────────────────────────────────
 const db = require('../config/db');
-const { query } = require('../config/dbHelper');
+const { query, ensureUserTables } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
 const { decrypt } = require('../utils/crypto');
 const fs = require('fs');
@@ -126,8 +126,13 @@ const generateRfq = async (req, res, next) => {
         isLogged = true;
         shipmentData = result.rows[0];
 
-        // ── Clone shipment to operator sandbox & main shipments table ──────────
+        // ── Clone shipment to sales sandbox, operator sandbox & main shipments table ──────────
         const cleanOp = targetOp.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+        const cleanUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+
+        await ensureUserTables(cleanOp);
+        await ensureUserTables(cleanUser);
+
         if (cleanOp && cleanOp !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanOp} (
@@ -141,6 +146,23 @@ const generateRfq = async (req, res, next) => {
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               cleanOp
+            ]
+          );
+        }
+
+        if (cleanUser && cleanUser !== cleanOp) {
+          await db.query(
+            `INSERT INTO shipments_${cleanUser} (
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              container, mode, weight, pickup_address, delivery_address,
+              dear_who, email, status, note, customer_id, customer_name, customer_email, operator
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+             ON CONFLICT (ref_no) DO NOTHING`,
+            [
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              container, mode, weight || null, pickup_address, delivery_address,
+              dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
+              cleanOp || targetOp
             ]
           );
         }

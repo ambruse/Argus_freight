@@ -1,13 +1,48 @@
 // src/config/dbHelper.js
 const db = require('./db');
 
+const ensuredTables = new Set(['admin']);
+
+const ensureUserTables = async (username) => {
+  if (!username || username === 'admin') return;
+  const clean = username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+  if (ensuredTables.has(clean)) return;
+  try {
+    await db.query(`CREATE TABLE IF NOT EXISTS shipments_${clean} (LIKE shipments INCLUDING ALL)`);
+  } catch (e) {
+    try {
+      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${clean} LIKE shipments`);
+    } catch (err) {}
+  }
+  try {
+    await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${clean} (LIKE shipment_replies INCLUDING ALL)`);
+  } catch (e) {
+    try {
+      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${clean} LIKE shipment_replies`);
+    } catch (err) {}
+  }
+  try {
+    await db.query(`CREATE TABLE IF NOT EXISTS files_${clean} (LIKE files INCLUDING ALL)`);
+  } catch (e) {
+    try {
+      await db.query(`CREATE TABLE IF NOT EXISTS files_${clean} LIKE files`);
+    } catch (err) {}
+  }
+  ensuredTables.add(clean);
+};
+
 const getAllSuffixes = async () => {
   try {
     const res = await db.query(
-      `SELECT table_name FROM information_schema.tables 
-       WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
+      `SELECT LOWER(username) AS suffix FROM users`
     );
-    return res.rows.map(r => r.table_name.replace('shipments_', ''));
+    const dbTablesRes = await db.query(
+      `SELECT table_name FROM information_schema.tables 
+       WHERE table_name LIKE 'shipments_%'`
+    ).catch(() => ({ rows: [] }));
+    const dbSuffixes = (dbTablesRes.rows || []).map(r => r.table_name.replace('shipments_', ''));
+    const userSuffixes = res.rows.map(r => r.suffix.replace(/[^a-zA-Z0-9_]/g, ''));
+    return Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
   } catch (err) {
     console.error('Error fetching all suffixes:', err);
     return [];
@@ -17,12 +52,17 @@ const getAllSuffixes = async () => {
 const getOperatorSuffixes = async () => {
   try {
     const res = await db.query(
-      `SELECT table_name FROM information_schema.tables 
-       WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
+      `SELECT LOWER(username) AS suffix FROM users WHERE role = 'operator'`
     );
-    return res.rows
+    const dbTablesRes = await db.query(
+      `SELECT table_name FROM information_schema.tables 
+       WHERE table_name LIKE 'shipments_%'`
+    ).catch(() => ({ rows: [] }));
+    const dbSuffixes = (dbTablesRes.rows || [])
       .map(r => r.table_name.replace('shipments_', ''))
       .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats'));
+    const userSuffixes = res.rows.map(r => r.suffix.replace(/[^a-zA-Z0-9_]/g, ''));
+    return Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
   } catch (err) {
     console.error('Error fetching operator suffixes:', err);
     return [];
@@ -137,6 +177,9 @@ const query = async (req, sql, params) => {
     } else if (isSelect) {
       // Global SELECT query: Query UNION ALL across all tables
       const suffixes = await getOperatorSuffixes();
+      for (const suffix of suffixes) {
+        await ensureUserTables(suffix);
+      }
       
       let shipmentsUnion = `(SELECT * FROM shipments`;
       for (const suffix of suffixes) {
@@ -164,13 +207,14 @@ const query = async (req, sql, params) => {
       if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
          const globalShipmentsUnion = shipmentsUnion;
          const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+         await ensureUserTables(cleanRoleUser);
          const userSuffixes = suffixes.includes(cleanRoleUser) ? suffixes : [...suffixes, cleanRoleUser];
          
          // Wrap the whole query and filter by their shipments
-         // Since sql could be anything, we must be careful.
          // Prioritize operator sandboxes (1), then admin (2), then sales/customer fallback (3)
          let sUnion = `SELECT 2 as __p, * FROM shipments WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser})`;
          for (const suffix of userSuffixes) {
+           await ensureUserTables(suffix);
            sUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM shipments_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser})`;
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
@@ -199,6 +243,8 @@ const query = async (req, sql, params) => {
 
   // Non-admin or targeted admin query
   const cleanUsername = targetUser.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+  await ensureUserTables(cleanUsername);
+
   const tables = (targetUser === 'admin') ? {
     shipments: 'shipments',
     replies: 'shipment_replies',
@@ -217,4 +263,4 @@ const query = async (req, sql, params) => {
   return db.query(modifiedSql, params);
 };
 
-module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes };
+module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes, ensureUserTables };

@@ -4,9 +4,9 @@ import { User } from 'lucide-react';
 const TEAM_MEMBERS = [
   {
     id: 1,
-    name: 'Ahmed Al-Mansoori',
-    role: 'Managing Director & Partner',
-    bio: 'Ahmed leads our regional growth strategies, managing relations with governmental entities and global shipping alliances across GCC hubs.'
+    name: 'Hassan Salem al Dosari',
+    role: 'Chairman',
+    bio: 'Hassan leads our regional growth strategies, managing relations with governmental entities and global shipping alliances across GCC hubs.'
   },
   {
     id: 2,
