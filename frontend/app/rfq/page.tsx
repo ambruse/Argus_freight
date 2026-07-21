@@ -6,7 +6,7 @@
 //  • Click REF NO → clipboard copy + toast
 //  • Double-click row → detail modal with status editor
 // ─────────────────────────────────────────────────────────────
-import { useEffect, useState, useCallback, Fragment } from "react";
+import { useEffect, useState, useCallback, useRef, Fragment } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Badge from "@/components/ui/Badge";
 import RFQDetailModal from "@/components/modals/RFQDetailModal";
@@ -66,8 +66,12 @@ export default function RFQPage() {
   // Hydration guard: mark user as loaded
   useEffect(() => { setUserHydrated(true); }, [user]);
 
-  const userRole = user?.role?.toLowerCase();
-  const isAdminOrOperator = userHydrated && (userRole === 'admin' || userRole === 'operator');
+  const isAdminOrOperator = userHydrated && (user?.role === 'admin' || user?.role === 'operator');
+
+  // Double-click detection
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastClickedRef = useRef<string | null>(null);
+  const lastClickedGroupRef = useRef<string | null>(null);
 
   // Expanded groups state (tracks base prefixes that are expanded)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -88,18 +92,17 @@ export default function RFQPage() {
     if (originalShipments.length === 0) return basePrefix;
     
     const sorted = [...originalShipments].sort((a, b) => {
-      const aMatch = a.ref_no.match(/-(\d+)$/);
-      const bMatch = b.ref_no.match(/-(\d+)$/);
-      const aSeq = aMatch ? parseInt(aMatch[1]) : 0;
-      const bSeq = bMatch ? parseInt(bMatch[1]) : 0;
-      return aSeq - bSeq;
+      return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
     });
 
-    const firstMatch = sorted[0].ref_no.match(/-(\d+)$/);
-    const lastMatch = sorted[sorted.length - 1].ref_no.match(/-(\d+)$/);
+    const firstRef = sorted[0].ref_no;
+    const lastRef = sorted[sorted.length - 1].ref_no;
 
-    const firstSeq = firstMatch ? firstMatch[1] : "01";
-    const lastSeq = lastMatch ? parseInt(lastMatch[1]).toString() : "1";
+    const firstSeqMatch = firstRef.match(/-(\d+)/);
+    const lastSeqMatch = lastRef.match(/-(\d+)/);
+
+    const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
+    const lastSeq = lastSeqMatch ? lastSeqMatch[1] : `${sorted.length}`;
 
     return `${basePrefix}-${firstSeq}-${lastSeq}`;
   };
@@ -199,14 +202,46 @@ export default function RFQPage() {
     }
   };
 
-  // ── Row double-click handlers (using native onDoubleClick) ──
-  const handleRowDoubleClick = (shipment: Shipment) => {
-    setSelected(shipment);
-    setModalOpen(true);
+  // ── Row click / double-click handler ───────────────────────
+  const handleRowClick = (shipment: Shipment) => {
+    if (clickTimerRef.current && lastClickedRef.current === shipment.ref_no) {
+      // Double-click detected
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      lastClickedRef.current = null;
+      setSelected(shipment);
+      setModalOpen(true);
+    } else {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+      lastClickedRef.current = shipment.ref_no;
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null;
+        lastClickedRef.current = null;
+        // Single click — no-op (double click opens modal)
+      }, 250);
+    }
   };
 
-  const handleGroupRowDoubleClick = (basePrefix: string) => {
-    toggleGroup(basePrefix);
+  const handleGroupRowClick = (basePrefix: string) => {
+    if (clickTimerRef.current && lastClickedGroupRef.current === basePrefix) {
+      // Double-click detected
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      lastClickedGroupRef.current = null;
+      toggleGroup(basePrefix);
+    } else {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+      lastClickedGroupRef.current = basePrefix;
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null;
+        lastClickedGroupRef.current = null;
+        // Single click — no-op
+      }, 250);
+    }
   };
 
   // ── Status update from modal ────────────────────────────────
@@ -261,14 +296,12 @@ export default function RFQPage() {
   };
 
   // ── Grouping & Filtering ─────────────────────────────────────
-  // 1. Group the raw shipments (only for Admin and Operator roles)
+  // 1. Group the raw shipments
   const groupedItems = (() => {
-    if (!isAdminOrOperator) {
-      return shipments;
-    }
     const groups: { [key: string]: Shipment[] } = {};
     shipments.forEach(s => {
-      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(.*)$/);
+      // Matches ref_no like 21OW07IQ26-01, 21OW07IQ26-02 or any PREFIX-XX
+      const match = s.ref_no.match(/^([A-Za-z0-9]+)-(\d+.*)$/);
       if (match) {
         const base = match[1];
         if (!groups[base]) {
@@ -282,18 +315,14 @@ export default function RFQPage() {
     const processedGroups = new Set<string>();
 
     shipments.forEach(s => {
-      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(.*)$/);
+      const match = s.ref_no.match(/^([A-Za-z0-9]+)-(\d+.*)$/);
       if (match) {
         const base = match[1];
         if (groups[base].length > 1) {
           if (!processedGroups.has(base)) {
             processedGroups.add(base);
             const sortedGroup = [...groups[base]].sort((a, b) => {
-              const aMatch = a.ref_no.match(/-(\d+)$/);
-              const bMatch = b.ref_no.match(/-(\d+)$/);
-              const aSeq = aMatch ? parseInt(aMatch[1]) : 0;
-              const bSeq = bMatch ? parseInt(bMatch[1]) : 0;
-              return aSeq - bSeq;
+              return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
             });
             items.push({
               isGroup: true,
@@ -504,36 +533,25 @@ export default function RFQPage() {
                     return (
                       <Fragment key={item.basePrefix}>
                       <tr
-                        onDoubleClick={() => handleGroupRowDoubleClick(item.basePrefix)}
+                        onClick={() => handleGroupRowClick(item.basePrefix)}
                         className="cursor-pointer bg-amber/[0.04] hover:bg-amber/[0.07] transition-colors border-l-2 border-amber/40"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title="Double-click to expand/collapse group"
                       >
                         <td>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleGroup(item.basePrefix);
-                              }}
-                              className="px-1.5 py-0.5 text-[11px] font-bold text-amber hover:text-amber-bright rounded bg-amber/10 hover:bg-amber/20 border border-amber/20 transition-all shrink-0"
-                              title={isExpanded ? "Collapse Group" : "Expand Group"}
-                            >
-                              {isExpanded ? "▲" : "▼"}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                copyRefNo(e, groupLabel);
-                              }}
-                              className="font-mono text-xs font-bold text-amber hover:text-amber-bright
-                                         px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
-                                         transition-all duration-150 group relative inline-flex items-center gap-1.5"
-                              title="Click to copy REF NO"
-                            >
-                              <span>{groupLabel}</span>
-                            </button>
-                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyRefNo(e, groupLabel);
+                            }}
+                            className="font-mono text-xs font-bold text-amber hover:text-amber-bright
+                                       px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
+                                       transition-all duration-150 group relative inline-flex items-center gap-1.5"
+                            title="Click to copy REF NO"
+                          >
+                            <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>
+                            <span>{groupLabel}</span>
+                          </button>
                         </td>
                         <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
                           {firstShipment.cust_req_no ?? "—"}
@@ -595,7 +613,7 @@ export default function RFQPage() {
                       {isExpanded && item.shipments.map((cs, cidx) => (
                         <tr
                           key={cs.ref_no}
-                          onDoubleClick={() => handleRowDoubleClick(cs)}
+                          onClick={() => handleRowClick(cs)}
                           className="cursor-pointer bg-white/[0.01] hover:bg-white/[0.04] transition-colors border-l-4 border-amber/20"
                           title="Double-click to open details"
                         >
@@ -668,7 +686,7 @@ export default function RFQPage() {
                     return (
                       <tr
                         key={s.ref_no}
-                        onDoubleClick={() => handleRowDoubleClick(s)}
+                        onClick={() => handleRowClick(s)}
                         className="cursor-pointer"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title="Double-click to open details"
