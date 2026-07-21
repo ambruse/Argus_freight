@@ -181,28 +181,7 @@ const query = async (req, sql, params) => {
         await ensureUserTables(suffix);
       }
       
-      let shipmentsUnion = `(SELECT * FROM shipments`;
-      for (const suffix of suffixes) {
-        shipmentsUnion += ` UNION ALL SELECT * FROM shipments_${suffix}`;
-      }
-      shipmentsUnion += `)`;
-
-      let repliesUnion = `(SELECT * FROM shipment_replies`;
-      for (const suffix of suffixes) {
-        repliesUnion += ` UNION ALL SELECT * FROM shipment_replies_${suffix}`;
-      }
-      repliesUnion += `)`;
-
-      let filesUnion = `(SELECT * FROM files`;
-      for (const suffix of suffixes) {
-        filesUnion += ` UNION ALL SELECT * FROM files_${suffix}`;
-      }
-      filesUnion += `)`;
-
-      let modifiedSql = sql
-        .replace(/\bshipments\b/g, shipmentsUnion)
-        .replace(/\bshipment_replies\b/g, repliesUnion)
-        .replace(/\bfiles\b/g, filesUnion);
+      let shipmentsUnion, repliesUnion, filesUnion;
 
       if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
          const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
@@ -227,23 +206,47 @@ const query = async (req, sql, params) => {
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
-         let rUnion = `SELECT 2 as __p, * FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
+         let rUnion = `SELECT 2 as __p, * FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
+           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
-         let fUnion = `SELECT 2 as __p, * FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
+         let fUnion = `SELECT 2 as __p, * FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
+           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
-         
-         modifiedSql = sql
-           .replace(/\bshipments\b/g, shipmentsUnion)
-           .replace(/\bshipment_replies\b/g, repliesUnion)
-           .replace(/\bfiles\b/g, filesUnion);
+      } else {
+         shipmentsUnion = `(SELECT * FROM shipments`;
+         for (const suffix of suffixes) {
+           shipmentsUnion += ` UNION ALL SELECT * FROM shipments_${suffix}`;
+         }
+         shipmentsUnion += `)`;
+
+         repliesUnion = `(SELECT * FROM shipment_replies`;
+         for (const suffix of suffixes) {
+           repliesUnion += ` UNION ALL SELECT * FROM shipment_replies_${suffix}`;
+         }
+         repliesUnion += `)`;
+
+         filesUnion = `(SELECT * FROM files`;
+         for (const suffix of suffixes) {
+           filesUnion += ` UNION ALL SELECT * FROM files_${suffix}`;
+         }
+         filesUnion += `)`;
       }
+
+      // Safe placeholder substitution to prevent recursive regex loops
+      let modifiedSql = sql
+        .replace(/\bshipment_replies\b/g, '___REPLIES___')
+        .replace(/\bfiles\b/g, '___FILES___')
+        .replace(/\bshipments\b/g, '___SHIPMENTS___');
+
+      modifiedSql = modifiedSql
+        .replace(/___REPLIES___/g, repliesUnion)
+        .replace(/___FILES___/g, filesUnion)
+        .replace(/___SHIPMENTS___/g, shipmentsUnion);
 
       return db.query(modifiedSql, params);
     }
