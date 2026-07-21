@@ -141,6 +141,15 @@ export default function CustomerRFQListPage() {
       .some((v) => v?.toLowerCase().includes(q));
   });
 
+    // Inside your component function, before the return:
+  const renderFirstWord = (value: string | null | undefined) => {
+    if (!value) return "—";
+    
+    // Convert to string, trim spaces, and split by whitespace
+    const words = String(value).trim().split(/\s+/);
+    return words.length > 0 && words[0] !== "" ? words[0] : "—";
+  };
+
   const fmtFollowUp = (val: string) => {
     try {
       const d = parseISO(val);
@@ -257,7 +266,7 @@ export default function CustomerRFQListPage() {
                       </button>
                     </td>
                     <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
-                    <td>{s.pol ? s.pol.trim().split(/\s+/)[0] : "—"}</td>
+                    {/* <td>{renderFirstWord(s.pol)}</td> */}
                     <td>{s.pod ?? "—"}</td>
                     <td className="max-w-[140px] truncate">{s.commodity ?? "—"}</td>
                     <td>

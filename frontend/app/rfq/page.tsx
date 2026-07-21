@@ -408,6 +408,14 @@ export default function RFQPage() {
     } catch { return "—"; }
   };
 
+    // Inside your component function, before the return:
+  const renderFirstWord = (value: string | null | undefined) => {
+    if (!value) return "—";
+    
+    // Convert to string, trim spaces, and split by whitespace
+    const words = String(value).trim().split(/\s+/);
+    return words.length > 0 && words[0] !== "" ? words[0] : "—";
+  };
   return (
     <AppLayout
       title="Sent RFQs"
@@ -721,7 +729,7 @@ export default function RFQPage() {
                         {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{s.refer_by || "—"}</td>
                         )}
-                        <td>{s.pol ? s.pol.trim().split(/\s+/)[0] : "—"}</td>
+                        {/* <td>{renderFirstWord(s.pol)}</td> */}
                         <td title={s.pod ?? "—"}>{getFirstWord(s.pod)}</td>
                         <td className="max-w-[140px] truncate">{s.commodity ?? "—"}</td>
                         <td>
