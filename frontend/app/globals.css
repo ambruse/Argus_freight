@@ -701,15 +701,39 @@ input[type="number"] {
 }
 
 @media (max-width: 900px) {
-  .hero-grid {
-    grid-template-columns: 1fr !important;
-    text-align: center !important;
-    justify-items: center !important;
+  .hero-section {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
     align-items: center !important;
-    gap: 2rem !important;
-    padding: 2rem 0 !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 2rem 1rem !important;
+    box-sizing: border-box !important;
   }
-  
+
+  .hero-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 1.5rem !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+  }
+
+  .hero-grid > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
   .hero-subtitle {
     margin-left: auto !important;
     margin-right: auto !important;
@@ -717,24 +741,33 @@ input[type="number"] {
 
   .hero-description {
     font-size: 0.8rem !important;
-    max-width: 75% !important;
+    max-width: 85% !important;
     margin-left: auto !important;
     margin-right: auto !important;
     text-align: center !important;
+    line-height: 1.5 !important;
+    margin-bottom: 1.25rem !important;
   }
 
   .slider-graphics {
     display: flex !important;
-    transform: scale(0.75) !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transform: scale(0.65) !important;
     transform-origin: center center !important;
-    margin-top: -2rem !important;
-    margin-bottom: -2rem !important;
+    margin-top: -3.5rem !important;
+    margin-bottom: -3.5rem !important;
     margin-left: auto !important;
     margin-right: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .hero-actions {
+    display: flex !important;
     justify-content: center !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
     margin-left: auto !important;
     margin-right: auto !important;
     width: 100% !important;
