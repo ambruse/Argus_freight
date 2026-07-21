@@ -167,6 +167,24 @@ const getAllShipments = async (req, res, next) => {
     );
 
     let rows = result.rows;
+    // De-duplicate rows by ref_no (case-insensitive) prioritizing operator sandboxes over admin
+    const uniqueMap = new Map();
+    rows.forEach(row => {
+      if (!row.ref_no) return;
+      const ref = row.ref_no.toLowerCase();
+      if (!uniqueMap.has(ref)) {
+        uniqueMap.set(ref, row);
+      } else {
+        const existing = uniqueMap.get(ref);
+        const existingOp = String(existing.operator || '').toLowerCase();
+        const rowOp = String(row.operator || '').toLowerCase();
+        if (existingOp === 'admin' && rowOp !== 'admin') {
+          uniqueMap.set(ref, row);
+        }
+      }
+    });
+    rows = Array.from(uniqueMap.values());
+
     if (req.user && req.user.role === 'customer') {
       rows = rows.map(r => ({
         ...r,

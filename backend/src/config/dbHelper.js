@@ -16,16 +16,13 @@ const getAllSuffixes = async () => {
 
 const getOperatorSuffixes = async () => {
   try {
-    const usersRes = await db.query("SELECT username FROM users WHERE role = 'operator'");
-    const opUsernames = usersRes.rows.map(r => r.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase());
-    
-    const tablesRes = await db.query(
+    const res = await db.query(
       `SELECT table_name FROM information_schema.tables 
        WHERE table_schema = 'public' AND table_name LIKE 'shipments_%'`
     );
-    const allSuffixes = tablesRes.rows.map(r => r.table_name.replace('shipments_', ''));
-    
-    return allSuffixes.filter(suffix => opUsernames.includes(suffix));
+    return res.rows
+      .map(r => r.table_name.replace('shipments_', ''))
+      .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats'));
   } catch (err) {
     console.error('Error fetching operator suffixes:', err);
     return [];

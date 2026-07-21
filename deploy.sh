@@ -54,6 +54,11 @@ npm install --legacy-peer-deps 2>&1 | tail -5
 npm run build:landing 2>&1 | tail -10
 echo "✅  Landing page built → dist/"
 
+# Merge landing page build into frontend/out static export directory
+echo "▶ Merging landing page build into frontend/out..."
+node scripts/merge-build.cjs
+echo "✅  Merge complete."
+
 # ── 4. Copy/Merge .htaccess to public_html ───────────────────
 echo ""
 echo "▶ [4/4] Deploying .htaccess to public_html..."
