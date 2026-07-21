@@ -286,8 +286,9 @@ export default function QuotationPage() {
         });
       }
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "An error occurred during quotation generation.");
+      console.error("Quotation generation error:", err);
+      const errMsg = err.response?.data?.message || err.message || "An error occurred during quotation generation.";
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
