@@ -14,20 +14,17 @@ if (!fs.existsSync(outDir)) {
   process.exit(1);
 }
 
-// 1. Copy dist/index.html to frontend/out/index.html (overwriting Next.js blank index)
-fs.copyFileSync(
-  path.join(distDir, 'index.html'),
-  path.join(outDir, 'index.html')
-);
+// 1. Read dist/index.html
+const indexHtmlContent = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');
+
+// Write to frontend/out/index.html
+fs.writeFileSync(path.join(outDir, 'index.html'), indexHtmlContent, 'utf-8');
 console.log('✓ Overwrote frontend/out/index.html with landing page index.html');
 
 // 2. Create static copies of index.html for other landing routes
 const landingRoutes = ['about', 'services', 'why-us', 'team', 'contact', 'chairman-message'];
 landingRoutes.forEach(route => {
-  fs.copyFileSync(
-    path.join(distDir, 'index.html'),
-    path.join(outDir, `${route}.html`)
-  );
+  fs.writeFileSync(path.join(outDir, `${route}.html`), indexHtmlContent, 'utf-8');
   console.log(`✓ Created frontend/out/${route}.html`);
 });
 

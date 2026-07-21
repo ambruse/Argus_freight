@@ -2673,8 +2673,8 @@ body.light-theme .footer-location-card:hover {
     align-items: center !important;
     transform: scale(0.65) !important;
     transform-origin: center center !important;
-    margin-top: -3.5rem !important;
-    margin-bottom: -3.5rem !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
     margin-left: auto !important;
     margin-right: auto !important;
     width: 100% !important;
