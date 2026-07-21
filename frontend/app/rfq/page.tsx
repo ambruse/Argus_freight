@@ -102,7 +102,12 @@ export default function RFQPage() {
     const lastSeqMatch = lastRef.match(/-(\d+)/);
 
     const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
-    const lastSeq = lastSeqMatch ? lastSeqMatch[1] : `${sorted.length}`;
+    let lastSeq = lastSeqMatch ? lastSeqMatch[1] : `${sorted.length}`;
+
+    // If both matches yield single-digit integers or formatted sequence, format range correctly
+    if (firstSeqMatch && lastSeqMatch && firstSeq === lastSeq) {
+      lastSeq = String(sorted.length);
+    }
 
     return `${basePrefix}-${firstSeq}-${lastSeq}`;
   };
@@ -299,11 +304,16 @@ export default function RFQPage() {
   // 1. Group the raw shipments
   const groupedItems = (() => {
     const groups: { [key: string]: Shipment[] } = {};
+    
+    // Extract base prefix (e.g. 21IL07CV26 from 21IL07CV26-01-2 or 21IL07CV26-01)
+    const getBasePrefix = (refNo: string) => {
+      const idx = refNo.indexOf('-');
+      return idx !== -1 ? refNo.substring(0, idx) : refNo;
+    };
+
     shipments.forEach(s => {
-      // Matches ref_no like 21OW07IQ26-01, 21OW07IQ26-02 or any PREFIX-XX
-      const match = s.ref_no.match(/^([A-Za-z0-9]+)-(\d+.*)$/);
-      if (match) {
-        const base = match[1];
+      const base = getBasePrefix(s.ref_no);
+      if (base && base !== s.ref_no) {
         if (!groups[base]) {
           groups[base] = [];
         }
@@ -315,24 +325,19 @@ export default function RFQPage() {
     const processedGroups = new Set<string>();
 
     shipments.forEach(s => {
-      const match = s.ref_no.match(/^([A-Za-z0-9]+)-(\d+.*)$/);
-      if (match) {
-        const base = match[1];
-        if (groups[base].length > 1) {
-          if (!processedGroups.has(base)) {
-            processedGroups.add(base);
-            const sortedGroup = [...groups[base]].sort((a, b) => {
-              return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
-            });
-            items.push({
-              isGroup: true,
-              basePrefix: base,
-              shipments: sortedGroup,
-              originalShipments: sortedGroup
-            });
-          }
-        } else {
-          items.push(s);
+      const base = getBasePrefix(s.ref_no);
+      if (base && groups[base] && groups[base].length > 1) {
+        if (!processedGroups.has(base)) {
+          processedGroups.add(base);
+          const sortedGroup = [...groups[base]].sort((a, b) => {
+            return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
+          });
+          items.push({
+            isGroup: true,
+            basePrefix: base,
+            shipments: sortedGroup,
+            originalShipments: sortedGroup
+          });
         }
       } else {
         items.push(s);
