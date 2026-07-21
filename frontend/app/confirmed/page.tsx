@@ -352,7 +352,7 @@ export default function ConfirmedPage() {
                       <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
                       <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(s.customer_id, s.customer_name)}</td>
                       <td className="text-xs text-muted/90">{s.dear_who ?? "—"}</td>
-                      <td>{s.pol ?? "—"}</td>
+                      <td>{s.pol ? s.pol.trim().split(' ')[0] : "—"}</td>
                       <td>{s.pod ?? "—"}</td>
                       <td>{s.commodity ?? "—"}</td>
                       <td>{s.carrier ?? "—"}</td>

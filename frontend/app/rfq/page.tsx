@@ -721,7 +721,7 @@ export default function RFQPage() {
                         {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{s.refer_by || "—"}</td>
                         )}
-                        <td title={s.pol ?? "—"}>{getFirstWord(s.pol)}</td>
+                        <td>{s.pol ? s.pol.trim().split(' ')[0] : "—"}</td>
                         <td title={s.pod ?? "—"}>{getFirstWord(s.pod)}</td>
                         <td className="max-w-[140px] truncate">{s.commodity ?? "—"}</td>
                         <td>
