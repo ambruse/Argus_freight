@@ -148,7 +148,7 @@ const generateCustomerRfq = async (req, res, next) => {
         });
       }
 
-      const lastOpRes = await db.query("SELECT value FROM app_settings WHERE key = 'last_assigned_operator_id'");
+      const lastOpRes = await db.query("SELECT value FROM app_settings WHERE `key` = 'last_assigned_operator_id'");
       let lastOpId = lastOpRes.rows[0]?.value ? parseInt(lastOpRes.rows[0].value, 10) : 0;
 
       let selectedOp = opRes.rows[0];
@@ -161,7 +161,7 @@ const generateCustomerRfq = async (req, res, next) => {
 
       // Update the pointer
       await db.query(
-        "INSERT INTO app_settings (key, value) VALUES ('last_assigned_operator_id', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+        "INSERT INTO app_settings (`key`, value) VALUES ('last_assigned_operator_id', $1) ON CONFLICT (`key`) DO UPDATE SET value = EXCLUDED.value",
         [selectedOp.id.toString()]
       );
 

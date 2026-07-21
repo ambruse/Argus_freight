@@ -44,7 +44,7 @@ const generateQuotation = async (req, res, next) => {
     let q_no = '';
     if (is_draft) {
       // Check if draft mode is globally enabled
-      const draftSettingRes = await db.query("SELECT value FROM app_settings WHERE key = $1", ['quotation_draft_mode_enabled']);
+      const draftSettingRes = await db.query("SELECT value FROM app_settings WHERE `key` = $1", ['quotation_draft_mode_enabled']);
       const isDraftGloballyEnabled = draftSettingRes.rows.length > 0 && draftSettingRes.rows[0].value === 'true';
       if (!isDraftGloballyEnabled) {
         return res.status(400).json({ success: false, message: 'Draft mode is currently disabled globally by the Admin.' });
@@ -656,7 +656,7 @@ const disapproveQuotation = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 const getDraftSettings = async (req, res, next) => {
   try {
-    const result = await db.query("SELECT value FROM app_settings WHERE key = $1", ['quotation_draft_mode_enabled']);
+    const result = await db.query("SELECT value FROM app_settings WHERE `key` = $1", ['quotation_draft_mode_enabled']);
     let enabled = false;
     if (result.rows.length > 0) {
       enabled = result.rows[0].value === 'true';
@@ -679,9 +679,9 @@ const updateDraftSettings = async (req, res, next) => {
     const { enabled } = req.body;
     const val = enabled === true || enabled === 'true' ? 'true' : 'false';
     await db.query(
-      `INSERT INTO app_settings (key, value) 
+      `INSERT INTO app_settings (\`key\`, value) 
        VALUES ('quotation_draft_mode_enabled', $1) 
-       ON CONFLICT (key) 
+       ON CONFLICT (\`key\`) 
        DO UPDATE SET value = EXCLUDED.value`,
       [val]
     );
