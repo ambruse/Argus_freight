@@ -29,6 +29,13 @@ const SkeletonRow = () => (
   </tr>
 );
 
+const formatCustIdName = (id?: string | null, name?: string | null) => {
+  if (id && name) return `${id} / ${name}`;
+  if (id) return id;
+  if (name) return name;
+  return "—";
+};
+
 export default function ConfirmedPage() {
   const { user } = useAuth();
 
@@ -274,10 +281,9 @@ export default function ConfirmedPage() {
               <tr>
                 <th>REF NO</th>
                 <th>RFQ NO</th>
-                <th>CUSTOMER NAME</th>
-                <th>DEAR WHO</th>
                 <th>OPERATOR</th>
-                <th>CUSTOMER ID</th>
+                <th>CUSTOMER ID/NAME</th>
+                <th>DEAR WHO</th>
                 <th>POL</th>
                 <th>POD</th>
                 <th>COMMODITY</th>
@@ -343,10 +349,9 @@ export default function ConfirmedPage() {
                           "—"
                         )}
                       </td>
-                      <td className="text-xs font-medium">{s.customer_name ?? "—"}</td>
-                      <td className="text-xs text-muted/90">{s.dear_who ?? "—"}</td>
                       <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
-                      <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{s.customer_id ?? "—"}</td>
+                      <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(s.customer_id, s.customer_name)}</td>
+                      <td className="text-xs text-muted/90">{s.dear_who ?? "—"}</td>
                       <td>{s.pol ?? "—"}</td>
                       <td>{s.pod ?? "—"}</td>
                       <td>{s.commodity ?? "—"}</td>

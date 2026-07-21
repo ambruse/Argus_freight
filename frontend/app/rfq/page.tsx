@@ -18,6 +18,8 @@ import toast from "react-hot-toast";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { exportShipmentsToExcel } from "@/lib/exportExcel";
 
+import { useAuth } from "@/hooks/useAuth";
+
 // ── Skeleton Row ──────────────────────────────────────────────
 const SkeletonRow = () => (
   <tr className="border-b border-white/[0.04]">
@@ -29,7 +31,23 @@ const SkeletonRow = () => (
   </tr>
 );
 
+const formatCustIdName = (id?: string | null, name?: string | null) => {
+  if (id && name) return `${id} / ${name}`;
+  if (id) return id;
+  if (name) return name;
+  return "—";
+};
+
+const getFirstWord = (str?: string | null) => {
+  if (!str) return "—";
+  const trimmed = str.trim();
+  if (!trimmed) return "—";
+  const first = trimmed.split(/\s+/)[0];
+  return first ? first.replace(/[,;]$/, '') : "—";
+};
+
 export default function RFQPage() {
+  const { user } = useAuth();
   const [shipments,  setShipments]  = useState<Shipment[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [search,     setSearch]     = useState("");
@@ -463,8 +481,9 @@ export default function RFQPage() {
                 <th>REF NO</th>
                 <th>CUST REQ NO</th>
                 <th>OPERATOR</th>
-                <th>CUSTOMER ID</th>
+                <th>CUSTOMER ID/NAME</th>
                 <th>DEAR WHO</th>
+                {(user?.role === 'admin' || user?.role === 'operator') && <th>SALES</th>}
                 <th>POL</th>
                 <th>POD</th>
                 <th>COMMODITY</th>
@@ -482,7 +501,7 @@ export default function RFQPage() {
                 Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="text-center py-16 text-muted">
+                  <td colSpan={(user?.role === 'admin' || user?.role === 'operator') ? 16 : 15} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📭</p>
                       <p className="text-sm">No RFQ records found.</p>
@@ -533,10 +552,13 @@ export default function RFQPage() {
                           {firstShipment.cust_req_no ?? "—"}
                         </td>
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
-                        <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{firstShipment.customer_id ?? "—"}</td>
+                        <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(firstShipment.customer_id, firstShipment.customer_name)}</td>
                         <td>{firstShipment.dear_who ?? "—"}</td>
-                        <td>{firstShipment.pol ?? "—"}</td>
-                        <td>{firstShipment.pod ?? "—"}</td>
+                        {(user?.role === 'admin' || user?.role === 'operator') && (
+                          <td className="text-xs font-semibold text-amber bg-white/[0.02]">{firstShipment.refer_by || "—"}</td>
+                        )}
+                        <td title={firstShipment.pol ?? "—"}>{getFirstWord(firstShipment.pol)}</td>
+                        <td title={firstShipment.pod ?? "—"}>{getFirstWord(firstShipment.pod)}</td>
                         <td className="max-w-[140px] truncate">{firstShipment.commodity ?? "—"}</td>
                         <td>
                           <span className="text-xs font-semibold text-muted uppercase">{firstShipment.mode ?? "—"}</span>
@@ -614,10 +636,13 @@ export default function RFQPage() {
                           {s.cust_req_no ?? "—"}
                         </td>
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
-                        <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{s.customer_id ?? "—"}</td>
+                        <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(s.customer_id, s.customer_name)}</td>
                         <td>{s.dear_who ?? "—"}</td>
-                        <td>{s.pol ?? "—"}</td>
-                        <td>{s.pod ?? "—"}</td>
+                        {(user?.role === 'admin' || user?.role === 'operator') && (
+                          <td className="text-xs font-semibold text-amber bg-white/[0.02]">{s.refer_by || "—"}</td>
+                        )}
+                        <td title={s.pol ?? "—"}>{getFirstWord(s.pol)}</td>
+                        <td title={s.pod ?? "—"}>{getFirstWord(s.pod)}</td>
                         <td className="max-w-[140px] truncate">{s.commodity ?? "—"}</td>
                         <td>
                           <span className="text-xs font-semibold text-muted uppercase">{s.mode ?? "—"}</span>
