@@ -647,19 +647,19 @@ input[type="number"] {
 
 @media (max-width: 900px) {
   .hero-logo-img {
-    width: clamp(180px, 60vw, 340px) !important;
+    width: clamp(135px, 45vw, 255px) !important;
   }
 }
 
 @media (max-width: 520px) {
   .hero-logo-img {
-    width: clamp(140px, 75vw, 260px) !important;
+    width: clamp(105px, 56vw, 195px) !important;
   }
 }
 
 @media (max-width: 380px) {
   .hero-logo-img {
-    width: clamp(120px, 80vw, 210px) !important;
+    width: clamp(90px, 60vw, 155px) !important;
   }
 }
 
@@ -716,9 +716,21 @@ input[type="number"] {
   }
 
   .hero-description {
+    font-size: 0.8rem !important;
+    max-width: 75% !important;
     margin-left: auto !important;
     margin-right: auto !important;
     text-align: center !important;
+  }
+
+  .slider-graphics {
+    display: flex !important;
+    transform: scale(0.75) !important;
+    transform-origin: center center !important;
+    margin-top: -2rem !important;
+    margin-bottom: -2rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .hero-actions {
@@ -729,11 +741,16 @@ input[type="number"] {
   }
 
   .hero-stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
     justify-content: center !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    gap: 1.5rem !important;
-    width: 100% !important;
+    padding-top: 1.5rem !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -756,12 +773,16 @@ input[type="number"] {
   }
 
   .hero-stats {
-    gap: 1.25rem !important;
-    justify-content: space-around !important;
+    gap: 0.35rem !important;
   }
 
   .hero-stat-value {
-    font-size: 1.5rem !important;
+    font-size: 1.25rem !important;
+  }
+
+  .hero-stat-label {
+    font-size: 0.6rem !important;
+    letter-spacing: 0.02em !important;
   }
 }
 
