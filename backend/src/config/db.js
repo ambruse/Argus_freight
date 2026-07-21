@@ -136,7 +136,7 @@ const query = async (text, params = []) => {
   }
 
   try {
-    const [result] = await pool.execute(mysqlSQL, cleanParams);
+    const [result] = await pool.query(mysqlSQL, cleanParams);
 
     if (!hasReturning) {
       return { rows: Array.isArray(result) ? result : [] };

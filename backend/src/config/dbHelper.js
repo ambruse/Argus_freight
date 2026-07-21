@@ -205,29 +205,37 @@ const query = async (req, sql, params) => {
         .replace(/\bfiles\b/g, filesUnion);
 
       if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
-         const globalShipmentsUnion = shipmentsUnion;
          const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
          await ensureUserTables(cleanRoleUser);
          const userSuffixes = suffixes.includes(cleanRoleUser) ? suffixes : [...suffixes, cleanRoleUser];
          
-         // Wrap the whole query and filter by their shipments
+         const safeUser = cleanRoleUser;
+         const safeName = (req.user.name || '').replace(/'/g, "''");
+         const safeUsername = (req.user.username || '').replace(/'/g, "''");
+
+         const userFilter = `(
+           ref_no IN (SELECT ref_no FROM shipments_${safeUser}) OR 
+           LOWER(refer_by) = LOWER('${safeUsername}') OR 
+           LOWER(refer_by) = LOWER('${safeName}')
+         )`;
+
          // Prioritize operator sandboxes (1), then admin (2), then sales/customer fallback (3)
-         let sUnion = `SELECT 2 as __p, * FROM shipments WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser})`;
+         let sUnion = `SELECT 2 as __p, * FROM shipments WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
            await ensureUserTables(suffix);
-           sUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM shipments_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser})`;
+           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM shipments_${suffix} WHERE ${userFilter}`;
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
-         let rUnion = `SELECT 2 as __p, * FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+         let rUnion = `SELECT 2 as __p, * FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
          for (const suffix of userSuffixes) {
-           rUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
          }
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
-         let fUnion = `SELECT 2 as __p, * FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+         let fUnion = `SELECT 2 as __p, * FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
          for (const suffix of userSuffixes) {
-           fUnion += ` UNION ALL SELECT ${suffix === cleanRoleUser ? 3 : 1} as __p, * FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${cleanRoleUser} UNION SELECT ref_no FROM ${globalShipmentsUnion} tmp WHERE cust_req_no IN (SELECT ref_no FROM shipments_${cleanRoleUser}))`;
+           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, * FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM ${shipmentsUnion} _su)`;
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
          
