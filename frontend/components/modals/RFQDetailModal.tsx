@@ -571,7 +571,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       )}
 
       {/* ── Email Replies ───────────────────────────────── */}
-      {user?.role !== "customer" && (
+      {user?.role !== "customer" && !isSales && (
         <div className="border-t border-white/[0.06] pt-5 mb-6">
           <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">Email Replies</p>
           {loadingReplies ? (
@@ -681,7 +681,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       )}
 
       {/* Chat Box Section */}
-      {shipment.customer_id && shipment.cust_req_no && (
+      {!isSales && shipment.customer_id && shipment.cust_req_no && (
         <div className="border-t border-white/[0.06] pt-5 mb-6">
           <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">
             {user?.role === "customer" ? "💬 Chat with Operator" : "💬 Chat with Customer"}
@@ -752,7 +752,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       )}
 
       {/* ── Edit Status & Financials ───────────────────── */}
-      {user?.role !== "customer" && (
+      {user?.role !== "customer" && !isSales && (
         <div className="border-t border-white/[0.06] pt-5">
           <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">
             {isSales ? "Update Status & Financials" : "Edit Status"}

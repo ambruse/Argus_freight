@@ -70,6 +70,8 @@ export interface Shipment {
   replies_count?:   number | string;
   unread_replies_count?: number | string;
   unread_chat_count?: number | string;
+  displayRefNo?:    string;
+  groupShipments?:  Shipment[];
 }
 
 export interface ShipmentFile {

@@ -284,8 +284,8 @@ export default function CustomerBookPage() {
 
         {/* ── Details View Modal ────────────────────────────────── */}
         {isDetailsModalOpen && detailedCustomer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative animate-zoom-in space-y-6">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+            <div className="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative animate-zoom-in space-y-6 z-[100000]">
               <button
                 onClick={() => setIsDetailsModalOpen(false)}
                 className="absolute top-4 right-4 text-muted hover:text-primary transition-colors text-lg"
@@ -350,8 +350,8 @@ export default function CustomerBookPage() {
 
         {/* ── Admin Edit Modal ──────────────────────────────────── */}
         {isEditModalOpen && selectedCustomer && isAdmin && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative animate-zoom-in space-y-6">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+            <div className="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative animate-zoom-in space-y-6 z-[100000]">
               <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="absolute top-4 right-4 text-muted hover:text-primary transition-colors text-lg"
@@ -481,8 +481,8 @@ export default function CustomerBookPage() {
 
         {/* ── Add Customer Modal ─────────────────────────────────── */}
         {isAddModalOpen && user && ["admin", "operator", "sales"].includes(user.role) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative animate-zoom-in space-y-6">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+            <div className="glass w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl p-6 relative animate-zoom-in space-y-6 z-[100000]">
               <button
                 onClick={() => setIsAddModalOpen(false)}
                 className="absolute top-4 right-4 text-muted hover:text-primary transition-colors text-lg"

@@ -87,20 +87,12 @@ const generateRfq = async (req, res, next) => {
     // ── Resolve Operator Username (if sent by sales) ──────────
     let opUsername = null;
     if (req.user.role === 'sales' && operator) {
-      const opByUsername = await db.query(
-        "SELECT username FROM users WHERE LOWER(username) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+      const opCheck = await db.query(
+        "SELECT username FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
         [operator]
       );
-      if (opByUsername.rows.length > 0) {
-        opUsername = opByUsername.rows[0].username.toLowerCase();
-      } else {
-        const opUserCheck = await db.query(
-          "SELECT username FROM users WHERE LOWER(email_address) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
-          [operator]
-        );
-        if (opUserCheck.rows.length > 0) {
-          opUsername = opUserCheck.rows[0].username.toLowerCase();
-        }
+      if (opCheck.rows.length > 0) {
+        opUsername = opCheck.rows[0].username.toLowerCase();
       }
     }
 
@@ -114,6 +106,8 @@ const generateRfq = async (req, res, next) => {
       }
 
       try {
+        const targetOp = opUsername || operator || req.user.username;
+
         const result = await query(req,
           `INSERT INTO shipments (
             ref_no, refer_by, pol, pod, commodity, term, dimension,
@@ -126,17 +120,17 @@ const generateRfq = async (req, res, next) => {
             ref_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
-            (req.user.role === 'sales' && operator) ? (opUsername || operator) : req.user.username
+            targetOp
           ]
         );
         isLogged = true;
         shipmentData = result.rows[0];
 
-        // ── Clone shipment to respective operator sandbox ──────────
-        if (opUsername && opUsername !== req.user.username.toLowerCase()) {
-          const opTableName = opUsername === 'admin' ? 'shipments' : `shipments_${opUsername}`;
+        // ── Clone shipment to operator sandbox & main shipments table ──────────
+        const cleanOp = targetOp.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+        if (cleanOp && cleanOp !== 'admin') {
           await db.query(
-            `INSERT INTO ${opTableName} (
+            `INSERT INTO shipments_${cleanOp} (
               ref_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
@@ -146,10 +140,26 @@ const generateRfq = async (req, res, next) => {
               ref_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
-              opUsername || operator
+              cleanOp
             ]
           );
         }
+
+        // Also ensure main shipments table has a copy if query mapped to user sandbox
+        await db.query(
+          `INSERT INTO shipments (
+            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            container, mode, weight, pickup_address, delivery_address,
+            dear_who, email, status, note, customer_id, customer_name, customer_email, operator
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+           ON CONFLICT (ref_no) DO NOTHING`,
+          [
+            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            container, mode, weight || null, pickup_address, delivery_address,
+            dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
+            cleanOp || targetOp
+          ]
+        );
 
         // ── Auto-save contact to Address Book ──────────
         if (email) {
@@ -262,7 +272,7 @@ const sendRfqEmail = async (req, res, next) => {
       if (req.user.role === 'sales') {
         // Sales sends through the selected operator's email address or username
         const userRes = await db.query(
-          "SELECT id, email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+          "SELECT id, email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
           [shipment.operator]
         );
         if (userRes.rows.length > 0) {

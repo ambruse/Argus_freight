@@ -393,8 +393,8 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
     <Modal isOpen={isOpen} onClose={onClose} title={`Shipment — ${shipment.ref_no}`} size="xl">
       {/* ── Tab Bar ──────────────────────────────────────── */}
       <div className="flex gap-1 p-1 rounded-xl bg-surface-4 border border-white/[0.05] mb-6">
-        {(user?.role === "customer" 
-          ? (shipment.customer_id ? (["details", "chat"] as Tab[]) : (["details"] as Tab[]))
+        {(user?.role === "customer" || isSales
+          ? (shipment.customer_id && !isSales ? (["details", "chat"] as Tab[]) : (["details"] as Tab[]))
           : (shipment.customer_id ? (["details", "files", "emails", "chat"] as Tab[]) : (["details", "files", "emails"] as Tab[]))
         ).map((t) => (
           <button
@@ -510,6 +510,49 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   <InfoField label="Customer Name"  value={shipment.customer_name} />
                   <InfoField label="Customer Email" value={shipment.customer_email} />
                   <InfoField label="Track Status" value={shipment.track_status} />
+                </div>
+              )}
+
+              {isSales && (
+                <div className="mt-6 pt-4 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-end gap-3">
+                  <div className="flex-1 max-w-xs">
+                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                      Update Profit (QAR)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="input-sm w-full font-semibold text-emerald"
+                      value={editForm.profit ?? ""}
+                      onChange={editSet("profit")}
+                      placeholder="e.g. 500"
+                    />
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!shipment) return;
+                      const parsedProfit = editForm.profit !== "" && editForm.profit != null ? parseFloat(String(editForm.profit)) : null;
+                      setSaving(true);
+                      try {
+                        const { data } = await api.patch(`/shipments/${shipment.ref_no}/status`, {
+                          profit: parsedProfit,
+                        });
+                        toast.success("Profit updated successfully.");
+                        onUpdated({
+                          ...shipment,
+                          profit: data.data.profit,
+                        });
+                      } catch (err: any) {
+                        toast.error(err?.response?.data?.message ?? "Failed to update profit.");
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    disabled={saving}
+                    className="btn-primary text-xs px-5 py-2 shrink-0"
+                  >
+                    {saving ? "Saving..." : "✓ Save Profit"}
+                  </button>
                 </div>
               )}
             </div>

@@ -40,22 +40,29 @@ const getMetrics = async (req, res, next) => {
     const result = await query(req, `
       SELECT
         -- ── Row 1: Pipeline ──────────────────────────────────
-        SUM(CASE WHEN note IS NULL OR note != 'Direct Booking' THEN 1 ELSE 0 END) AS total_rfqs,
-        SUM(CASE WHEN status = 'Pending' AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END) AS quotation_pending,
-        SUM(CASE WHEN status = 'Quoted' AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END) AS quoted,
-        SUM(CASE WHEN status = 'Customer Review' AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END) AS customer_review,
-        SUM(CASE WHEN status = 'Confirmed' THEN 1 ELSE 0 END)                  AS confirmed,
+        SUM(CASE WHEN note IS NULL OR LOWER(TRIM(note)) != 'direct booking' THEN 1 ELSE 0 END) AS total_rfqs,
+        
+        SUM(CASE WHEN (note IS NULL OR LOWER(TRIM(note)) != 'direct booking') AND (
+          status IS NULL OR LOWER(TRIM(status)) IN ('pending', 'pending quote', 'pending_quote', 'new', 'draft') OR
+          (LOWER(TRIM(status)) NOT IN ('quoted', 'quote sent', 'quote_sent', 'customer review', 'under review', 'customer_review', 'under_review', 'review', 'confirmed'))
+        ) THEN 1 ELSE 0 END) AS quotation_pending,
+
+        SUM(CASE WHEN (note IS NULL OR LOWER(TRIM(note)) != 'direct booking') AND LOWER(TRIM(status)) IN ('quoted', 'quote sent', 'quote_sent') THEN 1 ELSE 0 END) AS quoted,
+
+        SUM(CASE WHEN (note IS NULL OR LOWER(TRIM(note)) != 'direct booking') AND LOWER(TRIM(status)) IN ('customer review', 'under review', 'customer_review', 'under_review', 'review') THEN 1 ELSE 0 END) AS customer_review,
+
+        SUM(CASE WHEN LOWER(TRIM(status)) = 'confirmed' THEN 1 ELSE 0 END) AS confirmed,
 
         -- ── Row 2: Execution ─────────────────────────────────
-        SUM(CASE WHEN status = 'Files Pending' THEN 1 ELSE 0 END)              AS files_pending,
-        SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END)                  AS completed,
-        SUM(CASE WHEN status = 'Return Pending' THEN 1 ELSE 0 END)             AS return_pending,
-        SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END)                  AS cancelled,
+        SUM(CASE WHEN LOWER(TRIM(status)) IN ('files pending', 'files_pending') THEN 1 ELSE 0 END) AS files_pending,
+        SUM(CASE WHEN LOWER(TRIM(status)) = 'completed' THEN 1 ELSE 0 END) AS completed,
+        SUM(CASE WHEN LOWER(TRIM(status)) IN ('return pending', 'return_pending') THEN 1 ELSE 0 END) AS return_pending,
+        SUM(CASE WHEN LOWER(TRIM(status)) = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
 
         -- ── Follow Ups Due ───────────────────────────────────
-        SUM(CASE WHEN status IN ('Pending', 'Quoted', 'Customer Review')
+        SUM(CASE WHEN LOWER(TRIM(status)) IN ('pending', 'pending quote', 'quoted', 'customer review', 'under review')
             AND last_follow_up < NOW() - INTERVAL '4 hours'
-            AND (note IS NULL OR note != 'Direct Booking') THEN 1 ELSE 0 END)   AS follow_ups_due
+            AND (note IS NULL OR LOWER(TRIM(note)) != 'direct booking') THEN 1 ELSE 0 END) AS follow_ups_due
 
       FROM shipments
     `);

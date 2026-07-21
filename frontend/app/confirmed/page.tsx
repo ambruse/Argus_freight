@@ -129,10 +129,85 @@ export default function ConfirmedPage() {
     });
   };
 
-  const filtered = shipments.filter((s) => {
+  const getGroupLabel = (basePrefix: string, groupShipments: Shipment[]) => {
+    if (!groupShipments || groupShipments.length === 0) return basePrefix;
+    const seqNums = groupShipments
+      .map((s) => {
+        const match = s.ref_no.match(/-(\d+)$/);
+        return match ? parseInt(match[1], 10) : null;
+      })
+      .filter((n): n is number => n !== null)
+      .sort((a, b) => a - b);
+
+    if (seqNums.length === 0) return basePrefix;
+    const minSeq = String(seqNums[0]).padStart(2, "0");
+    const maxSeq = String(seqNums[seqNums.length - 1]).padStart(2, "0");
+
+    if (minSeq === maxSeq) return `${basePrefix}-${minSeq}`;
+    return `${basePrefix}-${minSeq}-${maxSeq}`;
+  };
+
+  const groupedItems = (() => {
+    const groups: { [key: string]: Shipment[] } = {};
+    shipments.forEach(s => {
+      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
+      if (match) {
+        const base = match[1];
+        if (!groups[base]) {
+          groups[base] = [];
+        }
+        groups[base].push(s);
+      }
+    });
+
+    const items: (Shipment | { isGroup: true; basePrefix: string; shipments: Shipment[]; originalShipments: Shipment[] })[] = [];
+    const processedGroups = new Set<string>();
+
+    shipments.forEach(s => {
+      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
+      if (match) {
+        const base = match[1];
+        if (groups[base].length > 1) {
+          if (!processedGroups.has(base)) {
+            processedGroups.add(base);
+            const sortedGroup = [...groups[base]].sort((a, b) => {
+              const aMatch = a.ref_no.match(/-(\d+)$/);
+              const bMatch = b.ref_no.match(/-(\d+)$/);
+              const aSeq = aMatch ? parseInt(aMatch[1]) : 0;
+              const bSeq = bMatch ? parseInt(bMatch[1]) : 0;
+              return aSeq - bSeq;
+            });
+            items.push({
+              isGroup: true,
+              basePrefix: base,
+              shipments: sortedGroup,
+              originalShipments: sortedGroup
+            });
+          }
+        } else {
+          items.push(s);
+        }
+      } else {
+        items.push(s);
+      }
+    });
+
+    return items;
+  })();
+
+  const filtered = groupedItems.filter((item) => {
     const q = search.toLowerCase();
-    return !q || [s.ref_no, s.pol, s.pod, s.carrier, s.bl_number, s.do_number, s.track_status, s.customer_id]
-      .some((v) => v?.toLowerCase().includes(q));
+    if (!q) return true;
+    if ('isGroup' in item) {
+      const groupLabel = getGroupLabel(item.basePrefix, item.originalShipments);
+      if (groupLabel.toLowerCase().includes(q)) return true;
+      return item.shipments.some(s => [s.ref_no, s.pol, s.pod, s.carrier, s.bl_number, s.do_number, s.track_status, s.customer_id]
+        .some((v) => v?.toLowerCase().includes(q)));
+    } else {
+      const s = item;
+      return [s.ref_no, s.pol, s.pod, s.carrier, s.bl_number, s.do_number, s.track_status, s.customer_id]
+        .some((v) => v?.toLowerCase().includes(q));
+    }
   });
 
   const fmtDate = (v: string | null) => v ? format(new Date(v), "dd MMM yy") : "—";
@@ -144,7 +219,10 @@ export default function ConfirmedPage() {
       action={
         <div className="flex gap-3">
           <button 
-            onClick={() => exportShipmentsToExcel(filtered, `Confirmed_Shipments_${format(new Date(), 'yyyyMMdd')}.xlsx`)} 
+            onClick={() => {
+              const flatList = filtered.flatMap(item => 'isGroup' in item ? item.shipments : [item]);
+              exportShipmentsToExcel(flatList, `Confirmed_Shipments_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+            }} 
             className="btn-secondary"
           >
             📊 Export Excel
@@ -236,95 +314,104 @@ export default function ConfirmedPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((s, idx) => (
-                  <tr
-                    key={s.ref_no}
-                    onClick={() => handleRowClick(s)}
-                    style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
-                    title="Double-click to open details & file manager"
-                  >
-                    <td>
-                      <span className="font-mono text-xs font-bold text-emerald bg-emerald/10 px-2 py-1 rounded-lg border border-emerald/20">
-                        {s.ref_no}
-                      </span>
-                    </td>
-                    <td>
-                      {s.cust_req_no ? (
-                        <span className="font-mono text-xs text-muted/80 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
-                          {s.cust_req_no}
+                filtered.map((item, idx) => {
+                  const s = 'isGroup' in item ? item.shipments[0] : item;
+                  const displayRef = 'isGroup' in item ? getGroupLabel(item.basePrefix, item.originalShipments) : s.ref_no;
+                  const unreadReplies = 'isGroup' in item ? item.shipments.reduce((sum, x) => sum + Number(x.unread_replies_count || 0), 0) : Number(s.unread_replies_count || 0);
+                  const totalReplies = 'isGroup' in item ? item.shipments.reduce((sum, x) => sum + Number(x.replies_count || 0), 0) : Number(s.replies_count || 0);
+                  const unreadChat = 'isGroup' in item ? item.shipments.reduce((sum, x) => sum + Number(x.unread_chat_count || 0), 0) : Number(s.unread_chat_count || 0);
+
+                  return (
+                    <tr
+                      key={'isGroup' in item ? item.basePrefix : s.ref_no}
+                      onClick={() => handleRowClick(s)}
+                      style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
+                      title="Double-click to open details & file manager"
+                      className="cursor-pointer"
+                    >
+                      <td>
+                        <span className="font-mono text-xs font-bold text-emerald bg-emerald/10 px-2 py-1 rounded-lg border border-emerald/20">
+                          {displayRef}
                         </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="text-xs font-medium">{s.customer_name ?? "—"}</td>
-                    <td className="text-xs text-muted/90">{s.dear_who ?? "—"}</td>
-                    <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
-                    <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{s.customer_id ?? "—"}</td>
-                    <td>{s.pol ?? "—"}</td>
-                    <td>{s.pod ?? "—"}</td>
-                    <td>{s.commodity ?? "—"}</td>
-                    <td>{s.carrier ?? "—"}</td>
-                    <td className="text-xs text-muted">{fmtDate(s.etd)}</td>
-                    <td className="text-xs text-muted">{fmtDate(s.eta)}</td>
-                    <td>
-                      {s.cost
-                        ? <span className="font-semibold text-emerald">QAR {Number(s.cost).toLocaleString()}</span>
-                        : <span className="text-muted">—</span>}
-                    </td>
-                    <td>
-                      {s.cost && s.profit
-                        ? <span className="font-semibold text-blue">QAR {(Number(s.cost) + Number(s.profit)).toLocaleString()}</span>
-                        : <span className="text-muted">—</span>}
-                    </td>
-                    <td className="font-mono text-xs">{s.do_number ?? "—"}</td>
-                    <td className="font-mono text-xs">{s.box_no    ?? "—"}</td>
-                    <td className="font-mono text-xs">{s.so_number ?? "—"}</td>
-                    <td className="font-mono text-xs">{s.bl_number ?? "—"}</td>
-                    <td>
-                      {s.track_status
-                        ? <span className="text-xs text-blue-bright">{s.track_status}</span>
-                        : <span className="text-muted text-xs">—</span>}
-                    </td>
-                    <td>
-                      {s.unread_replies_count && Number(s.unread_replies_count) > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
-                          📩 New ({s.unread_replies_count})
-                        </span>
-                      ) : s.replies_count && Number(s.replies_count) > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
-                          💬 Replied ({s.replies_count})
-                        </span>
-                      ) : (
-                        <span className="text-faint text-xs">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {s.unread_chat_count && Number(s.unread_chat_count) > 0 ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                      </td>
+                      <td>
+                        {s.cust_req_no ? (
+                          <span className="font-mono text-xs text-muted/80 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
+                            {s.cust_req_no}
                           </span>
-                          New Msg ({s.unread_chat_count})
-                        </span>
-                      ) : (
-                        <span className="text-faint text-xs">—</span>
-                      )}
-                    </td>
-                    <td>
-                      {(!user || user.role !== "sales") && (
-                        <button
-                          onClick={(e) => handleDelete(e, s.ref_no)}
-                          className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
-                          title="Delete Shipment"
-                        >
-                          🗑
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="text-xs font-medium">{s.customer_name ?? "—"}</td>
+                      <td className="text-xs text-muted/90">{s.dear_who ?? "—"}</td>
+                      <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
+                      <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{s.customer_id ?? "—"}</td>
+                      <td>{s.pol ?? "—"}</td>
+                      <td>{s.pod ?? "—"}</td>
+                      <td>{s.commodity ?? "—"}</td>
+                      <td>{s.carrier ?? "—"}</td>
+                      <td className="text-xs text-muted">{fmtDate(s.etd)}</td>
+                      <td className="text-xs text-muted">{fmtDate(s.eta)}</td>
+                      <td>
+                        {s.cost
+                          ? <span className="font-semibold text-emerald">QAR {Number(s.cost).toLocaleString()}</span>
+                          : <span className="text-muted">—</span>}
+                      </td>
+                      <td>
+                        {s.cost && s.profit
+                          ? <span className="font-semibold text-blue">QAR {(Number(s.cost) + Number(s.profit)).toLocaleString()}</span>
+                          : <span className="text-muted">—</span>}
+                      </td>
+                      <td className="font-mono text-xs">{s.do_number ?? "—"}</td>
+                      <td className="font-mono text-xs">{s.box_no    ?? "—"}</td>
+                      <td className="font-mono text-xs">{s.so_number ?? "—"}</td>
+                      <td className="font-mono text-xs">{s.bl_number ?? "—"}</td>
+                      <td>
+                        {s.track_status
+                          ? <span className="text-xs text-blue-bright">{s.track_status}</span>
+                          : <span className="text-muted text-xs">—</span>}
+                      </td>
+                      <td>
+                        {unreadReplies > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
+                            📩 New ({unreadReplies})
+                          </span>
+                        ) : totalReplies > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
+                            💬 Replied ({totalReplies})
+                          </span>
+                        ) : (
+                          <span className="text-faint text-xs">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {unreadChat > 0 ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                            </span>
+                            New Msg ({unreadChat})
+                          </span>
+                        ) : (
+                          <span className="text-faint text-xs">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {(!user || user.role !== "sales") && (
+                          <button
+                            onClick={(e) => handleDelete(e, s.ref_no)}
+                            className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
+                            title="Delete Shipment"
+                          >
+                            🗑
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

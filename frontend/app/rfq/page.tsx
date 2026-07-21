@@ -492,7 +492,6 @@ export default function RFQPage() {
               ) : (
                 filteredItems.map((item, idx) => {
                   if ('isGroup' in item) {
-                    const isExpanded = expandedGroups.has(item.basePrefix);
                     const groupLabel = getGroupLabel(item.basePrefix, item.originalShipments);
                     const firstShipment = item.shipments[0];
                     const groupRepliesCount = item.shipments.reduce((sum, s) => sum + Number(s.replies_count || 0), 0);
@@ -509,160 +508,80 @@ export default function RFQPage() {
                     const statusToShow = getGroupStatus(item.shipments) || firstShipment.status;
 
                     return (
-                      <Fragment key={item.basePrefix}>
-                        {/* Parent Group Row */}
-                        <tr
-                          onClick={() => handleGroupRowClick(item.basePrefix)}
-                          className="cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-amber-500/50"
-                          style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
-                          title="Double-click to expand/collapse"
-                        >
-                          <td>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                copyRefNo(e, groupLabel);
-                              }}
-                              className="font-mono text-xs font-bold text-amber hover:text-amber-bright
-                                         px-2 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
-                                         transition-all duration-150 group relative inline-flex items-center gap-1.5"
-                              title="Click to copy range"
-                            >
-                              <span className="text-[10px]">{isExpanded ? "▼" : "▶"}</span>
-                              <span>{groupLabel}</span>
-                              <span className="px-1 py-0.2 text-[9px] bg-amber/20 rounded font-semibold whitespace-nowrap">
-                                Group ({item.shipments.length})
-                              </span>
-                            </button>
-                          </td>
-                          <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
-                            {firstShipment.cust_req_no ?? "—"}
-                          </td>
-                          <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
-                          <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{firstShipment.customer_id ?? "—"}</td>
-                          <td>{firstShipment.dear_who ?? "—"}</td>
-                          <td>{firstShipment.pol ?? "—"}</td>
-                          <td>{firstShipment.pod ?? "—"}</td>
-                          <td className="max-w-[140px] truncate">{firstShipment.commodity ?? "—"}</td>
-                          <td>
-                            <span className="text-xs font-semibold text-muted uppercase">{firstShipment.mode ?? "—"}</span>
-                          </td>
-                          <td>{firstShipment.term ?? "—"}</td>
-                          <td><Badge status={statusToShow} /></td>
-                          <td className="text-xs">
-                            {statusToShow === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(latestFollowUp)}
-                          </td>
-                          <td>
-                            {groupUnreadRepliesCount > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
-                                📩 New ({groupUnreadRepliesCount})
-                              </span>
-                            ) : groupRepliesCount > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
-                                💬 Replied ({groupRepliesCount})
-                              </span>
-                            ) : (
-                              <span className="text-faint text-xs">—</span>
-                            )}
-                          </td>
-                          <td>
-                            {groupUnreadChatCount > 0 ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
-                                <span className="relative flex h-1.5 w-1.5">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-                                </span>
-                                New Msg ({groupUnreadChatCount})
-                              </span>
-                            ) : (
-                              <span className="text-faint text-xs">—</span>
-                            )}
-                          </td>
-                          <td>
-                            <button
-                              onClick={(e) => handleDeleteGroup(e, item.basePrefix, item.originalShipments)}
-                              className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
-                              title="Delete all RFQs in this group"
-                            >
-                              🗑
-                            </button>
-                          </td>
-                        </tr>
-
-                        {/* Child Rows (Rendered inline when expanded) */}
-                        {isExpanded && item.shipments.map((child, childIdx) => (
-                          <tr
-                            key={child.ref_no}
-                            onClick={() => handleRowClick(child)}
-                            className="cursor-pointer bg-white/[0.005] hover:bg-white/[0.02] border-l-4 border-blue/30 animate-fade-in"
-                            style={{ animation: `fade-in 0.2s ease-out ${childIdx * 10}ms both` }}
-                            title="Double-click to open details"
+                      <tr
+                        key={item.basePrefix}
+                        onClick={() => handleRowClick(firstShipment)}
+                        className="cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                        style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
+                        title="Double-click to open details"
+                      >
+                        <td>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyRefNo(e, groupLabel);
+                            }}
+                            className="font-mono text-xs font-bold text-amber hover:text-amber-bright
+                                       px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
+                                       transition-all duration-150 group relative inline-flex items-center gap-1.5"
+                            title="Click to copy REF NO"
                           >
-                            <td>
-                              <div className="flex items-center gap-2 pl-4">
-                                <span className="text-muted text-xs font-mono select-none">└─</span>
-                                <button
-                                  onClick={(e) => copyRefNo(e, child.ref_no)}
-                                  className="font-mono text-[11px] font-semibold text-blue hover:text-blue-bright
-                                             px-2 py-0.5 rounded bg-blue/5 hover:bg-blue/15 border border-blue/10
-                                             transition-all duration-150 group relative"
-                                  title="Click to copy individual REF NO"
-                                >
-                                  {child.ref_no}
-                                </button>
-                              </div>
-                            </td>
-                            <td className="text-xs font-mono text-muted">
-                              {child.cust_req_no ?? "—"}
-                            </td>
-                            <td className="text-xs text-muted">{child.operator ?? "—"}</td>
-                            <td className="text-muted font-mono text-xs">{child.customer_id ?? "—"}</td>
-                            <td className="text-muted text-xs">{child.dear_who ?? "—"}</td>
-                            <td className="text-muted text-xs">{child.pol ?? "—"}</td>
-                            <td className="text-muted text-xs">{child.pod ?? "—"}</td>
-                            <td className="max-w-[140px] truncate text-muted text-xs">{child.commodity ?? "—"}</td>
-                            <td>
-                              <span className="text-[10px] font-semibold text-muted uppercase">{child.mode ?? "—"}</span>
-                            </td>
-                            <td className="text-muted text-xs">{child.term ?? "—"}</td>
-                            <td><Badge status={child.status} /></td>
-                            <td className="text-xs">
-                              {child.status === 'Cancelled' ? <span className="text-muted italic text-xs">Turned Off</span> : fmtFollowUp(child.last_follow_up)}
-                            </td>
-                            <td>
-                              {child.unread_replies_count && Number(child.unread_replies_count) > 0 ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
-                                  📩 New ({child.unread_replies_count})
-                                </span>
-                              ) : child.replies_count && Number(child.replies_count) > 0 ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
-                                  💬 Replied ({child.replies_count})
-                                </span>
-                              ) : (
-                                <span className="text-faint text-xs">—</span>
-                              )}
-                            </td>
-                            <td>
-                              {child.unread_chat_count && Number(child.unread_chat_count) > 0 ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
-                                  New Msg ({child.unread_chat_count})
-                                </span>
-                              ) : (
-                                <span className="text-faint text-xs">—</span>
-                              )}
-                            </td>
-                            <td>
-                              <button
-                                onClick={(e) => handleDelete(e, child.ref_no)}
-                                className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
-                                title="Delete individual RFQ"
-                              >
-                                🗑
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </Fragment>
+                            <span>{groupLabel}</span>
+                          </button>
+                        </td>
+                        <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
+                          {firstShipment.cust_req_no ?? "—"}
+                        </td>
+                        <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
+                        <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{firstShipment.customer_id ?? "—"}</td>
+                        <td>{firstShipment.dear_who ?? "—"}</td>
+                        <td>{firstShipment.pol ?? "—"}</td>
+                        <td>{firstShipment.pod ?? "—"}</td>
+                        <td className="max-w-[140px] truncate">{firstShipment.commodity ?? "—"}</td>
+                        <td>
+                          <span className="text-xs font-semibold text-muted uppercase">{firstShipment.mode ?? "—"}</span>
+                        </td>
+                        <td>{firstShipment.term ?? "—"}</td>
+                        <td><Badge status={statusToShow} /></td>
+                        <td className="text-xs">
+                          {statusToShow === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(latestFollowUp)}
+                        </td>
+                        <td>
+                          {groupUnreadRepliesCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
+                              📩 New ({groupUnreadRepliesCount})
+                            </span>
+                          ) : groupRepliesCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
+                              💬 Replied ({groupRepliesCount})
+                            </span>
+                          ) : (
+                            <span className="text-faint text-xs">—</span>
+                          )}
+                        </td>
+                        <td>
+                          {groupUnreadChatCount > 0 ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
+                              <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                              </span>
+                              New Msg ({groupUnreadChatCount})
+                            </span>
+                          ) : (
+                            <span className="text-faint text-xs">—</span>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            onClick={(e) => handleDeleteGroup(e, item.basePrefix, item.originalShipments)}
+                            className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
+                            title="Delete RFQ"
+                          >
+                            🗑
+                          </button>
+                        </td>
+                      </tr>
                     );
                   } else {
                     const s = item;

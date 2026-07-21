@@ -367,14 +367,13 @@ export default function DashboardPage() {
         <section>
           <SectionHeader label="Pipeline — RFQ Funnel" icon="◈" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {loading ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />) :
-              metrics && (
+            {loading ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />) : (
                 <>
-                  <MetricCard label="Total RFQs"       value={metrics.totalRFQs}       icon="📦" accent={ACCENTS.gold.color}    accentRgb={ACCENTS.gold.rgb}    delay={0}   />
-                  <MetricCard label="Pending Quote"     value={metrics.quotationPending} icon="⏳" accent={ACCENTS.amber.color}   accentRgb={ACCENTS.amber.rgb}   delay={60}  />
-                  <MetricCard label="Quoted"            value={metrics.quoted}           icon="💬" accent={ACCENTS.sky.color}     accentRgb={ACCENTS.sky.rgb}     delay={120} />
-                  <MetricCard label="Customer Review"   value={metrics.customerReview}   icon="👁" accent={ACCENTS.violet.color}  accentRgb={ACCENTS.violet.rgb}  delay={180} />
-                  <MetricCard label="Confirmed"         value={metrics.confirmed}        icon="✓" accent={ACCENTS.emerald.color} accentRgb={ACCENTS.emerald.rgb} delay={240} />
+                  <MetricCard label="Total RFQs"       value={metrics?.totalRFQs        || 0} icon="📦" accent={ACCENTS.gold.color}    accentRgb={ACCENTS.gold.rgb}    delay={0}   />
+                  <MetricCard label="Pending Quote"     value={metrics?.quotationPending  || 0} icon="⏳" accent={ACCENTS.amber.color}   accentRgb={ACCENTS.amber.rgb}   delay={60}  />
+                  <MetricCard label="Quoted"            value={metrics?.quoted            || 0} icon="💬" accent={ACCENTS.sky.color}     accentRgb={ACCENTS.sky.rgb}     delay={120} />
+                  <MetricCard label="Customer Review"   value={metrics?.customerReview    || 0} icon="👁" accent={ACCENTS.violet.color}  accentRgb={ACCENTS.violet.rgb}  delay={180} />
+                  <MetricCard label="Confirmed"         value={metrics?.confirmed         || 0} icon="✓" accent={ACCENTS.emerald.color} accentRgb={ACCENTS.emerald.rgb} delay={240} />
                 </>
               )
             }
