@@ -48,6 +48,8 @@ const getFirstWord = (str?: string | null) => {
 
 export default function RFQPage() {
   const { user } = useAuth();
+  // Track whether user object has been hydrated from localStorage
+  const [userHydrated, setUserHydrated] = useState(false);
   const [shipments,  setShipments]  = useState<Shipment[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [search,     setSearch]     = useState("");
@@ -60,6 +62,11 @@ export default function RFQPage() {
     actionName: string;
     onSuccess: () => void;
   }>({ isOpen: false, actionName: "", onSuccess: () => {} });
+
+  // Hydration guard: mark user as loaded
+  useEffect(() => { setUserHydrated(true); }, [user]);
+
+  const isAdminOrOperator = userHydrated && (user?.role === 'admin' || user?.role === 'operator');
 
   // Double-click detection
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -483,7 +490,7 @@ export default function RFQPage() {
                 <th>OPERATOR</th>
                 <th>CUSTOMER ID/NAME</th>
                 <th>DEAR WHO</th>
-                {(user?.role === 'admin' || user?.role === 'operator') && <th>SALES</th>}
+                {isAdminOrOperator && <th>SALES</th>}
                 <th>POL</th>
                 <th>POD</th>
                 <th>COMMODITY</th>
@@ -501,7 +508,7 @@ export default function RFQPage() {
                 Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={(user?.role === 'admin' || user?.role === 'operator') ? 16 : 15} className="text-center py-16 text-muted">
+                  <td colSpan={isAdminOrOperator ? 16 : 15} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📭</p>
                       <p className="text-sm">No RFQ records found.</p>
@@ -526,13 +533,14 @@ export default function RFQPage() {
                     };
                     const statusToShow = getGroupStatus(item.shipments) || firstShipment.status;
 
+                    const isExpanded = expandedGroups.has(item.basePrefix);
                     return (
+                      <Fragment key={item.basePrefix}>
                       <tr
-                        key={item.basePrefix}
-                        onClick={() => handleRowClick(firstShipment)}
-                        className="cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                        onClick={() => handleGroupRowClick(item.basePrefix)}
+                        className="cursor-pointer bg-amber/[0.04] hover:bg-amber/[0.07] transition-colors border-l-2 border-amber/40"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
-                        title="Double-click to open details"
+                        title="Double-click to expand/collapse group"
                       >
                         <td>
                           <button
@@ -545,6 +553,7 @@ export default function RFQPage() {
                                        transition-all duration-150 group relative inline-flex items-center gap-1.5"
                             title="Click to copy REF NO"
                           >
+                            <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>
                             <span>{groupLabel}</span>
                           </button>
                         </td>
@@ -554,7 +563,7 @@ export default function RFQPage() {
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(firstShipment.customer_id, firstShipment.customer_name)}</td>
                         <td>{firstShipment.dear_who ?? "—"}</td>
-                        {(user?.role === 'admin' || user?.role === 'operator') && (
+                        {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{firstShipment.refer_by || "—"}</td>
                         )}
                         <td title={firstShipment.pol ?? "—"}>{getFirstWord(firstShipment.pol)}</td>
@@ -598,12 +607,83 @@ export default function RFQPage() {
                           <button
                             onClick={(e) => handleDeleteGroup(e, item.basePrefix, item.originalShipments)}
                             className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
-                            title="Delete RFQ"
+                            title="Delete group"
                           >
                             🗑
                           </button>
                         </td>
                       </tr>
+                      {/* ── Expanded child rows ── */}
+                      {isExpanded && item.shipments.map((cs, cidx) => (
+                        <tr
+                          key={cs.ref_no}
+                          onClick={() => handleRowClick(cs)}
+                          className="cursor-pointer bg-white/[0.01] hover:bg-white/[0.04] transition-colors border-l-4 border-amber/20"
+                          title="Double-click to open details"
+                        >
+                          <td className="pl-6">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); copyRefNo(e, cs.ref_no); }}
+                              className="font-mono text-xs font-bold text-blue hover:text-blue-bright
+                                         px-2 py-1 rounded-lg bg-blue/10 hover:bg-blue/20 border border-blue/20
+                                         transition-all duration-150 inline-flex items-center gap-1"
+                              title="Click to copy"
+                            >
+                              <span className="text-muted mr-1">↳</span>{cs.ref_no}
+                            </button>
+                          </td>
+                          <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">{cs.cust_req_no ?? "—"}</td>
+                          <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{cs.operator ?? "—"}</td>
+                          <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(cs.customer_id, cs.customer_name)}</td>
+                          <td>{cs.dear_who ?? "—"}</td>
+                          {isAdminOrOperator && (
+                            <td className="text-xs font-semibold text-amber bg-white/[0.02]">{cs.refer_by || "—"}</td>
+                          )}
+                          <td title={cs.pol ?? "—"}>{getFirstWord(cs.pol)}</td>
+                          <td title={cs.pod ?? "—"}>{getFirstWord(cs.pod)}</td>
+                          <td className="max-w-[140px] truncate">{cs.commodity ?? "—"}</td>
+                          <td><span className="text-xs font-semibold text-muted uppercase">{cs.mode ?? "—"}</span></td>
+                          <td>{cs.term ?? "—"}</td>
+                          <td><Badge status={cs.status} /></td>
+                          <td className="text-xs">
+                            {cs.status === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(cs.last_follow_up)}
+                          </td>
+                          <td>
+                            {cs.unread_replies_count && Number(cs.unread_replies_count) > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
+                                📩 New ({cs.unread_replies_count})
+                              </span>
+                            ) : cs.replies_count && Number(cs.replies_count) > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
+                                💬 Replied ({cs.replies_count})
+                              </span>
+                            ) : (
+                              <span className="text-faint text-xs">—</span>
+                            )}
+                          </td>
+                          <td>
+                            {cs.unread_chat_count && Number(cs.unread_chat_count) > 0 ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
+                                New Msg ({cs.unread_chat_count})
+                              </span>
+                            ) : (
+                              <span className="text-faint text-xs">—</span>
+                            )}
+                          </td>
+                          <td>
+                            {cs.status !== 'Confirmed' ? (
+                              <button
+                                onClick={(e) => handleDelete(e, cs.ref_no)}
+                                className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
+                                title="Delete RFQ"
+                              >🗑</button>
+                            ) : (
+                              <span className="text-xs text-muted italic">Locked</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      </Fragment>
                     );
                   } else {
                     const s = item;
@@ -638,7 +718,7 @@ export default function RFQPage() {
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(s.customer_id, s.customer_name)}</td>
                         <td>{s.dear_who ?? "—"}</td>
-                        {(user?.role === 'admin' || user?.role === 'operator') && (
+                        {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{s.refer_by || "—"}</td>
                         )}
                         <td title={s.pol ?? "—"}>{getFirstWord(s.pol)}</td>
