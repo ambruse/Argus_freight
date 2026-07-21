@@ -19,6 +19,20 @@ const formatCurrency = (val) => {
   return isNaN(num) ? val : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
+// Global cached WASM converter instance to prevent loading delays
+let wasmConverterPromise = null;
+const getWasmConverter = () => {
+  if (!wasmConverterPromise) {
+    const lib = require('@matbee/libreoffice-converter');
+    const wasmLoader = require('@matbee/libreoffice-converter/wasm/loader');
+    wasmConverterPromise = lib.createConverter({ wasmLoader }).catch(err => {
+      wasmConverterPromise = null;
+      throw err;
+    });
+  }
+  return wasmConverterPromise;
+};
+
 // ─────────────────────────────────────────────────────────────
 //  POST /api/quotation/generate
 //  Generates unique Q.NO, saves to DB, renders template and compiles to PDF.
@@ -239,40 +253,47 @@ const generateQuotation = async (req, res, next) => {
     // Save temporary docx
     fs.writeFileSync(tempDocxPath, docxBuffer);
 
-    // Convert docx to pdf function
+    // Convert docx to pdf function using fast libreoffice-convert package
     const convertDocxToPdf = (dPath, pPath) => {
       return new Promise((resolve, reject) => {
         const absoluteDocx = path.resolve(dPath);
         const absolutePdf = path.resolve(pPath);
         const { exec } = require('child_process');
 
-        // 1. Try system-installed LibreOffice CLI first (memory-efficient & fast)
-        exec(`soffice --headless --convert-to pdf --outdir "${path.dirname(absolutePdf)}" "${absoluteDocx}"`, (cliErr) => {
+        // 1. Try system soffice CLI
+        exec(`soffice --headless --convert-to pdf --outdir "${path.dirname(absolutePdf)}" "${absoluteDocx}"`, { timeout: 10000 }, (cliErr) => {
           if (!cliErr && fs.existsSync(absolutePdf)) {
             console.log("✅ PDF converted successfully using system LibreOffice (soffice) CLI.");
             return resolve();
           }
 
-          console.log("ℹ️ System soffice CLI not available or failed. Falling back to WebAssembly converter...");
+          console.log("ℹ️ System soffice CLI not available. Trying libreoffice-convert...");
 
-          // 2. Fallback to heavy WebAssembly converter
-          const lib = require('@matbee/libreoffice-converter');
-          const wasmLoader = require('@matbee/libreoffice-converter/wasm/loader');
+          // 2. Try native libreoffice-convert
+          const libre = require('libreoffice-convert');
+          const docxBuf = fs.readFileSync(absoluteDocx);
+          
+          libre.convert(docxBuf, '.pdf', undefined, (err, done) => {
+            if (!err && done) {
+              fs.writeFileSync(absolutePdf, done);
+              return resolve();
+            }
 
-          lib.createConverter({ wasmLoader })
-            .then(async (converter) => {
-              try {
-                const docxFileToConvert = fs.readFileSync(absoluteDocx);
-                const resultObj = await converter.convert(docxFileToConvert, { outputFormat: 'pdf' });
-                fs.writeFileSync(absolutePdf, resultObj.data);
-                await converter.destroy();
-                resolve();
-              } catch (err) {
-                await converter.destroy().catch(() => {});
-                reject(err);
-              }
-            })
-            .catch(reject);
+            console.log("ℹ️ libreoffice-convert failed. Falling back to WebAssembly converter...");
+
+            // 3. WebAssembly fallback
+            getWasmConverter()
+              .then(async (converter) => {
+                try {
+                  const resultObj = await converter.convert(docxBuf, { outputFormat: 'pdf' });
+                  fs.writeFileSync(absolutePdf, resultObj.data);
+                  resolve();
+                } catch (wasmErr) {
+                  reject(wasmErr);
+                }
+              })
+              .catch(reject);
+          });
         });
       });
     };
