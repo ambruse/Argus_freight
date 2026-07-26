@@ -143,8 +143,12 @@ const getAllShipments = async (req, res, next) => {
       conditions.push(`(note IS NULL OR note != 'Direct Booking')`);
     }
     if (status) {
-      params.push(status);
-      conditions.push(`status = $${params.length}`);
+      if (status.toLowerCase() === 'confirmed') {
+        conditions.push(`LOWER(TRIM(status)) IN ('confirmed', 'completed')`);
+      } else {
+        params.push(status);
+        conditions.push(`status = $${params.length}`);
+      }
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -411,8 +415,8 @@ const deleteShipment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
     
-    if (checkRes.rows[0].status === 'Confirmed') {
-      return res.status(400).json({ success: false, message: 'Confirmed shipments cannot be deleted.' });
+    if (checkRes.rows[0].status === 'Confirmed' || checkRes.rows[0].status === 'Completed') {
+      return res.status(400).json({ success: false, message: 'Confirmed/Completed shipments cannot be deleted.' });
     }
 
     const { getOperatorSuffixes } = require('../config/dbHelper');

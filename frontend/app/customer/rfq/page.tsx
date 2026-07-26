@@ -184,9 +184,8 @@ export default function CustomerRFQListPage() {
             <option value="Active">Active (Hide Cancelled)</option>
             <option value="All">All Statuses</option>
             <option value="Pending">Pending</option>
-            <option value="Quoted">Quoted</option>
-            <option value="Customer Review">Customer Review</option>
             <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>

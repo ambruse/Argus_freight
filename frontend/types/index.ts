@@ -15,20 +15,16 @@ export type ShipmentStatus =
 
 export const ALL_STATUSES: ShipmentStatus[] = [
   "Pending",
-  "Quoted",
-  "Customer Review",
   "Confirmed",
-  "Files Pending",
   "Completed",
-  "Return Pending",
   "Cancelled",
 ];
 
 export const RFQ_STATUSES: ShipmentStatus[] = [
   "Pending",
-  "Quoted",
-  "Customer Review",
   "Confirmed",
+  "Completed",
+  "Cancelled",
 ];
 
 export interface Shipment {
