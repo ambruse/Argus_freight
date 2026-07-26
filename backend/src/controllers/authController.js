@@ -185,6 +185,9 @@ const changePassword = async (req, res, next) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Current and new password are required.' });
     }
+    if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long and contain both letters and numbers.' });
+    }
 
     const result = await db.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' });
@@ -229,6 +232,10 @@ const register = async (req, res, next) => {
     let { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword, agent_extension } = req.body;
     newPassword = decryptPassword(newPassword);
     adminPassword = decryptPassword(adminPassword);
+
+    if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long and contain both letters and numbers.' });
+    }
 
     if (role === 'customer') {
       if (!newUsername || !newPassword || !name || !email_address || !contact_number) {

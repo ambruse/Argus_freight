@@ -79,8 +79,12 @@ export default function AdminRegisterUserPage() {
       toast.error("Passwords do not match.");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      toast.error("Password must contain at least one letter and one number.");
       return;
     }
     

@@ -66,7 +66,11 @@ export default function RegisterPage() {
   const handleInitialSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) { toast.error("Passwords do not match."); return; }
-    if (newPassword.length < 6) { toast.error("Password must be at least 6 characters."); return; }
+    if (newPassword.length < 8) { toast.error("Password must be at least 8 characters."); return; }
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      toast.error("Password must contain at least one letter and one number.");
+      return;
+    }
 
     if (role === "customer") {
       setLoading(true);
@@ -147,7 +151,7 @@ export default function RegisterPage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Password</label>
-            <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input w-full" placeholder="At least 6 characters" />
+            <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input w-full" placeholder="At least 8 chars (letters & numbers)" />
           </div>
 
           <div className="space-y-1.5">
@@ -155,21 +159,23 @@ export default function RegisterPage() {
             <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input w-full" placeholder="Repeat password" />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="input w-full disabled:opacity-75 disabled:cursor-not-allowed"
-              disabled={isRoleLocked}
-            >
-              <option value="operator">Operator</option>
-              <option value="calling_agent">Calling Agent</option>
-              <option value="admin">Admin</option>
-              <option value="sales">Sales</option>
-              <option value="customer">Customer</option>
-            </select>
-          </div>
+          {!isRoleLocked && (
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="input w-full disabled:opacity-75 disabled:cursor-not-allowed"
+                disabled={isRoleLocked}
+              >
+                <option value="operator">Operator</option>
+                <option value="calling_agent">Calling Agent</option>
+                <option value="admin">Admin</option>
+                <option value="sales">Sales</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
+          )}
 
           {role === "customer" && (
             <>
