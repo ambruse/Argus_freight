@@ -198,26 +198,29 @@ const query = async (req, sql, params) => {
          const safeUsername = (req.user.username || '').replace(/'/g, "''");
          const safeCid = (req.user.customer_id || '').replace(/'/g, "''");
 
-         const conds = [
-           `ref_no IN (SELECT ref_no FROM shipments_${safeUser})`,
-           `LOWER(refer_by) = LOWER('${safeUsername}')`
-         ];
-         if (safeName) {
-           conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
-         }
-
-         if (req?.user?.role === 'customer') {
+         const conds = [];
+         if (req?.user?.role === 'sales') {
+           conds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
+           if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
+             conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
+           }
+         } else if (req?.user?.role === 'customer') {
            conds.push(`LOWER(created_by) = LOWER('${safeUsername}')`);
            conds.push(`LOWER(email) = LOWER('${safeUsername}')`);
            conds.push(`LOWER(customer_email) = LOWER('${safeUsername}')`);
+           conds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
+           if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
+             conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
+             conds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeName}'))`);
+           } else if (safeUsername) {
+             conds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeUsername}'))`);
+           }
            if (safeCid) {
              conds.push(`(customer_id IS NOT NULL AND customer_id = '${safeCid}')`);
            }
-           const nameToMatch = safeName || safeUsername;
-           conds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${nameToMatch}'))`);
          }
 
-         const userFilter = `(${conds.join(' OR ')})`;
+         const userFilter = conds.length > 0 ? `(${conds.join(' OR ')})` : `(1=1)`;
 
          let sUnion = `SELECT 2 as __p, shipments.* FROM shipments WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
@@ -226,15 +229,15 @@ const query = async (req, sql, params) => {
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
-         let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+         let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
-         let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+         let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments_${safeUser} UNION SELECT ref_no FROM shipments WHERE ${userFilter})`;
+           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
