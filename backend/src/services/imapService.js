@@ -197,7 +197,12 @@ const syncInboxForUser = async (session, limit = 40) => {
       lock.release();
     }
   } catch (err) {
-    console.error(`[IMAP Service - ${username}] Error during syncInboxForUser:`, err);
+    if (err.code === 'NoConnection' || err.message?.includes('Connection not available')) {
+      console.warn(`[IMAP Service - ${username}] Lost connection to IMAP server. Cleaning up session.`);
+      stopUserSession(username, session).catch(() => {});
+    } else {
+      console.error(`[IMAP Service - ${username}] Error during syncInboxForUser:`, err);
+    }
   } finally {
     session.isFetching = false;
   }
