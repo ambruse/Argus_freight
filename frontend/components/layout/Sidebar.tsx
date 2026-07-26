@@ -188,6 +188,29 @@ export default function Sidebar() {
                   cleanPath.startsWith(item.href + "/")
                 );
 
+                if (item.href === "/quotation") {
+                  return (
+                    <div key={item.href}
+                      className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium opacity-50 cursor-not-allowed mb-0.5"
+                      style={{
+                        background: "transparent",
+                        border: "1px solid transparent",
+                        color: "var(--sidebar-text-secondary)",
+                      }}
+                      title="Quotation page is disabled"
+                    >
+                      {/* Icon */}
+                      <span className="text-base w-5 text-center flex-shrink-0"
+                        style={{ color: "var(--sidebar-text-muted)" }}
+                      >
+                        {item.icon}
+                      </span>
+
+                      <span className="flex-1 text-[13px]">{item.label}</span>
+                    </div>
+                  );
+                }
+
                 return (
                   <Link key={item.href} href={item.href}
                     className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5"
