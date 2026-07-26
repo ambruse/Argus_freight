@@ -44,9 +44,9 @@ const getAllSuffixes = async () => {
     );
     const dbTablesRes = await db.query(
       `SELECT table_name FROM information_schema.tables 
-       WHERE table_name LIKE 'shipments_%'`
+       WHERE table_name LIKE 'shipments_%' AND table_schema = DATABASE()`
     ).catch(() => ({ rows: [] }));
-    const dbSuffixes = (dbTablesRes.rows || []).map(r => ((r.table_name || '').replace('shipments_', '')));
+    const dbSuffixes = (dbTablesRes.rows || []).map(r => ((r.table_name || r.TABLE_NAME || '').replace('shipments_', '')));
     const userSuffixes = res.rows.map(r => ((r.suffix || '').replace(/[^a-zA-Z0-9_]/g, '')));
     cachedAllSuffixes = Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
     lastCacheTime = now;
@@ -66,10 +66,10 @@ const getOperatorSuffixes = async () => {
     );
     const dbTablesRes = await db.query(
       `SELECT table_name FROM information_schema.tables 
-       WHERE table_name LIKE 'shipments_%'`
+       WHERE table_name LIKE 'shipments_%' AND table_schema = DATABASE()`
     ).catch(() => ({ rows: [] }));
     const dbSuffixes = (dbTablesRes.rows || [])
-      .map(r => ((r.table_name || '').replace('shipments_', '')))
+      .map(r => ((r.table_name || r.TABLE_NAME || '').replace('shipments_', '')))
       .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats'));
     const userSuffixes = res.rows.map(r => ((r.suffix || '').replace(/[^a-zA-Z0-9_]/g, '')));
     cachedOperatorSuffixes = Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
@@ -227,37 +227,37 @@ const query = async (req, sql, params) => {
            await ensureUserTables(suffix);
            sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipments_${suffix}.* FROM shipments_${suffix} WHERE ${userFilter}`;
          }
-         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
+         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1) _u_s`;
          
          let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
            rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
-         repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
+         repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1) _u_r`;
          
          let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
            fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
-         filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
+         filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1) _u_f`;
       } else {
-         shipmentsUnion = `(SELECT shipments.* FROM shipments`;
+         let sBase = `SELECT shipments.* FROM shipments`;
          for (const suffix of suffixes) {
-           shipmentsUnion += ` UNION ALL SELECT shipments_${suffix}.* FROM shipments_${suffix}`;
+           sBase += ` UNION ALL SELECT shipments_${suffix}.* FROM shipments_${suffix}`;
          }
-         shipmentsUnion += `)`;
+         shipmentsUnion = `(SELECT * FROM (${sBase}) _u_s_inner) _u_s`;
 
-         repliesUnion = `(SELECT shipment_replies.* FROM shipment_replies`;
+         let rBase = `SELECT shipment_replies.* FROM shipment_replies`;
          for (const suffix of suffixes) {
-           repliesUnion += ` UNION ALL SELECT shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
+           rBase += ` UNION ALL SELECT shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
          }
-         repliesUnion += `)`;
+         repliesUnion = `(SELECT * FROM (${rBase}) _u_r_inner) _u_r`;
 
-         filesUnion = `(SELECT files.* FROM files`;
+         let fBase = `SELECT files.* FROM files`;
          for (const suffix of suffixes) {
-           filesUnion += ` UNION ALL SELECT files_${suffix}.* FROM files_${suffix}`;
+           fBase += ` UNION ALL SELECT files_${suffix}.* FROM files_${suffix}`;
          }
-         filesUnion += `)`;
+         filesUnion = `(SELECT * FROM (${fBase}) _u_f_inner) _u_f`;
       }
 
       let modifiedSql = sql
