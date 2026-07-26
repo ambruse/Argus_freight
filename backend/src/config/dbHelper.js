@@ -227,48 +227,58 @@ const query = async (req, sql, params) => {
            await ensureUserTables(suffix);
            sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipments_${suffix}.* FROM shipments_${suffix} WHERE ${userFilter}`;
          }
-         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1) _u_s`;
+         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
          let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
            rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
-         repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1) _u_r`;
+         repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
          let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
            fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
-         filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1) _u_f`;
+         filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
          let sBase = `SELECT shipments.* FROM shipments`;
          for (const suffix of suffixes) {
            sBase += ` UNION ALL SELECT shipments_${suffix}.* FROM shipments_${suffix}`;
          }
-         shipmentsUnion = `(SELECT * FROM (${sBase}) _u_s_inner) _u_s`;
+         shipmentsUnion = `(SELECT * FROM (${sBase}) _u_s_inner)`;
 
          let rBase = `SELECT shipment_replies.* FROM shipment_replies`;
          for (const suffix of suffixes) {
            rBase += ` UNION ALL SELECT shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
          }
-         repliesUnion = `(SELECT * FROM (${rBase}) _u_r_inner) _u_r`;
+         repliesUnion = `(SELECT * FROM (${rBase}) _u_r_inner)`;
 
          let fBase = `SELECT files.* FROM files`;
          for (const suffix of suffixes) {
            fBase += ` UNION ALL SELECT files_${suffix}.* FROM files_${suffix}`;
          }
-         filesUnion = `(SELECT * FROM (${fBase}) _u_f_inner) _u_f`;
+         filesUnion = `(SELECT * FROM (${fBase}) _u_f_inner)`;
       }
 
-      let modifiedSql = sql
-        .replace(/\bshipment_replies\b/g, '___REPLIES___')
-        .replace(/\bfiles\b/g, '___FILES___')
-        .replace(/\bshipments\b/g, '___SHIPMENTS___');
+      const replaceTableWithUnion = (rawSql, tableName, unionSql, defaultAlias) => {
+         const keywords = 'WHERE|ORDER|GROUP|LIMIT|JOIN|SET|USING|ON|UNION|SELECT|HAVING|LEFT|RIGHT|INNER|OUTER|CROSS|STRAIGHT_JOIN|NATURAL';
+         const regex = new RegExp(`\\b${tableName}\\s+(?:AS\\s+)?(?!(${keywords})\\b)([a-zA-Z0-9_]+)`, 'gi');
+         let replaced = false;
+         let result = rawSql.replace(regex, (match, g1, g2) => {
+           replaced = true;
+           return `${unionSql} ${g2}`;
+         });
+         if (!replaced) {
+           const tableRegex = new RegExp(`\\b${tableName}\\b`, 'gi');
+           result = result.replace(tableRegex, `${unionSql} ${defaultAlias}`);
+         }
+         return result;
+      };
 
-      modifiedSql = modifiedSql
-        .replace(/___REPLIES___/g, repliesUnion)
-        .replace(/___FILES___/g, filesUnion)
-        .replace(/___SHIPMENTS___/g, shipmentsUnion);
+      let modifiedSql = sql;
+      modifiedSql = replaceTableWithUnion(modifiedSql, 'shipment_replies', repliesUnion, '_u_r');
+      modifiedSql = replaceTableWithUnion(modifiedSql, 'files', filesUnion, '_u_f');
+      modifiedSql = replaceTableWithUnion(modifiedSql, 'shipments', shipmentsUnion, '_u_s');
 
       return db.query(modifiedSql, params);
     }
