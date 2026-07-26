@@ -118,22 +118,38 @@ const generateCustomerRfq = async (req, res, next) => {
 
     let assignedOperator = null;
 
-    if (operator && operator.trim()) {
+    // Check if a specific operator is assigned for customer requests
+    const globalOpRes = await db.query("SELECT value FROM app_settings WHERE `key` = 'assigned_operator_for_customer'");
+    const globalOpUsername = globalOpRes.rows[0]?.value;
+
+    if (globalOpUsername && globalOpUsername !== 'random' && globalOpUsername.trim()) {
       const opMatch = await db.query(
         `SELECT id, username, email_address, email_password FROM users 
          WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin')`,
-        [operator.trim()]
+        [globalOpUsername.trim()]
       );
-      if (opMatch.rows.length === 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Operator "${operator}" not found in the system. Please check the spelling.` 
-        });
+      if (opMatch.rows.length > 0) {
+        assignedOperator = opMatch.rows[0].username;
       }
-      assignedOperator = opMatch.rows[0].username;
-    } else {
-      // 2. Round-Robin Operator Assignment
-      const opRes = await db.query(
+    }
+
+    if (!assignedOperator) {
+      if (operator && operator.trim()) {
+        const opMatch = await db.query(
+          `SELECT id, username, email_address, email_password FROM users 
+           WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin')`,
+          [operator.trim()]
+        );
+        if (opMatch.rows.length === 0) {
+          return res.status(400).json({ 
+            success: false, 
+            message: `Operator "${operator}" not found in the system. Please check the spelling.` 
+          });
+        }
+        assignedOperator = opMatch.rows[0].username;
+      } else {
+        // 2. Round-Robin Operator Assignment
+        const opRes = await db.query(
         `SELECT id, username, email_address, email_password FROM users 
          WHERE role = 'operator' 
            AND email_address IS NOT NULL AND email_address != '' 

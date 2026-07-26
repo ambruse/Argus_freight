@@ -1,23 +1,25 @@
 "use client";
 // app/customer/rfq/new/page.tsx
 // ─────────────────────────────────────────────────────────────
-//  Customer Request Quote Page
+//  Customer Request Quote Page - Mirrored from admin/operator new RFQ page
 // ─────────────────────────────────────────────────────────────
 import { useState, useRef, ChangeEvent, DragEvent, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
+import Modal from "@/components/ui/Modal";
 import PortAutoSuggest from "@/components/ui/PortAutoSuggest";
 import CountryAutoSuggest from "@/components/ui/CountryAutoSuggest";
 import ContainerInput from "@/components/ui/ContainerInput";
 import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
-import { MAJOR_PORTS, ALL_COUNTRIES } from "@/lib/ports";
+import { ALL_COUNTRIES } from "@/lib/ports";
 
 type DimItem = {
   length: string;
   width: string;
   height: string;
   qty: string;
+  weight?: string;
 };
 
 type FormState = {
@@ -41,22 +43,70 @@ type FormState = {
   pickup_address: string;
   delivery_address: string;
   note: string;
-  operator: string;
+  refer_by: string;
+  no_dimension?: boolean;
 };
 
 const INITIAL_FORM: FormState = {
   pol: "", pol_country: "", pod: "", commodity: "", term: "", dimension: "",
   dim_length: "", dim_width: "", dim_height: "", dim_qty: "1", dim_unit: "cm", dim_cbm: "",
-  dim_items: [{ length: "", width: "", height: "", qty: "1" }],
+  dim_items: [{ length: "", width: "", height: "", qty: "1", weight: "" }],
   container: "", mode: "", weight: "", weight_unit: "KG", pickup_address: "",
-  delivery_address: "", note: "", operator: ""
+  delivery_address: "", note: "", refer_by: "",
+  no_dimension: false
+};
+
+const formatDimensionAndWeight = (form: FormState) => {
+  const isCbm = form.dim_unit === "cbm";
+  let dimensionStr = "";
+  if (form.no_dimension) {
+    dimensionStr = "No Dimension";
+  } else if (isCbm) {
+    dimensionStr = form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "";
+  } else {
+    const parts = (form.dim_items || []).map((item, idx) => {
+      const l = item.length?.trim() || "0";
+      const w = item.width?.trim() || "0";
+      const h = item.height?.trim() || "0";
+      const qty = item.qty?.trim() || "1";
+      return `${idx + 1}) ${l}x${w}x${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
+    }).filter(Boolean);
+    dimensionStr = parts.length ? `dimensions : ${parts.join("  ")}` : "";
+  }
+
+  let weightStr = "";
+  let totalWeight = 0;
+  if (form.no_dimension || isCbm) {
+    const wVal = parseFloat(form.weight) || 0;
+    totalWeight = wVal;
+    weightStr = wVal ? `${wVal} ${form.weight_unit || "KG"}` : "";
+  } else {
+    const wParts: string[] = [];
+    (form.dim_items || []).forEach((item, idx) => {
+      const wVal = parseFloat(item.weight || "") || 0;
+      const qtyVal = parseFloat(item.qty || "") || 1;
+      const rowWeight = wVal * qtyVal;
+      totalWeight += rowWeight;
+      wParts.push(`${idx + 1}) ${rowWeight.toFixed(2)} ${form.weight_unit || "KG"}`);
+    });
+    weightStr = totalWeight ? `${wParts.join("  ")}   total ${form.weight_unit || "KG"} = ${totalWeight.toFixed(2)}` : "";
+  }
+
+  const isLb = ["LB", "Pound"].includes(form.weight_unit || "KG");
+  const weightInKg = totalWeight
+    ? (isLb ? (totalWeight * 0.45359237).toFixed(2) : totalWeight.toFixed(2))
+    : "";
+
+  return { dimensionStr, weightStr, weightInKg };
 };
 
 export default function CustomerNewRFQPage() {
+  const { user } = useAuth();
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [files, setFiles] = useState<File[]>([]);
   
   const [submitting, setSubmitting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,7 +144,7 @@ export default function CustomerNewRFQPage() {
   const addDimItem = () => {
     setForm(prev => ({
       ...prev,
-      dim_items: [...(prev.dim_items || []), { length: "", width: "", height: "", qty: "1" }]
+      dim_items: [...(prev.dim_items || []), { length: "", width: "", height: "", qty: "1", weight: "" }]
     }));
   };
 
@@ -113,7 +163,6 @@ export default function CustomerNewRFQPage() {
         target.tagName === "SELECT"
       ) {
         e.preventDefault();
-        // Find all focusable form controls in this outer container
         const formElements = Array.from(
           e.currentTarget.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
             "input:not([disabled]), select:not([disabled]), textarea:not([disabled])"
@@ -149,13 +198,10 @@ export default function CustomerNewRFQPage() {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // ── Form Actions ────────────────────────────────────────────
   const handleClear = () => {
     setForm(INITIAL_FORM);
     setFiles([]);
   };
-
-  const { user } = useAuth();
 
   const handleSend = async () => {
     // 1. Validations
@@ -184,31 +230,11 @@ export default function CustomerNewRFQPage() {
       return;
     }
 
+    const { dimensionStr, weightStr, weightInKg } = formatDimensionAndWeight(form);
+
     // Dimension, Container, Weight logic
-    const isCbm = form.dim_unit === "cbm";
-    let dimensionStr = "";
-    if (isCbm) {
-      dimensionStr = form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "";
-    } else {
-      const parts = (form.dim_items || []).map(item => {
-        const l = item.length?.trim() || "0";
-        const w = item.width?.trim() || "0";
-        const h = item.height?.trim() || "0";
-        const qty = item.qty?.trim() || "1";
-        return `${l} x ${w} x ${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
-      }).filter(Boolean);
-      dimensionStr = parts.join("; ");
-    }
-
-    const weightVal = parseFloat(form.weight) || 0;
-    const qtyVal = isCbm ? 1 : (form.dim_items || []).reduce((acc, item) => acc + (parseFloat(item.qty) || 1), 0);
-    const isLb = ["LB", "Pound"].includes(form.weight_unit || "KG");
-    const weightInKg = weightVal
-      ? (isLb ? (weightVal * qtyVal * 0.45359237).toFixed(2) : (weightVal * qtyVal).toFixed(2))
-      : "";
-
     const isContainerEmpty = !form.container?.trim();
-    const isDimensionEmpty = !dimensionStr.trim();
+    const isDimensionEmpty = !form.no_dimension && !dimensionStr.trim();
     const isWeightEmpty = !weightInKg;
 
     if (isContainerEmpty) {
@@ -269,9 +295,6 @@ export default function CustomerNewRFQPage() {
     }
   };
 
-  const polCountries = ALL_COUNTRIES;
-
-  // Container structured UI only for Sea / Road
   const isContainerMode = ["sea", "road"].includes(form.mode?.toLowerCase() ?? "");
 
   const fields = [
@@ -284,18 +307,21 @@ export default function CustomerNewRFQPage() {
     { label: "DIMENSION", name: "dimension" },
     { label: "WEIGHT", name: "weight" },
     { label: "NOTE", name: "note" },
-    { label: "OPERATOR", name: "operator" },
+    { label: "REFER BY", name: "refer_by" },
   ];
+
+  const { dimensionStr, weightStr } = formatDimensionAndWeight(form);
+  const displayPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
 
   return (
     <AppLayout
       title="Request Quote"
       subtitle="Draft a new request for quotation and submit it to the operations team."
     >
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         
         {/* ── Main Form Container ────────────────────────────── */}
-        <div className="glass rounded-2xl p-4 sm:p-6 shadow-card space-y-8 animate-fade-in" onKeyDown={handleKeyDown}>
+        <div className="glass rounded-2xl p-6 shadow-card space-y-8 animate-fade-in" onKeyDown={handleKeyDown}>
           
           {/* Section 1: Cargo & Shipping Details */}
           <div className="relative z-20">
@@ -328,7 +354,7 @@ export default function CustomerNewRFQPage() {
                       name="mode"
                       value={form.mode}
                       onChange={handleChange}
-                      className="select w-full min-h-[44px]"
+                      className="select w-full"
                     >
                       <option value="">— Select mode —</option>
                       <option value="Road">Road</option>
@@ -348,7 +374,7 @@ export default function CustomerNewRFQPage() {
                             setForm(prev => ({ ...prev, term: "" }));
                           }
                         }}
-                        className="select w-full min-h-[44px]"
+                        className="select w-full"
                       >
                         <option value="">— Select term —</option>
                         <option value="FOB">FOB</option>
@@ -364,26 +390,40 @@ export default function CustomerNewRFQPage() {
                           value={form.term}
                           onChange={(e) => setForm(prev => ({ ...prev, term: e.target.value }))}
                           placeholder="Enter custom term (e.g. DDU, CIP)..."
-                          className="input w-full mt-2 min-h-[44px]"
+                          className="input w-full mt-2"
                         />
                       )}
                     </div>
                   ) : f.name === "dimension" ? (
                     <div className="space-y-3">
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-4">
                         <select
                           name="dim_unit"
                           value={form.dim_unit || "cm"}
                           onChange={handleChange}
-                          className="select w-full text-xs min-h-[44px]"
+                          className="select text-xs min-h-[36px] flex-1"
+                          disabled={form.no_dimension}
                         >
                           <option value="cm">cm (Centimeter)</option>
                           <option value="m">m (Meter)</option>
                           <option value="cbm">CBM (Cubic Meter)</option>
                         </select>
+                        <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={form.no_dimension || false}
+                            onChange={(e) => setForm(prev => ({ ...prev, no_dimension: e.target.checked }))}
+                            className="checkbox checkbox-sm checkbox-primary"
+                          />
+                          No Dimension
+                        </label>
                       </div>
 
-                      {form.dim_unit === "cbm" ? (
+                      {form.no_dimension ? (
+                        <div className="p-3 text-center text-xs text-muted/60 italic bg-white/[0.02] border border-white/[0.04] rounded-xl">
+                          No Dimension Checked
+                        </div>
+                      ) : form.dim_unit === "cbm" ? (
                         <div className="relative">
                           <input
                             type="number"
@@ -392,7 +432,7 @@ export default function CustomerNewRFQPage() {
                             name="dim_cbm"
                             value={form.dim_cbm || ""}
                             onChange={handleChange}
-                            className="input w-full pr-12 font-mono min-h-[44px]"
+                            className="input w-full pr-12 font-mono"
                             placeholder="Enter total CBM (e.g. 1.5)"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted pointer-events-none">CBM</span>
@@ -401,14 +441,14 @@ export default function CustomerNewRFQPage() {
                         <div className="space-y-2">
                           {(form.dim_items || []).map((item, idx) => (
                             <div key={idx} className="flex gap-2 items-center">
-                              <div className="grid grid-cols-4 gap-2 flex-1">
+                              <div className="grid grid-cols-5 gap-2 flex-1">
                                 <div className="relative">
                                   <input
                                     type="number"
                                     min="0"
                                     value={item.length || ""}
                                     onChange={(e) => handleDimItemChange(idx, "length", e.target.value)}
-                                    className="input w-full pr-7 text-center font-mono text-xs min-h-[44px]"
+                                    className="input w-full pr-7 text-center font-mono text-xs"
                                     placeholder="L"
                                   />
                                   <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
@@ -421,7 +461,7 @@ export default function CustomerNewRFQPage() {
                                     min="0"
                                     value={item.width || ""}
                                     onChange={(e) => handleDimItemChange(idx, "width", e.target.value)}
-                                    className="input w-full pr-7 text-center font-mono text-xs min-h-[44px]"
+                                    className="input w-full pr-7 text-center font-mono text-xs"
                                     placeholder="W"
                                   />
                                   <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
@@ -434,7 +474,7 @@ export default function CustomerNewRFQPage() {
                                     min="0"
                                     value={item.height || ""}
                                     onChange={(e) => handleDimItemChange(idx, "height", e.target.value)}
-                                    className="input w-full pr-7 text-center font-mono text-xs min-h-[44px]"
+                                    className="input w-full pr-7 text-center font-mono text-xs"
                                     placeholder="H"
                                   />
                                   <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
@@ -447,11 +487,25 @@ export default function CustomerNewRFQPage() {
                                     min="1"
                                     value={item.qty || ""}
                                     onChange={(e) => handleDimItemChange(idx, "qty", e.target.value)}
-                                    className="input w-full pr-7 text-center font-mono text-xs min-h-[44px]"
+                                    className="input w-full pr-7 text-center font-mono text-xs"
                                     placeholder="Qty"
                                   />
                                   <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
                                     pcs
+                                  </span>
+                                </div>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={item.weight || ""}
+                                    onChange={(e) => handleDimItemChange(idx, "weight", e.target.value)}
+                                    className="input w-full pr-8 text-center font-mono text-xs"
+                                    placeholder="Weight"
+                                  />
+                                  <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted pointer-events-none">
+                                    {form.weight_unit || "KG"}
                                   </span>
                                 </div>
                               </div>
@@ -459,7 +513,7 @@ export default function CustomerNewRFQPage() {
                                 <button
                                   type="button"
                                   onClick={addDimItem}
-                                  className="btn btn-primary min-h-[44px] h-[44px] w-[44px] p-0 flex items-center justify-center font-bold text-lg"
+                                  className="btn btn-primary min-h-[36px] h-[36px] w-[36px] p-0 flex items-center justify-center font-bold text-lg"
                                 >
                                   +
                                 </button>
@@ -467,9 +521,9 @@ export default function CustomerNewRFQPage() {
                                 <button
                                   type="button"
                                   onClick={() => removeDimItem(idx)}
-                                  className="btn btn-error min-h-[44px] h-[44px] w-[44px] p-0 flex items-center justify-center font-bold text-lg bg-red-600/20 hover:bg-red-600/40 text-red-500 border border-red-500/30"
+                                  className="btn btn-error min-h-[36px] h-[36px] w-[36px] p-0 flex items-center justify-center font-bold text-lg bg-red-600/20 hover:bg-red-600/40 text-red-500 border border-red-500/30"
                                 >
-                                  ×
+                                  &times;
                                 </button>
                               )}
                             </div>
@@ -480,7 +534,9 @@ export default function CustomerNewRFQPage() {
                       {(() => {
                         const unit = form.dim_unit || "cm";
                         let cbmCalc = 0;
-                        if (unit === "cbm") {
+                        if (form.no_dimension) {
+                          cbmCalc = 0;
+                        } else if (unit === "cbm") {
                           cbmCalc = parseFloat(form.dim_cbm) || 0;
                         } else {
                           (form.dim_items || []).forEach(item => {
@@ -496,16 +552,25 @@ export default function CustomerNewRFQPage() {
                           });
                         }
                         const volWeightCalc = cbmCalc * 167;
-
-                        const wVal = parseFloat(form.weight) || 0;
-                        const qtyVal = unit === "cbm" ? 1 : (form.dim_items || []).reduce((acc, item) => acc + (parseFloat(item.qty) || 1), 0);
+                        
+                        let actWeight = 0;
+                        if (form.no_dimension || unit === "cbm") {
+                          actWeight = parseFloat(form.weight) || 0;
+                        } else {
+                          actWeight = (form.dim_items || []).reduce((acc, item) => {
+                            const w = parseFloat(item.weight || "") || 0;
+                            const q = parseFloat(item.qty || "") || 1;
+                            return acc + (w * q);
+                          }, 0);
+                        }
                         const isLbWeight = ["LB", "Pound"].includes(form.weight_unit || "KG");
-                        const actWeight = wVal 
-                          ? (isLbWeight ? (wVal * qtyVal * 0.45359237) : (wVal * qtyVal))
+                        const actWeightKg = actWeight 
+                          ? (isLbWeight ? (actWeight * 0.45359237) : actWeight)
                           : 0;
 
-                        const chgWeightCalc = Math.max(actWeight, volWeightCalc);
+                        const chgWeightCalc = Math.max(actWeightKg, volWeightCalc);
 
+                        if (form.no_dimension) return null;
                         if (!cbmCalc && !actWeight) return null;
 
                         return (
@@ -519,67 +584,93 @@ export default function CustomerNewRFQPage() {
                               <p className="font-mono font-bold text-blue text-sm">{chgWeightCalc.toFixed(2)} kg</p>
                             </div>
                             <div className="col-span-2 text-[9px] text-muted italic border-t border-white/[0.04] pt-1.5 mt-0.5">
-                              Volumetric Weight: {volWeightCalc.toFixed(2)} kg | Actual Weight: {actWeight.toFixed(2)} kg
+                              Volumetric Weight: {volWeightCalc.toFixed(2)} kg | Actual Weight: {actWeightKg.toFixed(2)} kg
                             </div>
                           </div>
                         );
                       })()}
                     </div>
                   ) : f.name === "weight" ? (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          name="weight"
-                          value={form.weight || ""}
-                          onChange={handleChange}
-                          className="input w-full col-span-2 min-h-[44px]"
-                          placeholder="Weight"
-                        />
-                        <select
-                          name="weight_unit"
-                          value={form.weight_unit || "KG"}
-                          onChange={handleChange}
-                          className="select w-full text-xs min-h-[44px]"
-                        >
-                          <option value="KG">KG</option>
-                          <option value="LB">LB</option>
-                          <option value="Pound">Pound</option>
-                        </select>
+                    (form.no_dimension || form.dim_unit === "cbm") ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            name="weight"
+                            value={form.weight || ""}
+                            onChange={handleChange}
+                            className="input w-full col-span-2"
+                            placeholder="Weight"
+                          />
+                          <select
+                            name="weight_unit"
+                            value={form.weight_unit || "KG"}
+                            onChange={handleChange}
+                            className="select w-full text-xs min-h-[36px]"
+                          >
+                            <option value="KG">KG</option>
+                            <option value="LB">LB</option>
+                            <option value="Pound">Pound</option>
+                          </select>
+                        </div>
+
+                        {(() => {
+                          const wVal = parseFloat(form.weight) || 0;
+                          const qty = 1;
+                          const unit = form.weight_unit || "KG";
+                          const totalWeight = wVal * qty;
+                          
+                          let totalWeightKg = totalWeight;
+                          if (unit === "LB" || unit === "Pound") {
+                            totalWeightKg = totalWeight * 0.45359237;
+                          }
+
+                          if (!wVal) return null;
+
+                          return (
+                            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[10px] text-muted flex justify-between">
+                              <span>Total Weight: <strong className="text-primary">{totalWeight.toFixed(2)} {unit}</strong></span>
+                              {(unit === "LB" || unit === "Pound") && (
+                                <span>(<strong className="text-gold">{totalWeightKg.toFixed(2)} KG</strong>)</span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
-
-                      {(() => {
-                        const wVal = parseFloat(form.weight) || 0;
-                        const qty = parseFloat(form.dim_qty) || 1;
-                        const unit = form.weight_unit || "KG";
-                        const totalWeight = wVal * qty;
-                        
-                        // Convert to KG for calculation preview
-                        let totalWeightKg = totalWeight;
-                        if (unit === "LB" || unit === "Pound") {
-                          totalWeightKg = totalWeight * 0.45359237;
-                        }
-
-                        if (!wVal) return null;
-
-                        return (
-                          <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[10px] text-muted flex justify-between">
-                            <span>Total Weight: <strong className="text-primary">{totalWeight.toFixed(2)} {unit}</strong></span>
-                            {(unit === "LB" || unit === "Pound") && (
-                              <span>(<strong className="text-gold">{totalWeightKg.toFixed(2)} KG</strong>)</span>
-                            )}
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="input w-full col-span-2 bg-white/[0.02] border-white/5 flex items-center px-3 text-xs text-muted font-mono select-none">
+                            Calculated Total: {(() => {
+                              const total = (form.dim_items || []).reduce((acc, item) => {
+                                const w = parseFloat(item.weight || "") || 0;
+                                const q = parseFloat(item.qty || "") || 1;
+                                return acc + (w * q);
+                              }, 0);
+                              return total.toFixed(2);
+                            })()}
                           </div>
-                        );
-                      })()}
-                    </div>
+                          <select
+                            name="weight_unit"
+                            value={form.weight_unit || "KG"}
+                            onChange={handleChange}
+                            className="select w-full text-xs min-h-[36px]"
+                          >
+                            <option value="KG">KG</option>
+                            <option value="LB">LB</option>
+                            <option value="Pound">Pound</option>
+                          </select>
+                        </div>
+                      </div>
+                    )
                   ) : (
                     <input
                       name={f.name}
                       value={(form as any)[f.name]}
                       onChange={handleChange}
-                      className="input w-full min-h-[44px]"
+                      className="input w-full"
                       placeholder={`Enter ${f.label.toLowerCase()}...`}
                       disabled={f.name === "container" && form.mode?.toLowerCase() === "air"}
                     />
@@ -701,6 +792,14 @@ export default function CustomerNewRFQPage() {
             >
               Clear Form
             </button>
+            <button 
+              type="button"
+              onClick={() => setPreviewOpen(true)} 
+              className="btn-secondary w-full sm:w-auto justify-center min-h-[44px]"
+              disabled={submitting}
+            >
+              Preview RFQ
+            </button>
             <button
               type="button"
               onClick={handleSend}
@@ -713,6 +812,57 @@ export default function CustomerNewRFQPage() {
 
         </div>
       </div>
+
+      {/* ── Preview Modal ──────────────────────────────────── */}
+      <Modal 
+        isOpen={previewOpen} 
+        onClose={() => setPreviewOpen(false)} 
+        title="Quote Request Preview"
+        size="lg"
+      >
+        <div className="p-6 bg-surface-4 rounded-xl border border-white/[0.05] font-sans text-sm text-primary space-y-4 whitespace-pre-wrap">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-gold mb-2">Quote Request Summary</h4>
+          
+          <div className="pl-4 border-l-2 border-blue/50 space-y-1 my-4 py-2">
+            {[
+              { l: "POL", v: displayPol },
+              { l: "POD", v: form.pod },
+              { l: "COMMODITY", v: form.commodity },
+              { l: "TERM", v: form.term },
+              { l: "DIMENSION", v: dimensionStr },
+              { l: "CONTAINER", v: form.container },
+              { l: "MODE", v: form.mode },
+              { l: "TOTAL WEIGHT", v: weightStr },
+              { l: "PICK-UP ADDRESS", v: form.pickup_address },
+              { l: "DELIVERY ADDRESS", v: form.delivery_address },
+              { l: "NOTE", v: form.note },
+              { l: "REFER BY", v: form.refer_by },
+            ].map(f => f.v ? (
+              <p key={f.l}><b>{f.l}:</b> {f.v}</p>
+            ) : null)}
+          </div>
+          
+          {files.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-white/[0.05] text-xs text-muted space-y-1">
+              <p className="font-semibold text-primary">Attachments ({files.length}):</p>
+              {files.map((f, index) => (
+                <div key={`${f.name}-${index}`} className="flex items-center gap-1.5 pl-2">
+                  <span>📎</span>
+                  <span>{f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button 
+            onClick={() => setPreviewOpen(false)} 
+            className="btn-secondary px-6"
+          >
+            Close Preview
+          </button>
+        </div>
+      </Modal>
     </AppLayout>
   );
 }

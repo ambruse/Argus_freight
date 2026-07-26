@@ -864,8 +864,38 @@ const getSalesList = async (req, res, next) => {
   }
 };
 
+const getCustomerOperatorSetting = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Forbidden. Admin role required.' });
+    }
+    const result = await db.query("SELECT value FROM app_settings WHERE `key` = 'assigned_operator_for_customer'");
+    const value = result.rows[0]?.value || 'random';
+    res.json({ success: true, operator: value });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateCustomerOperatorSetting = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Forbidden. Admin role required.' });
+    }
+    const { operator } = req.body;
+    await db.query(
+      "INSERT INTO app_settings (`key`, value) VALUES ('assigned_operator_for_customer', $1) ON CONFLICT (`key`) DO UPDATE SET value = EXCLUDED.value",
+      [operator || 'random']
+    );
+    res.json({ success: true, message: 'Customer operator setting updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
   getAdminUsers, updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
+  updateUserExtension, updateProfile, getProfile, getPublicKey, getSignature, updateSignature,
+  getCustomerOperatorSetting, updateCustomerOperatorSetting
 };
