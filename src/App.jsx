@@ -269,15 +269,29 @@ export default function App() {
                 </div>
 
                 <div className="footer-location-card">
-                  <h4 className="location-name">Mumbai Hub (India)</h4>
+                  <h4 className="location-name">Tuticorin , INDIA</h4>
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>Mumbai Hub, India</span>
+                      <span>107/84/1E , Millerpuram, Tuticorin - 8,India</span>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
-                      <a href="tel:+919742379838">+91 9742379838</a>
+                      <a href="tel:919095054575">+91 9095054575</a>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="footer-location-card">
+                  <h4 className="location-name">Nilampur , INDIA</h4>
+                  <div className="location-details-list">
+                    <span className="location-detail-item">
+                      <MapPin size={13} />
+                      <span>Vk road,nilambur Opp - pg medical trust hospital Malappuram,India</span>
+                    </span>
+                    <span className="location-detail-item">
+                      <Phone size={13} />
+                      <a href="tel:919207062636">+91 9207062636</a>
                     </span>
                   </div>
                 </div>
