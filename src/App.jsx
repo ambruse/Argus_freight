@@ -252,8 +252,6 @@ export default function App() {
                   </div>
                 </div>
 
-                
-
                 <div className="footer-location-card">
                   <h4 className="location-name">Guangzhou Yuwei Hub (China)</h4>
                   <div className="location-details-list">
