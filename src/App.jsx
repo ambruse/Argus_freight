@@ -197,7 +197,7 @@ export default function App() {
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>PO Box 31861, Doha, Qatar</span>
+                      <a href="https://maps.app.goo.gl/DzzoydGjMrxuLGyTA">PO Box 31861, Doha, Qatar</a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
@@ -215,7 +215,7 @@ export default function App() {
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>Argus shipping LLC, Al Qusais industrial area 4, Warehouse no4, Dubai , UAE</span>
+                      <a href="https://maps.app.goo.gl/s8U7472GjTtkFcwB7">Argus shipping LLC, Al Qusais industrial area 4, Warehouse no4, Dubai , UAE</a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
@@ -229,7 +229,7 @@ export default function App() {
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>ARGUS SHIPPING, Yiwu Xinalingke International Trade Co., Ltd. Room 1616, Jinmao Building, No. 699 Chouzhou North Road, Yiwu City, Zhejiang Province, China </span>
+                      <a href="https://maps.app.goo.gl/Px3uwdUdALhsjQ8YA">Yiwu Xinalingke International Trade Co., Ltd. Room 1616, Jinmao Building, No. 699 Chouzhou North Road, Yiwu City, Zhejiang Province, China </a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
@@ -243,7 +243,7 @@ export default function App() {
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>Office 21, Building 2464, Road 2663, Block 226, Busaiteen , Bahrain</span>
+                      <a href="https://maps.app.goo.gl/2uNuTu8JHas1GjwR8">Office 21, Building 2464, Road 2663, Block 226, Busaiteen , Bahrain</a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
@@ -253,11 +253,11 @@ export default function App() {
                 </div>
 
                 <div className="footer-location-card">
-                  <h4 className="location-name">Guangzhou Yuwei Hub (China)</h4>
+                  <h4 className="location-name">ARGUS Shipping Guangzhou Hub (China)</h4>
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>Yuwei Hub, Guangzhou, China</span>
+                      <a href="https://maps.app.goo.gl/cbNtjkowDdjsaFGu6">Unit 101, Building C, No. 35 Dagang West Street, Baiyunhu Subdistrict, Baiyun District, Guangzhou</a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
@@ -271,7 +271,7 @@ export default function App() {
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>107/84/1E , Millerpuram, Tuticorin - 8,India</span>
+                      <a href="https://maps.app.goo.gl/ab6KFSwup9Y9szyn9">107/84/1E , Millerpuram, Tuticorin - 8,India</a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
@@ -285,7 +285,7 @@ export default function App() {
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>Vk road,nilambur Opp - pg medical trust hospital Malappuram,India</span>
+                      <a href="https://maps.app.goo.gl/qUT9kmfmVcK9Nn9CA">Vk road,nilambur Opp - pg medical trust hospital Malappuram,India</a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
