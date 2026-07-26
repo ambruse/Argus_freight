@@ -273,7 +273,7 @@ export default function App() {
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
-                      <span>107/84/1E , Millerpuram, Tuticorin - 8,India</span>
+                      <a href="https://maps.app.goo.gl/ab6KFSwup9Y9szyn9">107/84/1E , Millerpuram, Tuticorin - 8,India</a>
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
