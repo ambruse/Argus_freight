@@ -198,24 +198,26 @@ const query = async (req, sql, params) => {
          const safeUsername = (req.user.username || '').replace(/'/g, "''");
          const safeCid = (req.user.customer_id || '').replace(/'/g, "''");
 
-         let userFilter = `(
-           ref_no IN (SELECT ref_no FROM shipments_${safeUser}) OR 
-           LOWER(refer_by) = LOWER('${safeUsername}') OR 
-           (LOWER(refer_by) = LOWER('${safeName}') AND '${safeName}' != '')
-         )`;
+         const conds = [
+           `ref_no IN (SELECT ref_no FROM shipments_${safeUser})`,
+           `LOWER(refer_by) = LOWER('${safeUsername}')`
+         ];
+         if (safeName) {
+           conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
+         }
 
          if (req?.user?.role === 'customer') {
-           userFilter = `(
-             ref_no IN (SELECT ref_no FROM shipments_${safeUser}) OR 
-             LOWER(refer_by) = LOWER('${safeUsername}') OR 
-             (LOWER(refer_by) = LOWER('${safeName}') AND '${safeName}' != '') OR 
-             LOWER(created_by) = LOWER('${safeUsername}') OR 
-             LOWER(email) = LOWER('${safeUsername}') OR 
-             LOWER(customer_email) = LOWER('${safeUsername}') OR 
-             ${safeCid ? `(customer_id IS NOT NULL AND customer_id = '${safeCid}') OR ` : ''}
-             (customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeName || safeUsername}'))
-           )`;
+           conds.push(`LOWER(created_by) = LOWER('${safeUsername}')`);
+           conds.push(`LOWER(email) = LOWER('${safeUsername}')`);
+           conds.push(`LOWER(customer_email) = LOWER('${safeUsername}')`);
+           if (safeCid) {
+             conds.push(`(customer_id IS NOT NULL AND customer_id = '${safeCid}')`);
+           }
+           const nameToMatch = safeName || safeUsername;
+           conds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${nameToMatch}'))`);
          }
+
+         const userFilter = `(${conds.join(' OR ')})`;
 
          let sUnion = `SELECT 2 as __p, shipments.* FROM shipments WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
