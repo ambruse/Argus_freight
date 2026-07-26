@@ -196,12 +196,26 @@ const query = async (req, sql, params) => {
          const safeUser = cleanRoleUser;
          const safeName = (req.user.name || '').replace(/'/g, "''");
          const safeUsername = (req.user.username || '').replace(/'/g, "''");
+         const safeCid = (req.user.customer_id || '').replace(/'/g, "''");
 
-         const userFilter = `(
+         let userFilter = `(
            ref_no IN (SELECT ref_no FROM shipments_${safeUser}) OR 
            LOWER(refer_by) = LOWER('${safeUsername}') OR 
-           LOWER(refer_by) = LOWER('${safeName}')
+           (LOWER(refer_by) = LOWER('${safeName}') AND '${safeName}' != '')
          )`;
+
+         if (req?.user?.role === 'customer') {
+           userFilter = `(
+             ref_no IN (SELECT ref_no FROM shipments_${safeUser}) OR 
+             LOWER(refer_by) = LOWER('${safeUsername}') OR 
+             (LOWER(refer_by) = LOWER('${safeName}') AND '${safeName}' != '') OR 
+             LOWER(created_by) = LOWER('${safeUsername}') OR 
+             LOWER(email) = LOWER('${safeUsername}') OR 
+             LOWER(customer_email) = LOWER('${safeUsername}') OR 
+             ${safeCid ? `(customer_id IS NOT NULL AND customer_id = '${safeCid}') OR ` : ''}
+             (customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeName || safeUsername}'))
+           )`;
+         }
 
          let sUnion = `SELECT 2 as __p, shipments.* FROM shipments WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {

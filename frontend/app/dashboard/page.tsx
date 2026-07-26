@@ -160,11 +160,16 @@ export default function DashboardPage() {
     try {
       const { data } = await api.get("/dashboard/metrics");
       setMetrics(data.data);
+    } catch (err: any) {
+      console.error("Failed to fetch dashboard metrics:", err);
+      toast.error(err.response?.data?.message || err.message || "Failed to load dashboard metrics.");
+    }
 
+    try {
       const { data: shipData } = await api.get("/shipments?status=Confirmed");
       setConfirmedShipments(shipData.data || []);
-    } catch {
-      toast.error("Failed to load dashboard metrics.");
+    } catch (err: any) {
+      console.error("Failed to fetch confirmed shipments for dashboard:", err);
     } finally {
       setLoading(false);
     }

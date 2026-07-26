@@ -23,7 +23,7 @@ const getMetrics = async (req, res, next) => {
         WHERE calling_agent = $1
       `, [req.user.username]);
 
-      const raw = result.rows[0];
+      const raw = (result && result.rows && result.rows[0]) ? result.rows[0] : {};
       return res.json({
         success: true,
         data: {
@@ -61,14 +61,14 @@ const getMetrics = async (req, res, next) => {
 
         -- ── Follow Ups Due ───────────────────────────────────
         SUM(CASE WHEN LOWER(TRIM(status)) IN ('pending', 'pending quote', 'quoted', 'customer review', 'under review')
-            AND last_follow_up < NOW() - INTERVAL '4 hours'
+            AND last_follow_up IS NOT NULL AND last_follow_up < NOW() - INTERVAL '4 hours'
             AND (note IS NULL OR LOWER(TRIM(note)) != 'direct booking') THEN 1 ELSE 0 END) AS follow_ups_due
 
       FROM shipments
     `);
 
-    // All values come back as strings from pg — cast to integers
-    const raw = result.rows[0];
+    // All values come back as strings from pg/mysql — cast to integers
+    const raw = (result && result.rows && result.rows[0]) ? result.rows[0] : {};
     const metrics = {
       // Pipeline
       totalRFQs:        parseInt(raw.total_rfqs || 0),
@@ -86,7 +86,8 @@ const getMetrics = async (req, res, next) => {
 
     res.json({ success: true, data: metrics });
   } catch (err) {
-    next(err);
+    console.error('Error fetching dashboard metrics:', err);
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch dashboard metrics.' });
   }
 };
 
