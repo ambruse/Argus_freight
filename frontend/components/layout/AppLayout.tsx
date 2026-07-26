@@ -102,7 +102,6 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
     otherItems = [
       { href: "/summary", label: "Summary", icon: BarChart2 },
       { href: "/sales/call-enquiries", label: "Assigned Calls", icon: PhoneCall },
-      { href: "/quotation", label: "Quotation", icon: FileText },
       { href: "/calculator", label: "Calculator", icon: Calculator },
       { href: "/customers", label: "Customer Book", icon: BookOpen },
       { href: "/settings", label: "Settings", icon: Settings },
@@ -119,7 +118,6 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/summary", label: "Summary", icon: BarChart2 },
       { href: "/contacts", label: "Address Book", icon: BookOpen },
       { href: "/customers", label: "Customer Book", icon: BookOpen },
-      { href: "/quotation", label: "Quotation", icon: FileText },
       { href: "/calculator", label: "Calculator", icon: Calculator },
       { href: "/settings", label: "Settings", icon: Settings },
       { label: "Logout", icon: LogOut, onClick: logout }
@@ -135,11 +133,9 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/summary", label: "Summary", icon: BarChart2 },
       { href: "/contacts", label: "Address Book", icon: BookOpen },
       { href: "/customers", label: "Customer Book", icon: BookOpen },
-      { href: "/quotation", label: "Quotation", icon: FileText },
       { href: "/calculator", label: "Calculator", icon: Calculator },
       { href: "/admin/call-enquiries", label: "All Calls", icon: Phone },
       { href: "/admin/register", label: "Register User", icon: UserPlus },
-      { href: "/admin/quotations", label: "Approve Quotes", icon: CheckSquare },
       { href: "/settings", label: "Settings", icon: Settings },
       { label: "Logout", icon: LogOut, onClick: logout }
     ];

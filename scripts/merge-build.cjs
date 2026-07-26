@@ -40,4 +40,12 @@ if (fs.existsSync(srcAssets)) {
   console.log('✓ Copied landing page assets to frontend/out/assets');
 }
 
+// 4. Create Quotation.html copy so /Quotation URL works on case-sensitive web servers
+const lowerQuot = path.join(outDir, 'quotation.html');
+const upperQuot = path.join(outDir, 'Quotation.html');
+if (fs.existsSync(lowerQuot)) {
+  fs.copyFileSync(lowerQuot, upperQuot);
+  console.log('✓ Created frontend/out/Quotation.html alias');
+}
+
 console.log('🎉 Landing page successfully merged into frontend/out!');
