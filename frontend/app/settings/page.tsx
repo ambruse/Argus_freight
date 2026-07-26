@@ -199,8 +199,6 @@ export default function SettingsPage() {
   const [showAddOpForm, setShowAddOpForm] = useState(false);
   const [draftGloballyEnabled, setDraftGloballyEnabled] = useState(false);
   const [togglingDraft, setTogglingDraft] = useState(false);
-  const [assignedOperator, setAssignedOperator] = useState("random");
-  const [savingAssignedOperator, setSavingAssignedOperator] = useState(false);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
@@ -240,9 +238,6 @@ export default function SettingsPage() {
         .catch(() => {});
       api.get("/quotation/draft-settings")
         .then(res => setDraftGloballyEnabled(res.data.enabled))
-        .catch(() => {});
-      api.get("/auth/admin/customer-operator-setting")
-        .then(res => setAssignedOperator(res.data.operator || "random"))
         .catch(() => {});
     }
 
@@ -534,18 +529,6 @@ export default function SettingsPage() {
       toast.error(err.response?.data?.message || "Failed to update draft mode setting.");
     } finally {
       setTogglingDraft(false);
-    }
-  };
-  const handleUpdateAssignedOperator = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingAssignedOperator(true);
-    try {
-      await api.post("/auth/admin/customer-operator-setting", { operator: assignedOperator });
-      toast.success("Customer Operator assignment updated successfully.");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update operator assignment.");
-    } finally {
-      setSavingAssignedOperator(false);
     }
   };
   return (
@@ -1323,51 +1306,6 @@ export default function SettingsPage() {
                 />
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Customer Operator Assignment Card — admin only */}
-        {user?.role === "admin" && (
-          <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">
-            <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
-              <span>🎧</span> Customer Operator Assignment
-            </h2>
-            <p className="text-sm text-muted mb-6">Assign a specific operator to handle all incoming customer RFQ requests.</p>
-            
-            <form onSubmit={handleUpdateAssignedOperator} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-widest mb-1.5">
-                  Assigned Operator
-                </label>
-                <select
-                  value={assignedOperator}
-                  onChange={(e) => setAssignedOperator(e.target.value)}
-                  className="select w-full"
-                >
-                  <option value="random">Random (Round-Robin / Load-Balancing)</option>
-                  {adminUsers
-                    .filter((u) => u.role === "operator" || u.role === "admin")
-                    .map((u) => (
-                      <option key={u.id} value={u.username}>
-                        {u.username} ({u.role.toUpperCase()})
-                      </option>
-                    ))}
-                </select>
-                <p className="text-[10px] text-muted mt-1.5">
-                  If set to Random, customer requests are routed in a round-robin style to operators with valid SMTP credentials. If a specific operator is selected, all incoming requests route directly to their queue.
-                </p>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={savingAssignedOperator}
-                  className="btn-primary w-full justify-center"
-                >
-                  {savingAssignedOperator ? "Saving Assignment..." : "Save Operator Assignment"}
-                </button>
-              </div>
-            </form>
           </div>
         )}
 

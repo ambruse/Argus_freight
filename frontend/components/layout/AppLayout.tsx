@@ -272,18 +272,6 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
                 );
               }
 
-              if (item.href === "/quotation") {
-                return (
-                  <div
-                    key={item.href}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-white/[0.02] border-white/[0.04] text-slate-500 opacity-50 cursor-not-allowed"
-                    title="Quotation page is disabled"
-                  >
-                    {itemContent}
-                  </div>
-                );
-              }
-
               return (
                 <Link
                   key={item.href}
