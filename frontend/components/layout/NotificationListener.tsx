@@ -139,53 +139,58 @@ export default function NotificationListener() {
         );
 
         if (newReplies.length > 0) {
-          newReplies.forEach((reply) => {
-            notifiedIds.current.push(reply.id);
+          playNotificationSound();
+          newReplies.forEach((reply) => notifiedIds.current.push(reply.id));
+          const count = newReplies.length;
+          const first = newReplies[0];
 
-            // Display custom toast
-            toast.custom(
-              (t) => (
-                <div
-                  className={`${
-                    t.visible ? "animate-enter" : "animate-leave"
-                  } max-w-md w-full bg-[#1E1E1E] border border-white/[0.08] shadow-card rounded-2xl pointer-events-auto flex p-4 justify-between gap-3`}
-                  style={{
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-blue uppercase tracking-wider mb-1">
-                      📩 New Email Reply
-                    </p>
-                    <p className="text-sm font-semibold text-[#F0F0F0] truncate">
-                      Shipment {reply.ref_no} ({reply.pol || "—"} ➔ {reply.pod || "—"})
-                    </p>
-                    <p className="text-xs text-muted truncate mt-0.5">
-                      {reply.from_email}: "{reply.subject}"
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2 justify-center flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        toast.dismiss(t.id);
-                        handleShowReply(reply);
-                      }}
-                      className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap"
-                    >
-                      Show Details
-                    </button>
-                    <button
-                      onClick={() => toast.dismiss(t.id)}
-                      className="btn-secondary text-[10px] px-2 py-1"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
+          // Display custom toast with N new replies count and brief detail
+          toast.custom(
+            (t) => (
+              <div
+                className={`${
+                  t.visible ? "animate-enter" : "animate-leave"
+                } max-w-md w-full bg-[#1E1E1E] border border-blue/30 shadow-card rounded-2xl pointer-events-auto flex p-4 justify-between gap-3`}
+                style={{
+                  boxShadow: "0 8px 32px rgba(59, 130, 246, 0.15)",
+                }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-blue uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue"></span>
+                    </span>
+                    New Email Replies
+                  </p>
+                  <p className="text-sm font-semibold text-[#F0F0F0] truncate">
+                    {count === 1 ? "There is 1 new reply" : `There are ${count} new replies`}
+                  </p>
+                  <p className="text-xs text-muted truncate mt-0.5">
+                    REF: {first.ref_no} ({first.pol || "—"} ➔ {first.pod || "—"})
+                  </p>
                 </div>
-              ),
-              { duration: 10000 }
-            );
-          });
+                <div className="flex flex-col gap-2 justify-center flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      toast.dismiss(t.id);
+                      handleShowReply(first);
+                    }}
+                    className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => toast.dismiss(t.id)}
+                    className="btn-secondary text-[10px] px-2 py-1"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ),
+            { duration: 10000 }
+          );
         }
       } catch (err) {
         console.error("Failed to check for new replies:", err);
@@ -224,57 +229,62 @@ export default function NotificationListener() {
           const newAssignments = shipments.filter((s: any) => !savedSet.has(s.ref_no));
 
           if (newAssignments.length > 0) {
-            newAssignments.forEach((shipment: any) => {
-              playNotificationSound();
+            playNotificationSound();
+            const count = newAssignments.length;
+            const first = newAssignments[0];
 
-              // Display beautiful custom green toast
-              toast.custom(
-                (t) => (
-                  <div
-                    className={`${
-                      t.visible ? "animate-enter" : "animate-leave"
-                    } max-w-md w-full bg-[#1E1E1E] border border-emerald/30 shadow-card rounded-2xl pointer-events-auto flex p-4 justify-between gap-3`}
-                    style={{
-                      boxShadow: "0 8px 32px rgba(16, 185, 129, 0.15)",
-                    }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-emerald uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald"></span>
-                        </span>
-                        New RFQ Assigned
-                      </p>
-                      <p className="text-sm font-semibold text-[#F0F0F0] truncate">
-                        RFQ {shipment.ref_no} ({shipment.pol || "—"} ➔ {shipment.pod || "—"})
-                      </p>
-                      <p className="text-xs text-muted truncate mt-0.5">
-                        Customer: {shipment.customer_name || "Unknown"} (CID: {shipment.customer_id || "—"})
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2 justify-center flex-shrink-0">
-                      <button
-                        onClick={() => {
-                          toast.dismiss(t.id);
-                          handleShowShipment(shipment);
-                        }}
-                        className="btn-primary text-xs px-3 py-1.5 bg-emerald hover:bg-emerald-bright text-white border-none whitespace-nowrap"
-                      >
-                        Open Details
-                      </button>
-                      <button
-                        onClick={() => toast.dismiss(t.id)}
-                        className="btn-secondary text-[10px] px-2 py-1"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
+            // Small brief details format for sales / customer assigned RFQ
+            const custInfo = first.customer_name || first.customer_id || "Customer";
+            const salesInfo = first.refer_by ? ` (Sales: ${first.refer_by})` : "";
+            const briefDetails = `${first.ref_no} • ${custInfo}${salesInfo} • ${first.pol || "—"} ➔ ${first.pod || "—"}`;
+
+            // Display custom green toast with N new RFQs count and brief detail
+            toast.custom(
+              (t) => (
+                <div
+                  className={`${
+                    t.visible ? "animate-enter" : "animate-leave"
+                  } max-w-md w-full bg-[#1E1E1E] border border-emerald/30 shadow-card rounded-2xl pointer-events-auto flex p-4 justify-between gap-3`}
+                  style={{
+                    boxShadow: "0 8px 32px rgba(16, 185, 129, 0.15)",
+                  }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-emerald uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald"></span>
+                      </span>
+                      New RFQ Assigned
+                    </p>
+                    <p className="text-sm font-semibold text-[#F0F0F0] truncate">
+                      {count === 1 ? "There is 1 new RFQ assigned" : `There are ${count} new RFQs assigned`}
+                    </p>
+                    <p className="text-xs text-muted truncate mt-0.5">
+                      {briefDetails}
+                    </p>
                   </div>
-                ),
-                { duration: 12000 }
-              );
-            });
+                  <div className="flex flex-col gap-2 justify-center flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        toast.dismiss(t.id);
+                        handleShowShipment(first);
+                      }}
+                      className="btn-primary text-xs px-3 py-1.5 bg-emerald hover:bg-emerald-bright text-white border-none whitespace-nowrap"
+                    >
+                      View RFQ
+                    </button>
+                    <button
+                      onClick={() => toast.dismiss(t.id)}
+                      className="btn-secondary text-[10px] px-2 py-1"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ),
+              { duration: 12000 }
+            );
 
             // Update saved refs
             const updatedRefs = Array.from(new Set([...savedRefs, ...shipmentRefs]));
