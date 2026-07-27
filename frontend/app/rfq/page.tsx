@@ -287,19 +287,34 @@ export default function RFQPage() {
   };
 
   // ── Grouping & Filtering ─────────────────────────────────────
-  // 1. Group the raw shipments
+  // 1. Group the raw shipments per customer request
   const groupedItems = (() => {
     const groups: { [key: string]: Shipment[] } = {};
     
-    // Extract base prefix (e.g. 21IL07CV26 from 21IL07CV26-01-2 or 21IL07CV26-01)
-    const getBasePrefix = (refNo: string) => {
-      const idx = refNo.indexOf('-');
-      return idx !== -1 ? refNo.substring(0, idx) : refNo;
+    const getBasePrefix = (s: Shipment) => {
+      if (s.cust_req_no && s.cust_req_no.trim()) {
+        const clean = s.cust_req_no.trim();
+        const parts = clean.split('-');
+        if (parts.length > 2) {
+          return `${parts[0]}-${parts[1]}`;
+        }
+        return clean;
+      }
+      const ref = s.ref_no || "";
+      if (!ref.includes('-')) return ref;
+      const parts = ref.split('-');
+      if (parts[0] === 'ARG' && parts.length > 2) {
+        return `${parts[0]}-${parts[1]}`;
+      }
+      if (parts.length > 2) {
+        return `${parts[0]}-${parts[1]}`;
+      }
+      return parts[0];
     };
 
     shipments.forEach(s => {
-      const base = getBasePrefix(s.ref_no);
-      if (base && base !== s.ref_no) {
+      const base = getBasePrefix(s);
+      if (base) {
         if (!groups[base]) {
           groups[base] = [];
         }
@@ -311,7 +326,7 @@ export default function RFQPage() {
     const processedGroups = new Set<string>();
 
     shipments.forEach(s => {
-      const base = getBasePrefix(s.ref_no);
+      const base = getBasePrefix(s);
       if (base && groups[base] && groups[base].length > 1) {
         if (!processedGroups.has(base)) {
           processedGroups.add(base);
