@@ -4,7 +4,7 @@ const mockDb = {
   query: async (sql, params) => {
     console.log('\n--- EXECUTED QUERY ---');
     console.log(sql);
-    return { rows: [] };
+    return { rows: [{ total_rfqs: 5 }] };
   }
 };
 

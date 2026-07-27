@@ -265,18 +265,21 @@ const query = async (req, sql, params) => {
       }
 
       const replaceTableWithUnion = (rawSql, tableName, unionSql, defaultAlias) => {
-         const keywords = 'WHERE|ORDER|GROUP|LIMIT|JOIN|SET|USING|ON|UNION|SELECT|HAVING|LEFT|RIGHT|INNER|OUTER|CROSS|STRAIGHT_JOIN|NATURAL';
-         const regex = new RegExp(`\\b${tableName}\\s+(?:AS\\s+)?(?!(${keywords})\\b)([a-zA-Z0-9_]+)`, 'gi');
-         let replaced = false;
-         let result = rawSql.replace(regex, (match, g1, g2) => {
-           replaced = true;
-           return `${unionSql} ${g2}`;
+         const keywords = new Set([
+           'WHERE', 'ORDER', 'GROUP', 'LIMIT', 'JOIN', 'SET', 'USING', 'ON', 'UNION',
+           'SELECT', 'HAVING', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'CROSS', 'STRAIGHT_JOIN', 'NATURAL',
+           'AND', 'OR', 'NOT', 'AS', 'END', 'THEN', 'ELSE', 'WHEN', 'CASE', 'IN'
+         ]);
+
+         const regex = new RegExp(`\\b(FROM|JOIN)\\s+${tableName}\\b(?:\\s+(?:AS\\s+)?([a-zA-Z0-9_]+))?`, 'gi');
+
+         return rawSql.replace(regex, (match, prefix, alias) => {
+           if (alias && keywords.has(alias.toUpperCase())) {
+             return `${prefix} ${unionSql} ${defaultAlias} ${alias}`;
+           }
+           const finalAlias = alias || defaultAlias;
+           return `${prefix} ${unionSql} ${finalAlias}`;
          });
-         if (!replaced) {
-           const tableRegex = new RegExp(`\\b${tableName}\\b`, 'gi');
-           result = result.replace(tableRegex, `${unionSql} ${defaultAlias}`);
-         }
-         return result;
       };
 
       let modifiedSql = sql;
