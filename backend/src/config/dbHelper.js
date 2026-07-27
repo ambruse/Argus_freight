@@ -196,6 +196,7 @@ const query = async (req, sql, params) => {
          const safeUser = cleanRoleUser;
          const safeName = (req.user.name || '').replace(/'/g, "''");
          const safeUsername = (req.user.username || '').replace(/'/g, "''");
+         const safeUserEmail = (req.user.email_address || '').replace(/'/g, "''");
          const safeCid = (req.user.customer_id || '').replace(/'/g, "''");
 
          const conds = [];
@@ -205,9 +206,12 @@ const query = async (req, sql, params) => {
              conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
            }
          } else if (req?.user?.role === 'customer') {
-           conds.push(`LOWER(created_by) = LOWER('${safeUsername}')`);
            conds.push(`LOWER(email) = LOWER('${safeUsername}')`);
            conds.push(`LOWER(customer_email) = LOWER('${safeUsername}')`);
+           if (safeUserEmail && safeUserEmail.toLowerCase() !== safeUsername.toLowerCase()) {
+             conds.push(`LOWER(email) = LOWER('${safeUserEmail}')`);
+             conds.push(`LOWER(customer_email) = LOWER('${safeUserEmail}')`);
+           }
            conds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
            if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
              conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
