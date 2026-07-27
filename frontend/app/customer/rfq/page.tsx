@@ -54,18 +54,19 @@ export default function CustomerRFQListPage() {
 
   const getBaseRef = useCallback((s: Partial<Shipment>) => {
     if (s.cust_req_no && s.cust_req_no.trim()) {
-      const cleanCust = s.cust_req_no.trim();
-      const idx = cleanCust.indexOf('-');
-      return idx !== -1 ? cleanCust.substring(0, idx) : cleanCust;
+      return s.cust_req_no.trim();
     }
     const ref = s.ref_no || "";
-    const idx = ref.indexOf('-');
-    if (idx === -1) return ref;
-    const parts = ref.split('-');
-    if (parts.length > 2 && parts[0] === 'ARG') {
-      return `${parts[0]}-${parts[1]}`;
+    if (ref.includes('-')) {
+      const parts = ref.split('-');
+      if (parts.length > 2 && parts[0] === 'ARG') {
+        return `${parts[0]}-${parts[1]}`;
+      }
+      if (parts.length > 2) {
+        return `${parts[0]}-${parts[1]}`;
+      }
     }
-    return parts[0];
+    return ref;
   }, []);
 
   // ── Consolidate sub-shipments into ONE single row per request for Customer ────
@@ -119,6 +120,14 @@ export default function CustomerRFQListPage() {
         replies_count: totalReplies,
         unread_chat_count: totalUnreadChat,
       });
+    });
+
+    // Sort descending so the NEWEST request ALWAYS comes FIRST (at the top)!
+    result.sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (dateA !== dateB) return dateB - dateA;
+      return b.ref_no.localeCompare(a.ref_no, undefined, { numeric: true, sensitivity: 'base' });
     });
 
     return result;

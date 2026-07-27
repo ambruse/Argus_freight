@@ -33,7 +33,7 @@ const generateCustomerRefNo = async (req, customerId, cleanUsername) => {
   const result = await db.query(
     `SELECT ref_no FROM shipments_${cleanUsername} 
      WHERE ref_no LIKE $1 
-     ORDER BY CAST(SUBSTRING(ref_no FROM POSITION('-' IN ref_no) + 1) AS INTEGER) DESC 
+     ORDER BY CAST(SUBSTRING_INDEX(ref_no, '-', -1) AS UNSIGNED) DESC 
      LIMIT 1`,
     [`${customerId}-%`]
   );
