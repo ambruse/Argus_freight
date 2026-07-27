@@ -5,7 +5,7 @@
 //  • Click REF NO → clipboard copy + toast
 //  • Double-click row → detail modal
 // ─────────────────────────────────────────────────────────────
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Badge from "@/components/ui/Badge";
 import RFQDetailModal from "@/components/modals/RFQDetailModal";
@@ -52,12 +52,88 @@ export default function CustomerRFQListPage() {
     fetchShipments();
   }, [fetchShipments]);
 
+  const getBaseRef = useCallback((s: Partial<Shipment>) => {
+    if (s.cust_req_no && s.cust_req_no.trim()) {
+      const cleanCust = s.cust_req_no.trim();
+      const idx = cleanCust.indexOf('-');
+      return idx !== -1 ? cleanCust.substring(0, idx) : cleanCust;
+    }
+    const ref = s.ref_no || "";
+    const idx = ref.indexOf('-');
+    if (idx === -1) return ref;
+    const parts = ref.split('-');
+    if (parts.length > 2 && parts[0] === 'ARG') {
+      return `${parts[0]}-${parts[1]}`;
+    }
+    return parts[0];
+  }, []);
+
+  // ── Consolidate sub-shipments into ONE single row per request for Customer ────
+  const groupedShipments = useMemo(() => {
+    const groups: { [key: string]: Shipment[] } = {};
+
+    shipments.forEach((s) => {
+      const key = getBaseRef(s) || s.ref_no;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(s);
+    });
+
+    const result: Shipment[] = [];
+
+    Object.keys(groups).forEach((groupKey) => {
+      const groupList = groups[groupKey];
+      const primary = groupList[0];
+
+      // Aggregated status: Confirmed > Completed > Active Quoted/Review > Pending > Cancelled
+      const hasConfirmed = groupList.some((s) => s.status === 'Confirmed');
+      const hasCompleted = groupList.some((s) => s.status === 'Completed');
+      const activeStatus = groupList.find((s) => ['Quoted', 'Quote Sent', 'Customer Review', 'Under Review'].includes(s.status))?.status;
+      const hasPending = groupList.some((s) => ['Pending', 'Pending Quote', 'New', 'Draft'].includes(s.status));
+
+      let aggregatedStatus = primary.status;
+      if (hasConfirmed) aggregatedStatus = 'Confirmed';
+      else if (hasCompleted) aggregatedStatus = 'Completed';
+      else if (activeStatus) aggregatedStatus = activeStatus;
+      else if (hasPending) aggregatedStatus = 'Pending';
+
+      // Latest follow up across group
+      const latestFollowUp = groupList.reduce((latest, s) => {
+        if (!s.last_follow_up) return latest;
+        if (!latest) return s.last_follow_up;
+        return new Date(s.last_follow_up) > new Date(latest) ? s.last_follow_up : latest;
+      }, primary.last_follow_up);
+
+      // Aggregated unread counts & total replies across all sub-shipments
+      const totalUnreadReplies = groupList.reduce((sum, s) => sum + (Number(s.unread_replies_count) || 0), 0);
+      const totalReplies = groupList.reduce((sum, s) => sum + (Number(s.replies_count) || 0), 0);
+      const totalUnreadChat = groupList.reduce((sum, s) => sum + (Number(s.unread_chat_count) || 0), 0);
+
+      result.push({
+        ...primary,
+        ref_no: groupKey,
+        status: aggregatedStatus,
+        last_follow_up: latestFollowUp,
+        unread_replies_count: totalUnreadReplies,
+        replies_count: totalReplies,
+        unread_chat_count: totalUnreadChat,
+      });
+    });
+
+    return result;
+  }, [shipments, getBaseRef]);
+
   // ── Auto-open checks for notification clicks ────
   const checkAutoOpen = useCallback(() => {
-    if (shipments.length > 0) {
+    if (groupedShipments.length > 0) {
       const autoRef = sessionStorage.getItem("autoOpenShipmentRef");
       if (autoRef) {
-        const found = shipments.find((s) => s.ref_no === autoRef);
+        const found = groupedShipments.find((s) => 
+          s.ref_no === autoRef || 
+          s.cust_req_no === autoRef || 
+          getBaseRef(s) === getBaseRef({ ref_no: autoRef })
+        );
         if (found) {
           sessionStorage.removeItem("autoOpenShipmentRef");
           setSelected(found);
@@ -65,11 +141,11 @@ export default function CustomerRFQListPage() {
         }
       }
     }
-  }, [shipments]);
+  }, [groupedShipments, getBaseRef]);
 
   useEffect(() => {
     checkAutoOpen();
-  }, [shipments, checkAutoOpen]);
+  }, [groupedShipments, checkAutoOpen]);
 
   useEffect(() => {
     window.addEventListener("check-auto-open", checkAutoOpen);
@@ -79,7 +155,11 @@ export default function CustomerRFQListPage() {
   useEffect(() => {
     const handleOpenDetail = (e: Event) => {
       const reply = (e as CustomEvent).detail;
-      const found = shipments.find((s) => s.ref_no === reply.ref_no);
+      const found = groupedShipments.find((s) => 
+        s.ref_no === reply.ref_no || 
+        s.cust_req_no === reply.ref_no || 
+        getBaseRef(s) === getBaseRef({ ref_no: reply.ref_no })
+      );
       if (found) {
         setSelected(found);
         setModalOpen(true);
@@ -87,7 +167,7 @@ export default function CustomerRFQListPage() {
     };
     window.addEventListener("open-shipment-detail", handleOpenDetail);
     return () => window.removeEventListener("open-shipment-detail", handleOpenDetail);
-  }, [shipments]);
+  }, [groupedShipments, getBaseRef]);
 
   useEffect(() => {
     const handleListUpdate = () => {
@@ -125,12 +205,17 @@ export default function CustomerRFQListPage() {
 
   // ── Status update callback ──────────────────────────────────
   const handleStatusUpdate = (updated: Shipment) => {
-    setShipments((prev) => prev.map((s) => s.ref_no === updated.ref_no ? updated : s));
+    setShipments((prev) => prev.map((s) => {
+      if (s.ref_no === updated.ref_no || s.cust_req_no === updated.ref_no || getBaseRef(s) === getBaseRef(updated)) {
+        return { ...s, ...updated };
+      }
+      return s;
+    }));
     setSelected(updated);
   };
 
   // ── Filter ─────────────────────────────────────────────────
-  const filtered = shipments.filter((s) => {
+  const filtered = groupedShipments.filter((s) => {
     // 1. Status Filter
     if (statusFilter === "Active" && s.status === "Cancelled") return false;
     if (statusFilter !== "All" && statusFilter !== "Active" && s.status !== statusFilter) return false;
