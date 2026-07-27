@@ -67,6 +67,7 @@ export default function RFQPage() {
   useEffect(() => { setUserHydrated(true); }, [user]);
 
   const isAdminOrOperator = userHydrated && (user?.role === 'admin' || user?.role === 'operator');
+  const isSales = userHydrated && user?.role === 'sales';
 
   // Double-click detection
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -474,7 +475,7 @@ export default function RFQPage() {
                 <th>CUST REQ NO</th>
                 <th>OPERATOR</th>
                 <th>CUSTOMER ID/NAME</th>
-                <th>DEAR WHO</th>
+                {!isSales && <th>DEAR WHO</th>}
                 {isAdminOrOperator && <th>SALES</th>}
                 <th>POL</th>
                 <th>POD</th>
@@ -493,7 +494,7 @@ export default function RFQPage() {
                 Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdminOrOperator ? 16 : 15} className="text-center py-16 text-muted">
+                  <td colSpan={isSales ? 14 : (isAdminOrOperator ? 16 : 15)} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📭</p>
                       <p className="text-sm">No RFQ records found.</p>
@@ -547,7 +548,7 @@ export default function RFQPage() {
                         </td>
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(firstShipment.customer_id, firstShipment.customer_name)}</td>
-                        <td>{firstShipment.dear_who ?? "—"}</td>
+                        {!isSales && <td>{firstShipment.dear_who ?? "—"}</td>}
                         {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{firstShipment.refer_by || "—"}</td>
                         )}
@@ -620,7 +621,7 @@ export default function RFQPage() {
                           <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">{cs.cust_req_no ?? "—"}</td>
                           <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{cs.operator ?? "—"}</td>
                           <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(cs.customer_id, cs.customer_name)}</td>
-                          <td>{cs.dear_who ?? "—"}</td>
+                          {!isSales && <td>{cs.dear_who ?? "—"}</td>}
                           {isAdminOrOperator && (
                             <td className="text-xs font-semibold text-amber bg-white/[0.02]">{cs.refer_by || "—"}</td>
                           )}
@@ -702,7 +703,7 @@ export default function RFQPage() {
                         </td>
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{s.operator ?? "—"}</td>
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(s.customer_id, s.customer_name)}</td>
-                        <td>{s.dear_who ?? "—"}</td>
+                        {!isSales && <td>{s.dear_who ?? "—"}</td>}
                         {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{s.refer_by || "—"}</td>
                         )}

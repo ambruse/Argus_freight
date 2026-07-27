@@ -380,6 +380,9 @@ const getEmailSettings = async (req, res, next) => {
  */
 const updateEmailSettings = async (req, res, next) => {
   try {
+    if (req.user.role === 'customer' || req.user.role === 'sales') {
+      return res.status(400).json({ success: false, message: 'User SMTP credentials are not needed for Customer and Sales roles.' });
+    }
     const { email_address, email_password } = req.body;
 
     if (!email_address || email_address.trim() === '') {
@@ -476,11 +479,15 @@ const updateAdminUserEmail = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
 
-    const userCheck = await db.query("SELECT username, email_password FROM users WHERE id = $1", [userId]);
+    const userCheck = await db.query("SELECT username, role, email_password FROM users WHERE id = $1", [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
     const targetUser = userCheck.rows[0];
+
+    if (targetUser.role === 'customer' || targetUser.role === 'sales') {
+      return res.status(400).json({ success: false, message: 'User SMTP credentials are not needed for Customer and Sales roles.' });
+    }
 
     if (action === 'remove') {
       await db.query(

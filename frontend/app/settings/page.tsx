@@ -1084,7 +1084,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
               <span>🔑</span> User SMTP Credentials
             </h2>
-            <p className="text-sm text-muted mb-6">Manage and verify SMTP/IMAP credentials for all operators and users.</p>
+            <p className="text-sm text-muted mb-6">Manage and verify SMTP/IMAP credentials for operators and admins.</p>
 
             {/* Add Operator Form */}
             <div className="mb-6">
@@ -1176,10 +1176,10 @@ export default function SettingsPage() {
             </div>
             
             <div className="space-y-4">
-              {adminUsers.length === 0 && (
+              {adminUsers.filter(u => u.role !== "customer" && u.role !== "sales").length === 0 && (
                 <p className="text-xs text-muted/50 italic">No users found.</p>
               )}
-              {adminUsers.map(u => (
+              {adminUsers.filter(u => u.role !== "customer" && u.role !== "sales").map(u => (
                 <div
                   key={u.id}
                   className="flex flex-col gap-3 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl"

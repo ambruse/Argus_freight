@@ -413,7 +413,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-5 mb-6">
         <Field label="REF NO"       value={shipment.ref_no} />
         <Field label="Referred By"  value={shipment.refer_by} />
-        {user?.role !== "customer" && <Field label="Dear Who"     value={shipment.dear_who} />}
+        {user?.role !== "customer" && user?.role !== "sales" && <Field label="Dear Who"     value={shipment.dear_who} />}
         {user?.role !== "customer" && <Field label="Email"        value={shipment.email} />}
         <Field label="POL"          value={shipment.pol} />
         <Field label="POD"          value={shipment.pod} />

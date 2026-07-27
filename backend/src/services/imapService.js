@@ -287,7 +287,8 @@ const startImapService = async () => {
       `SELECT username, role, email_address, email_password 
        FROM users 
        WHERE email_address IS NOT NULL AND email_address != '' 
-         AND email_password IS NOT NULL AND email_password != ''`
+         AND email_password IS NOT NULL AND email_password != ''
+         AND role NOT IN ('customer', 'sales')`
     );
 
     const configuredUsers = usersRes.rows;

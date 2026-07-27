@@ -411,10 +411,12 @@ export default function AdminRegisterUserPage() {
                             {u.email_address ? (
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-xs text-primary">{u.email_address}</span>
-                                {u.has_password ? (
-                                  <span className="self-start text-[9px] px-1 py-0.2 rounded bg-blue/10 text-blue/80 border border-blue/20">SMTP Active</span>
-                                ) : (
-                                  <span className="self-start text-[9px] px-1 py-0.2 rounded bg-white/[0.04] text-muted border border-white/[0.06]">SMTP Missing Pass</span>
+                                {u.role !== "customer" && u.role !== "sales" && (
+                                  u.has_password ? (
+                                    <span className="self-start text-[9px] px-1 py-0.2 rounded bg-blue/10 text-blue/80 border border-blue/20">SMTP Active</span>
+                                  ) : (
+                                    <span className="self-start text-[9px] px-1 py-0.2 rounded bg-white/[0.04] text-muted border border-white/[0.06]">SMTP Missing Pass</span>
+                                  )
                                 )}
                               </div>
                             ) : (
