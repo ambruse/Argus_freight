@@ -80,31 +80,32 @@ const formatDimensionAndWeight = (form: FormState) => {
   if (form.no_dimension) {
     dimensionStr = "No Dimension";
   } else if (isCbm) {
-    dimensionStr = form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "";
+    const cbmVal = parseFloat(form.dim_cbm || "0") || 0;
+    dimensionStr = cbmVal > 0 ? `${form.dim_cbm?.trim()} CBM` : "";
   } else {
-    const validItems = (form.dim_items || []).filter(item => {
-      const l = parseFloat(item.length || "") || 0;
-      const w = parseFloat(item.width || "") || 0;
-      const h = parseFloat(item.height || "") || 0;
-      return l > 0 || w > 0 || h > 0;
+    const validDimItems = (form.dim_items || []).filter((item) => {
+      const l = parseFloat(item.length || "0") || 0;
+      const w = parseFloat(item.width || "0") || 0;
+      const h = parseFloat(item.height || "0") || 0;
+      return l * w * h > 0;
     });
 
-    if (validItems.length === 1) {
-      const item = validItems[0];
+    if (validDimItems.length === 1) {
+      const item = validDimItems[0];
       const l = item.length?.trim() || "0";
       const w = item.width?.trim() || "0";
       const h = item.height?.trim() || "0";
       const qty = item.qty?.trim() || "1";
       dimensionStr = `${l}x${w}x${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
-    } else if (validItems.length > 1) {
-      const parts = validItems.map((item, idx) => {
+    } else if (validDimItems.length > 1) {
+      const parts = validDimItems.map((item, idx) => {
         const l = item.length?.trim() || "0";
         const w = item.width?.trim() || "0";
         const h = item.height?.trim() || "0";
         const qty = item.qty?.trim() || "1";
         return `${idx + 1}) ${l}x${w}x${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
       });
-      dimensionStr = parts.join("  ");
+      dimensionStr = `dimensions : ${parts.join("  ")}`;
     } else {
       dimensionStr = "";
     }
@@ -117,14 +118,22 @@ const formatDimensionAndWeight = (form: FormState) => {
     totalWeight = wVal;
     weightStr = wVal ? `${wVal} ${form.weight_unit || "KG"}` : "";
   } else {
-    const validWeightItems = (form.dim_items || []).filter(item => {
-      const wVal = parseFloat(item.weight || "") || 0;
-      return wVal > 0;
+    const validItems = (form.dim_items || []).filter((item) => {
+      const l = parseFloat(item.length || "0") || 0;
+      const w = parseFloat(item.width || "0") || 0;
+      const h = parseFloat(item.height || "0") || 0;
+      return l * w * h > 0;
     });
 
-    if (validWeightItems.length > 1) {
+    if (validItems.length === 1) {
+      const item = validItems[0];
+      const wVal = parseFloat(item.weight || "") || 0;
+      const qtyVal = parseFloat(item.qty || "") || 1;
+      totalWeight = wVal * qtyVal;
+      weightStr = totalWeight ? `${totalWeight.toFixed(2)} ${form.weight_unit || "KG"}` : "";
+    } else if (validItems.length > 1) {
       const wParts: string[] = [];
-      (form.dim_items || []).forEach((item, idx) => {
+      validItems.forEach((item, idx) => {
         const wVal = parseFloat(item.weight || "") || 0;
         const qtyVal = parseFloat(item.qty || "") || 1;
         const rowWeight = wVal * qtyVal;
@@ -132,13 +141,8 @@ const formatDimensionAndWeight = (form: FormState) => {
         wParts.push(`${idx + 1}) ${rowWeight.toFixed(2)} ${form.weight_unit || "KG"}`);
       });
       weightStr = totalWeight ? `${wParts.join("  ")}   total ${form.weight_unit || "KG"} = ${totalWeight.toFixed(2)}` : "";
-    } else if (validWeightItems.length === 1) {
-      const wVal = parseFloat(validWeightItems[0].weight || "") || 0;
-      const qtyVal = parseFloat(validWeightItems[0].qty || "") || 1;
-      totalWeight = wVal * qtyVal;
-      weightStr = totalWeight ? `${totalWeight.toFixed(2)} ${form.weight_unit || "KG"}` : "";
     } else {
-      const wVal = parseFloat(form.weight) || 0;
+      const wVal = parseFloat(form.weight || "") || 0;
       totalWeight = wVal;
       weightStr = wVal ? `${wVal} ${form.weight_unit || "KG"}` : "";
     }
@@ -1577,31 +1581,28 @@ export default function NewRFQPage() {
               { l: "DIMENSION", v: form.dimension },
               { l: "CONTAINER", v: form.container },
               { l: "MODE", v: form.mode },
-              { 
-                l: "TOTAL WEIGHT", 
-                v: (form.weight && parseFloat(String(form.weight).replace(/[^\d.]/g, '')) > 0) 
-                   ? (form.weight.toLowerCase().includes('kg') ? form.weight : `${form.weight} Kg`) 
-                   : null 
-              },
+              { l: "TOTAL WEIGHT", v: form.weight },
               { l: "PICK-UP ADDRESS", v: form.pickup_address },
               { l: "DELIVERY ADDRESS", v: form.delivery_address },
               { l: "NOTE", v: form.note },
-            ].map(f => (f.v && String(f.v).trim() !== '' && String(f.v).trim() !== 'No Dimension') ? (
+            ].map(f => f.v ? (
               <p key={f.l}><b>{f.l}:</b> {f.v}</p>
             ) : null)}
           </div>
 
           <br />
           <p>Best regards,</p>
-          {user?.role !== "sales" && (
+          {isSales ? (
+            user?.name ? <p className="font-semibold text-[#3b78c8]">{user.name}</p> : null
+          ) : (
             <>
               <div className="text-[#3b78c8]">
-                <b>{user?.name || user?.username || "Muhammed Jabir"}</b><br />
+                <b>{user?.name || user?.username || "Operator"}</b><br />
                 PRICING AND OPERATION<br />
                 ARGUS SHIPPING
               </div>
               <p>📞 {user?.contact_number || "+974 30512233"}</p>
-              <p>📧 <a href={"mailto:" + (user?.email_address || "jabir@argusshipping.co")} className="underline">{user?.email_address || "jabir@argusshipping.co"}</a></p>
+              <p>📧 <a href={`mailto:${user?.email_address || "ops@argusshipping.co"}`} className="underline">{user?.email_address || "ops@argusshipping.co"}</a></p>
               <p>🌐 <a href="https://www.argusshipping.co" className="underline">www.argusshipping.co</a></p>
               <br />
               <div className="bg-yellow-400 text-red-600 p-2 text-xs leading-tight font-medium" style={{ backgroundColor: 'yellow', color: 'red' }}>

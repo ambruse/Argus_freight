@@ -880,7 +880,7 @@ I am writing to gently follow up on my previous message regarding the pending sh
 
 Best regards,
 
-Muhammed Jabir
+${user?.name || user?.username || "Operator"}
 PRICING AND OPERATION
 ARGUS SHIPPING`}
               </div>
@@ -1099,13 +1099,13 @@ ${quotaForm.note.trim() ? quotaForm.note.trim() + "\n\n" : ""}${quotaForm.mode =
 * Transit times are for indicative purposes only; the carrier will confirm the exact transit time at departure.
 * In case of end-voyage or discharge at a contingency/alternate port, the consignee will be liable for all additional costs arising.\n\n` : ""}Best regards,
 
-Muhammed Jabir
+${user?.name || user?.username || "Operator"}
 PRICING AND OPERATION
 ARGUS SHIPPING
 
-📞 +974 30512233
+📞 ${user?.contact_number || "+974 30512233"}
 
-📧 jabir@argusshipping.co
+📧 ${user?.email_address || "ops@argusshipping.co"}
 
 🌐 www.argusshipping.co`}
                   </div>

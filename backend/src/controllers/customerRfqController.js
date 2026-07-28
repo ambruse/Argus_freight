@@ -409,27 +409,16 @@ const sendCustomerRfqEmail = async (req, res, next) => {
       }
       const chgWeight = Math.max(actWeight, volWeight);
 
-      const isDimValid = shipment.dimension && 
-                         shipment.dimension.trim() !== '' && 
-                         shipment.dimension.trim() !== 'No Dimension' && 
-                         !shipment.dimension.includes('0x0x0') &&
-                         !shipment.dimension.includes('0 x 0 x 0');
-
-      const isWeightValid = shipment.weight && 
-                            String(shipment.weight).trim() !== '' && 
-                            String(shipment.weight).trim() !== '0' && 
-                            parseFloat(String(shipment.weight).replace(/[^\d.]/g, '')) > 0;
-
       const labels = [
         ['POL', shipment.pol],
         ['POD', shipment.pod],
         ['COMMODITY', shipment.commodity],
         ['TERM', shipment.term],
-        ['DIMENSION', isDimValid ? shipment.dimension : null],
+        ['DIMENSION', shipment.dimension],
         ['CONTAINER', shipment.container],
         ['MODE', shipment.mode],
-        ['TOTAL WEIGHT', isWeightValid ? (String(shipment.weight).toLowerCase().includes('kg') ? shipment.weight : `${shipment.weight} Kg`) : null],
-        ['CHARGEABLE WEIGHT', (isWeightValid && chgWeight > 0) ? `${chgWeight.toFixed(2)} Kg` : null],
+        ['TOTAL WEIGHT', shipment.weight ? (String(shipment.weight).toLowerCase().includes('kg') ? shipment.weight : `${shipment.weight} Kg`) : null],
+        ['CHARGEABLE WEIGHT', chgWeight ? `${chgWeight.toFixed(2)} Kg` : null],
         ['PICK-UP ADDRESS', shipment.pickup_address],
         ['DELIVERY ADDRESS', shipment.delivery_address],
         ['NOTE', shipment.note]
