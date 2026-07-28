@@ -6,6 +6,9 @@ export interface AuthUser {
   id: number;
   username: string;
   role: string;
+  name?: string;
+  email_address?: string;
+  contact_number?: string;
 }
 
 const TOKEN_KEY = "freight_token";

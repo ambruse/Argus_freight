@@ -190,14 +190,26 @@ export default function CustomerNewRFQPage() {
     if (isCbm) {
       dimensionStr = form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "";
     } else {
-      const parts = (form.dim_items || []).map(item => {
-        const l = item.length?.trim() || "0";
-        const w = item.width?.trim() || "0";
-        const h = item.height?.trim() || "0";
-        const qty = item.qty?.trim() || "1";
-        return `${l} x ${w} x ${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
-      }).filter(Boolean);
-      dimensionStr = parts.join("; ");
+      const hasValidDims = (form.dim_items || []).some(item => {
+        const l = parseFloat(item.length || "") || 0;
+        const w = parseFloat(item.width || "") || 0;
+        const h = parseFloat(item.height || "") || 0;
+        return l > 0 || w > 0 || h > 0;
+      });
+
+      if (hasValidDims) {
+        const parts = (form.dim_items || []).map(item => {
+          const l = parseFloat(item.length || "") || 0;
+          const w = parseFloat(item.width || "") || 0;
+          const h = parseFloat(item.height || "") || 0;
+          if (l === 0 && w === 0 && h === 0) return null;
+          const qty = item.qty?.trim() || "1";
+          return `${item.length?.trim() || 0} x ${item.width?.trim() || 0} x ${item.height?.trim() || 0} ${form.dim_unit || "cm"} (Qty: ${qty})`;
+        }).filter(Boolean);
+        dimensionStr = parts.join("; ");
+      } else {
+        dimensionStr = "";
+      }
     }
 
     const weightVal = parseFloat(form.weight) || 0;

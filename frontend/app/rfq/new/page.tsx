@@ -82,14 +82,32 @@ const formatDimensionAndWeight = (form: FormState) => {
   } else if (isCbm) {
     dimensionStr = form.dim_cbm?.trim() ? `${form.dim_cbm?.trim()} CBM` : "";
   } else {
-    const parts = (form.dim_items || []).map((item, idx) => {
+    const validItems = (form.dim_items || []).filter(item => {
+      const l = parseFloat(item.length || "") || 0;
+      const w = parseFloat(item.width || "") || 0;
+      const h = parseFloat(item.height || "") || 0;
+      return l > 0 || w > 0 || h > 0;
+    });
+
+    if (validItems.length === 1) {
+      const item = validItems[0];
       const l = item.length?.trim() || "0";
       const w = item.width?.trim() || "0";
       const h = item.height?.trim() || "0";
       const qty = item.qty?.trim() || "1";
-      return `${idx + 1}) ${l}x${w}x${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
-    }).filter(Boolean);
-    dimensionStr = parts.length ? `dimensions : ${parts.join("  ")}` : "";
+      dimensionStr = `${l}x${w}x${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
+    } else if (validItems.length > 1) {
+      const parts = validItems.map((item, idx) => {
+        const l = item.length?.trim() || "0";
+        const w = item.width?.trim() || "0";
+        const h = item.height?.trim() || "0";
+        const qty = item.qty?.trim() || "1";
+        return `${idx + 1}) ${l}x${w}x${h} ${form.dim_unit || "cm"} (Qty: ${qty})`;
+      });
+      dimensionStr = parts.join("  ");
+    } else {
+      dimensionStr = "";
+    }
   }
 
   let weightStr = "";
@@ -99,15 +117,31 @@ const formatDimensionAndWeight = (form: FormState) => {
     totalWeight = wVal;
     weightStr = wVal ? `${wVal} ${form.weight_unit || "KG"}` : "";
   } else {
-    const wParts: string[] = [];
-    (form.dim_items || []).forEach((item, idx) => {
+    const validWeightItems = (form.dim_items || []).filter(item => {
       const wVal = parseFloat(item.weight || "") || 0;
-      const qtyVal = parseFloat(item.qty || "") || 1;
-      const rowWeight = wVal * qtyVal;
-      totalWeight += rowWeight;
-      wParts.push(`${idx + 1}) ${rowWeight.toFixed(2)} ${form.weight_unit || "KG"}`);
+      return wVal > 0;
     });
-    weightStr = totalWeight ? `${wParts.join("  ")}   total ${form.weight_unit || "KG"} = ${totalWeight.toFixed(2)}` : "";
+
+    if (validWeightItems.length > 1) {
+      const wParts: string[] = [];
+      (form.dim_items || []).forEach((item, idx) => {
+        const wVal = parseFloat(item.weight || "") || 0;
+        const qtyVal = parseFloat(item.qty || "") || 1;
+        const rowWeight = wVal * qtyVal;
+        totalWeight += rowWeight;
+        wParts.push(`${idx + 1}) ${rowWeight.toFixed(2)} ${form.weight_unit || "KG"}`);
+      });
+      weightStr = totalWeight ? `${wParts.join("  ")}   total ${form.weight_unit || "KG"} = ${totalWeight.toFixed(2)}` : "";
+    } else if (validWeightItems.length === 1) {
+      const wVal = parseFloat(validWeightItems[0].weight || "") || 0;
+      const qtyVal = parseFloat(validWeightItems[0].qty || "") || 1;
+      totalWeight = wVal * qtyVal;
+      weightStr = totalWeight ? `${totalWeight.toFixed(2)} ${form.weight_unit || "KG"}` : "";
+    } else {
+      const wVal = parseFloat(form.weight) || 0;
+      totalWeight = wVal;
+      weightStr = wVal ? `${wVal} ${form.weight_unit || "KG"}` : "";
+    }
   }
 
   const isLb = ["LB", "Pound"].includes(form.weight_unit || "KG");
@@ -1543,29 +1577,38 @@ export default function NewRFQPage() {
               { l: "DIMENSION", v: form.dimension },
               { l: "CONTAINER", v: form.container },
               { l: "MODE", v: form.mode },
-              { l: "TOTAL WEIGHT", v: form.weight },
+              { 
+                l: "TOTAL WEIGHT", 
+                v: (form.weight && parseFloat(String(form.weight).replace(/[^\d.]/g, '')) > 0) 
+                   ? (form.weight.toLowerCase().includes('kg') ? form.weight : `${form.weight} Kg`) 
+                   : null 
+              },
               { l: "PICK-UP ADDRESS", v: form.pickup_address },
               { l: "DELIVERY ADDRESS", v: form.delivery_address },
               { l: "NOTE", v: form.note },
-            ].map(f => f.v ? (
+            ].map(f => (f.v && String(f.v).trim() !== '' && String(f.v).trim() !== 'No Dimension') ? (
               <p key={f.l}><b>{f.l}:</b> {f.v}</p>
             ) : null)}
           </div>
 
           <br />
           <p>Best regards,</p>
-          <div className="text-[#3b78c8]">
-            <b>Muhammed Jabir</b><br />
-            PRICING AND OPERATION<br />
-            ARGUS SHIPPING
-          </div>
-          <p>📞 +974 30512233</p>
-          <p>📧 <a href="mailto:jabir@argusshipping.co" className="underline">jabir@argusshipping.co</a></p>
-          <p>🌐 <a href="https://www.argusshipping.co" className="underline">www.argusshipping.co</a></p>
-          <br />
-          <div className="bg-yellow-400 text-red-600 p-2 text-xs leading-tight font-medium" style={{ backgroundColor: 'yellow', color: 'red' }}>
-            Confidentiality Notice: This email and any attachments are confidential and may contain legally privileged information intended solely for the named recipient(s). Any unauthorized review, use, disclosure, copying, or distribution is strictly prohibited. If received in error, please notify the sender immediately and permanently delete the message.
-          </div>
+          {user?.role !== "sales" && (
+            <>
+              <div className="text-[#3b78c8]">
+                <b>{user?.name || user?.username || "Muhammed Jabir"}</b><br />
+                PRICING AND OPERATION<br />
+                ARGUS SHIPPING
+              </div>
+              <p>📞 {user?.contact_number || "+974 30512233"}</p>
+              <p>📧 <a href={"mailto:" + (user?.email_address || "jabir@argusshipping.co")} className="underline">{user?.email_address || "jabir@argusshipping.co"}</a></p>
+              <p>🌐 <a href="https://www.argusshipping.co" className="underline">www.argusshipping.co</a></p>
+              <br />
+              <div className="bg-yellow-400 text-red-600 p-2 text-xs leading-tight font-medium" style={{ backgroundColor: 'yellow', color: 'red' }}>
+                Confidentiality Notice: This email and any attachments are confidential and may contain legally privileged information intended solely for the named recipient(s). Any unauthorized review, use, disclosure, copying, or distribution is strictly prohibited. If received in error, please notify the sender immediately and permanently delete the message.
+              </div>
+            </>
+          )}
           
           {files.length > 0 && (
             <div className="mt-6 pt-4 border-t border-white/[0.05] text-xs text-muted space-y-1">
