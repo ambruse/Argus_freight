@@ -13,6 +13,7 @@ import api from "@/lib/api";
 import { Shipment } from "@/types";
 import toast from "react-hot-toast";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
+import { parseDbDate, fmtFollowUpDate } from "@/lib/dateUtils";
 import { exportShipmentsToExcel } from "@/lib/exportExcel";
 
 // ── Skeleton Row ──────────────────────────────────────────────
@@ -103,7 +104,9 @@ export default function CustomerRFQListPage() {
       const latestFollowUp = groupList.reduce((latest, s) => {
         if (!s.last_follow_up) return latest;
         if (!latest) return s.last_follow_up;
-        return new Date(s.last_follow_up) > new Date(latest) ? s.last_follow_up : latest;
+        const t1 = parseDbDate(s.last_follow_up)?.getTime() || 0;
+        const t2 = parseDbDate(latest)?.getTime() || 0;
+        return t1 > t2 ? s.last_follow_up : latest;
       }, primary.last_follow_up);
 
       // Aggregated unread counts & total replies across all sub-shipments
@@ -235,15 +238,7 @@ export default function CustomerRFQListPage() {
       .some((v) => v?.toLowerCase().includes(q));
   });
 
-  const fmtFollowUp = (val: string) => {
-    try {
-      const d = parseISO(val);
-      const hours = (Date.now() - d.getTime()) / 3_600_000;
-      return hours > 4
-        ? <span className="text-amber font-semibold">{formatDistanceToNow(d, { addSuffix: true })}</span>
-        : <span className="text-muted">{formatDistanceToNow(d, { addSuffix: true })}</span>;
-    } catch { return "—"; }
-  };
+  const fmtFollowUp = (val: string) => fmtFollowUpDate(val);
 
   return (
     <AppLayout

@@ -16,6 +16,7 @@ import api from "@/lib/api";
 import { Shipment } from "@/types";
 import toast from "react-hot-toast";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
+import { parseDbDate, fmtFollowUpDate } from "@/lib/dateUtils";
 import { exportShipmentsToExcel } from "@/lib/exportExcel";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -114,10 +115,16 @@ export default function RFQPage() {
   };
 
   const getGroupLastFollowUp = (shipmentsList: Shipment[]) => {
-    let latest = shipmentsList[0].last_follow_up;
+    let latest = shipmentsList[0]?.last_follow_up;
     shipmentsList.forEach(s => {
-      if (new Date(s.last_follow_up) > new Date(latest)) {
-        latest = s.last_follow_up;
+      if (s.last_follow_up) {
+        if (!latest) {
+          latest = s.last_follow_up;
+        } else {
+          const t1 = parseDbDate(s.last_follow_up)?.getTime() || 0;
+          const t2 = parseDbDate(latest)?.getTime() || 0;
+          if (t1 > t2) latest = s.last_follow_up;
+        }
       }
     });
     return latest;
@@ -437,15 +444,7 @@ export default function RFQPage() {
 
   const totalRecords = flatFilteredShipments.length;
 
-  const fmtFollowUp = (val: string) => {
-    try {
-      const d = parseISO(val);
-      const hours = (Date.now() - d.getTime()) / 3_600_000;
-      return hours > 4
-        ? <span className="text-amber font-semibold">{formatDistanceToNow(d, { addSuffix: true })}</span>
-        : <span className="text-muted">{formatDistanceToNow(d, { addSuffix: true })}</span>;
-    } catch { return "—"; }
-  };
+  const fmtFollowUp = (val: string) => fmtFollowUpDate(val);
 
   return (
     <AppLayout
