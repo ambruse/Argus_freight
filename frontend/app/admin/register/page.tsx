@@ -75,6 +75,16 @@ export default function AdminRegisterUserPage() {
     }
   };
 
+  const handleSaveUserCountry = async (userId: number, newCountry: string) => {
+    try {
+      await api.post("/auth/admin/update-country", { userId, country: newCountry });
+      toast.success("Country updated successfully!");
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, country: newCountry } : u));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update country.");
+    }
+  };
+
   const handleInitialSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -425,7 +435,17 @@ export default function AdminRegisterUserPage() {
                               {u.role}
                             </span>
                           </td>
-                          <td className="text-xs text-primary font-medium">{u.country || "—"}</td>
+                          <td>
+                            <select
+                              value={u.country || "Qatar"}
+                              onChange={(e) => handleSaveUserCountry(u.id, e.target.value)}
+                              className="input text-xs py-1 px-2 border-white/10 bg-white/[0.03] text-primary rounded"
+                            >
+                              {COUNTRIES.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </td>
                           <td>
                             {u.email_address ? (
                               <div className="flex flex-col gap-0.5">

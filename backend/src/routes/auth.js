@@ -5,7 +5,8 @@ const {
   login, me, verifyPassword, changePassword, register, 
   getEmailSettings, updateEmailSettings, getAdminUsers, 
   updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
+  updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
+  updateUserExtension, updateAdminUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
 } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { authRateLimiter } = require('../middleware/rateLimiter');
@@ -46,5 +47,6 @@ router.post('/admin/update-user-email', authenticateToken, updateAdminUserEmail)
 router.post('/admin/create-operator', authenticateToken, createAdminOperator);
 router.post('/admin/delete-user', authenticateToken, deleteAdminUser);
 router.post('/admin/toggle-stall', authenticateToken, toggleStallUser);
-router.post('/admin/update-extension', authenticateToken, updateUserExtension);
+router.post('/admin/update-extension', authenticateToken, requireRole('admin'), updateUserExtension);
+router.post('/admin/update-country', authenticateToken, requireRole('admin'), updateAdminUserCountry);
 module.exports = router;
