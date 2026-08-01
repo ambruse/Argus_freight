@@ -281,7 +281,7 @@ export default function App() {
                 </div>
 
                 <div className="footer-location-card">
-                  <h4 className="location-name">Nilampur , INDIA</h4>
+                  <h4 className="location-name">Nilambur , INDIA</h4>
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
