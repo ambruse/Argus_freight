@@ -10,6 +10,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { authStorage } from "@/lib/auth";
 import { encryptPassword } from "@/lib/crypto";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [name,            setName]            = useState("");
   const [emailAddress,    setEmailAddress]    = useState("");
   const [contactNumber,   setContactNumber]   = useState("");
+  const [country,         setCountry]         = useState("Qatar");
   const [isRoleLocked,    setIsRoleLocked]    = useState(false);
 
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -76,7 +78,7 @@ export default function RegisterPage() {
       setLoading(true);
       try {
         const securePassword = await encryptPassword(newPassword);
-        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress, contact_number: contactNumber });
+        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress, contact_number: contactNumber, country });
         toast.success("Account created successfully!");
         router.push("/login");
       } catch (err: any) {
@@ -96,7 +98,7 @@ export default function RegisterPage() {
     try {
       const secureNewPassword = await encryptPassword(newPassword);
       const secureAdminPassword = await encryptPassword(adminPassword);
-      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, adminUsername, adminPassword: secureAdminPassword });
+      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, adminUsername, adminPassword: secureAdminPassword, country });
       toast.success("Account created successfully!");
       router.push("/login");
     } catch (err: any) {
@@ -176,6 +178,19 @@ export default function RegisterPage() {
               </select>
             </div>
           )}
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Country</label>
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="input w-full"
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
 
           {role === "customer" && (
             <>

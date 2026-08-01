@@ -15,7 +15,7 @@ const getAllCustomers = async (req, res, next) => {
 
     const result = await db.query(
       `SELECT id, username, name, email_address, contact_number, customer_id, 
-              address, company, company_address, secondary_phone, created_at 
+              address, company, company_address, secondary_phone, country, created_at 
        FROM users 
        WHERE role = 'customer' 
        ORDER BY created_at DESC`
@@ -32,7 +32,7 @@ const getAllCustomers = async (req, res, next) => {
 const updateCustomerByAdmin = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, email_address, contact_number, address, company, company_address, secondary_phone } = req.body;
+    const { name, email_address, contact_number, address, company, company_address, secondary_phone, country } = req.body;
 
     // Check if the user exists and is a customer
     const userCheck = await db.query('SELECT role, customer_id FROM users WHERE id = $1', [id]);
@@ -52,10 +52,11 @@ const updateCustomerByAdmin = async (req, res, next) => {
            address = $4,
            company = $5,
            company_address = $6,
-           secondary_phone = $7
-       WHERE id = $8
+           secondary_phone = $7,
+           country = $8
+       WHERE id = $9
        RETURNING id, username, name, email_address, contact_number, customer_id, 
-                 address, company, company_address, secondary_phone, created_at`,
+                 address, company, company_address, secondary_phone, country, created_at`,
       [
         name || null,
         email_address ? email_address.trim() : null,
@@ -64,6 +65,7 @@ const updateCustomerByAdmin = async (req, res, next) => {
         company ? company.trim() : null,
         company_address ? company_address.trim() : null,
         secondary_phone ? secondary_phone.trim() : null,
+        country ? country.trim() : null,
         id
       ]
     );
@@ -134,7 +136,8 @@ const createCustomer = async (req, res, next) => {
       secondary_phone,
       create_account,
       username,
-      password
+      password,
+      country
     } = req.body;
 
     if (!name) {
@@ -194,18 +197,18 @@ const createCustomer = async (req, res, next) => {
 
     // Insert into customers table
     await db.query(
-      'INSERT INTO customers (customer_id, name) VALUES ($1, $2)',
-      [finalCustomerId, name.trim()]
+      'INSERT INTO customers (customer_id, name, country) VALUES ($1, $2, $3)',
+      [finalCustomerId, name.trim(), country ? country.trim() : null]
     );
 
     // Insert into users table
     const result = await db.query(
       `INSERT INTO users (
         username, password_hash, role, name, email_address, contact_number, 
-        customer_id, address, company, company_address, secondary_phone
-      ) VALUES ($1, $2, 'customer', $3, $4, $5, $6, $7, $8, $9, $10) 
+        customer_id, address, company, company_address, secondary_phone, country
+      ) VALUES ($1, $2, 'customer', $3, $4, $5, $6, $7, $8, $9, $10, $11) 
       RETURNING id, username, name, email_address, contact_number, customer_id, 
-                address, company, company_address, secondary_phone, created_at`,
+                address, company, company_address, secondary_phone, country, created_at`,
       [
         finalUsername,
         finalHash,
@@ -216,7 +219,8 @@ const createCustomer = async (req, res, next) => {
         address ? address.trim() : null,
         company ? company.trim() : null,
         company_address ? company_address.trim() : null,
-        secondary_phone ? secondary_phone.trim() : null
+        secondary_phone ? secondary_phone.trim() : null,
+        country ? country.trim() : null
       ]
     );
 

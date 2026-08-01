@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { encryptPassword } from "@/lib/crypto";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function AdminRegisterUserPage() {
   const { user: currentUser } = useAuth();
@@ -16,6 +17,7 @@ export default function AdminRegisterUserPage() {
   const [emailAddress, setEmailAddress] = useState("");
   const [contactNumber, setContactNumber] = useState("");
   const [agentExtension, setAgentExtension] = useState("");
+  const [country, setCountry] = useState("Qatar");
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [tempExtension, setTempExtension] = useState("");
 
@@ -98,7 +100,8 @@ export default function AdminRegisterUserPage() {
           role,
           name,
           email_address: emailAddress,
-          contact_number: contactNumber
+          contact_number: contactNumber,
+          country
         });
         toast.success("Customer account created successfully!");
         fetchUsers();
@@ -138,6 +141,7 @@ export default function AdminRegisterUserPage() {
         adminUsername,
         adminPassword: secureAdminPassword,
         agent_extension: agentExtension || undefined,
+        country
       });
       toast.success("Account created successfully!");
       fetchUsers();
@@ -272,6 +276,19 @@ export default function AdminRegisterUserPage() {
               </select>
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">Country</label>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="input w-full"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
             {role === "calling_agent" && (
               <div className="space-y-1.5 animate-slide-up">
                 <label className="text-xs font-medium text-muted uppercase tracking-wider">3CX Extension</label>
@@ -369,6 +386,7 @@ export default function AdminRegisterUserPage() {
                   <tr>
                     <th>USERNAME</th>
                     <th>ROLE</th>
+                    <th>COUNTRY</th>
                     <th>EMAIL / SMTP</th>
                     <th>3CX EXTENSION</th>
                     <th>STATUS</th>
@@ -378,13 +396,13 @@ export default function AdminRegisterUserPage() {
                 <tbody>
                   {loadingUsers ? (
                     <tr>
-                      <td colSpan={5} className="text-center py-8 text-muted">
+                      <td colSpan={7} className="text-center py-8 text-muted">
                         Loading accounts...
                       </td>
                     </tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center py-8 text-muted">
+                      <td colSpan={7} className="text-center py-8 text-muted">
                         No registered accounts found.
                       </td>
                     </tr>
@@ -407,6 +425,7 @@ export default function AdminRegisterUserPage() {
                               {u.role}
                             </span>
                           </td>
+                          <td className="text-xs text-primary font-medium">{u.country || "—"}</td>
                           <td>
                             {u.email_address ? (
                               <div className="flex flex-col gap-0.5">

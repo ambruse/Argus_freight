@@ -229,7 +229,7 @@ const me = async (req, res, next) => {
  */
 const register = async (req, res, next) => {
   try {
-    let { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword, agent_extension } = req.body;
+    let { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword, agent_extension, country } = req.body;
     newPassword = decryptPassword(newPassword);
     adminPassword = decryptPassword(adminPassword);
 
@@ -307,14 +307,14 @@ const register = async (req, res, next) => {
 
       // Also insert into customers table
       await db.query(
-        'INSERT INTO customers (customer_id, name) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
-        [finalCustomerId, name || newUsername]
+        'INSERT INTO customers (customer_id, name, country) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET country = EXCLUDED.country',
+        [finalCustomerId, name || newUsername, country || null]
       );
     }
 
     const insertRes = await db.query(
-      'INSERT INTO users (username, password_hash, role, name, email_address, contact_number, customer_id, agent_extension) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, username, role, customer_id',
-      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null]
+      'INSERT INTO users (username, password_hash, role, name, email_address, contact_number, customer_id, agent_extension, country) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, username, role, customer_id, country',
+      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null, country || null]
     );
 
     // 4. Create and seed user-specific tables
@@ -457,7 +457,7 @@ const getAdminUsers = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Forbidden. Admin only.' });
     }
     const result = await db.query(
-      `SELECT id, username, role, email_address, is_stalled, agent_extension,
+      `SELECT id, username, role, name, email_address, contact_number, country, is_stalled, agent_extension,
               (email_password IS NOT NULL AND email_password != '') as has_password
        FROM users 
        ORDER BY role, username`
@@ -580,7 +580,7 @@ const createAdminOperator = async (req, res, next) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Forbidden. Admin only.' });
     }
-    let { username, password, email_address, email_password } = req.body;
+    let { username, password, email_address, email_password, country } = req.body;
     password = decryptPassword(password);
 
     if (!username || !password || !email_address || !email_password) {
@@ -633,10 +633,10 @@ const createAdminOperator = async (req, res, next) => {
 
     // Insert user
     const insertRes = await db.query(
-      `INSERT INTO users (username, password_hash, role, email_address, email_password) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING id, username, role, email_address`,
-      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim())]
+      `INSERT INTO users (username, password_hash, role, email_address, email_password, country) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, username, role, email_address, country`,
+      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim()), country || null]
     );
 
     // Create sandbox tables for this new operator

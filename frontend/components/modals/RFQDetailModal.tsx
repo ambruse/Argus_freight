@@ -681,10 +681,10 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       )}
 
       {/* Chat Box Section */}
-      {!isSales && shipment.customer_id && shipment.cust_req_no && (
+      {(shipment.cust_req_no || shipment.ref_no) && (
         <div className="border-t border-white/[0.06] pt-5 mb-6">
           <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">
-            {user?.role === "customer" ? "💬 Chat with Operator" : "💬 Chat with Customer"}
+            {user?.role === "customer" ? "💬 Chat with Operator" : (user?.role === "sales" ? "💬 Chat with Operator" : "💬 Chat Room")}
           </p>
         <div className="p-4 rounded-xl bg-surface-4 border border-white/[0.05] space-y-4">
           {/* Messages List */}

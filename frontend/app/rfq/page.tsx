@@ -139,6 +139,43 @@ export default function RFQPage() {
     }
   };
 
+  // ── Rate editing state & handler ─────────────────────────────
+  const [editingRateGroupKey, setEditingRateGroupKey] = useState<string | null>(null);
+  const [rateInputValue, setRateInputValue] = useState<string>("");
+  const [savingRate, setSavingRate] = useState(false);
+
+  const handleSaveRate = async (groupKey: string, shipmentsToUpdate: Shipment[]) => {
+    if (!rateInputValue.trim()) {
+      setEditingRateGroupKey(null);
+      return;
+    }
+    const numRate = parseFloat(rateInputValue.trim());
+    if (isNaN(numRate)) {
+      toast.error("Please enter a valid numeric rate.");
+      return;
+    }
+    setSavingRate(true);
+    try {
+      for (const s of shipmentsToUpdate) {
+        await api.patch(`/shipments/${s.ref_no}/status`, {
+          cost: numRate
+        });
+      }
+      toast.success("Rate updated successfully!");
+      setShipments(prev => prev.map(s => {
+        if (shipmentsToUpdate.some(gs => gs.ref_no === s.ref_no)) {
+          return { ...s, cost: numRate };
+        }
+        return s;
+      }));
+      setEditingRateGroupKey(null);
+    } catch {
+      toast.error("Failed to update rate.");
+    } finally {
+      setSavingRate(false);
+    }
+  };
+
   const fetchShipments = useCallback(async () => {
     try {
       const { data } = await api.get("/shipments?exclude_direct=true");
@@ -498,9 +535,10 @@ export default function RFQPage() {
                 <th>MODE</th>
                 <th>TERM</th>
                 <th>STATUS</th>
-                <th>LAST FOLLOW-UP</th>
-                <th>REPLIES</th>
+                {!isSales && <th>LAST FOLLOW-UP</th>}
+                {!isSales && <th>REPLIES</th>}
                 <th>CHAT</th>
+                <th>RATE</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
@@ -509,7 +547,7 @@ export default function RFQPage() {
                 Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={isSales ? 14 : (isAdminOrOperator ? 16 : 15)} className="text-center py-16 text-muted">
+                  <td colSpan={isSales ? 12 : (isAdminOrOperator ? 16 : 15)} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📭</p>
                       <p className="text-sm">No RFQ records found.</p>
@@ -539,9 +577,16 @@ export default function RFQPage() {
                       <Fragment key={item.basePrefix}>
                       <tr
                         onClick={() => handleGroupRowClick(item.basePrefix)}
+                        onDoubleClick={(e) => {
+                          if (isAdminOrOperator) {
+                            e.stopPropagation();
+                            setEditingRateGroupKey(item.basePrefix);
+                            setRateInputValue(firstShipment.cost != null ? String(firstShipment.cost) : "");
+                          }
+                        }}
                         className="cursor-pointer bg-amber/[0.04] hover:bg-amber/[0.07] transition-colors border-l-2 border-amber/40"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
-                        title="Click to expand/collapse group"
+                        title={isAdminOrOperator ? "Click to expand, double-click to input rate" : "Click to expand/collapse group"}
                       >
                         <td>
                           <button
@@ -575,22 +620,26 @@ export default function RFQPage() {
                         </td>
                         <td>{firstShipment.term ?? "—"}</td>
                         <td><Badge status={statusToShow} /></td>
-                        <td className="text-xs">
-                          {statusToShow === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(latestFollowUp)}
-                        </td>
-                        <td>
-                          {groupUnreadRepliesCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
-                              📩 New ({groupUnreadRepliesCount})
-                            </span>
-                          ) : groupRepliesCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
-                              💬 Replied ({groupRepliesCount})
-                            </span>
-                          ) : (
-                            <span className="text-faint text-xs">—</span>
-                          )}
-                        </td>
+                        {!isSales && (
+                          <td className="text-xs">
+                            {statusToShow === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(latestFollowUp)}
+                          </td>
+                        )}
+                        {!isSales && (
+                          <td>
+                            {groupUnreadRepliesCount > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
+                                📩 New ({groupUnreadRepliesCount})
+                              </span>
+                            ) : groupRepliesCount > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
+                                💬 Replied ({groupRepliesCount})
+                              </span>
+                            ) : (
+                              <span className="text-faint text-xs">—</span>
+                            )}
+                          </td>
+                        )}
                         <td>
                           {groupUnreadChatCount > 0 ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
@@ -602,6 +651,52 @@ export default function RFQPage() {
                             </span>
                           ) : (
                             <span className="text-faint text-xs">—</span>
+                          )}
+                        </td>
+                        <td
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => {
+                            if (isAdminOrOperator) {
+                              e.stopPropagation();
+                              setEditingRateGroupKey(item.basePrefix);
+                              setRateInputValue(firstShipment.cost != null ? String(firstShipment.cost) : "");
+                            }
+                          }}
+                          className="font-semibold text-emerald text-xs cursor-pointer"
+                          title={isAdminOrOperator ? "Double-click to set/edit rate for group" : ""}
+                        >
+                          {editingRateGroupKey === item.basePrefix ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                value={rateInputValue}
+                                onChange={(e) => setRateInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSaveRate(item.basePrefix, item.shipments);
+                                  if (e.key === "Escape") setEditingRateGroupKey(null);
+                                }}
+                                placeholder="Rate"
+                                className="input-sm w-20 text-xs bg-surface-1 border border-blue/50 text-primary rounded px-1.5 py-0.5"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveRate(item.basePrefix, item.shipments)}
+                                disabled={savingRate}
+                                className="btn-primary text-[10px] px-1.5 py-0.5 font-bold"
+                              >
+                                {savingRate ? "..." : "✓"}
+                              </button>
+                              <button
+                                onClick={() => setEditingRateGroupKey(null)}
+                                className="btn-secondary text-[10px] px-1 py-0.5"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            firstShipment.cost != null
+                              ? `QAR ${Number(firstShipment.cost).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                              : (isAdminOrOperator ? <span className="text-faint italic text-xs">Double-click rate</span> : "—")
                           )}
                         </td>
                         <td>
@@ -619,8 +714,15 @@ export default function RFQPage() {
                         <tr
                           key={cs.ref_no}
                           onClick={() => handleRowClick(cs)}
+                          onDoubleClick={(e) => {
+                            if (isAdminOrOperator) {
+                              e.stopPropagation();
+                              setEditingRateGroupKey(cs.ref_no);
+                              setRateInputValue(cs.cost != null ? String(cs.cost) : "");
+                            }
+                          }}
                           className="cursor-pointer bg-white/[0.01] hover:bg-white/[0.04] transition-colors border-l-4 border-amber/20"
-                          title="Double-click to open details"
+                          title="Double-click to open details or edit rate"
                         >
                           <td className="pl-6">
                             <button
@@ -646,22 +748,26 @@ export default function RFQPage() {
                           <td><span className="text-xs font-semibold text-muted uppercase">{cs.mode ?? "—"}</span></td>
                           <td>{cs.term ?? "—"}</td>
                           <td><Badge status={cs.status} /></td>
-                          <td className="text-xs">
-                            {cs.status === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(cs.last_follow_up)}
-                          </td>
-                          <td>
-                            {cs.unread_replies_count && Number(cs.unread_replies_count) > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
-                                📩 New ({cs.unread_replies_count})
-                              </span>
-                            ) : cs.replies_count && Number(cs.replies_count) > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
-                                💬 Replied ({cs.replies_count})
-                              </span>
-                            ) : (
-                              <span className="text-faint text-xs">—</span>
-                            )}
-                          </td>
+                          {!isSales && (
+                            <td className="text-xs">
+                              {cs.status === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(cs.last_follow_up)}
+                            </td>
+                          )}
+                          {!isSales && (
+                            <td>
+                              {cs.unread_replies_count && Number(cs.unread_replies_count) > 0 ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
+                                  📩 New ({cs.unread_replies_count})
+                                </span>
+                              ) : cs.replies_count && Number(cs.replies_count) > 0 ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
+                                  💬 Replied ({cs.replies_count})
+                                </span>
+                              ) : (
+                                <span className="text-faint text-xs">—</span>
+                              )}
+                            </td>
+                          )}
                           <td>
                             {cs.unread_chat_count && Number(cs.unread_chat_count) > 0 ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
@@ -669,6 +775,52 @@ export default function RFQPage() {
                               </span>
                             ) : (
                               <span className="text-faint text-xs">—</span>
+                            )}
+                          </td>
+                          <td
+                            onClick={(e) => e.stopPropagation()}
+                            onDoubleClick={(e) => {
+                              if (isAdminOrOperator) {
+                                e.stopPropagation();
+                                setEditingRateGroupKey(cs.ref_no);
+                                setRateInputValue(cs.cost != null ? String(cs.cost) : "");
+                              }
+                            }}
+                            className="font-semibold text-emerald text-xs cursor-pointer"
+                            title={isAdminOrOperator ? "Double-click to set/edit rate" : ""}
+                          >
+                            {editingRateGroupKey === cs.ref_no ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  value={rateInputValue}
+                                  onChange={(e) => setRateInputValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSaveRate(cs.ref_no, [cs]);
+                                    if (e.key === "Escape") setEditingRateGroupKey(null);
+                                  }}
+                                  placeholder="Rate"
+                                  className="input-sm w-20 text-xs bg-surface-1 border border-blue/50 text-primary rounded px-1.5 py-0.5"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleSaveRate(cs.ref_no, [cs])}
+                                  disabled={savingRate}
+                                  className="btn-primary text-[10px] px-1.5 py-0.5 font-bold"
+                                >
+                                  {savingRate ? "..." : "✓"}
+                                </button>
+                                <button
+                                  onClick={() => setEditingRateGroupKey(null)}
+                                  className="btn-secondary text-[10px] px-1 py-0.5"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              cs.cost != null
+                                ? `QAR ${Number(cs.cost).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                : (isAdminOrOperator ? <span className="text-faint italic text-xs">Double-click rate</span> : "—")
                             )}
                           </td>
                           <td>
@@ -692,9 +844,16 @@ export default function RFQPage() {
                       <tr
                         key={s.ref_no}
                         onClick={() => handleRowClick(s)}
+                        onDoubleClick={(e) => {
+                          if (isAdminOrOperator) {
+                            e.stopPropagation();
+                            setEditingRateGroupKey(s.ref_no);
+                            setRateInputValue(s.cost != null ? String(s.cost) : "");
+                          }
+                        }}
                         className="cursor-pointer"
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
-                        title="Double-click to open details"
+                        title={isAdminOrOperator ? "Click to view, double-click to input rate" : "Double-click to open details"}
                       >
                         {/* REF NO — click to copy */}
                         <td>
@@ -730,22 +889,26 @@ export default function RFQPage() {
                         </td>
                         <td>{s.term ?? "—"}</td>
                         <td><Badge status={s.status} /></td>
-                        <td className="text-xs">
-                          {s.status === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(s.last_follow_up)}
-                        </td>
-                        <td>
-                          {s.unread_replies_count && Number(s.unread_replies_count) > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
-                              📩 New ({s.unread_replies_count})
-                            </span>
-                          ) : s.replies_count && Number(s.replies_count) > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
-                              💬 Replied ({s.replies_count})
-                            </span>
-                          ) : (
-                            <span className="text-faint text-xs">—</span>
-                          )}
-                        </td>
+                        {!isSales && (
+                          <td className="text-xs">
+                            {s.status === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(s.last_follow_up)}
+                          </td>
+                        )}
+                        {!isSales && (
+                          <td>
+                            {s.unread_replies_count && Number(s.unread_replies_count) > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
+                                📩 New ({s.unread_replies_count})
+                              </span>
+                            ) : s.replies_count && Number(s.replies_count) > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
+                                💬 Replied ({s.replies_count})
+                              </span>
+                            ) : (
+                              <span className="text-faint text-xs">—</span>
+                            )}
+                          </td>
+                        )}
                         <td>
                           {s.unread_chat_count && Number(s.unread_chat_count) > 0 ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
@@ -757,6 +920,52 @@ export default function RFQPage() {
                             </span>
                           ) : (
                             <span className="text-faint text-xs">—</span>
+                          )}
+                        </td>
+                        <td
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => {
+                            if (isAdminOrOperator) {
+                              e.stopPropagation();
+                              setEditingRateGroupKey(s.ref_no);
+                              setRateInputValue(s.cost != null ? String(s.cost) : "");
+                            }
+                          }}
+                          className="font-semibold text-emerald text-xs cursor-pointer"
+                          title={isAdminOrOperator ? "Double-click to set/edit rate" : ""}
+                        >
+                          {editingRateGroupKey === s.ref_no ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                value={rateInputValue}
+                                onChange={(e) => setRateInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleSaveRate(s.ref_no, [s]);
+                                  if (e.key === "Escape") setEditingRateGroupKey(null);
+                                }}
+                                placeholder="Rate"
+                                className="input-sm w-20 text-xs bg-surface-1 border border-blue/50 text-primary rounded px-1.5 py-0.5"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveRate(s.ref_no, [s])}
+                                disabled={savingRate}
+                                className="btn-primary text-[10px] px-1.5 py-0.5 font-bold"
+                              >
+                                {savingRate ? "..." : "✓"}
+                              </button>
+                              <button
+                                onClick={() => setEditingRateGroupKey(null)}
+                                className="btn-secondary text-[10px] px-1 py-0.5"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            s.cost != null
+                              ? `QAR ${Number(s.cost).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                              : (isAdminOrOperator ? <span className="text-faint italic text-xs">Double-click rate</span> : "—")
                           )}
                         </td>
                         <td>

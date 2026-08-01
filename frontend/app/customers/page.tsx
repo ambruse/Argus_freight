@@ -4,6 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { COUNTRIES } from "@/lib/countries";
 
 interface Customer {
   id: number;
@@ -16,6 +17,7 @@ interface Customer {
   company: string | null;
   company_address: string | null;
   secondary_phone: string | null;
+  country: string | null;
   created_at: string;
 }
 
@@ -35,7 +37,8 @@ export default function CustomerBookPage() {
     address: "",
     company: "",
     company_address: "",
-    secondary_phone: ""
+    secondary_phone: "",
+    country: "Qatar"
   });
   const [saving, setSaving] = useState(false);
 
@@ -49,6 +52,7 @@ export default function CustomerBookPage() {
     company: "",
     company_address: "",
     secondary_phone: "",
+    country: "Qatar",
     create_account: false,
     username: "",
     password: ""
@@ -88,7 +92,8 @@ export default function CustomerBookPage() {
       address: c.address || "",
       company: c.company || "",
       company_address: c.company_address || "",
-      secondary_phone: c.secondary_phone || ""
+      secondary_phone: c.secondary_phone || "",
+      country: c.country || "Qatar"
     });
     setIsEditModalOpen(true);
   };
@@ -131,6 +136,7 @@ export default function CustomerBookPage() {
         company: "",
         company_address: "",
         secondary_phone: "",
+        country: "Qatar",
         create_account: false,
         username: "",
         password: ""
@@ -447,6 +453,21 @@ export default function CustomerBookPage() {
 
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                    Country
+                  </label>
+                  <select
+                    className="input w-full"
+                    value={editForm.country}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, country: e.target.value }))}
+                  >
+                    {COUNTRIES.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
                     Company Address
                   </label>
                   <textarea
@@ -567,15 +588,17 @@ export default function CustomerBookPage() {
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                      Personal Address
+                      Country
                     </label>
-                    <input
-                      type="text"
+                    <select
                       className="input w-full"
-                      value={addForm.address}
-                      onChange={(e) => setAddForm(prev => ({ ...prev, address: e.target.value }))}
-                      placeholder="Optional"
-                    />
+                      value={addForm.country}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, country: e.target.value }))}
+                    >
+                      {COUNTRIES.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
