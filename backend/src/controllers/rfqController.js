@@ -107,6 +107,9 @@ const generateRfq = async (req, res, next) => {
 
       try {
         const targetOp = opUsername || operator || req.user.username;
+        const finalReferBy = (refer_by && String(refer_by).trim() !== '')
+          ? String(refer_by).trim()
+          : (req.user ? (req.user.name || req.user.username) : null);
 
         const result = await query(req,
           `INSERT INTO shipments (
@@ -117,7 +120,7 @@ const generateRfq = async (req, res, next) => {
             $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
           ) RETURNING *`,
           [
-            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOp
@@ -142,7 +145,7 @@ const generateRfq = async (req, res, next) => {
             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               cleanOp
@@ -159,7 +162,7 @@ const generateRfq = async (req, res, next) => {
             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               cleanOp || targetOp
@@ -176,7 +179,7 @@ const generateRfq = async (req, res, next) => {
           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
            ON CONFLICT (ref_no) DO NOTHING`,
           [
-            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             cleanOp || targetOp

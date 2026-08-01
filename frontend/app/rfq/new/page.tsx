@@ -186,6 +186,7 @@ export default function NewRFQPage() {
 
   useEffect(() => {
     if (!user) return;
+    setForm(prev => prev.refer_by ? prev : ({ ...prev, refer_by: user.name || user.username || "" }));
     api.get("/customers").then(async (res) => {
       let custs = res.data.data || [];
       if (["admin", "operator"].includes(user.role)) {

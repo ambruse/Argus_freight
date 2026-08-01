@@ -205,6 +205,7 @@ const query = async (req, sql, params) => {
            if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
              conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
            }
+           conds.push(`(refer_by IS NULL OR refer_by = '')`);
          } else if (req?.user?.role === 'customer') {
            conds.push(`LOWER(email) = LOWER('${safeUsername}')`);
            conds.push(`LOWER(customer_email) = LOWER('${safeUsername}')`);
