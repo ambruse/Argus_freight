@@ -874,6 +874,10 @@ const getSalesList = async (req, res, next) => {
     }
     res.json({ success: true, data: users });
   } catch (err) {
+    next(err);
+  }
+};
+
 const updateAdminUserCountry = async (req, res, next) => {
   try {
     const { requireRole } = require('../middleware/auth');

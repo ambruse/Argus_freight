@@ -5,7 +5,6 @@ const {
   login, me, verifyPassword, changePassword, register, 
   getEmailSettings, updateEmailSettings, getAdminUsers, 
   updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
   updateUserExtension, updateAdminUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
 } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
