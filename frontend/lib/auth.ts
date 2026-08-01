@@ -9,6 +9,7 @@ export interface AuthUser {
   name?: string;
   email_address?: string;
   contact_number?: string;
+  country?: string;
   email_signature?: string;
 }
 

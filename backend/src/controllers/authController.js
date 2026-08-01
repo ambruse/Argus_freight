@@ -98,7 +98,8 @@ const login = async (req, res, next) => {
         name: user.name,
         email_address: user.email_address,
         contact_number: user.contact_number,
-        customer_id: user.customer_id
+        customer_id: user.customer_id,
+        country: user.country || 'Qatar'
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
@@ -141,7 +142,8 @@ const login = async (req, res, next) => {
         name: user.name,
         email_address: user.email_address,
         contact_number: user.contact_number,
-        customer_id: user.customer_id
+        customer_id: user.customer_id,
+        country: user.country || 'Qatar'
       },
     });
   } catch (err) {

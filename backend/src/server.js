@@ -385,8 +385,10 @@ const createLike = async (newTable, baseTable) => {
     await addCol('users', 'agent_extension', 'VARCHAR(50)');
     await addCol('users', 'country', "VARCHAR(100) DEFAULT 'Qatar'");
     await addCol('customers', 'country', "VARCHAR(100) DEFAULT 'Qatar'");
+    await addCol('compulsory_emails', 'country', "VARCHAR(100) DEFAULT 'Qatar'");
     try { await db.query("UPDATE users SET country = 'Qatar' WHERE country IS NULL OR country = ''"); } catch(e){}
     try { await db.query("UPDATE customers SET country = 'Qatar' WHERE country IS NULL OR country = ''"); } catch(e){}
+    try { await db.query("UPDATE compulsory_emails SET country = 'Qatar' WHERE country IS NULL OR country = ''"); } catch(e){}
     await addCol('shipments', 'customer_id', 'VARCHAR(5)');
     await addCol('shipments', 'profit', 'DECIMAL(15,2)');
     await addCol('shipments', 'customer_name', 'VARCHAR(255)');

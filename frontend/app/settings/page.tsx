@@ -5,10 +5,11 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { encryptPassword } from "@/lib/crypto";
+import { COUNTRIES } from "@/lib/countries";
 
 type CcRecipient = { id: number; name: string; email: string; multi_select: boolean };
 type AdminUser = { id: number; username: string; role: string; email_address: string | null; has_password: boolean };
-type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; is_active: boolean };
+type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; country?: string; is_active: boolean };
 
 interface RichTextEditorProps {
   value: string;
@@ -182,6 +183,7 @@ export default function SettingsPage() {
   const [addCeEmail, setAddCeEmail] = useState("");
   const [addCeDearWho, setAddCeDearWho] = useState("");
   const [addCeMode, setAddCeMode] = useState("Air");
+  const [addCeCountry, setAddCeCountry] = useState("Qatar");
   const [addingCe, setAddingCe] = useState(false);
 
   // ── User SMTP Settings (admin only) ─────────────────────────
@@ -390,11 +392,12 @@ export default function SettingsPage() {
     if (!addCeEmail.trim() || !addCeDearWho.trim() || !addCeMode) return;
     setAddingCe(true);
     try {
-      const res = await api.post("/compulsory-emails", { email: addCeEmail, dear_who: addCeDearWho, mode: addCeMode, is_active: true });
+      const res = await api.post("/compulsory-emails", { email: addCeEmail, dear_who: addCeDearWho, mode: addCeMode, country: addCeCountry, is_active: true });
       setCompulsoryList(prev => [...prev, res.data.data]);
       setAddCeEmail("");
       setAddCeDearWho("");
       setAddCeMode("Air");
+      setAddCeCountry("Qatar");
       toast.success("Compulsory email added.");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to add compulsory email.");
@@ -1021,6 +1024,9 @@ export default function SettingsPage() {
                       <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue/10 text-blue/70 border border-blue/20">
                         {ce.mode}
                       </span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber/10 text-amber/70 border border-amber/20">
+                        {ce.country || "Qatar"}
+                      </span>
                     </div>
                     <p className="text-xs text-muted truncate">{ce.email}</p>
                   </div>
@@ -1044,7 +1050,7 @@ export default function SettingsPage() {
 
             <form onSubmit={handleAddCe} className="space-y-3">
               <p className="text-xs font-semibold text-muted uppercase tracking-widest">Add New</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <input
                   className="input text-sm py-2"
                   placeholder="Dear Who"
@@ -1069,6 +1075,16 @@ export default function SettingsPage() {
                   <option value="Air">Air</option>
                   <option value="Sea">Sea</option>
                   <option value="Road">Road</option>
+                </select>
+                <select
+                  className="select text-sm py-2"
+                  value={addCeCountry}
+                  onChange={e => setAddCeCountry(e.target.value)}
+                  required
+                >
+                  {COUNTRIES.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
               <button type="submit" disabled={addingCe} className="btn-primary w-full justify-center">
