@@ -308,13 +308,13 @@ const register = async (req, res, next) => {
       // Also insert into customers table
       await db.query(
         'INSERT INTO customers (customer_id, name, country) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET country = EXCLUDED.country',
-        [finalCustomerId, name || newUsername, country || 'Qatar']
+        [finalCustomerId, name || newUsername, country || null]
       );
     }
 
     const insertRes = await db.query(
       'INSERT INTO users (username, password_hash, role, name, email_address, contact_number, customer_id, agent_extension, country) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, username, role, customer_id, country',
-      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null, country || 'Qatar']
+      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null, country || null]
     );
 
     // 4. Create and seed user-specific tables
@@ -636,7 +636,7 @@ const createAdminOperator = async (req, res, next) => {
       `INSERT INTO users (username, password_hash, role, email_address, email_password, country) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING id, username, role, email_address, country`,
-      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim()), country || 'Qatar']
+      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim()), country || null]
     );
 
     // Create sandbox tables for this new operator
@@ -878,33 +878,8 @@ const getSalesList = async (req, res, next) => {
   }
 };
 
-const updateAdminUserCountry = async (req, res, next) => {
-  try {
-    const { requireRole } = require('../middleware/auth');
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Forbidden. Admin only.' });
-    }
-    const { userId, country } = req.body;
-    if (!userId) {
-      return res.status(400).json({ success: false, message: 'User ID is required.' });
-    }
-    const finalCountry = country ? country.trim() : 'Qatar';
-    await db.query("UPDATE users SET country = $1 WHERE id = $2", [finalCountry, userId]);
-
-    // Keep customers table in sync if user is a customer
-    const userRes = await db.query("SELECT role, customer_id FROM users WHERE id = $1", [userId]);
-    if (userRes.rows.length > 0 && userRes.rows[0].role === 'customer' && userRes.rows[0].customer_id) {
-      await db.query("UPDATE customers SET country = $1 WHERE customer_id = $2", [finalCountry, userRes.rows[0].customer_id]);
-    }
-
-    res.json({ success: true, message: 'User country updated successfully.' });
-  } catch (err) {
-    next(err);
-  }
-};
-
 module.exports = { 
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
   getAdminUsers, updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateAdminUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
+  updateUserExtension, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
 };

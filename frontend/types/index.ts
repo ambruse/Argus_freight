@@ -157,11 +157,4 @@ export interface CallEnquiry {
   is_lead?: boolean;
   created_at: string;
   updated_at: string;
-}export interface CompulsoryEmail {
-  id: number;
-  email: string;
-  dear_who: string;
-  mode: string;
-  country: string | null;
-  is_active: boolean;
 }

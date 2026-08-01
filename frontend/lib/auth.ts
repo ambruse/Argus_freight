@@ -10,7 +10,6 @@ export interface AuthUser {
   email_address?: string;
   contact_number?: string;
   email_signature?: string;
-  country?: string;
 }
 
 const TOKEN_KEY = "freight_token";

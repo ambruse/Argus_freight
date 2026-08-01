@@ -383,9 +383,8 @@ const createLike = async (newTable, baseTable) => {
     await addCol('users', 'secondary_phone', 'VARCHAR(100)');
     await addCol('users', 'email_signature', 'TEXT');
     await addCol('users', 'agent_extension', 'VARCHAR(50)');
-    await addCol('users', 'country', "VARCHAR(100) DEFAULT 'Qatar'");
-    await addCol('customers', 'country', "VARCHAR(100) DEFAULT 'Qatar'");
-    await addCol('compulsory_emails', 'country', "VARCHAR(100) DEFAULT 'Qatar'");
+    await addCol('users', 'country', 'VARCHAR(100)');
+    await addCol('customers', 'country', 'VARCHAR(100)');
     await addCol('shipments', 'customer_id', 'VARCHAR(5)');
     await addCol('shipments', 'profit', 'DECIMAL(15,2)');
     await addCol('shipments', 'customer_name', 'VARCHAR(255)');

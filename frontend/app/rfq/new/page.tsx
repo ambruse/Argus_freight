@@ -58,8 +58,8 @@ type FormState = {
   no_dimension?: boolean;
 };
 
-type CcRecipient = { id: number; name: string; email: string; country?: string | null; multi_select: boolean };
-type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; country: string | null; is_active: boolean };
+type CcRecipient = { id: number; name: string; email: string; multi_select: boolean };
+type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; is_active: boolean };
 
 const INITIAL_FORM: FormState = {
   customer_name: "",
@@ -340,12 +340,10 @@ export default function NewRFQPage() {
       }
     });
 
-    // 2. Add compulsory recipients based on Mode & Operator Country
+    // 2. Add compulsory recipients based on Mode
     const lowerMode = form.mode.toLowerCase();
-    const opCountry = ((isSales && selectedOperator ? selectedOperator.country : user?.country) || "Qatar").trim().toLowerCase();
     compulsoryEmails.forEach(ce => {
-      const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
-      if (ce.is_active && ce.mode.toLowerCase() === lowerMode && ceCountry === opCountry) {
+      if (ce.is_active && ce.mode.toLowerCase() === lowerMode) {
         recipientsList.push({ email: ce.email, dear_who: ce.dear_who });
       }
     });
@@ -543,12 +541,10 @@ export default function NewRFQPage() {
       }
     });
 
-    // 2. Add compulsory recipients based on Mode & Operator Country
+    // 2. Add compulsory recipients based on Mode
     const lowerMode = form.mode.toLowerCase();
-    const opCountry = (user?.country || "Qatar").trim().toLowerCase();
     compulsoryEmails.forEach(ce => {
-      const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
-      if (ce.is_active && ce.mode.toLowerCase() === lowerMode && ceCountry === opCountry) {
+      if (ce.is_active && ce.mode.toLowerCase() === lowerMode) {
         recipientsList.push({ email: ce.email, dear_who: ce.dear_who });
       }
     });
@@ -1224,7 +1220,6 @@ export default function NewRFQPage() {
                       compulsoryEmails={compulsoryEmails}
                       currentPolCountry={form.pol_country}
                       currentMode={form.mode}
-                      operatorCountry={user?.country}
                       value={form.email}
                       onChange={(email, dearWho) => {
                         setForm(prev => ({

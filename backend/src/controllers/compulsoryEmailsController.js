@@ -13,18 +13,17 @@ exports.getAll = async (req, res, next) => {
 };
 
 exports.create = async (req, res, next) => {
-  const { email, dear_who, mode, country, is_active } = req.body;
+  const { email, dear_who, mode, is_active } = req.body;
   if (!email || !dear_who || !mode) {
     return res.status(400).json({ success: false, message: 'Email, mode, and dear_who are required.' });
   }
 
   try {
     const active = typeof is_active === 'boolean' ? is_active : true;
-    const finalCountry = country ? country.trim() : 'Qatar';
     const result = await db.query(
-      `INSERT INTO compulsory_emails (email, dear_who, mode, country, is_active)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [email, dear_who, mode, finalCountry, active]
+      `INSERT INTO compulsory_emails (email, dear_who, mode, is_active)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [email, dear_who, mode, active]
     );
 
     res.status(201).json({
@@ -41,7 +40,7 @@ exports.create = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
   const { id } = req.params;
-  const { email, dear_who, mode, country, is_active } = req.body;
+  const { email, dear_who, mode, is_active } = req.body;
 
   try {
     const result = await db.query(
@@ -49,10 +48,9 @@ exports.update = async (req, res, next) => {
        SET email = COALESCE($1, email),
            dear_who = COALESCE($2, dear_who),
            mode = COALESCE($3, mode),
-           country = COALESCE($4, country),
-           is_active = COALESCE($5, is_active)
-       WHERE id = $6 RETURNING *`,
-      [email, dear_who, mode, country ? country.trim() : null, is_active, id]
+           is_active = COALESCE($4, is_active)
+       WHERE id = $5 RETURNING *`,
+      [email, dear_who, mode, is_active, id]
     );
 
     if (result.rows.length === 0) {

@@ -2,14 +2,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Contact } from "@/types";
 
-type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; country: string | null; is_active: boolean };
+type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; is_active: boolean };
 
 interface Props {
   contacts: Contact[];
   compulsoryEmails?: CompulsoryEmail[];
   currentPolCountry: string;
   currentMode: string;
-  operatorCountry?: string;
   value: string;
   onChange: (email: string, dearWho?: string) => void;
 }
@@ -19,7 +18,6 @@ export default function EmailAutoSuggest({
   compulsoryEmails = [],
   currentPolCountry,
   currentMode,
-  operatorCountry = "Qatar",
   value,
   onChange
 }: Props) {
@@ -46,13 +44,10 @@ export default function EmailAutoSuggest({
     return countryMatch && modeMatch;
   });
 
-  // Filter compulsory emails by mode and operator country
+  // Filter compulsory emails by mode
   const filteredCompulsory = compulsoryEmails.filter(ce => {
     const modeMatch = !currentMode || (ce.mode && ce.mode.trim().toLowerCase() === currentMode.trim().toLowerCase());
-    const opCountry = (operatorCountry || "Qatar").trim().toLowerCase();
-    const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
-    const countryMatch = ceCountry === opCountry;
-    return ce.is_active && modeMatch && countryMatch;
+    return ce.is_active && modeMatch;
   });
 
   // Merge suggestions into a unified display structure
