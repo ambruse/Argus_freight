@@ -378,7 +378,7 @@ export default function ConfirmedPage() {
                           : <span className="text-muted text-xs">—</span>}
                       </td>
                       <td>
-                        {unreadReplies > 0 ? (
+                        {totalReplies > 0 && unreadReplies > 0 ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
                             📩 New ({unreadReplies})
                           </span>

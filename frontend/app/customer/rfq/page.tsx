@@ -362,11 +362,11 @@ export default function CustomerRFQListPage() {
                       {s.status === 'Cancelled' ? <span className="text-muted italic">Turned Off</span> : fmtFollowUp(s.last_follow_up)}
                     </td>
                     <td>
-                      {s.unread_replies_count && Number(s.unread_replies_count) > 0 ? (
+                      {Number(s.replies_count || 0) > 0 && Number(s.unread_replies_count || 0) > 0 ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
                           📩 New ({s.unread_replies_count})
                         </span>
-                      ) : s.replies_count && Number(s.replies_count) > 0 ? (
+                      ) : Number(s.replies_count || 0) > 0 ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
                           💬 Replied ({s.replies_count})
                         </span>
@@ -473,11 +473,11 @@ export default function CustomerRFQListPage() {
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse">
                       💬 {s.unread_chat_count} msg
                     </span>
-                  ) : s.unread_replies_count && Number(s.unread_replies_count) > 0 ? (
+                  ) : Number(s.replies_count || 0) > 0 && Number(s.unread_replies_count || 0) > 0 ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
                       📩 {s.unread_replies_count} new
                     </span>
-                  ) : s.replies_count && Number(s.replies_count) > 0 ? (
+                  ) : Number(s.replies_count || 0) > 0 ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
                       💬 {s.replies_count}
                     </span>

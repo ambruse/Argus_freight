@@ -627,7 +627,7 @@ export default function RFQPage() {
                         )}
                         {!isSales && (
                           <td>
-                            {groupUnreadRepliesCount > 0 ? (
+                            {groupRepliesCount > 0 && groupUnreadRepliesCount > 0 ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
                                 📩 New ({groupUnreadRepliesCount})
                               </span>
@@ -755,11 +755,11 @@ export default function RFQPage() {
                           )}
                           {!isSales && (
                             <td>
-                              {cs.unread_replies_count && Number(cs.unread_replies_count) > 0 ? (
+                              {Number(cs.replies_count || 0) > 0 && Number(cs.unread_replies_count || 0) > 0 ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
                                   📩 New ({cs.unread_replies_count})
                                 </span>
-                              ) : cs.replies_count && Number(cs.replies_count) > 0 ? (
+                              ) : Number(cs.replies_count || 0) > 0 ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
                                   💬 Replied ({cs.replies_count})
                                 </span>
@@ -896,11 +896,11 @@ export default function RFQPage() {
                         )}
                         {!isSales && (
                           <td>
-                            {s.unread_replies_count && Number(s.unread_replies_count) > 0 ? (
+                            {Number(s.replies_count || 0) > 0 && Number(s.unread_replies_count || 0) > 0 ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose/10 text-rose border border-rose/20 animate-pulse">
                                 📩 New ({s.unread_replies_count})
                               </span>
-                            ) : s.replies_count && Number(s.replies_count) > 0 ? (
+                            ) : Number(s.replies_count || 0) > 0 ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.04] text-muted border border-white/[0.06]">
                                 💬 Replied ({s.replies_count})
                               </span>
