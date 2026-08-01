@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const SkeletonRow = () => (
   <tr className="border-b border-white/[0.04]">
-    {Array.from({ length: 21 }).map((_, i) => (
+    {Array.from({ length: 22 }).map((_, i) => (
       <td key={i} className="px-4 py-3">
         <div className="h-4 rounded-full bg-white/[0.04] animate-pulse" style={{ width: `${50 + (i % 5) * 15}%` }} />
       </td>
@@ -280,6 +280,7 @@ export default function ConfirmedPage() {
             <thead>
               <tr>
                 <th>REF NO</th>
+                <th>STATUS</th>
                 <th>RFQ NO</th>
                 <th>OPERATOR</th>
                 <th>CUSTOMER ID/NAME</th>
@@ -307,7 +308,7 @@ export default function ConfirmedPage() {
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={22} className="text-center py-16 text-muted">
+                  <td colSpan={23} className="text-center py-16 text-muted">
                     <div className="space-y-2">
                       <p className="text-4xl">📦</p>
                       <p className="text-sm">No confirmed shipments found.</p>
@@ -339,6 +340,9 @@ export default function ConfirmedPage() {
                         <span className="font-mono text-xs font-bold text-emerald bg-emerald/10 px-2 py-1 rounded-lg border border-emerald/20">
                           {displayRef}
                         </span>
+                      </td>
+                      <td>
+                        <Badge status={s.status} />
                       </td>
                       <td>
                         {s.cust_req_no ? (
