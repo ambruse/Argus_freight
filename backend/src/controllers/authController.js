@@ -305,16 +305,18 @@ const register = async (req, res, next) => {
         return res.status(500).json({ success: false, message: 'Failed to generate a unique Customer ID. Please try again.' });
       }
 
+      const finalCountry = country && country.trim() ? country.trim() : 'Qatar';
       // Also insert into customers table
       await db.query(
         'INSERT INTO customers (customer_id, name, country) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET country = EXCLUDED.country',
-        [finalCustomerId, name || newUsername, country || null]
+        [finalCustomerId, name || newUsername, finalCountry]
       );
     }
 
+    const finalCountry = country && country.trim() ? country.trim() : 'Qatar';
     const insertRes = await db.query(
       'INSERT INTO users (username, password_hash, role, name, email_address, contact_number, customer_id, agent_extension, country) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, username, role, customer_id, country',
-      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null, country || null]
+      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null, finalCountry]
     );
 
     // 4. Create and seed user-specific tables
@@ -631,12 +633,13 @@ const createAdminOperator = async (req, res, next) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    const finalCountry = country && country.trim() ? country.trim() : 'Qatar';
     // Insert user
     const insertRes = await db.query(
       `INSERT INTO users (username, password_hash, role, email_address, email_password, country) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING id, username, role, email_address, country`,
-      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim()), country || null]
+      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim()), finalCountry]
     );
 
     // Create sandbox tables for this new operator
@@ -741,6 +744,33 @@ const updateUserExtension = async (req, res, next) => {
       [agent_extension ? agent_extension.trim() : null, userId]
     );
     res.json({ success: true, message: 'Agent extension updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateUserCountry = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Forbidden. Admin only.' });
+    }
+    const { userId, country } = req.body;
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required.' });
+    }
+    const targetCountry = country && country.trim() ? country.trim() : 'Qatar';
+    await db.query(
+      "UPDATE users SET country = $1 WHERE id = $2",
+      [targetCountry, userId]
+    );
+
+    // Sync with customers table if user is a customer
+    const userCheck = await db.query("SELECT customer_id FROM users WHERE id = $1", [userId]);
+    if (userCheck.rows.length > 0 && userCheck.rows[0].customer_id) {
+      await db.query("UPDATE customers SET country = $1 WHERE customer_id = $2", [targetCountry, userCheck.rows[0].customer_id]);
+    }
+
+    res.json({ success: true, message: 'Country updated successfully.' });
   } catch (err) {
     next(err);
   }
@@ -881,5 +911,5 @@ const getSalesList = async (req, res, next) => {
 module.exports = { 
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
   getAdminUsers, updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
+  updateUserExtension, updateUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
 };
