@@ -570,10 +570,10 @@ const approveQuotation = async (req, res, next) => {
 
       // If it's linked to an RFQ/shipment, update shipment and replies log
       if (quotation.shipment_ref) {
-        // Save to shipment_replies DB
+        // Save to shipment_replies DB (marked as read since it is an outgoing email)
         await db.query(
-          `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text)
-           VALUES ($1, $2, $3, $4)`,
+          `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, is_read)
+           VALUES ($1, $2, $3, $4, true)`,
           [quotation.shipment_ref, payload.smtpUser, payload.subject, payload.messageText]
         );
 

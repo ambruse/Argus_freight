@@ -113,7 +113,7 @@ const DETAILED_SERVICES = [
     title: 'Fleet Transportation & Distribution',
     shortTitle: 'Transportation',
     icon: ShieldCheck,
-    imgSrc: '/images/Transportation.jpg',
+    imgSrc: '/Videos/Transportation.mp4',
     description: 'Advanced fleet logistics providing secure transport and delivery fulfillment for all commercial shipping scales.',
     extended: [
       'Diverse modern fleet including reefer trucks, flatbeds, and heavy haulers.',

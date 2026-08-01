@@ -396,6 +396,7 @@ const createLike = async (newTable, baseTable) => {
     await addCol('shipments', 'operator', 'VARCHAR(100)');
     await addCol('shipments', 'cust_req_no', 'VARCHAR(50)');
     await addCol('shipment_replies', 'is_read', 'TINYINT(1) NOT NULL DEFAULT 0');
+    try { await db.query("UPDATE shipment_replies SET is_read = true WHERE is_read IS NULL OR is_read = false OR is_read = 0"); } catch(e){}
     await addCol('shipment_replies', 'message_id', 'VARCHAR(255)');
     await addCol('shipment_replies', 'to_emails', 'TEXT');
     await addCol('shipment_replies', 'cc_emails', 'TEXT');

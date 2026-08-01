@@ -164,7 +164,7 @@ const getAllShipments = async (req, res, next) => {
                 s.operator
               ) AS operator,
               (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no) AS replies_count,
-              (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no AND r.is_read = false AND LOWER(r.from_email) != LOWER($1)) AS unread_replies_count,
+              (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no AND (r.is_read = false OR r.is_read = 0 OR r.is_read IS NULL) AND LOWER(r.from_email) != LOWER($1)) AS unread_replies_count,
               (SELECT COUNT(*) FROM customer_operator_chats c WHERE (c.cust_req_no = s.cust_req_no OR c.cust_req_no = s.ref_no) AND c.is_read = false AND LOWER(c.sender_username) != LOWER($2)) AS unread_chat_count
        FROM shipments s ${where} ORDER BY s.created_at DESC`,
       params
@@ -692,10 +692,10 @@ const sendReply = async (req, res, next) => {
     const info = await transporter.sendMail(mailOptions);
     const sentMessageId = info.messageId || null;
 
-    // 9. Save to shipment_replies DB
+    // 9. Save to shipment_replies DB (marked as read since it is an outgoing email)
     const insertRes = await query(req, 
-      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id, is_read)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
       [ref_no, smtpUser, subject, messageText, recipientEmail, ccEmails, sentMessageId]
     );
 
@@ -854,10 +854,10 @@ const sendFollowUp = async (req, res, next) => {
     const info = await transporter.sendMail(mailOptions);
     const sentMessageId = info.messageId || null;
 
-    // 9. Save to shipment_replies DB
+    // 9. Save to shipment_replies DB (marked as read since it is an outgoing email)
     const insertRes = await query(req, 
-      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id, is_read)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
       [ref_no, smtpUser, subject, messageText, recipientEmail, ccEmails, sentMessageId]
     );
 
@@ -1388,10 +1388,10 @@ const sendQuotation = async (req, res, next) => {
     const info = await transporter.sendMail(mailOptions);
     const sentMessageId = info.messageId || null;
 
-    // Save to shipment_replies DB
+    // Save to shipment_replies DB (marked as read since it is an outgoing email)
     const insertRes = await query(req, 
-      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id, is_read)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING *`,
       [ref_no, smtpUser, subject, messageText, recipientEmail, '', sentMessageId]
     );
 

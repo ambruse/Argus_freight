@@ -486,10 +486,10 @@ const sendRfqEmail = async (req, res, next) => {
     const info = await transporter.sendMail(mailOptions);
     const sentMessageId = info.messageId || null;
 
-    // 8. Save to shipment_replies DB
+    // 8. Save to shipment_replies DB (marked as read since it is an outgoing email)
     await query(req, 
-      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO shipment_replies (ref_no, from_email, subject, body_text, to_emails, cc_emails, message_id, is_read)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
       [ref_no, smtpUser, subject, messageText, shipment.email, cc || '', sentMessageId]
     );
 
