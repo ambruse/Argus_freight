@@ -10,7 +10,7 @@ const TEAM_MEMBERS = [
   },
   {
     id: 2,
-    name: 'Jemshy Keloth',
+    name: 'Jemshy ',
     role: 'General Manager',
     bio: 'A visionary leader who steers the company through global market complexities with the same precision and foresight that our vessels navigate the open sea. '},
   {
