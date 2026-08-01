@@ -523,8 +523,8 @@ const approveQuotation = async (req, res, next) => {
       }
 
       // Sanitize
-      if (smtpUser) smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
-      if (smtpPass) smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
+      if (smtpUser && typeof smtpUser === 'string') smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
+      if (smtpPass && typeof smtpPass === 'string') smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
 
       if (!smtpUser || !smtpPass) {
         return res.status(400).json({ 

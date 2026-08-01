@@ -296,32 +296,52 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     const customerShipment = shipRes.rows[0];
 
     // 2. Fetch all attached files
-    const fileRes = await db.query(
-      `SELECT * FROM files_${cleanUsername} WHERE shipment_ref_no = $1 ORDER BY uploaded_at ASC`,
-      [ref_no]
-    );
-    const attachedFiles = fileRes.rows;
+    let attachedFiles = [];
+    try {
+      const fileRes = await db.query(
+        `SELECT * FROM files_${cleanUsername} WHERE shipment_ref_no = $1 ORDER BY uploaded_at ASC`,
+        [ref_no]
+      );
+      attachedFiles = fileRes.rows || [];
+    } catch (e) {
+      const fileRes = await db.query(
+        `SELECT * FROM files WHERE shipment_ref_no = $1 ORDER BY uploaded_at ASC`,
+        [ref_no]
+      ).catch(() => ({ rows: [] }));
+      attachedFiles = fileRes.rows || [];
+    }
 
     // 3. Retrieve Assigned Operator email credentials
-    const operatorName = customerShipment.operator;
-    const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-    const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
-
-    const opShipmentsRes = await db.query(
-      `SELECT * FROM ${opTableName} WHERE cust_req_no = $1`,
-      [ref_no]
+    const operatorName = customerShipment.operator || '';
+    const userRes = await db.query(
+      "SELECT id, username, email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1) ORDER BY role = 'operator' DESC, id ASC LIMIT 1",
+      [operatorName]
     );
+
+    const actualOpUsername = userRes.rows.length > 0 ? userRes.rows[0].username : operatorName;
+    const cleanOperator = actualOpUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const opTableName = (!cleanOperator || cleanOperator === 'admin') ? 'shipments' : `shipments_${cleanOperator}`;
+
+    const { ensureUserTables } = require('../config/dbHelper');
+    await ensureUserTables(cleanOperator);
+
+    let opShipmentsRes = await db.query(
+      `SELECT * FROM ${opTableName} WHERE cust_req_no = $1 OR ref_no = $1`,
+      [ref_no]
+    ).catch(() => ({ rows: [] }));
+
+    if (opShipmentsRes.rows.length === 0) {
+      opShipmentsRes = await db.query(
+        `SELECT * FROM shipments WHERE cust_req_no = $1 OR ref_no = $1`,
+        [ref_no]
+      ).catch(() => ({ rows: [] }));
+    }
 
     if (opShipmentsRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'No recipient shipments found in operator sandbox.' });
     }
 
     const shipments = opShipmentsRes.rows;
-
-    const userRes = await db.query(
-      "SELECT id, email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) ORDER BY role = 'operator' DESC, id ASC LIMIT 1",
-      [operatorName]
-    );
 
     let smtpUser = userRes.rows.length > 0 ? userRes.rows[0].email_address : null;
     let smtpPass = userRes.rows.length > 0 ? decrypt(userRes.rows[0].email_password) : null;
@@ -346,10 +366,10 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     }
 
     // Sanitize any accidental surrounding quotes
-    if (smtpUser) {
+    if (smtpUser && typeof smtpUser === 'string') {
       smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
     }
-    if (smtpPass) {
+    if (smtpPass && typeof smtpPass === 'string') {
       smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
     }
 

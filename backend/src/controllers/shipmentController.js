@@ -585,10 +585,10 @@ const sendReply = async (req, res, next) => {
     }
 
     // Sanitize any accidental surrounding quotes
-    if (smtpUser) {
+    if (smtpUser && typeof smtpUser === 'string') {
       smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
     }
-    if (smtpPass) {
+    if (smtpPass && typeof smtpPass === 'string') {
       smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
     }
 
@@ -748,10 +748,10 @@ const sendFollowUp = async (req, res, next) => {
     }
 
     // Sanitize any accidental surrounding quotes
-    if (smtpUser) {
+    if (smtpUser && typeof smtpUser === 'string') {
       smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
     }
-    if (smtpPass) {
+    if (smtpPass && typeof smtpPass === 'string') {
       smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
     }
 
@@ -925,10 +925,10 @@ const sendQuotation = async (req, res, next) => {
     }
 
     // Sanitize any accidental surrounding quotes
-    if (smtpUser) {
+    if (smtpUser && typeof smtpUser === 'string') {
       smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
     }
-    if (smtpPass) {
+    if (smtpPass && typeof smtpPass === 'string') {
       smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
     }
 
