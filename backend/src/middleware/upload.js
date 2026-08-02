@@ -43,12 +43,25 @@ const fileFilter = (_req, file, cb) => {
     'image/jpeg',
     'image/jpg',
     'image/gif',
-    'image/webp'
+    'image/webp',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-excel', // .xls
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    'application/msword', // .doc
+    'text/csv',
+    'application/csv',
+    'application/x-csv',
+    'text/plain'
   ];
-  if (allowedMimeTypes.includes(file.mimetype)) {
+
+  // Also check file extension defensively in case client browser reports application/octet-stream
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.xlsx', '.xls', '.docx', '.doc', '.csv', '.txt'];
+
+  if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'Only PDF and image files (PNG, JPG, JPEG, GIF, WEBP) are allowed.'));
+    cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'Only PDF, image, Excel, Word, and CSV/text files are allowed.'));
   }
 };
 

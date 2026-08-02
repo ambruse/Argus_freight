@@ -327,10 +327,21 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
       "image/jpeg",
       "image/jpg",
       "image/gif",
-      "image/webp"
+      "image/webp",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "text/csv",
+      "application/csv",
+      "application/x-csv",
+      "text/plain"
     ];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Only PDF and image files (PNG, JPG, JPEG, GIF, WEBP) are accepted.");
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'xlsx', 'xls', 'docx', 'doc', 'csv', 'txt'];
+
+    if (!allowedTypes.includes(file.type) && (!ext || !allowedExtensions.includes(ext))) {
+      toast.error("Only PDF, image, Excel, Word, and CSV/text files are accepted.");
       return;
     }
     setUploading(true);
@@ -691,16 +702,16 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/pdf,image/*"
+              accept="application/pdf,image/*,.xlsx,.xls,.docx,.doc,.csv,.txt"
               className="hidden"
               onChange={onFileChange}
             />
             <div className="space-y-2 pointer-events-none">
               <p className="text-3xl">{uploading ? "⏳" : "📄"}</p>
               <p className="text-sm font-semibold text-primary">
-                {uploading ? "Uploading…" : "Click or drag & drop PDF or Image"}
+                {uploading ? "Uploading…" : "Click or drag & drop PDF, Excel, Word, or Image"}
               </p>
-              <p className="text-xs text-muted">PDF and image files only · Max 10 MB</p>
+              <p className="text-xs text-muted">PDF, image, Excel, Word, or text files · Max 10 MB</p>
             </div>
           </div>
           )}
@@ -716,22 +727,21 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
               <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
                 Attached Files ({files.length})
               </p>
-              {files.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-surface-4 border border-white/[0.06]
-                             hover:border-blue/20 transition-all duration-150 group"
-                >
-                  {/* PDF/Image icon */}
-                  {file.mime_type && file.mime_type.startsWith("image/") ? (
-                    <div className="w-9 h-9 flex-shrink-0 rounded-lg bg-emerald/10 border border-emerald/20 flex items-center justify-center">
-                      <span className="text-xs font-bold text-emerald">IMG</span>
+              {files.map((file) => {
+                const isImg = file.mime_type && file.mime_type.startsWith("image/");
+                const isExcel = file.original_name?.match(/\.(xlsx|xls)$/i) || file.mime_type?.includes("excel") || file.mime_type?.includes("spreadsheet");
+                const isWord = file.original_name?.match(/\.(docx|doc)$/i) || file.mime_type?.includes("word");
+                const badgeLabel = isImg ? "IMG" : isExcel ? "XLS" : isWord ? "DOC" : "FILE";
+                const badgeColorClass = isImg ? "bg-emerald/10 border-emerald/20 text-emerald" : isExcel ? "bg-amber/10 border-amber/20 text-amber" : isWord ? "bg-blue/10 border-blue/20 text-blue" : "bg-rose/10 border-rose/20 text-rose";
+                return (
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-surface-4 border border-white/[0.06]
+                               hover:border-blue/20 transition-all duration-150 group"
+                  >
+                    <div className={`w-9 h-9 flex-shrink-0 rounded-lg border flex items-center justify-center ${badgeColorClass}`}>
+                      <span className="text-xs font-bold">{badgeLabel}</span>
                     </div>
-                  ) : (
-                    <div className="w-9 h-9 flex-shrink-0 rounded-lg bg-rose/10 border border-rose/20 flex items-center justify-center">
-                      <span className="text-xs font-bold text-rose">PDF</span>
-                    </div>
-                  )}
 
                   {/* File info */}
                   <div className="flex-1 min-w-0">
@@ -761,8 +771,9 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
           )}
         </div>
       )}
