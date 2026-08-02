@@ -166,7 +166,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const { data: shipData } = await api.get("/shipments?status=Confirmed");
+      const { data: shipData } = await api.get("/shipments?status=Confirmed&exclude_completed=true");
       setConfirmedShipments(shipData.data || []);
     } catch (err: any) {
       console.error("Failed to fetch confirmed shipments for dashboard:", err);
@@ -285,6 +285,7 @@ export default function DashboardPage() {
 
   const airShipments = confirmedShipments
     .filter(s => {
+      if (s.status?.toLowerCase() === "completed") return false;
       if (s.mode?.toUpperCase() !== "AIR") return false;
       if (!s.eta) return true;
 
@@ -306,7 +307,7 @@ export default function DashboardPage() {
     });
 
   const seaShipments = confirmedShipments
-    .filter(s => s.mode?.toUpperCase() === "SEA")
+    .filter(s => s.status?.toLowerCase() !== "completed" && s.mode?.toUpperCase() === "SEA")
     .sort((a, b) => {
       if (!a.eta) return 1;
       if (!b.eta) return -1;

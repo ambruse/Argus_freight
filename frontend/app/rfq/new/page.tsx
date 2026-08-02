@@ -543,10 +543,12 @@ export default function NewRFQPage() {
       }
     });
 
-    // 2. Add compulsory recipients based on Mode
+    // 2. Add compulsory recipients based on Mode and Account Country
     const lowerMode = form.mode.toLowerCase();
+    const accountCountry = (user?.country || "Qatar").trim().toLowerCase();
     compulsoryEmails.forEach(ce => {
-      if (ce.is_active && ce.mode.toLowerCase() === lowerMode) {
+      const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
+      if (ce.is_active && ce.mode.toLowerCase() === lowerMode && ceCountry === accountCountry) {
         recipientsList.push({ email: ce.email, dear_who: ce.dear_who });
       }
     });

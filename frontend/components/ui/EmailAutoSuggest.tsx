@@ -1,8 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Contact } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 
-type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; is_active: boolean };
+type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; country?: string; is_active: boolean };
 
 interface Props {
   contacts: Contact[];
@@ -21,6 +22,7 @@ export default function EmailAutoSuggest({
   value,
   onChange
 }: Props) {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -37,6 +39,8 @@ export default function EmailAutoSuggest({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const accountCountry = (user?.country || "Qatar").trim().toLowerCase();
+
   // Filter contacts by country and mode
   const filteredContacts = contacts.filter(c => {
     const countryMatch = !currentPolCountry || (c.country && c.country.trim().toLowerCase() === currentPolCountry.trim().toLowerCase());
@@ -44,10 +48,12 @@ export default function EmailAutoSuggest({
     return countryMatch && modeMatch;
   });
 
-  // Filter compulsory emails by mode
+  // Filter compulsory emails by mode and matching registered account country
   const filteredCompulsory = compulsoryEmails.filter(ce => {
     const modeMatch = !currentMode || (ce.mode && ce.mode.trim().toLowerCase() === currentMode.trim().toLowerCase());
-    return ce.is_active && modeMatch;
+    const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
+    const countryMatch = ceCountry === accountCountry;
+    return ce.is_active && modeMatch && countryMatch;
   });
 
   // Merge suggestions into a unified display structure

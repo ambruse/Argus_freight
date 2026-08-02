@@ -183,14 +183,14 @@ const generateCustomerRfq = async (req, res, next) => {
       [mode, pol_country]
     );
 
-    const operatorCountry = req.user?.country || pol_country || 'Qatar';
+    const userAccountCountry = (req.user?.country || 'Qatar').trim().toLowerCase();
 
     const compulsoryRes = await db.query(
       `SELECT email, dear_who FROM compulsory_emails 
        WHERE is_active = true 
          AND LOWER(mode) = LOWER($1)
          AND LOWER(COALESCE(country, 'Qatar')) = LOWER($2)`,
-      [mode, operatorCountry]
+      [mode, userAccountCountry]
     );
 
     const recipientsMap = new Map();

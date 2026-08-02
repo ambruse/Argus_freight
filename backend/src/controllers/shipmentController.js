@@ -133,7 +133,7 @@ const generateRefNo = async (req) => {
 // ─────────────────────────────────────────────────────────────
 const getAllShipments = async (req, res, next) => {
   try {
-    const { exclude_direct, status } = req.query;
+    const { exclude_direct, exclude_completed, status } = req.query;
     const myEmail = process.env.SMTP_USER || '';
     const myUsername = req.user.username;
     const conditions = [];
@@ -142,9 +142,16 @@ const getAllShipments = async (req, res, next) => {
     if (exclude_direct === 'true') {
       conditions.push(`(note IS NULL OR note != 'Direct Booking')`);
     }
+    if (exclude_completed === 'true') {
+      conditions.push(`LOWER(TRIM(status)) != 'completed'`);
+    }
     if (status) {
       if (status.toLowerCase() === 'confirmed') {
-        conditions.push(`LOWER(TRIM(status)) IN ('confirmed', 'completed')`);
+        if (exclude_completed === 'true') {
+          conditions.push(`LOWER(TRIM(status)) = 'confirmed'`);
+        } else {
+          conditions.push(`LOWER(TRIM(status)) IN ('confirmed', 'completed')`);
+        }
       } else {
         params.push(status);
         conditions.push(`status = $${params.length}`);
