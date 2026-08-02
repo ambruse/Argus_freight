@@ -15,15 +15,15 @@ const TEAM_MEMBERS = [
     bio: 'A visionary leader who steers the company through global market complexities with the same precision and foresight that our vessels navigate the open sea. '},
   {
     id: 3,
-    name: 'Team Sales',
-    role: 'Sales',
-    bio: "A great sales team doesn't just sell space on a vessel or aircraft—they build the trust that keeps cargo moving and turns logistical challenges into long-term partnerships."
+    name: 'Ganesh',
+    role: 'Manager',
+    bio: "Ganesh for his exceptional leadership in the fast-moving world of freight forwarding. Managing global shipments and tight deadlines is no easy feat, but [his/her] calm approach under pressure, deep supply chain insight, and dedication to our team keep everything moving smoothly every day."
   },
   {
     id: 4,
-    name: 'Finos',
-    role: 'Operatiion Manager',
-    bio: 'When the port gets congested and schedules blow up, Finos is the one person who can look at a tangled mess of manifests and turn it into a smooth, seamless operation.'
+    name: 'Mansoor',
+    role: 'COO',
+    bio: 'Managing global logistics operations at an executive level requires extraordinary vision and execution, and Mansoor delivers both every day. As our COO, his strategic guidance, focus on operational efficiency, and drive to modernize our freight forwarding networks keep our business ahead of the curve. His leadership sets the standard for how a modern logistics company should run.'
   }
 ];
 
