@@ -12,12 +12,14 @@ const TEAM_MEMBERS = [
     id: 2,
     name: 'Jemshy ',
     role: 'General Manager',
-    bio: 'A visionary leader who steers the company through global market complexities with the same precision and foresight that our vessels navigate the open sea. '},
+    bio: 'A visionary leader who steers the company through global market complexities with the same precision and foresight that our vessels navigate the open sea. '
+  },
   {
     id: 3,
     name: 'Ganesh',
     role: 'Manager',
-    bio: "Ganesh for his exceptional leadership in the fast-moving world of freight forwarding. Managing global shipments and tight deadlines is no easy feat, but [his/her] calm approach under pressure, deep supply chain insight, and dedication to our team keep everything moving smoothly every day."
+    image: '/images/Ganesh.png',
+    bio: 'Ganesh for his exceptional leadership in the fast-moving world of freight forwarding. Managing global shipments and tight deadlines is no easy feat, but his calm approach under pressure, deep supply chain insight, and dedication to our team keep everything moving smoothly every day.'
   },
   {
     id: 4,
@@ -48,7 +50,11 @@ export default function Team() {
             {TEAM_MEMBERS.map((member) => (
               <div key={member.id} className="team-card">
                 <div className="team-card-image">
-                  <User size={80} style={{ opacity: 0.8 }} />
+                  {member.image ? (
+                    <img src={member.image} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <User size={80} style={{ opacity: 0.8 }} />
+                  )}
                 </div>
                 <div className="team-card-info">
                   <h3 className="team-card-name">{member.name}</h3>

@@ -2033,6 +2033,7 @@ body.light-theme .premium-service-badge {
   margin: 0 auto 1.25rem;
   color: var(--accent);
   box-shadow: 0 0 20px var(--accent-glow);
+  overflow: hidden;
 }
 .team-card-name {
   font-size: 1.05rem;
