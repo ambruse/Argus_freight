@@ -128,7 +128,7 @@ const DETAILED_SERVICES = [
     title: 'Third-Party Logistics (3PL)',
     shortTitle: '3PL Logistics',
     icon: Layers,
-    imgSrc: '/Videos/PPL.mp4',
+    imgSrc: '/Videos/PLL.mp4',
     description: 'Total supply chain management for international entities. Expand your regional presence with zero capital investment in warehouses or local employees.',
     extended: [
       'Integrated inventory storage, order fulfillment, and regional distribution.',
