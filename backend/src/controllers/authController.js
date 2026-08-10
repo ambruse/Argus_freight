@@ -567,7 +567,7 @@ const updateAdminUserEmail = async (req, res, next) => {
 const getOperatorsList = async (req, res, next) => {
   try {
     const result = await db.query(
-      `SELECT username, email_address FROM users 
+      `SELECT username, email_address, country FROM users 
        WHERE role = 'operator' 
          AND email_address IS NOT NULL 
          AND email_address != ''

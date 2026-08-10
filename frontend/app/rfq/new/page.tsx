@@ -58,7 +58,7 @@ type FormState = {
   no_dimension?: boolean;
 };
 
-type CcRecipient = { id: number; name: string; email: string; multi_select: boolean };
+type CcRecipient = { id: number; name: string; email: string; multi_select: boolean; country?: string };
 type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; country?: string; is_active: boolean };
 
 const INITIAL_FORM: FormState = {
@@ -173,7 +173,7 @@ export default function NewRFQPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [ccOptions, setCcOptions] = useState<CcRecipient[]>([]);
-  const [operators, setOperators] = useState<{ username: string; email_address: string | null }[]>([]);
+  const [operators, setOperators] = useState<{ username: string; email_address: string | null; country?: string }[]>([]);
   const [selectedOperator, setSelectedOperator] = useState<CcRecipient | null>(null);
   const [compulsoryEmails, setCompulsoryEmails] = useState<CompulsoryEmail[]>([]);
 
@@ -320,6 +320,7 @@ export default function NewRFQPage() {
     id: idx,
     name: op.username,
     email: op.email_address || "",
+    country: op.country || "Qatar",
     multi_select: false
   }));
 
@@ -342,7 +343,7 @@ export default function NewRFQPage() {
 
     // 2. Add compulsory recipients based on Mode and Operator Country
     const lowerMode = form.mode.toLowerCase();
-    const operatorCountry = (user?.country || "Qatar").trim().toLowerCase();
+    const operatorCountry = (selectedOperator?.country || user?.country || "Qatar").trim().toLowerCase();
     compulsoryEmails.forEach(ce => {
       const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
       if (ce.is_active && ce.mode.toLowerCase() === lowerMode && ceCountry === operatorCountry) {
