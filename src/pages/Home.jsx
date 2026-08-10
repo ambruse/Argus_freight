@@ -264,7 +264,15 @@ export default function Home({ onNavigate, onOpenQuote }) {
         <div className="container">
           <div className="about-grid">
             <div className="about-image-wrapper">
-              <img src="/images/hero-cargo.png" alt="Global Supply Chain Operations" className="about-img-main" />
+              <video 
+                src="/Videos/OHR.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                className="about-img-main" 
+                style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              />
               <div className="about-img-overlay">
                 <h4>15+ Years</h4>
                 <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.85rem' }}>

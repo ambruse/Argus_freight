@@ -143,7 +143,7 @@ const DETAILED_SERVICES = [
     title: 'Office & Household Relocation',
     shortTitle: 'Relocation',
     icon: Move,
-    imgSrc: '/images/hero-cargo.png',
+    imgSrc: '/Videos/OHR.mp4',
     description: 'Professional relocation services managed by trained packaging crews and heavy equipment operators.',
     extended: [
       'Specially trained 15-employee team dedicated solely to packing and relocations.',
