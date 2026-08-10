@@ -1534,7 +1534,7 @@ const markAllRepliesAsRead = async (req, res, next) => {
 
 const getFollowUpOverdue = async (req, res, next) => {
   try {
-    if (req.user && req.user.role === 'customer') {
+    if (req.user && (req.user.role === 'customer' || req.user.role === 'sales')) {
       return res.json({ success: true, data: [] });
     }
 
@@ -1554,6 +1554,10 @@ const getFollowUpOverdue = async (req, res, next) => {
 
 const snoozeFollowUp = async (req, res, next) => {
   try {
+    if (req.user && (req.user.role === 'customer' || req.user.role === 'sales')) {
+      return res.status(403).json({ success: false, message: 'Follow-up snooze action is not allowed for Sales or Customer roles.' });
+    }
+
     const { ref_no } = req.params;
     
     // We update last_follow_up to 14 days ago, so it reappears tomorrow (after 1 day)

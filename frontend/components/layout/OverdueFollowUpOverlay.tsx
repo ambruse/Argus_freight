@@ -22,7 +22,7 @@ export default function OverdueFollowUpOverlay() {
       return;
     }
     const user = authStorage.getUser();
-    if (user?.role === "customer") {
+    if (user?.role === "customer" || user?.role === "sales") {
       setLoading(false);
       return;
     }
