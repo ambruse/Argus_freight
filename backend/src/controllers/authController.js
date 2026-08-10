@@ -214,11 +214,28 @@ const changePassword = async (req, res, next) => {
  */
 const me = async (req, res, next) => {
   try {
-    const result = await db.query('SELECT is_stalled FROM users WHERE id = $1', [req.user.id]);
-    if (result.rows.length > 0 && result.rows[0].is_stalled) {
+    const result = await db.query(
+      'SELECT id, username, role, name, email_address, contact_number, customer_id, country, is_stalled FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'User not found.' });
+    const dbUser = result.rows[0];
+    if (dbUser.is_stalled) {
       return res.status(403).json({ success: false, message: 'Your account has been stalled/suspended.' });
     }
-    res.json({ success: true, user: req.user });
+    res.json({ 
+      success: true, 
+      user: {
+        id: dbUser.id,
+        username: dbUser.username,
+        role: dbUser.role,
+        name: dbUser.name,
+        email_address: dbUser.email_address,
+        contact_number: dbUser.contact_number,
+        customer_id: dbUser.customer_id,
+        country: dbUser.country
+      }
+    });
   } catch (err) {
     next(err);
   }

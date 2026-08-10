@@ -14,11 +14,17 @@ export function useAuth() {
   const [user, setUser]       = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Hydrate from localStorage on mount (client-only)
+  // Hydrate from localStorage on mount & sync latest user profile from server
   useEffect(() => {
     const stored = authStorage.getUser();
     if (stored && authStorage.isAuthenticated()) {
       setUser(stored);
+      api.get("/auth/me").then(res => {
+        if (res.data.success && res.data.user) {
+          authStorage.setUser(res.data.user);
+          setUser(res.data.user);
+        }
+      }).catch(() => {});
     } else {
       authStorage.clear();
     }

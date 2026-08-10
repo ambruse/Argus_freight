@@ -343,10 +343,10 @@ export default function NewRFQPage() {
 
     // 2. Add compulsory recipients based on Mode and Operator Country
     const lowerMode = form.mode.toLowerCase();
-    const operatorCountry = (selectedOperator?.country || user?.country || "Qatar").trim().toLowerCase();
+    const operatorCountry = (selectedOperator?.country || user?.country || "").trim().toLowerCase();
     compulsoryEmails.forEach(ce => {
-      const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
-      if (ce.is_active && ce.mode.toLowerCase() === lowerMode && ceCountry === operatorCountry) {
+      const ceCountry = (ce.country || "").trim().toLowerCase();
+      if (ce.is_active && ce.mode.toLowerCase() === lowerMode && operatorCountry !== "" && ceCountry === operatorCountry) {
         recipientsList.push({ email: ce.email, dear_who: ce.dear_who });
       }
     });
@@ -546,10 +546,10 @@ export default function NewRFQPage() {
 
     // 2. Add compulsory recipients based on Mode and Account Country
     const lowerMode = form.mode.toLowerCase();
-    const accountCountry = (user?.country || "Qatar").trim().toLowerCase();
+    const accountCountry = (user?.country || "").trim().toLowerCase();
     compulsoryEmails.forEach(ce => {
-      const ceCountry = (ce.country || "Qatar").trim().toLowerCase();
-      if (ce.is_active && ce.mode.toLowerCase() === lowerMode && ceCountry === accountCountry) {
+      const ceCountry = (ce.country || "").trim().toLowerCase();
+      if (ce.is_active && ce.mode.toLowerCase() === lowerMode && accountCountry !== "" && ceCountry === accountCountry) {
         recipientsList.push({ email: ce.email, dear_who: ce.dear_who });
       }
     });
