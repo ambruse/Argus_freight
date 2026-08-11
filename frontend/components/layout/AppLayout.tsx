@@ -27,6 +27,16 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   const [user, setUser] = useState<any>(null);
   const [isOtherOpen, setIsOtherOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const updateCollapse = () => {
+      setIsSidebarCollapsed(localStorage.getItem("sidebar_collapsed") === "true");
+    };
+    updateCollapse();
+    window.addEventListener("sidebarToggle", updateCollapse);
+    return () => window.removeEventListener("sidebarToggle", updateCollapse);
+  }, []);
 
   useEffect(() => {
     const updateTheme = () => {
@@ -158,7 +168,9 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
 
       {/* Main content */}
       <main 
-        className="flex-1 flex flex-col h-[100dvh] max-w-full overflow-x-hidden transition-all duration-300 ml-0 md:ml-64"
+        className={`flex-1 flex flex-col h-[100dvh] max-w-full overflow-x-hidden transition-all duration-300 ml-0 ${
+          isSidebarCollapsed ? "md:ml-16" : "md:ml-64"
+        }`}
       >
         {/* Page header */}
         {title && (
