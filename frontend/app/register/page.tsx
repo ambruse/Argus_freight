@@ -10,7 +10,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { authStorage } from "@/lib/auth";
 import { encryptPassword } from "@/lib/crypto";
-import { COUNTRIES } from "@/lib/countries";
+import { COUNTRIES, updatePhoneForCountry } from "@/lib/countries";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -183,7 +183,11 @@ export default function RegisterPage() {
             <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Country</label>
             <select
               value={country}
-              onChange={(e) => setCountry(e.target.value)}
+              onChange={(e) => {
+                const newCountry = e.target.value;
+                setCountry(newCountry);
+                setContactNumber(prev => updatePhoneForCountry(prev, newCountry));
+              }}
               className="input w-full"
             >
               {COUNTRIES.map((c) => (

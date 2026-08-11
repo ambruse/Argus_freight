@@ -4,7 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { COUNTRIES } from "@/lib/countries";
+import { COUNTRIES, updatePhoneForCountry } from "@/lib/countries";
 
 interface Customer {
   id: number;
@@ -47,7 +47,7 @@ export default function CustomerBookPage() {
   const [addForm, setAddForm] = useState({
     name: "",
     email_address: "",
-    contact_number: "",
+    contact_number: "+974 ",
     address: "",
     company: "",
     company_address: "",
@@ -458,7 +458,15 @@ export default function CustomerBookPage() {
                   <select
                     className="input w-full"
                     value={editForm.country}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, country: e.target.value }))}
+                    onChange={(e) => {
+                      const newCountry = e.target.value;
+                      setEditForm(prev => ({
+                        ...prev,
+                        country: newCountry,
+                        contact_number: updatePhoneForCountry(prev.contact_number, newCountry),
+                        secondary_phone: prev.secondary_phone ? updatePhoneForCountry(prev.secondary_phone, newCountry) : prev.secondary_phone
+                      }));
+                    }}
                   >
                     {COUNTRIES.map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -593,7 +601,15 @@ export default function CustomerBookPage() {
                     <select
                       className="input w-full"
                       value={addForm.country}
-                      onChange={(e) => setAddForm(prev => ({ ...prev, country: e.target.value }))}
+                      onChange={(e) => {
+                        const newCountry = e.target.value;
+                        setAddForm(prev => ({
+                          ...prev,
+                          country: newCountry,
+                          contact_number: updatePhoneForCountry(prev.contact_number, newCountry),
+                          secondary_phone: prev.secondary_phone ? updatePhoneForCountry(prev.secondary_phone, newCountry) : prev.secondary_phone
+                        }));
+                      }}
                     >
                       {COUNTRIES.map(c => (
                         <option key={c} value={c}>{c}</option>

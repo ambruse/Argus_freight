@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { encryptPassword } from "@/lib/crypto";
-import { COUNTRIES } from "@/lib/countries";
+import { COUNTRIES, updatePhoneForCountry } from "@/lib/countries";
 
 export default function AdminRegisterUserPage() {
   const { user: currentUser } = useAuth();
@@ -290,7 +290,11 @@ export default function AdminRegisterUserPage() {
               <label className="text-xs font-medium text-muted uppercase tracking-wider">Country</label>
               <select
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                onChange={(e) => {
+                  const newCountry = e.target.value;
+                  setCountry(newCountry);
+                  setContactNumber(prev => updatePhoneForCountry(prev, newCountry));
+                }}
                 className="input w-full"
               >
                 {COUNTRIES.map((c) => (
