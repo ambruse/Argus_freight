@@ -232,7 +232,29 @@ const query = async (req, sql, params) => {
            await ensureUserTables(suffix);
            sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipments_${suffix}.* FROM shipments_${suffix} WHERE ${userFilter}`;
          }
-         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY ref_no ORDER BY __p ASC) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
+         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
+            ORDER BY 
+              CASE LOWER(TRIM(status))
+                WHEN 'confirmed' THEN 10
+                WHEN 'completed' THEN 9
+                WHEN 'customer review' THEN 8
+                WHEN 'under review' THEN 8
+                WHEN 'customer_review' THEN 8
+                WHEN 'under_review' THEN 8
+                WHEN 'review' THEN 8
+                WHEN 'quoted' THEN 7
+                WHEN 'quote sent' THEN 7
+                WHEN 'quote_sent' THEN 7
+                WHEN 'files pending' THEN 5
+                WHEN 'files_pending' THEN 5
+                WHEN 'return pending' THEN 4
+                WHEN 'return_pending' THEN 4
+                WHEN 'cancelled' THEN 2
+                ELSE 1
+              END DESC,
+              __p DESC
+          ) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
          let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
