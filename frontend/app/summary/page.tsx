@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 interface SummaryData {
   totalRFQs: number;
   totalConfirmed: number;
+  totalCompleted?: number;
   totalCost: number;
   totalProfit: number;
   totalCustomerPrice: number;
@@ -321,6 +322,19 @@ export default function SummaryPage() {
               <p className="text-xs text-muted">Shipments confirmed in {format(currentDate, "MMMM")}</p>
             </div>
 
+            {/* Completed Shipments */}
+            <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-sky/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-semibold text-muted uppercase tracking-wider">Completed Shipments</p>
+                  <p className="text-4xl font-bold text-sky mt-2">{summary.totalCompleted || 0}</p>
+                </div>
+                <div className="p-3 bg-sky/10 rounded-xl text-sky text-xl">🏁</div>
+              </div>
+              <p className="text-xs text-muted">Shipments completed in {format(currentDate, "MMMM")}</p>
+            </div>
+
             {/* Total Cost */}
             <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-rose/10 rounded-full blur-3xl pointer-events-none" />
@@ -333,7 +347,7 @@ export default function SummaryPage() {
                 </div>
                 <div className="p-3 bg-rose/10 rounded-xl text-rose text-xl">📉</div>
               </div>
-              <p className="text-xs text-muted">Total cost for confirmed shipments</p>
+              <p className="text-xs text-muted">Total cost for confirmed & completed</p>
             </div>
 
             {/* Total Revenue */}
@@ -354,7 +368,7 @@ export default function SummaryPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Operations Summary */}
             <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue/10 rounded-full blur-3xl pointer-events-none" />
@@ -380,6 +394,18 @@ export default function SummaryPage() {
               <p className="text-xs text-muted">Shipments confirmed in {format(currentDate, "MMMM")}</p>
             </div>
 
+            <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-sky/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-semibold text-muted uppercase tracking-wider">Completed Shipments</p>
+                  <p className="text-4xl font-bold text-sky mt-2">{summary.totalCompleted || 0}</p>
+                </div>
+                <div className="p-3 bg-sky/10 rounded-xl text-sky text-xl">🏁</div>
+              </div>
+              <p className="text-xs text-muted">Shipments completed in {format(currentDate, "MMMM")}</p>
+            </div>
+
             {/* Financial Summary */}
             <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-rose/10 rounded-full blur-3xl pointer-events-none" />
@@ -392,7 +418,7 @@ export default function SummaryPage() {
                 </div>
                 <div className="p-3 bg-rose/10 rounded-xl text-rose text-xl">📉</div>
               </div>
-              <p className="text-xs text-muted">Total cost for confirmed shipments</p>
+              <p className="text-xs text-muted">Total cost for confirmed & completed</p>
             </div>
 
             <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">

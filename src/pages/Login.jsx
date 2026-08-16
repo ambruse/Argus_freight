@@ -61,6 +61,10 @@ export default function Login() {
                       <strong className="logo-gold">3</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Completed Shipments:</span>
+                      <strong className="logo-gold">12</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>Unpaid Invoices:</span>
                       <strong className="logo-gold">0</strong>
                     </div>

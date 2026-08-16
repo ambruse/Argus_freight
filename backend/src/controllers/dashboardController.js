@@ -110,10 +110,11 @@ const getMonthlySummary = async (req, res, next) => {
 
     let sql = `
       SELECT
-        SUM(CASE WHEN note IS NULL OR note != 'Direct Booking' THEN 1 ELSE 0 END) AS total_rfqs,
-        SUM(CASE WHEN status = 'Confirmed' THEN 1 ELSE 0 END) AS total_confirmed,
-        SUM(CASE WHEN status = 'Confirmed' THEN cost ELSE 0 END) AS total_cost,
-        SUM(CASE WHEN status = 'Confirmed' THEN profit ELSE 0 END) AS total_profit
+        SUM(CASE WHEN note IS NULL OR LOWER(TRIM(note)) != 'direct booking' THEN 1 ELSE 0 END) AS total_rfqs,
+        SUM(CASE WHEN LOWER(TRIM(status)) = 'confirmed' THEN 1 ELSE 0 END) AS total_confirmed,
+        SUM(CASE WHEN LOWER(TRIM(status)) = 'completed' THEN 1 ELSE 0 END) AS total_completed,
+        SUM(CASE WHEN LOWER(TRIM(status)) IN ('confirmed', 'completed') THEN cost ELSE 0 END) AS total_cost,
+        SUM(CASE WHEN LOWER(TRIM(status)) IN ('confirmed', 'completed') THEN profit ELSE 0 END) AS total_profit
       FROM shipments
       WHERE YEAR(created_at) = $1
         AND MONTH(created_at) = $2
@@ -217,6 +218,7 @@ const getMonthlySummary = async (req, res, next) => {
     const summary = {
       totalRFQs: parseInt(raw.total_rfqs || 0),
       totalConfirmed: parseInt(raw.total_confirmed || 0),
+      totalCompleted: parseInt(raw.total_completed || 0),
       totalCost: cost,
       totalProfit: profit,
       totalCustomerPrice: cost + profit,
