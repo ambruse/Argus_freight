@@ -228,7 +228,7 @@ export default function SummaryPage() {
         </div>
       ) : summary ? (
         activeRole === "calling_agent" ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Call Enquiries */}
             <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue/10 rounded-full blur-3xl pointer-events-none" />
@@ -266,6 +266,19 @@ export default function SummaryPage() {
                 <div className="p-3 bg-emerald/10 rounded-xl text-emerald text-xl">🏆</div>
               </div>
               <p className="text-xs text-muted">Confirmed business in {format(currentDate, "MMMM")}</p>
+            </div>
+
+            {/* Completed */}
+            <div className="glass p-6 rounded-2xl shadow-card space-y-4 relative overflow-hidden">
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-sky/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-semibold text-muted uppercase tracking-wider">Completed Shipments</p>
+                  <p className="text-4xl font-bold text-sky mt-2">{summary.totalCompleted || 0}</p>
+                </div>
+                <div className="p-3 bg-sky/10 rounded-xl text-sky text-xl">🏁</div>
+              </div>
+              <p className="text-xs text-muted">Shipments completed in {format(currentDate, "MMMM")}</p>
             </div>
           </div>
         ) : activeRole === "sales" ? (
