@@ -188,15 +188,19 @@ const generateCustomerRfq = async (req, res, next) => {
       [assignedOperator]
     );
     const operatorCountry = (opUserRes.rows[0]?.country || '').trim().toLowerCase();
+    const customerCountry = (req.user?.country || '').trim().toLowerCase();
+    const polCountryClean = (pol_country || '').trim().toLowerCase();
+
+    const targetCountry = operatorCountry || customerCountry || polCountryClean;
 
     let compulsoryRes = { rows: [] };
-    if (operatorCountry) {
+    if (targetCountry) {
       compulsoryRes = await db.query(
         `SELECT email, dear_who FROM compulsory_emails 
          WHERE is_active = true 
            AND LOWER(mode) = LOWER($1)
            AND LOWER(TRIM(country)) = LOWER($2)`,
-        [mode, operatorCountry]
+        [mode, targetCountry]
       );
     }
 
