@@ -18,7 +18,6 @@ const TEAM_MEMBERS = [
     id: 3,
     name: 'Ganesh',
     role: 'COO',
-    image: '/images/Ganesh.png',
     bio: 'Ganesh for his exceptional leadership in the fast-moving world of freight forwarding. Managing global shipments and tight deadlines is no easy feat, but his calm approach under pressure, deep supply chain insight, and dedication to our team keep everything moving smoothly every day.'
   },
   {
