@@ -356,10 +356,23 @@ const sendCustomerRfqEmail = async (req, res, next) => {
 
     let smtpUser = userRes.rows.length > 0 ? userRes.rows[0].email_address : null;
     let smtpPass = userRes.rows.length > 0 ? decrypt(userRes.rows[0].email_password) : null;
-    const operatorUserId = userRes.rows.length > 0 ? userRes.rows[0].id : null;
+    let operatorUserId = userRes.rows.length > 0 ? userRes.rows[0].id : null;
 
-    const { getSignatureForUser } = require('../utils/signature');
-    const signature = await getSignatureForUser(operatorUserId);
+    // Fall back to admin user SMTP credentials if operator password not set
+    if (!smtpUser || !smtpPass) {
+      try {
+        const adminRes = await db.query(
+          "SELECT id, email_address, email_password FROM users WHERE role = 'admin' AND email_address IS NOT NULL AND email_address != '' AND email_password IS NOT NULL AND email_password != '' ORDER BY id ASC LIMIT 1"
+        );
+        if (adminRes.rows.length > 0) {
+          smtpUser = adminRes.rows[0].email_address;
+          smtpPass = decrypt(adminRes.rows[0].email_password);
+          if (!operatorUserId) operatorUserId = adminRes.rows[0].id;
+        }
+      } catch (adminErr) {
+        console.error('Error fetching admin fallback credentials:', adminErr.message);
+      }
+    }
 
     // Fallback to global env variables if not set in DB
     if (!smtpUser) {
@@ -369,13 +382,6 @@ const sendCustomerRfqEmail = async (req, res, next) => {
       smtpPass = process.env.SMTP_PASS || null;
     }
 
-    if (!smtpUser || !smtpPass) {
-      return res.status(500).json({
-        success: false,
-        message: 'SMTP credentials for the assigned operator are not configured.'
-      });
-    }
-
     // Sanitize any accidental surrounding quotes
     if (smtpUser && typeof smtpUser === 'string') {
       smtpUser = smtpUser.trim().replace(/^["']|["']$/g, '');
@@ -383,6 +389,18 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     if (smtpPass && typeof smtpPass === 'string') {
       smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
     }
+
+    if (!smtpUser || !smtpPass) {
+      console.warn(`[customer-send-email] SMTP credentials for assigned operator "${operatorName}" or Admin are not configured. Skipping email dispatch.`);
+      return res.json({
+        success: true,
+        sent: false,
+        message: 'RFQ created successfully, but operator SMTP credentials are not configured so email notification was skipped.'
+      });
+    }
+
+    const { getSignatureForUser } = require('../utils/signature');
+    const signature = await getSignatureForUser(operatorUserId);
 
     // 4. Configure Nodemailer
     const transporter = nodemailer.createTransport({
@@ -399,119 +417,125 @@ const sendCustomerRfqEmail = async (req, res, next) => {
       family: 4
     });
 
-    // 5. Send to each recipient
+    // 5. Send to each recipient safely
+    let sentCount = 0;
     for (const shipment of shipments) {
       if (!shipment.email) continue;
+      try {
+        let subject = `RFQ FROM ${shipment.pol || ''} TO ${shipment.pod || ''}`;
+        if (shipment.mode) subject += `/${shipment.mode}`;
+        if (shipment.container) subject += `/${shipment.container}`;
+        subject += `/${shipment.ref_no}/CID : ${shipment.customer_id || ''}`;
 
-      let subject = `RFQ FROM ${shipment.pol || ''} TO ${shipment.pod || ''}`;
-      if (shipment.mode) subject += `/${shipment.mode}`;
-      if (shipment.container) subject += `/${shipment.container}`;
-      subject += `/${shipment.ref_no}/CID : ${shipment.customer_id || ''}`;
-
-      // Format Pick-up / Delivery address
-      const formatAddress = (address) => {
-        if (!address) return '';
-        let result = '';
-        let lineLen = 0;
-        for (let i = 0; i < address.length; i++) {
-          result += address[i];
-          lineLen++;
-          if (lineLen >= 40 && address[i] === ',') {
-            result += '<br>';
-            lineLen = 0;
-            while (i + 1 < address.length && address[i + 1] === ' ') {
-              i++;
+        // Format Pick-up / Delivery address
+        const formatAddress = (address) => {
+          if (!address) return '';
+          let result = '';
+          let lineLen = 0;
+          for (let i = 0; i < address.length; i++) {
+            result += address[i];
+            lineLen++;
+            if (lineLen >= 40 && address[i] === ',') {
+              result += '<br>';
+              lineLen = 0;
+              while (i + 1 < address.length && address[i + 1] === ' ') {
+                i++;
+              }
             }
           }
-        }
-        return result;
-      };
+          return result;
+        };
 
-      const cbmVal = calculateCbm(shipment.dimension);
-      const volWeight = cbmVal * 167;
-      let actWeight = 0;
-      if (shipment.weight) {
-        const totalMatch = shipment.weight.match(/total\s*(?:KG|LB|Pound)?\s*=\s*([\d.]+)/i);
-        if (totalMatch) {
-          actWeight = parseFloat(totalMatch[1]) || 0;
-        } else {
-          actWeight = parseFloat(shipment.weight) || 0;
-        }
-        if (/LB|Pound/i.test(shipment.weight)) {
-          actWeight = actWeight * 0.45359237;
-        }
-      }
-      const chgWeight = Math.max(actWeight, volWeight);
-
-      const labels = [
-        ['POL', shipment.pol],
-        ['POD', shipment.pod],
-        ['COMMODITY', shipment.commodity],
-        ['TERM', shipment.term],
-        ['DIMENSION', shipment.dimension],
-        ['CONTAINER', shipment.container],
-        ['MODE', shipment.mode],
-        ['TOTAL WEIGHT', shipment.weight ? (String(shipment.weight).toLowerCase().includes('kg') ? shipment.weight : `${shipment.weight} Kg`) : null],
-        ['CHARGEABLE WEIGHT', chgWeight ? `${chgWeight.toFixed(2)} Kg` : null],
-        ['PICK-UP ADDRESS', shipment.pickup_address],
-        ['DELIVERY ADDRESS', shipment.delivery_address],
-        ['NOTE', shipment.note]
-      ];
-
-      let htmlBody = `
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          Dear ${shipment.dear_who || 'Sir/Madam'},<br><br>
-          Kindly provide a Quotation for the following Shipment.<br><br>
-      `;
-
-      labels.forEach(([label, value]) => {
-        if (value && String(value).trim() !== '') {
-          let valStr = String(value);
-          if (label === 'PICK-UP ADDRESS' || label === 'DELIVERY ADDRESS') {
-            valStr = formatAddress(valStr);
+        const cbmVal = calculateCbm(shipment.dimension);
+        const volWeight = cbmVal * 167;
+        let actWeight = 0;
+        if (shipment.weight) {
+          const totalMatch = shipment.weight.match(/total\s*(?:KG|LB|Pound)?\s*=\s*([\d.]+)/i);
+          if (totalMatch) {
+            actWeight = parseFloat(totalMatch[1]) || 0;
+          } else {
+            actWeight = parseFloat(shipment.weight) || 0;
           }
-          htmlBody += `<b>${label}:</b> ${valStr}<br>`;
+          if (/LB|Pound/i.test(shipment.weight)) {
+            actWeight = actWeight * 0.45359237;
+          }
         }
-      });
+        const chgWeight = Math.max(actWeight, volWeight);
 
-      htmlBody += `
-        <br><br>
-        ${signature.html}
-        </body>
-        </html>
-      `;
+        const labels = [
+          ['POL', shipment.pol],
+          ['POD', shipment.pod],
+          ['COMMODITY', shipment.commodity],
+          ['TERM', shipment.term],
+          ['DIMENSION', shipment.dimension],
+          ['CONTAINER', shipment.container],
+          ['MODE', shipment.mode],
+          ['TOTAL WEIGHT', shipment.weight ? (String(shipment.weight).toLowerCase().includes('kg') ? shipment.weight : `${shipment.weight} Kg`) : null],
+          ['CHARGEABLE WEIGHT', chgWeight ? `${chgWeight.toFixed(2)} Kg` : null],
+          ['PICK-UP ADDRESS', shipment.pickup_address],
+          ['DELIVERY ADDRESS', shipment.delivery_address],
+          ['NOTE', shipment.note]
+        ];
 
-      const mailOptions = {
-        from: `"Argus Shipping " <${smtpUser}>`,
-        to: shipment.email,
-        subject: subject,
-        html: htmlBody
-      };
+        let htmlBody = `
+          <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            Dear ${shipment.dear_who || 'Sir/Madam'},<br><br>
+            Kindly provide a Quotation for the following Shipment.<br><br>
+        `;
 
-      if (attachedFiles.length > 0) {
-        const attachments = [];
-        attachedFiles.forEach(file => {
-          const absPath = path.resolve(process.cwd(), file.file_path);
-          if (fs.existsSync(absPath)) {
-            attachments.push({
-              filename: file.original_name,
-              path: absPath
-            });
+        labels.forEach(([label, value]) => {
+          if (value && String(value).trim() !== '') {
+            let valStr = String(value);
+            if (label === 'PICK-UP ADDRESS' || label === 'DELIVERY ADDRESS') {
+              valStr = formatAddress(valStr);
+            }
+            htmlBody += `<b>${label}:</b> ${valStr}<br>`;
           }
         });
-        if (attachments.length > 0) {
-          mailOptions.attachments = attachments;
-        }
-      }
 
-      await transporter.sendMail(mailOptions);
+        htmlBody += `
+          <br><br>
+          ${signature.html}
+          </body>
+          </html>
+        `;
+
+        const mailOptions = {
+          from: `"Argus Shipping " <${smtpUser}>`,
+          to: shipment.email,
+          subject: subject,
+          html: htmlBody
+        };
+
+        if (attachedFiles.length > 0) {
+          const attachments = [];
+          attachedFiles.forEach(file => {
+            const absPath = path.resolve(process.cwd(), file.file_path);
+            if (fs.existsSync(absPath)) {
+              attachments.push({
+                filename: file.original_name,
+                path: absPath
+              });
+            }
+          });
+          if (attachments.length > 0) {
+            mailOptions.attachments = attachments;
+          }
+        }
+
+        await transporter.sendMail(mailOptions);
+        sentCount++;
+      } catch (mailErr) {
+        console.error(`[customer-send-email] Failed to send email to ${shipment.email}:`, mailErr.message);
+      }
     }
 
-    res.json({ success: true, message: 'Emails dispatched successfully.' });
+    res.json({ success: true, sentCount, message: 'Emails dispatched successfully.' });
 
   } catch (err) {
-    next(err);
+    console.error('[customer-send-email] General error:', err);
+    res.json({ success: true, sent: false, message: 'RFQ created successfully, but sending email notification encountered an issue.' });
   }
 };
 

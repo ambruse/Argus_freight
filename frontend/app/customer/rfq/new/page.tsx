@@ -322,8 +322,12 @@ export default function CustomerNewRFQPage() {
         }
       }
 
-      // 3. Dispatch Email through assigned Operator SMTP
-      await api.post(`/rfq/customer-send-email/${ref_no}`);
+      // 3. Dispatch Email through assigned Operator SMTP (non-blocking for RFQ creation success)
+      try {
+        await api.post(`/rfq/customer-send-email/${ref_no}`);
+      } catch (emailErr) {
+        console.error("Email notification error:", emailErr);
+      }
 
       toast.success("Quote Request submitted successfully! The assigned Operator will follow up with you.");
       handleClear();
