@@ -17,15 +17,15 @@ const TEAM_MEMBERS = [
   {
     id: 3,
     name: 'Ganesh',
-    role: 'Manager',
+    role: 'COO',
     image: '/images/Ganesh.png',
     bio: 'Ganesh for his exceptional leadership in the fast-moving world of freight forwarding. Managing global shipments and tight deadlines is no easy feat, but his calm approach under pressure, deep supply chain insight, and dedication to our team keep everything moving smoothly every day.'
   },
   {
     id: 4,
     name: 'Mansoor',
-    role: 'COO',
-    bio: 'Managing global logistics operations at an executive level requires extraordinary vision and execution, and Mansoor delivers both every day. As our COO, his strategic guidance, focus on operational efficiency, and drive to modernize our freight forwarding networks keep our business ahead of the curve. His leadership sets the standard for how a modern logistics company should run.'
+    role: 'CFO',
+    bio: 'Managing global logistics operations at an executive level requires extraordinary vision and execution, and Mansoor delivers both every day. As our CFO, his strategic guidance, focus on operational efficiency, and drive to modernize our freight forwarding networks keep our business ahead of the curve. His leadership sets the standard for how a modern logistics company should run.'
   }
 ];
 
