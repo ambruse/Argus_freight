@@ -175,7 +175,7 @@ export default function ArgusNavbar() {
                 />
                 {/* Light mode logo (shown when html.light) */}
                 <img 
-                  src="/images/logo.png"
+                  src="/images/light-logo.png"
                   alt="Argus Shipping WLL Logo" 
                   className="logo-light"
                   style={{ height: '48px', width: 'auto', transition: 'all 0.2s ease' }} 

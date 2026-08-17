@@ -208,7 +208,7 @@ export default function LoginPage() {
         <div className="relative w-full max-w-[400px] animate-fade-in login-glass-card">
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center justify-center mb-6">
-            <img src={theme === "light" ? "/images/logo.png" : "/images/light-logo.png"} alt="ARGUS Shipping" className="h-10 w-auto object-contain" />
+            <img src={theme === "light" ? "/images/light-logo.png" : "/images/light-logo.png"} alt="ARGUS Shipping" className="h-10 w-auto object-contain" />
           </div>
 
           {/* Top gold line */}

@@ -153,7 +153,7 @@ export default function App() {
             <div className="footer-brand">
               <div className="footer-logo" style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/')}>
                 <img 
-                  src="/images/logo.png" 
+                  src="/images/light-logo.png" 
                   alt="Argus Shipping WLL Logo" 
                   style={{ height: '42px', width: 'auto', display: 'block' }} 
                 />
