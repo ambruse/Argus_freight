@@ -162,10 +162,10 @@ export default function OverdueFollowUpOverlay() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-primary" style={{ fontFamily: "'Outfit', sans-serif" }}>
-              Pending Follow-Up Alert (15+ Days Overdue)
+              Pending Follow-Up Alert (14+ Days Overdue)
             </h2>
             <p className="text-xs text-muted mt-1 leading-relaxed">
-              The following RFQs have had no follow-up activity for more than 15 days. Please review them. You can either <span className="text-rose font-medium">delete</span> them (requires password) or click <span className="text-blue-bright font-medium">Snooze</span> to ask again tomorrow.
+              The following RFQs have had no follow-up activity for more than 14 days. Please review them. You can either <span className="text-rose font-medium">delete</span> them (requires password) or click <span className="text-blue-bright font-medium">Snooze</span> to ask again tomorrow.
             </p>
           </div>
         </div>

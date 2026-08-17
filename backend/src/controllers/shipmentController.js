@@ -1550,7 +1550,7 @@ const getFollowUpOverdue = async (req, res, next) => {
       `SELECT s.ref_no, s.cust_req_no, s.customer_name, s.status, s.last_follow_up, s.created_at, s.pol, s.pod, s.commodity
        FROM shipments s
        WHERE s.status IN ('Pending', 'Customer Review', 'Quoted', 'Cancelled')
-         AND (s.last_follow_up < NOW() - INTERVAL '15 days' OR (s.last_follow_up IS NULL AND s.created_at < NOW() - INTERVAL '15 days'))
+         AND (s.last_follow_up < NOW() - INTERVAL '14 days' OR (s.last_follow_up IS NULL AND s.created_at < NOW() - INTERVAL '14 days'))
        ORDER BY COALESCE(s.last_follow_up, s.created_at) ASC`
     );
 
@@ -1568,10 +1568,10 @@ const snoozeFollowUp = async (req, res, next) => {
 
     const { ref_no } = req.params;
     
-    // We update last_follow_up to 14 days ago, so it reappears tomorrow (after 1 day)
+    // We update last_follow_up to 13 days ago, so it reappears tomorrow (after 1 day, making it 14 days)
     const result = await query(req,
       `UPDATE shipments 
-       SET last_follow_up = NOW() - INTERVAL '14 days' 
+       SET last_follow_up = NOW() - INTERVAL '13 days' 
        WHERE ref_no = $1 
        RETURNING ref_no, last_follow_up`,
       [ref_no]
