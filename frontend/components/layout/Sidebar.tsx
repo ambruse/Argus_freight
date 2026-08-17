@@ -174,7 +174,7 @@ export default function Sidebar() {
               style={{ background: "radial-gradient(circle, rgba(245,176,55,0.5) 0%, transparent 70%)" }}
             />
             <img
-              src={theme === "light" ? "/light-logo.png" : "/light-logo.png"}
+              src={theme === "light" ? "/logo.png" : "/logo.png"}
               alt="ARGUS Shipping"
               className="relative w-auto h-8 object-contain"
             />
@@ -200,7 +200,7 @@ export default function Sidebar() {
                 style={{ background: "radial-gradient(circle, rgba(245,176,55,0.5) 0%, transparent 70%)" }}
               />
               <img
-                src={theme === "light" ? "/light-logo.png" : "/light-logo.png"}
+                src={theme === "light" ? "/logo.png" : "/logo.png"}
                 alt="ARGUS Shipping"
                 className="relative w-auto h-9 object-contain"
               />

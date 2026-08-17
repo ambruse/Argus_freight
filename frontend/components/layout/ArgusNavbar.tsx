@@ -168,14 +168,14 @@ export default function ArgusNavbar() {
               <a href="/" className="logo-container" style={{ textDecoration: 'none' }}>
                 {/* Dark mode logo (shown when html.dark) */}
                 <img 
-                  src="/images/light-logo.png"
+                  src="/images/logo.png"
                   alt="Argus Shipping WLL Logo" 
                   className="logo-dark"
                   style={{ height: '48px', width: 'auto', transition: 'all 0.2s ease' }} 
                 />
                 {/* Light mode logo (shown when html.light) */}
                 <img 
-                  src="/images/light-logo.png"
+                  src="/images/logo.png"
                   alt="Argus Shipping WLL Logo" 
                   className="logo-light"
                   style={{ height: '48px', width: 'auto', transition: 'all 0.2s ease' }} 

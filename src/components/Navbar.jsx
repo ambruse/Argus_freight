@@ -165,7 +165,7 @@ export default function Navbar({ currentPath, setCurrentPath, onOpenQuote, isDar
             }}
           >
             <img 
-              src={isDarkMode ? "/images/light-logo.png" : "/images/light-logo.png"} 
+              src={isDarkMode ? "/images/logo.png" : "/images/logo.png"} 
               alt="Argus Shipping WLL Logo" 
               className="navbar-logo"
             />

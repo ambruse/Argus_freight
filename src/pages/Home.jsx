@@ -71,7 +71,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
   "@type": "CargoShippingService",
   "name": "Argus Shipping W.L.L",
   "url": "https://argusshipping.co/",
-  "logo": "https://argusshipping.co/images/light-logo.png",
+  "logo": "https://argusshipping.co/images/logo.png",
   "description": "Premium international freight forwarding, ocean & air cargo, 3PL warehousing, and door-to-door console cargo consolidation services based in Doha, Qatar.",
   "address": {
     "@type": "PostalAddress",

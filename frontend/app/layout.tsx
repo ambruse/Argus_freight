@@ -54,13 +54,13 @@ export const metadata: Metadata = {
     url: "https://argus-freight.onrender.com/",
     title: "ARGUS — Cargo & RFQ Management",
     description: "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
-    images: [{ url: "https://argus-freight.onrender.com/light-logo.png" }],
+    images: [{ url: "https://argus-freight.onrender.com/logo.png" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ARGUS — Cargo & RFQ Management",
     description: "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
-    images: ["https://argus-freight.onrender.com/light-logo.png"],
+    images: ["https://argus-freight.onrender.com/logo.png"],
   }
 };
 

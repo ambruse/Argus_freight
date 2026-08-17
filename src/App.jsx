@@ -122,7 +122,7 @@ export default function App() {
         <div className="loader-content">
           <div className="loader-spinner">
             <div className="spinner-ring"></div>
-            <img src="/images/light-logo.png" alt="Loading..." className="loader-logo" />
+            <img src="/images/logo.png" alt="Loading..." className="loader-logo" />
           </div>
           <span className="loader-text">Loading Supply Chain...</span>
         </div>
@@ -153,7 +153,7 @@ export default function App() {
             <div className="footer-brand">
               <div className="footer-logo" style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/')}>
                 <img 
-                  src="/images/light-logo.png" 
+                  src="/images/logo.png" 
                   alt="Argus Shipping WLL Logo" 
                   style={{ height: '42px', width: 'auto', display: 'block' }} 
                 />
