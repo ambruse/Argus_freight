@@ -184,7 +184,7 @@ export default function CustomerBookPage() {
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white/5 border border-white/10 p-4 rounded-2xl">
           <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:max-w-xl">
             <div className="relative w-full">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">🔍</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted"></span>
               <input
                 type="text"
                 placeholder="Search by name, company, mail, customer ID..."

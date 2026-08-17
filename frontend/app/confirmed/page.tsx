@@ -119,8 +119,25 @@ export default function ConfirmedPage() {
     setSelected(updated);
   };
 
-  const handleDelete = (e: React.MouseEvent, refNo: string) => {
+  const canDeleteShipment = (role: string | undefined, status: string | undefined) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'confirmed' || s === 'completed') return false;
+    if (role === 'operator') return s === 'pending';
+    return true;
+  };
+
+  const handleDelete = (e: React.MouseEvent, refNo: string, status?: string) => {
     e.stopPropagation();
+    const targetShipment = shipments.find((s) => s.ref_no === refNo);
+    const currentStatus = (status || targetShipment?.status || '').toLowerCase();
+    if (currentStatus === 'confirmed' || currentStatus === 'completed') {
+      toast.error("Confirmed and Completed shipments cannot be deleted.");
+      return;
+    }
+    if (user?.role === 'operator' && currentStatus !== 'pending') {
+      toast.error("Operators can only delete shipments with Pending status.");
+      return;
+    }
     setPasswordPrompt({
       isOpen: true,
       actionName: `delete Shipment ${refNo}`,
@@ -408,14 +425,16 @@ export default function ConfirmedPage() {
                         )}
                       </td>
                       <td>
-                        {(!user || user.role !== "sales") && (
+                        {(!user || user.role !== "sales") && canDeleteShipment(user?.role, s.status) ? (
                           <button
-                            onClick={(e) => handleDelete(e, s.ref_no)}
+                            onClick={(e) => handleDelete(e, s.ref_no, s.status)}
                             className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
                             title="Delete Shipment"
                           >
                             🗑
                           </button>
+                        ) : (
+                          <span className="text-xs text-muted italic">Locked</span>
                         )}
                       </td>
                     </tr>

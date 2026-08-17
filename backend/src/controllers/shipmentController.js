@@ -422,8 +422,16 @@ const deleteShipment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
     
-    if (checkRes.rows[0].status === 'Confirmed' || checkRes.rows[0].status === 'Completed') {
-      return res.status(400).json({ success: false, message: 'Confirmed/Completed shipments cannot be deleted.' });
+    const statusLower = (checkRes.rows[0].status || '').toLowerCase();
+
+    // Confirmed and Completed shipments can NEVER be deleted by anyone
+    if (statusLower === 'confirmed' || statusLower === 'completed') {
+      return res.status(400).json({ success: false, message: 'Confirmed and Completed shipments cannot be deleted.' });
+    }
+
+    // For operator role: only allow deleting if status is Pending
+    if (req.user?.role === 'operator' && statusLower !== 'pending') {
+      return res.status(403).json({ success: false, message: 'Operators can only delete shipments with Pending status.' });
     }
 
     const { getOperatorSuffixes } = require('../config/dbHelper');

@@ -285,9 +285,26 @@ export default function RFQPage() {
     setSelected(updated);
   };
 
+  const canDeleteShipment = (role: string | undefined, status: string | undefined) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'confirmed' || s === 'completed') return false;
+    if (role === 'operator') return s === 'pending';
+    return true;
+  };
+
   // ── Delete handler ──────────────────────────────────────────
-  const handleDelete = (e: React.MouseEvent, refNo: string) => {
+  const handleDelete = (e: React.MouseEvent, refNo: string, status?: string) => {
     e.stopPropagation();
+    const targetShipment = shipments.find((s) => s.ref_no === refNo);
+    const currentStatus = (status || targetShipment?.status || '').toLowerCase();
+    if (currentStatus === 'confirmed' || currentStatus === 'completed') {
+      toast.error("Confirmed and Completed shipments cannot be deleted.");
+      return;
+    }
+    if (user?.role === 'operator' && currentStatus !== 'pending') {
+      toast.error("Operators can only delete shipments with Pending status.");
+      return;
+    }
     setPasswordPrompt({
       isOpen: true,
       actionName: `delete RFQ ${refNo}`,
@@ -306,6 +323,14 @@ export default function RFQPage() {
 
   const handleDeleteGroup = (e: React.MouseEvent, basePrefix: string, groupShipments: Shipment[]) => {
     e.stopPropagation();
+    if (groupShipments.some((s) => ['confirmed', 'completed'].includes((s.status || '').toLowerCase()))) {
+      toast.error("Confirmed and Completed shipments cannot be deleted.");
+      return;
+    }
+    if (user?.role === 'operator' && groupShipments.some((s) => (s.status || '').toLowerCase() !== 'pending')) {
+      toast.error("Operators can only delete shipments with Pending status.");
+      return;
+    }
     const groupLabel = getGroupLabel(basePrefix, groupShipments);
     setPasswordPrompt({
       isOpen: true,
@@ -699,13 +724,17 @@ export default function RFQPage() {
                           )}
                         </td>
                         <td>
-                          <button
-                            onClick={(e) => handleDeleteGroup(e, item.basePrefix, item.originalShipments)}
-                            className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
-                            title="Delete group"
-                          >
-                            🗑
-                          </button>
+                          {item.originalShipments.every(s => canDeleteShipment(user?.role, s.status)) ? (
+                            <button
+                              onClick={(e) => handleDeleteGroup(e, item.basePrefix, item.originalShipments)}
+                              className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
+                              title="Delete group"
+                            >
+                              🗑
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted italic">Locked</span>
+                          )}
                         </td>
                       </tr>
                       {/* ── Expanded child rows (Admin & Operator only) ── */}
@@ -823,9 +852,9 @@ export default function RFQPage() {
                             )}
                           </td>
                           <td>
-                            {cs.status !== 'Confirmed' ? (
+                            {canDeleteShipment(user?.role, cs.status) ? (
                               <button
-                                onClick={(e) => handleDelete(e, cs.ref_no)}
+                                onClick={(e) => handleDelete(e, cs.ref_no, cs.status)}
                                 className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
                                 title="Delete RFQ"
                               >🗑</button>
@@ -968,9 +997,9 @@ export default function RFQPage() {
                           )}
                         </td>
                         <td>
-                          {s.status !== 'Confirmed' ? (
+                          {canDeleteShipment(user?.role, s.status) ? (
                             <button
-                              onClick={(e) => handleDelete(e, s.ref_no)}
+                              onClick={(e) => handleDelete(e, s.ref_no, s.status)}
                               className="text-muted hover:text-rose p-1.5 rounded hover:bg-rose/10 transition-colors"
                               title="Delete RFQ"
                             >

@@ -70,8 +70,26 @@ export default function OverdueFollowUpOverlay() {
     }
   };
 
+  const canDeleteShipment = (role: string | undefined, status: string | undefined) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'confirmed' || s === 'completed') return false;
+    if (role === 'operator') return s === 'pending';
+    return true;
+  };
+
   // Open password prompt for deletion
   const triggerDelete = (refNo: string) => {
+    const user = authStorage.getUser();
+    const target = overdueList.find(s => s.ref_no === refNo);
+    const statusLower = (target?.status || '').toLowerCase();
+    if (statusLower === 'confirmed' || statusLower === 'completed') {
+      toast.error("Confirmed and Completed shipments cannot be deleted.");
+      return;
+    }
+    if (user?.role === 'operator' && statusLower !== 'pending') {
+      toast.error("Operators can only delete shipments with Pending status.");
+      return;
+    }
     setSelectedRefNo(refNo);
     setIsBulkDelete(false);
     setPasswordPromptOpen(true);
@@ -79,6 +97,15 @@ export default function OverdueFollowUpOverlay() {
 
   // Open password prompt for bulk deletion
   const triggerDeleteAll = () => {
+    const user = authStorage.getUser();
+    if (overdueList.some(s => ['confirmed', 'completed'].includes((s.status || '').toLowerCase()))) {
+      toast.error("Confirmed and Completed shipments cannot be deleted.");
+      return;
+    }
+    if (user?.role === 'operator' && overdueList.some(s => (s.status || '').toLowerCase() !== 'pending')) {
+      toast.error("Operators can only delete shipments with Pending status.");
+      return;
+    }
     setIsBulkDelete(true);
     setPasswordPromptOpen(true);
   };
@@ -156,13 +183,15 @@ export default function OverdueFollowUpOverlay() {
             >
               {actioningAll ? "Snoozing..." : "Snooze All"}
             </button>
-            <button
-              onClick={triggerDeleteAll}
-              disabled={actioningAll}
-              className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 hover:border-transparent transition-all disabled:opacity-50"
-            >
-              {actioningAll ? "Deleting..." : "Delete All"}
-            </button>
+            {overdueList.every(s => canDeleteShipment(authStorage.getUser()?.role, s.status)) && (
+              <button
+                onClick={triggerDeleteAll}
+                disabled={actioningAll}
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 hover:border-transparent transition-all disabled:opacity-50"
+              >
+                {actioningAll ? "Deleting..." : "Delete All"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -217,12 +246,14 @@ export default function OverdueFollowUpOverlay() {
                   >
                     Snooze (Ask Tomorrow)
                   </button>
-                  <button
-                    onClick={() => triggerDelete(s.ref_no)}
-                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose/10 hover:bg-rose text-rose hover:text-white border border-rose/20 hover:border-transparent transition-all"
-                  >
-                    Delete
-                  </button>
+                  {canDeleteShipment(authStorage.getUser()?.role, s.status) && (
+                    <button
+                      onClick={() => triggerDelete(s.ref_no)}
+                      className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose/10 hover:bg-rose text-rose hover:text-white border border-rose/20 hover:border-transparent transition-all"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             );
