@@ -267,10 +267,26 @@ const query = async (req, sql, params) => {
          const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
          const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
 
+         const getExistingTables = async () => {
+           try {
+             const res = await db.query(
+               `SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()`
+             ).catch(() => []);
+             const rows = res.rows || res || [];
+             return new Set(rows.map(r => (r.table_name || r.TABLE_NAME || '').toLowerCase()));
+           } catch (e) {
+             return new Set();
+           }
+         };
+
+         const existingTables = await getExistingTables();
+
          let sUnion = `SELECT 2 as __p, ${S_COLS} FROM \`shipments\` WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
            await ensureUserTables(suffix);
-           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${S_COLS} FROM \`shipments_${suffix}\` WHERE ${sandboxFilter}`;
+           if (existingTables.has(`shipments_${suffix}`)) {
+             sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${S_COLS} FROM \`shipments_${suffix}\` WHERE ${sandboxFilter}`;
+           }
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
@@ -298,35 +314,59 @@ const query = async (req, sql, params) => {
          
          let rUnion = `SELECT 2 as __p, ${R_COLS} FROM \`shipment_replies\` WHERE ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${R_COLS} FROM \`shipment_replies_${suffix}\` WHERE ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
+           if (existingTables.has(`shipment_replies_${suffix}`)) {
+             rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${R_COLS} FROM \`shipment_replies_${suffix}\` WHERE ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
+           }
          }
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
          let fUnion = `SELECT 2 as __p, ${F_COLS} FROM \`files\` WHERE shipment_ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${F_COLS} FROM \`files_${suffix}\` WHERE shipment_ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
+           if (existingTables.has(`files_${suffix}`)) {
+             fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${F_COLS} FROM \`files_${suffix}\` WHERE shipment_ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
+           }
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
+         const getExistingTables = async () => {
+           try {
+             const res = await db.query(
+               `SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()`
+             ).catch(() => []);
+             const rows = res.rows || res || [];
+             return new Set(rows.map(r => (r.table_name || r.TABLE_NAME || '').toLowerCase()));
+           } catch (e) {
+             return new Set();
+           }
+         };
+
+         const existingTables = await getExistingTables();
+
          const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, note, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator, created_at`;
          const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
          const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
 
          let sBase = `SELECT ${S_COLS} FROM \`shipments\``;
          for (const suffix of suffixes) {
-           sBase += ` UNION ALL SELECT ${S_COLS} FROM \`shipments_${suffix}\``;
+           if (existingTables.has(`shipments_${suffix}`)) {
+             sBase += ` UNION ALL SELECT ${S_COLS} FROM \`shipments_${suffix}\``;
+           }
          }
          shipmentsUnion = `(SELECT * FROM (${sBase}) _u_s_inner)`;
 
          let rBase = `SELECT ${R_COLS} FROM \`shipment_replies\``;
          for (const suffix of suffixes) {
-           rBase += ` UNION ALL SELECT ${R_COLS} FROM \`shipment_replies_${suffix}\``;
+           if (existingTables.has(`shipment_replies_${suffix}`)) {
+             rBase += ` UNION ALL SELECT ${R_COLS} FROM \`shipment_replies_${suffix}\``;
+           }
          }
          repliesUnion = `(SELECT * FROM (${rBase}) _u_r_inner)`;
 
          let fBase = `SELECT ${F_COLS} FROM \`files\``;
          for (const suffix of suffixes) {
-           fBase += ` UNION ALL SELECT ${F_COLS} FROM \`files_${suffix}\``;
+           if (existingTables.has(`files_${suffix}`)) {
+             fBase += ` UNION ALL SELECT ${F_COLS} FROM \`files_${suffix}\``;
+           }
          }
          filesUnion = `(SELECT * FROM (${fBase}) _u_f_inner)`;
       }

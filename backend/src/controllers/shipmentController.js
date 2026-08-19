@@ -207,7 +207,8 @@ const getAllShipments = async (req, res, next) => {
 
     res.json({ success: true, data: rows });
   } catch (err) {
-    next(err);
+    console.error('[getAllShipments Error]', err);
+    res.status(500).json({ success: false, message: err.message, error: err.toString() });
   }
 };
 
