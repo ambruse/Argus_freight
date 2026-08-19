@@ -66,11 +66,19 @@ const login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Username and password are required.' });
     }
 
-    // Look up user by username (case-insensitive) excluding soft-deleted users
-    const result = await db.query(
-      'SELECT id, user_id, username, password_hash, role, is_stalled, is_deleted, status, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted = 0 OR is_deleted IS NULL)',
-      [username]
-    );
+    // Look up user by username (case-insensitive)
+    let result;
+    try {
+      result = await db.query(
+        'SELECT id, user_id, username, password_hash, role, is_stalled, is_deleted, status, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted = 0 OR is_deleted IS NULL)',
+        [username]
+      );
+    } catch (qErr) {
+      result = await db.query(
+        'SELECT id, username, password_hash, role, is_stalled, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1)',
+        [username]
+      );
+    }
 
     if (result.rows.length === 0) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
