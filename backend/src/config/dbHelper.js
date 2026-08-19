@@ -62,7 +62,7 @@ const getOperatorSuffixes = async () => {
   if (cachedOperatorSuffixes && (now - lastCacheTime < 10000)) return cachedOperatorSuffixes;
   try {
     const res = await db.query(
-      `SELECT LOWER(username) AS suffix FROM users WHERE role = 'operator'`
+      `SELECT LOWER(username) AS suffix FROM users WHERE role = 'operator' AND (is_deleted = 0 OR is_deleted IS NULL)`
     );
     const dbTablesRes = await db.query(
       `SELECT table_name FROM information_schema.tables 

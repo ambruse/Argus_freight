@@ -120,8 +120,8 @@ const generateCustomerRfq = async (req, res, next) => {
 
     if (operator && operator.trim()) {
       const opMatch = await db.query(
-        `SELECT id, username, email_address, email_password FROM users 
-         WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin')`,
+        `SELECT id, user_id, username, email_address, email_password FROM users 
+         WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin') AND (is_deleted = 0 OR is_deleted IS NULL)`,
         [operator.trim()]
       );
       if (opMatch.rows.length === 0) {
@@ -134,8 +134,9 @@ const generateCustomerRfq = async (req, res, next) => {
     } else {
       // 2. Round-Robin Operator Assignment
       const opRes = await db.query(
-        `SELECT id, username, email_address, email_password FROM users 
+        `SELECT id, user_id, username, email_address, email_password FROM users 
          WHERE role = 'operator' 
+           AND (is_deleted = 0 OR is_deleted IS NULL)
            AND email_address IS NOT NULL AND email_address != '' 
            AND email_password IS NOT NULL AND email_password != '' 
          ORDER BY id ASC`

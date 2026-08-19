@@ -88,7 +88,7 @@ const generateRfq = async (req, res, next) => {
     let opUsername = null;
     if (req.user.role === 'sales' && operator) {
       const opCheck = await db.query(
-        "SELECT username FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+        "SELECT user_id, username FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1)) AND (is_deleted = 0 OR is_deleted IS NULL) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
         [operator]
       );
       if (opCheck.rows.length > 0) {
