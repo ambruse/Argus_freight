@@ -433,21 +433,59 @@ const createLike = async (newTable, baseTable) => {
       console.error('[Migration] Error migrating credentials:', migErr.message);
     }
 
-    // ── Operator Table Sandboxes Migration ────────────────────
+    // ── Operator Table Sandboxes & Full Schema Sync Migration ──
     try {
-      const tablesRes = await db.query(
-        `SELECT table_name FROM information_schema.tables
-         WHERE table_schema = DATABASE() AND table_name LIKE 'shipments_%'`
+      const getColsMap = async (tbl) => {
+        const res = await db.query(
+          `SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND LOWER(TABLE_NAME) = LOWER($1)`,
+          [tbl]
+        );
+        const cols = {};
+        for (const r of (res.rows || [])) {
+          const cName = (r.COLUMN_NAME || r.column_name).toLowerCase();
+          const cType = r.COLUMN_TYPE || r.column_type || r.DATA_TYPE || r.data_type;
+          cols[cName] = cType;
+        }
+        return cols;
+      };
+
+      const mainShipmentCols = await getColsMap('shipments');
+      const mainReplyCols = await getColsMap('shipment_replies');
+      const mainFileCols = await getColsMap('files');
+
+      const allDbTables = await db.query(
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`
       );
-      await addCol('shipments', 'operator', 'VARCHAR(100)');
-      if (tablesRes && tablesRes.length > 0) {
-        for (const r of tablesRes) {
-          await addCol(r.table_name, 'operator', 'VARCHAR(100)');
-          await addCol(r.table_name, 'cust_req_no', 'VARCHAR(50)');
+
+      const tableRows = allDbTables.rows || (Array.isArray(allDbTables) ? allDbTables : []);
+      for (const row of tableRows) {
+        const tblName = (row.TABLE_NAME || row.table_name || '').toLowerCase();
+        if (!tblName || tblName === 'shipments' || tblName === 'shipment_replies' || tblName === 'files') continue;
+
+        let refCols = null;
+        if (tblName.startsWith('shipments_') && !tblName.includes('replies') && !tblName.includes('files') && !tblName.includes('chats')) {
+          refCols = mainShipmentCols;
+        } else if (tblName.startsWith('shipment_replies_')) {
+          refCols = mainReplyCols;
+        } else if (tblName.startsWith('files_')) {
+          refCols = mainFileCols;
+        }
+
+        if (refCols && Object.keys(refCols).length > 0) {
+          const currentCols = await getColsMap(tblName);
+          for (const [colName, colType] of Object.entries(refCols)) {
+            if (!currentCols[colName]) {
+              try {
+                await db.query(`ALTER TABLE \`${tblName}\` ADD COLUMN \`${colName}\` ${colType}`);
+                console.log(`[Schema Sync] Added missing column ${colName} (${colType}) to ${tblName}`);
+              } catch (err) {}
+            }
+          }
         }
       }
+
       await db.query("UPDATE shipments SET operator = 'jabir' WHERE operator IS NULL");
-      console.log('[Migration] Operator & cust_req_no columns updated.');
+      console.log('[Migration] Operator & sandbox columns schema synced.');
     } catch (opMigErr) {
       console.error('[Migration] Operator migration error:', opMigErr.message);
     }

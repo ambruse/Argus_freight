@@ -163,6 +163,56 @@ const getTables = (req) => {
   };
 };
 
+const buildAlignedUnion = async (mainTable, suffixes, getPriorityFn = () => 1, extraWhere = '') => {
+  let mainCols = [];
+  try {
+    const mainColsRes = await db.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() AND LOWER(TABLE_NAME) = LOWER($1)
+       ORDER BY ORDINAL_POSITION`,
+      [mainTable]
+    );
+    mainCols = (mainColsRes.rows || []).map(r => r.COLUMN_NAME || r.column_name);
+  } catch (e) {}
+
+  if (!mainCols || mainCols.length === 0) {
+    let base = `SELECT 2 as __p, \`${mainTable}\`.* FROM \`${mainTable}\` ${extraWhere}`;
+    for (const suffix of suffixes) {
+      base += ` UNION ALL SELECT ${getPriorityFn(suffix)} as __p, \`${mainTable}_${suffix}\`.* FROM \`${mainTable}_${suffix}\` ${extraWhere}`;
+    }
+    return base;
+  }
+
+  const formattedMainCols = mainCols.map(c => `\`${c}\``).join(', ');
+  let unionSql = `SELECT 2 as __p, ${formattedMainCols} FROM \`${mainTable}\` ${extraWhere}`;
+
+  for (const suffix of suffixes) {
+    const targetTable = `${mainTable}_${suffix}`;
+    let targetColsSet = new Set();
+    try {
+      const targetColsRes = await db.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+         WHERE TABLE_SCHEMA = DATABASE() AND LOWER(TABLE_NAME) = LOWER($1)`,
+        [targetTable]
+      );
+      targetColsSet = new Set((targetColsRes.rows || []).map(r => (r.COLUMN_NAME || r.column_name).toLowerCase()));
+    } catch (e) {}
+
+    const mappedCols = mainCols.map(c => {
+      const cleanC = c.toLowerCase();
+      if (targetColsSet.has(cleanC)) {
+        return `\`${c}\``;
+      }
+      return `NULL AS \`${c}\``;
+    });
+
+    const pVal = getPriorityFn(suffix);
+    unionSql += ` UNION ALL SELECT ${pVal} as __p, ${mappedCols.join(', ')} FROM \`${targetTable}\` ${extraWhere}`;
+  }
+
+  return unionSql;
+};
+
 const query = async (req, sql, params) => {
   let targetUser = req?.user?.username || 'admin';
   const isAdmin = req?.user?.role === 'admin';
@@ -251,13 +301,9 @@ const query = async (req, sql, params) => {
            }
          }
 
-         const userFilter = conds.length > 0 ? `(${conds.join(' OR ')})` : `(1=1)`;
+         const userFilter = conds.length > 0 ? `WHERE (${conds.join(' OR ')})` : '';
 
-         let sUnion = `SELECT 2 as __p, shipments.* FROM shipments WHERE ${userFilter}`;
-         for (const suffix of userSuffixes) {
-           await ensureUserTables(suffix);
-           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipments_${suffix}.* FROM shipments_${suffix} WHERE ${userFilter}`;
-         }
+         const sUnion = await buildAlignedUnion('shipments', userSuffixes, (s) => s === safeUser ? 3 : 1, userFilter);
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
             ORDER BY 
@@ -281,24 +327,17 @@ const query = async (req, sql, params) => {
               END DESC,
               __p DESC
           ) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
-         
-         let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
-         for (const suffix of userSuffixes) {
-           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
-         }
+
+         const rFilter = `WHERE ref_no IN (SELECT ref_no FROM shipments ${userFilter})`;
+         const rUnion = await buildAlignedUnion('shipment_replies', userSuffixes, (s) => s === safeUser ? 3 : 1, rFilter);
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
-         
-         let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
-         for (const suffix of userSuffixes) {
-           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
-         }
+
+         const fFilter = `WHERE shipment_ref_no IN (SELECT ref_no FROM shipments ${userFilter})`;
+         const fUnion = await buildAlignedUnion('files', userSuffixes, (s) => s === safeUser ? 3 : 1, fFilter);
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
          const sSuffixes = await getPhysicalSuffixes('shipments');
-         let sBase = `SELECT 2 as __p, shipments.* FROM shipments`;
-         for (const suffix of sSuffixes) {
-           sBase += ` UNION ALL SELECT 1 as __p, shipments_${suffix}.* FROM shipments_${suffix}`;
-         }
+         const sBase = await buildAlignedUnion('shipments', sSuffixes, () => 1, '');
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
             ORDER BY 
@@ -324,17 +363,11 @@ const query = async (req, sql, params) => {
           ) AS _rn FROM (${sBase}) _s) _ranked WHERE _rn = 1)`;
 
          const rSuffixes = await getPhysicalSuffixes('shipment_replies');
-         let rBase = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies`;
-         for (const suffix of rSuffixes) {
-           rBase += ` UNION ALL SELECT 1 as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
-         }
+         const rBase = await buildAlignedUnion('shipment_replies', rSuffixes, () => 1, '');
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rBase}) _r) _ranked WHERE _rn = 1)`;
 
          const fSuffixes = await getPhysicalSuffixes('files');
-         let fBase = `SELECT 2 as __p, files.* FROM files`;
-         for (const suffix of fSuffixes) {
-           fBase += ` UNION ALL SELECT 1 as __p, files_${suffix}.* FROM files_${suffix}`;
-         }
+         const fBase = await buildAlignedUnion('files', fSuffixes, () => 1, '');
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fBase}) _f) _ranked WHERE _rn = 1)`;
       }
 
