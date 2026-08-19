@@ -233,6 +233,36 @@ const query = async (req, sql, params) => {
 
          const userFilter = conds.length > 0 ? `(${conds.join(' OR ')})` : `(1=1)`;
 
+         const sandboxConds = [];
+         if (req?.user?.role === 'operator') {
+           sandboxConds.push(`LOWER(operator) = LOWER('${safeUsername}')`);
+           sandboxConds.push(`'${safeUser}' = '${safeUsername}'`);
+         } else if (req?.user?.role === 'sales') {
+           sandboxConds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
+           if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
+             sandboxConds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
+           }
+           sandboxConds.push(`(refer_by IS NULL OR refer_by = '')`);
+         } else if (req?.user?.role === 'customer') {
+           sandboxConds.push(`LOWER(email) = LOWER('${safeUsername}')`);
+           sandboxConds.push(`LOWER(customer_email) = LOWER('${safeUsername}')`);
+           if (safeUserEmail && safeUserEmail.toLowerCase() !== safeUsername.toLowerCase()) {
+             sandboxConds.push(`LOWER(email) = LOWER('${safeUserEmail}')`);
+             sandboxConds.push(`LOWER(customer_email) = LOWER('${safeUserEmail}')`);
+           }
+           sandboxConds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
+           if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
+             sandboxConds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
+             sandboxConds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeName}'))`);
+           } else if (safeUsername) {
+             sandboxConds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeUsername}'))`);
+           }
+           if (safeCid) {
+             sandboxConds.push(`(customer_id IS NOT NULL AND customer_id = '${safeCid}')`);
+           }
+         }
+         const sandboxFilter = sandboxConds.length > 0 ? `(${sandboxConds.join(' OR ')})` : `(1=1)`;
+
          const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, note, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator, created_at`;
          const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
          const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
@@ -240,7 +270,7 @@ const query = async (req, sql, params) => {
          let sUnion = `SELECT 2 as __p, ${S_COLS} FROM \`shipments\` WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
            await ensureUserTables(suffix);
-           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${S_COLS} FROM \`shipments_${suffix}\` WHERE ${userFilter}`;
+           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${S_COLS} FROM \`shipments_${suffix}\` WHERE ${sandboxFilter}`;
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
