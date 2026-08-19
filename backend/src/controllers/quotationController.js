@@ -589,15 +589,15 @@ const approveQuotation = async (req, res, next) => {
           if (updatedShipment.customer_id) {
             try {
               const custUserRes = await db.query(
-                `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' LIMIT 1`,
+                `SELECT id, username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
                 [updatedShipment.customer_id]
               );
               if (custUserRes.rows.length > 0) {
-                const customerUsername = custUserRes.rows[0].username;
-                const cleanUsername = customerUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                const { getUserSuffix } = require('../config/dbHelper');
+                const custSuffix = getUserSuffix(custUserRes.rows[0]);
                 
                 await db.query(
-                  `UPDATE shipments_${cleanUsername} SET
+                  `UPDATE shipments_${custSuffix} SET
                      status = $1,
                      do_number = $2,
                      box_no = $3,

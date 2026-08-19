@@ -89,32 +89,26 @@ const updateCustomerByAdmin = async (req, res, next) => {
 };
 
 // ── DELETE /api/customers/:id ────────────────────────────────
-// Deletes a customer's user account and customer record (Admin only)
+// Soft deletes a customer's user account and preserves sandbox tables (Admin only)
 const deleteCustomerByAdmin = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     // Get customer_id first to delete from customers table too
-    const userCheck = await db.query('SELECT customer_id, username FROM users WHERE id = $1', [id]);
+    const userCheck = await db.query('SELECT customer_id, username FROM users WHERE id = $1 AND (is_deleted IS NOT TRUE)', [id]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Customer not found.' });
     }
 
     const { customer_id, username } = userCheck.rows[0];
 
-    // Delete user
-    await db.query('DELETE FROM users WHERE id = $1', [id]);
+    // Soft delete user: preserve sandbox tables for Admin view
+    await db.query("UPDATE users SET is_deleted = TRUE, deleted_at = NOW(), username = CONCAT(username, '__deleted_', id) WHERE id = $1", [id]);
 
-    // Delete customer
+    // Delete customer profile record
     if (customer_id) {
       await db.query('DELETE FROM customers WHERE customer_id = $1', [customer_id]);
     }
-
-    // Drop sandbox tables if they exist
-    const suffix = username.toLowerCase();
-    await db.query(`DROP TABLE IF EXISTS shipment_replies_${suffix}`);
-    await db.query(`DROP TABLE IF EXISTS files_${suffix}`);
-    await db.query(`DROP TABLE IF EXISTS shipments_${suffix}`);
 
     res.json({ success: true, message: 'Customer account deleted successfully.' });
   } catch (err) {
@@ -227,19 +221,8 @@ const createCustomer = async (req, res, next) => {
     const newCustomer = result.rows[0];
 
     // Create user-specific sandbox tables
-    const suffix = finalUsername.toLowerCase();
-    await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} (LIKE shipments INCLUDING ALL)`);
-    await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} (LIKE files INCLUDING ALL)`);
-    await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} (LIKE shipment_replies INCLUDING ALL)`);
-
-    // Recreate foreign keys
-    await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_${suffix}_shipment_ref_no_fkey`);
-    await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_shipment_ref_no_fkey`);
-    await db.query(`ALTER TABLE files_${suffix} ADD CONSTRAINT files_${suffix}_shipment_ref_no_fkey FOREIGN KEY (shipment_ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
-
-    await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_${suffix}_ref_no_fkey`);
-    await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_ref_no_fkey`);
-    await db.query(`ALTER TABLE shipment_replies_${suffix} ADD CONSTRAINT shipment_replies_${suffix}_ref_no_fkey FOREIGN KEY (ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
+    const { ensureUserTables } = require('../config/dbHelper');
+    await ensureUserTables(newCustomer);
 
     res.status(201).json({ success: true, data: newCustomer });
   } catch (err) {

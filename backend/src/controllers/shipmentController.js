@@ -58,18 +58,18 @@ const resolveReplyRecipients = (shipment, latestMessage, myEmail) => {
 const syncShipmentToCustomer = async (shipment) => {
   if (!shipment || !shipment.cust_req_no || !shipment.customer_id) return;
   try {
-    // Find customer username
+    // Find customer user
     const custUserRes = await db.query(
-      `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' LIMIT 1`,
+      `SELECT id, username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
       [shipment.customer_id]
     );
     if (custUserRes.rows.length === 0) return;
-    const customerUsername = custUserRes.rows[0].username;
-    const cleanUsername = customerUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const { getUserSuffix } = require('../config/dbHelper');
+    const custSuffix = getUserSuffix(custUserRes.rows[0]);
 
-    // Update customer sandbox table shipments_username
+    // Update customer sandbox table shipments_suffix
     await db.query(
-      `UPDATE shipments_${cleanUsername} SET
+      `UPDATE shipments_${custSuffix} SET
          status = $1,
          do_number = $2,
          box_no = $3,
@@ -100,7 +100,7 @@ const syncShipmentToCustomer = async (shipment) => {
         shipment.cust_req_no
       ]
     );
-    console.log(`[Sync] Synced shipment ${shipment.ref_no} updates to customer ${cleanUsername} ref_no ${shipment.cust_req_no}`);
+    console.log(`[Sync] Synced shipment ${shipment.ref_no} updates to customer ${custSuffix} ref_no ${shipment.cust_req_no}`);
   } catch (err) {
     console.error(`[Sync] Failed to sync shipment ${shipment.ref_no} to customer:`, err.message);
   }
@@ -481,25 +481,29 @@ const getReplies = async (req, res, next) => {
     } catch (dbErr) {}
 
     if (req.user && req.user.role === 'customer') {
-      const cleanUsername = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-      const shipRes = await db.query(`SELECT operator FROM shipments_${cleanUsername} WHERE ref_no = $1 LIMIT 1`, [ref_no]);
+      const { getUserSuffix, getUserSuffixFromReq } = require('../config/dbHelper');
+      const custSuffix = getUserSuffixFromReq(req);
+      const shipRes = await db.query(`SELECT operator FROM shipments_${custSuffix} WHERE ref_no = $1 LIMIT 1`, [ref_no]);
       if (shipRes.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Shipment not found.' });
       }
 
       const operatorName = shipRes.rows[0].operator;
-      const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-      const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
-      const opRepliesTable = cleanOperator === 'admin' ? 'shipment_replies' : `shipment_replies_${cleanOperator}`;
-
-      let operatorEmail = '';
+      let cleanOperator = 'admin';
       const opEmailRes = await db.query(
-        "SELECT email_address FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) LIMIT 1",
+        "SELECT id, username, email_address FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1)) AND (is_deleted IS NOT TRUE) LIMIT 1",
         [operatorName]
       );
       if (opEmailRes.rows.length > 0) {
-        operatorEmail = opEmailRes.rows[0].email_address || '';
+        cleanOperator = getUserSuffix(opEmailRes.rows[0]);
+      } else if (operatorName) {
+        cleanOperator = getUserSuffix(operatorName);
       }
+
+      const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
+      const opRepliesTable = cleanOperator === 'admin' ? 'shipment_replies' : `shipment_replies_${cleanOperator}`;
+
+      let operatorEmail = opEmailRes.rows[0]?.email_address || '';
 
       // Mark incoming replies as read in operator replies table
       await db.query(
@@ -1503,8 +1507,8 @@ const sendChatMessage = async (req, res, next) => {
 const markAllRepliesAsRead = async (req, res, next) => {
   try {
     const role = req.user.role;
-    const username = req.user.username;
-    const cleanUsername = username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const { getUserSuffixFromReq } = require('../config/dbHelper');
+    const userSuffix = getUserSuffixFromReq(req);
     
     const myEmail = process.env.SMTP_USER || '';
 
@@ -1529,7 +1533,7 @@ const markAllRepliesAsRead = async (req, res, next) => {
     } else if (role === 'operator') {
       // Mark operator replies as read
       await db.query(
-        `UPDATE shipment_replies_${cleanUsername} SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
+        `UPDATE shipment_replies_${userSuffix} SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
         [myEmail]
       );
     }

@@ -3,32 +3,50 @@ const db = require('./db');
 
 const ensuredTables = new Set(['admin']);
 
-const ensureUserTables = async (username) => {
-  if (!username || username === 'admin') return;
-  const clean = username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-  if (ensuredTables.has(clean)) return;
+const getUserSuffix = (input) => {
+  if (!input) return 'admin';
+  if (typeof input === 'object') {
+    if (input.role === 'admin' || input.username === 'admin') return 'admin';
+    if (input.id) return `u${input.id}`;
+    if (input.username) return input.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+  }
+  if (typeof input === 'number') return `u${input}`;
+  if (typeof input === 'string') {
+    const clean = input.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    if (clean === 'admin') return 'admin';
+    if (/^\d+$/.test(clean)) return `u${clean}`;
+    return clean;
+  }
+  return 'admin';
+};
+
+const ensureUserTables = async (userOrSuffix) => {
+  if (!userOrSuffix || userOrSuffix === 'admin') return;
+  const suffix = getUserSuffix(userOrSuffix);
+  if (suffix === 'admin' || ensuredTables.has(suffix)) return;
+
   try {
-    await db.query(`CREATE TABLE IF NOT EXISTS shipments_${clean} (LIKE shipments INCLUDING ALL)`);
+    await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} (LIKE shipments INCLUDING ALL)`);
   } catch (e) {
     try {
-      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${clean} LIKE shipments`);
+      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} LIKE shipments`);
     } catch (err) {}
   }
   try {
-    await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${clean} (LIKE shipment_replies INCLUDING ALL)`);
+    await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} (LIKE shipment_replies INCLUDING ALL)`);
   } catch (e) {
     try {
-      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${clean} LIKE shipment_replies`);
+      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} LIKE shipment_replies`);
     } catch (err) {}
   }
   try {
-    await db.query(`CREATE TABLE IF NOT EXISTS files_${clean} (LIKE files INCLUDING ALL)`);
+    await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} (LIKE files INCLUDING ALL)`);
   } catch (e) {
     try {
-      await db.query(`CREATE TABLE IF NOT EXISTS files_${clean} LIKE files`);
+      await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} LIKE files`);
     } catch (err) {}
   }
-  ensuredTables.add(clean);
+  ensuredTables.add(suffix);
 };
 
 let cachedAllSuffixes = null;
@@ -39,16 +57,14 @@ const getAllSuffixes = async () => {
   const now = Date.now();
   if (cachedAllSuffixes && (now - lastCacheTime < 10000)) return cachedAllSuffixes;
   try {
-    const res = await db.query(
-      `SELECT LOWER(username) AS suffix FROM users`
-    );
     const dbTablesRes = await db.query(
       `SELECT table_name FROM information_schema.tables 
        WHERE table_name LIKE 'shipments_%' AND table_schema = DATABASE()`
     ).catch(() => ({ rows: [] }));
-    const dbSuffixes = (dbTablesRes.rows || []).map(r => ((r.table_name || r.TABLE_NAME || '').replace('shipments_', '')));
-    const userSuffixes = res.rows.map(r => ((r.suffix || '').replace(/[^a-zA-Z0-9_]/g, '')));
-    cachedAllSuffixes = Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
+    const dbSuffixes = (dbTablesRes.rows || [])
+      .map(r => ((r.table_name || r.TABLE_NAME || '').replace('shipments_', '')))
+      .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats') && suffix !== 'admin');
+    cachedAllSuffixes = Array.from(new Set(dbSuffixes));
     lastCacheTime = now;
     return cachedAllSuffixes;
   } catch (err) {
@@ -61,18 +77,14 @@ const getOperatorSuffixes = async () => {
   const now = Date.now();
   if (cachedOperatorSuffixes && (now - lastCacheTime < 10000)) return cachedOperatorSuffixes;
   try {
-    const res = await db.query(
-      `SELECT LOWER(username) AS suffix FROM users WHERE role = 'operator'`
-    );
     const dbTablesRes = await db.query(
       `SELECT table_name FROM information_schema.tables 
        WHERE table_name LIKE 'shipments_%' AND table_schema = DATABASE()`
     ).catch(() => ({ rows: [] }));
     const dbSuffixes = (dbTablesRes.rows || [])
       .map(r => ((r.table_name || r.TABLE_NAME || '').replace('shipments_', '')))
-      .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats'));
-    const userSuffixes = res.rows.map(r => ((r.suffix || '').replace(/[^a-zA-Z0-9_]/g, '')));
-    cachedOperatorSuffixes = Array.from(new Set([...userSuffixes, ...dbSuffixes].filter(s => s && s !== 'admin')));
+      .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats') && suffix !== 'admin');
+    cachedOperatorSuffixes = Array.from(new Set(dbSuffixes));
     lastCacheTime = now;
     return cachedOperatorSuffixes;
   } catch (err) {
@@ -117,23 +129,35 @@ const findUsernameForFileId = async (id) => {
   }
 };
 
-const getTables = (req) => {
-  let username = req?.user?.username;
-  if (req?.user?.role === 'admin' && req?.query?.user) {
-    username = req.query.user;
+const getUserSuffixFromReq = (req) => {
+  if (!req?.user || req.user.role === 'admin' || req.user.username === 'admin') {
+    if (req?.user?.role === 'admin' && req?.query?.user) {
+      const qUser = req.query.user;
+      if (/^\d+$/.test(qUser)) return `u${qUser}`;
+      if (/^u\d+$/i.test(qUser)) return qUser.toLowerCase();
+      return qUser.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    }
+    return 'admin';
   }
-  if (!username || username === 'admin') {
+  if (req.user.id) {
+    return `u${req.user.id}`;
+  }
+  return (req.user.username || '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() || 'admin';
+};
+
+const getTables = (req) => {
+  const suffix = getUserSuffixFromReq(req);
+  if (!suffix || suffix === 'admin') {
     return {
       shipments: 'shipments',
       replies: 'shipment_replies',
       files: 'files'
     };
   }
-  const cleanUsername = username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
   return {
-    shipments: `shipments_${cleanUsername}`,
-    replies: `shipment_replies_${cleanUsername}`,
-    files: `files_${cleanUsername}`
+    shipments: `shipments_${suffix}`,
+    replies: `shipment_replies_${suffix}`,
+    files: `files_${suffix}`
   };
 };
 
@@ -150,12 +174,12 @@ const query = async (req, sql, params) => {
       targetUser = req.query.user;
     } else if (ref_no || id) {
       if (!isSelect && (req?.user?.role === 'sales' || req?.user?.role === 'customer')) {
-        targetUser = req.user.username;
+        targetUser = getUserSuffixFromReq(req);
       } else {
         const foundUser = (await findUsernameForRefNo(ref_no)) || (await findUsernameForFileId(id));
         if (foundUser) {
           if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
-             const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+             const cleanRoleUser = getUserSuffixFromReq(req);
              let hasAccess = false;
              if (ref_no) {
                 const chk = await db.query(`SELECT 1 FROM shipments_${cleanRoleUser} WHERE ref_no = $1`, [ref_no]);
@@ -167,14 +191,14 @@ const query = async (req, sql, params) => {
              if (hasAccess) {
                 targetUser = foundUser;
              } else {
-                targetUser = req.user.username;
+                targetUser = getUserSuffixFromReq(req);
              }
           } else {
              targetUser = foundUser;
           }
         } else {
           if (!isAdmin) {
-            targetUser = req.user.username;
+            targetUser = getUserSuffixFromReq(req);
           } else {
             targetUser = 'admin';
           }
@@ -189,7 +213,7 @@ const query = async (req, sql, params) => {
       let shipmentsUnion, repliesUnion, filesUnion;
 
       if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
-         const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+         const cleanRoleUser = getUserSuffixFromReq(req);
          await ensureUserTables(cleanRoleUser);
          const userSuffixes = suffixes.includes(cleanRoleUser) ? suffixes : [...suffixes, cleanRoleUser];
          
@@ -315,17 +339,17 @@ const query = async (req, sql, params) => {
   }
 
   // Non-admin or targeted admin query
-  const cleanUsername = targetUser.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-  await ensureUserTables(cleanUsername);
+  const targetSuffix = getUserSuffixFromReq(req);
+  await ensureUserTables(targetSuffix);
 
-  const tables = (targetUser === 'admin') ? {
+  const tables = (targetSuffix === 'admin') ? {
     shipments: 'shipments',
     replies: 'shipment_replies',
     files: 'files'
   } : {
-    shipments: `shipments_${cleanUsername}`,
-    replies: `shipment_replies_${cleanUsername}`,
-    files: `files_${cleanUsername}`
+    shipments: `shipments_${targetSuffix}`,
+    replies: `shipment_replies_${targetSuffix}`,
+    files: `files_${targetSuffix}`
   };
 
   const modifiedSql = sql
@@ -336,4 +360,4 @@ const query = async (req, sql, params) => {
   return db.query(modifiedSql, params);
 };
 
-module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes, ensureUserTables };
+module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes, ensureUserTables, getUserSuffix, getUserSuffixFromReq };

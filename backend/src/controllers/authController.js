@@ -68,7 +68,7 @@ const login = async (req, res, next) => {
 
     // Look up user by username (case-insensitive)
     const result = await db.query(
-      'SELECT id, username, password_hash, role, is_stalled, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1)',
+      'SELECT id, username, password_hash, role, is_stalled, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE)',
       [username]
     );
 
@@ -108,26 +108,16 @@ const login = async (req, res, next) => {
     // Ensure operator sandbox tables exist on login (for users registered before sandboxing, etc.)
     const cleanUsername = user.username.toLowerCase();
     if (user.role !== 'admin' && cleanUsername !== 'admin') {
-      const suffix = cleanUsername;
-      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} LIKE shipments`);
-      await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} LIKE files`);
-      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} LIKE shipment_replies`);
-
-      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_${suffix}_shipment_ref_no_fkey`); } catch(e) {}
-      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_shipment_ref_no_fkey`); } catch(e) {}
-      await db.query(`ALTER TABLE files_${suffix} ADD CONSTRAINT files_${suffix}_shipment_ref_no_fkey FOREIGN KEY (shipment_ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
-
-      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_${suffix}_ref_no_fkey`); } catch(e) {}
-      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_ref_no_fkey`); } catch(e) {}
-      await db.query(`ALTER TABLE shipment_replies_${suffix} ADD CONSTRAINT shipment_replies_${suffix}_ref_no_fkey FOREIGN KEY (ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
+      const { ensureUserTables } = require('../config/dbHelper');
+      await ensureUserTables(user);
 
       // Seed initial data only for the 'jabir' user if their shipments table is completely empty
       if (cleanUsername === 'jabir') {
-        const checkCount = await db.query(`SELECT COUNT(*) as cnt FROM shipments_${suffix}`);
+        const checkCount = await db.query(`SELECT COUNT(*) as cnt FROM shipments_u${user.id}`);
         if (parseInt(checkCount.rows[0].cnt, 10) === 0) {
-          await db.query(`INSERT INTO shipments_${suffix} SELECT * FROM shipments ON CONFLICT DO NOTHING`);
-          await db.query(`INSERT INTO files_${suffix} SELECT * FROM files ON CONFLICT DO NOTHING`);
-          await db.query(`INSERT INTO shipment_replies_${suffix} SELECT * FROM shipment_replies ON CONFLICT DO NOTHING`);
+          await db.query(`INSERT INTO shipments_u${user.id} SELECT * FROM shipments ON CONFLICT DO NOTHING`);
+          await db.query(`INSERT INTO files_u${user.id} SELECT * FROM files ON CONFLICT DO NOTHING`);
+          await db.query(`INSERT INTO shipment_replies_u${user.id} SELECT * FROM shipment_replies ON CONFLICT DO NOTHING`);
         }
       }
     }
@@ -286,9 +276,9 @@ const register = async (req, res, next) => {
       }
     }
 
-    // 2. Check if new username already exists
+    // 2. Check if new username already exists among active users
     const existingRes = await db.query(
-      'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE)',
       [newUsername]
     );
     if (existingRes.rows.length > 0) {
@@ -339,29 +329,17 @@ const register = async (req, res, next) => {
     );
 
     // 4. Create and seed user-specific tables
+    const newUser = insertRes.rows[0];
     const cleanUsername = newUsername.toLowerCase();
     if (cleanUsername !== 'admin') {
-      const suffix = cleanUsername;
-      
-      // Create tables
-      await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} LIKE shipments`);
-      await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} LIKE files`);
-      await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} LIKE shipment_replies`);
-
-      // Recreate foreign keys
-      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_${suffix}_shipment_ref_no_fkey`); } catch(e) {}
-      try { await db.query(`ALTER TABLE files_${suffix} DROP FOREIGN KEY files_shipment_ref_no_fkey`); } catch(e) {}
-      await db.query(`ALTER TABLE files_${suffix} ADD CONSTRAINT files_${suffix}_shipment_ref_no_fkey FOREIGN KEY (shipment_ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
-
-      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_${suffix}_ref_no_fkey`); } catch(e) {}
-      try { await db.query(`ALTER TABLE shipment_replies_${suffix} DROP FOREIGN KEY shipment_replies_ref_no_fkey`); } catch(e) {}
-      await db.query(`ALTER TABLE shipment_replies_${suffix} ADD CONSTRAINT shipment_replies_${suffix}_ref_no_fkey FOREIGN KEY (ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
+      const { ensureUserTables } = require('../config/dbHelper');
+      await ensureUserTables(newUser);
 
       // Seed initial data only for the 'jabir' user as specifically requested
       if (cleanUsername === 'jabir') {
-        await db.query(`INSERT INTO shipments_${suffix} SELECT * FROM shipments ON CONFLICT DO NOTHING`);
-        await db.query(`INSERT INTO files_${suffix} SELECT * FROM files ON CONFLICT DO NOTHING`);
-        await db.query(`INSERT INTO shipment_replies_${suffix} SELECT * FROM shipment_replies ON CONFLICT DO NOTHING`);
+        await db.query(`INSERT INTO shipments_u${newUser.id} SELECT * FROM shipments ON CONFLICT DO NOTHING`);
+        await db.query(`INSERT INTO files_u${newUser.id} SELECT * FROM files ON CONFLICT DO NOTHING`);
+        await db.query(`INSERT INTO shipment_replies_u${newUser.id} SELECT * FROM shipment_replies ON CONFLICT DO NOTHING`);
       }
     }
 
@@ -481,6 +459,7 @@ const getAdminUsers = async (req, res, next) => {
       `SELECT id, username, role, name, email_address, contact_number, country, is_stalled, agent_extension,
               (email_password IS NOT NULL AND email_password != '') as has_password
        FROM users 
+       WHERE (is_deleted IS NOT TRUE)
        ORDER BY role, username`
     );
     res.json({ success: true, data: result.rows });
@@ -500,7 +479,7 @@ const updateAdminUserEmail = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
 
-    const userCheck = await db.query("SELECT username, role, email_password FROM users WHERE id = $1", [userId]);
+    const userCheck = await db.query("SELECT username, role, email_password FROM users WHERE id = $1 AND (is_deleted IS NOT TRUE)", [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
@@ -586,6 +565,7 @@ const getOperatorsList = async (req, res, next) => {
     const result = await db.query(
       `SELECT username, email_address, country FROM users 
        WHERE role = 'operator' 
+         AND (is_deleted IS NOT TRUE)
          AND email_address IS NOT NULL 
          AND email_address != ''
        ORDER BY username`
@@ -608,9 +588,9 @@ const createAdminOperator = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'All fields are required.' });
     }
 
-    // Check if username already exists
+    // Check if username already exists among active users
     const existingRes = await db.query(
-      'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE)',
       [username]
     );
     if (existingRes.rows.length > 0) {
@@ -662,19 +642,9 @@ const createAdminOperator = async (req, res, next) => {
     );
 
     // Create sandbox tables for this new operator
-    const cleanUsername = username.toLowerCase();
-    const suffix = cleanUsername;
-    await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} (LIKE shipments INCLUDING ALL)`);
-    await db.query(`CREATE TABLE IF NOT EXISTS files_${suffix} (LIKE files INCLUDING ALL)`);
-    await db.query(`CREATE TABLE IF NOT EXISTS shipment_replies_${suffix} (LIKE shipment_replies INCLUDING ALL)`);
-
-    await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_${suffix}_shipment_ref_no_fkey`);
-    await db.query(`ALTER TABLE files_${suffix} DROP CONSTRAINT IF EXISTS files_shipment_ref_no_fkey`);
-    await db.query(`ALTER TABLE files_${suffix} ADD CONSTRAINT files_${suffix}_shipment_ref_no_fkey FOREIGN KEY (shipment_ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
-
-    await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_${suffix}_ref_no_fkey`);
-    await db.query(`ALTER TABLE shipment_replies_${suffix} DROP CONSTRAINT IF EXISTS shipment_replies_ref_no_fkey`);
-    await db.query(`ALTER TABLE shipment_replies_${suffix} ADD CONSTRAINT shipment_replies_${suffix}_ref_no_fkey FOREIGN KEY (ref_no) REFERENCES shipments_${suffix}(ref_no) ON DELETE CASCADE`);
+    const newOp = insertRes.rows[0];
+    const { ensureUserTables } = require('../config/dbHelper');
+    await ensureUserTables(newOp);
 
     // Trigger IMAP Reconnection
     const { startImapService } = require('../services/imapService');
@@ -684,7 +654,7 @@ const createAdminOperator = async (req, res, next) => {
       console.error('Error restarting IMAP after operator creation:', imapErr);
     }
 
-    res.status(201).json({ success: true, message: 'Operator created and verified successfully.', user: insertRes.rows[0] });
+    res.status(201).json({ success: true, message: 'Operator created and verified successfully.', user: newOp });
   } catch (err) {
     next(err);
   }
@@ -700,14 +670,17 @@ const deleteAdminUser = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
 
-    const userCheck = await db.query("SELECT username FROM users WHERE id = $1", [userId]);
+    const userCheck = await db.query("SELECT username FROM users WHERE id = $1 AND (is_deleted IS NOT TRUE)", [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
     const targetUser = userCheck.rows[0];
 
-    // Delete user
-    await db.query("DELETE FROM users WHERE id = $1", [userId]);
+    // Soft delete user: preserve all historical sandbox tables & data for Admin view
+    await db.query(
+      "UPDATE users SET is_deleted = TRUE, deleted_at = NOW(), username = CONCAT(username, '__deleted_', id) WHERE id = $1",
+      [userId]
+    );
 
     res.json({ success: true, message: `User ${targetUser.username} removed successfully.` });
   } catch (err) {
@@ -895,6 +868,7 @@ const getSalesList = async (req, res, next) => {
     const result = await db.query(
       `SELECT id, username, name, email_address, contact_number, customer_id FROM users 
        WHERE role = 'sales' 
+         AND (is_deleted IS NOT TRUE)
        ORDER BY username`
     );
     const users = result.rows;

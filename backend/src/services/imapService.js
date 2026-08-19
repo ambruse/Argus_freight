@@ -26,18 +26,19 @@ const extractEmails = (headerObj) => {
 // Map to store active user sessions: username (lowercase) -> session details
 const activeSessions = new Map();
 
+const { getUserSuffix } = require('../config/dbHelper');
+
 /**
- * Resolves shipments and replies tables based on user role and username
+ * Resolves shipments and replies tables based on user role and user object/username
  */
-const getUserTables = (username, role) => {
-  const cleanUsername = username.toLowerCase();
-  if (role === 'admin' || cleanUsername === 'admin') {
+const getUserTables = (userOrUsername, role) => {
+  const suffix = getUserSuffix(userOrUsername);
+  if (role === 'admin' || suffix === 'admin') {
     return {
       shipments: 'shipments',
       replies: 'shipment_replies'
     };
   }
-  const suffix = cleanUsername.replace(/[^a-zA-Z0-9_]/g, '');
   return {
     shipments: `shipments_${suffix}`,
     replies: `shipment_replies_${suffix}`
@@ -168,17 +169,16 @@ const syncInboxForUser = async (session, limit = 40) => {
                     if (updatedShip.cust_req_no && updatedShip.customer_id) {
                       try {
                         const custUserRes = await db.query(
-                          `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' LIMIT 1`,
+                          `SELECT id, username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
                           [updatedShip.customer_id]
                         );
                         if (custUserRes.rows.length > 0) {
-                          const customerUsername = custUserRes.rows[0].username;
-                          const cleanUsername = customerUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                          const custSuffix = getUserSuffix(custUserRes.rows[0]);
                           await db.query(
-                            `UPDATE shipments_${cleanUsername} SET last_follow_up = NOW(), updated_at = NOW() WHERE ref_no = $1`,
+                            `UPDATE shipments_${custSuffix} SET last_follow_up = NOW(), updated_at = NOW() WHERE ref_no = $1`,
                             [updatedShip.cust_req_no]
                           );
-                          console.log(`[IMAP Sync] Synced follow-up timestamp for customer ${cleanUsername} ref_no ${updatedShip.cust_req_no}`);
+                          console.log(`[IMAP Sync] Synced follow-up timestamp for customer ${custSuffix} ref_no ${updatedShip.cust_req_no}`);
                         }
                       } catch (custErr) {
                         console.error("Error updating customer follow up from IMAP:", custErr.message);

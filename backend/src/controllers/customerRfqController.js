@@ -121,7 +121,7 @@ const generateCustomerRfq = async (req, res, next) => {
     if (operator && operator.trim()) {
       const opMatch = await db.query(
         `SELECT id, username, email_address, email_password FROM users 
-         WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin')`,
+         WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin') AND (is_deleted IS NOT TRUE)`,
         [operator.trim()]
       );
       if (opMatch.rows.length === 0) {
@@ -131,11 +131,13 @@ const generateCustomerRfq = async (req, res, next) => {
         });
       }
       assignedOperator = opMatch.rows[0].username;
+      assignedOperatorUser = opMatch.rows[0];
     } else {
       // 2. Round-Robin Operator Assignment
       const opRes = await db.query(
         `SELECT id, username, email_address, email_password FROM users 
          WHERE role = 'operator' 
+           AND (is_deleted IS NOT TRUE)
            AND email_address IS NOT NULL AND email_address != '' 
            AND email_password IS NOT NULL AND email_password != '' 
          ORDER BY id ASC`
@@ -229,12 +231,14 @@ const generateCustomerRfq = async (req, res, next) => {
     const customerEmail = req.user.email_address;
 
     // 5. Create shipment records in both Customer's and Operator's sandboxes
-    const cleanOperator = assignedOperator.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const { getUserSuffix, getUserSuffixFromReq } = require('../config/dbHelper');
+    const custSuffix = getUserSuffixFromReq(req);
+    const cleanOperator = getUserSuffix(assignedOperator);
     const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
 
     // Customer Sandbox insertion: Insert ONE row representing the request
     await db.query(
-      `INSERT INTO shipments_${cleanUsername} (
+      `INSERT INTO shipments_${custSuffix} (
         ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
         container, mode, weight, pickup_address, delivery_address,
         dear_who, email, status, note, customer_id, customer_name, customer_email, operator

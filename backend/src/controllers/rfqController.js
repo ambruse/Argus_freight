@@ -85,14 +85,14 @@ const generateRfq = async (req, res, next) => {
       }
     }
     // ── Resolve Operator Username (if sent by sales) ──────────
-    let opUsername = null;
+    let targetOpUser = null;
     if (req.user.role === 'sales' && operator) {
       const opCheck = await db.query(
-        "SELECT username FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+        "SELECT id, username FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1)) AND (is_deleted IS NOT TRUE) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
         [operator]
       );
       if (opCheck.rows.length > 0) {
-        opUsername = opCheck.rows[0].username.toLowerCase();
+        targetOpUser = opCheck.rows[0];
       }
     }
 
@@ -106,7 +106,8 @@ const generateRfq = async (req, res, next) => {
       }
 
       try {
-        const targetOp = opUsername || operator || req.user.username;
+        const { getUserSuffix, getUserSuffixFromReq, ensureUserTables } = require('../config/dbHelper');
+        const targetOpName = targetOpUser ? targetOpUser.username : (operator || req.user.username);
         const finalReferBy = (refer_by && String(refer_by).trim() !== '')
           ? String(refer_by).trim()
           : (req.user ? (req.user.name || req.user.username) : null);
@@ -118,20 +119,22 @@ const generateRfq = async (req, res, next) => {
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
           ) VALUES (
             $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
-          ) RETURNING *`,
+          ) RETURNING ref_no, refer_by, pol, pod, commodity, term, dimension,
+                     container, mode, weight, pickup_address, delivery_address,
+                     dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at`,
           [
             ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
-            targetOp
+            targetOpName
           ]
         );
         isLogged = true;
         shipmentData = result.rows[0];
 
         // ── Clone shipment to sales sandbox, operator sandbox & main shipments table ──────────
-        const cleanOp = targetOp.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-        const cleanUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+        const cleanOp = targetOpUser ? getUserSuffix(targetOpUser) : getUserSuffix(operator || req.user.username);
+        const cleanUser = getUserSuffixFromReq(req);
 
         await ensureUserTables(cleanOp);
         await ensureUserTables(cleanUser);
@@ -148,12 +151,12 @@ const generateRfq = async (req, res, next) => {
               ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
-              cleanOp
+              targetOpName
             ]
           );
         }
 
-        if (cleanUser && cleanUser !== cleanOp) {
+        if (cleanUser && cleanUser !== cleanOp && cleanUser !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanUser} (
               ref_no, refer_by, pol, pod, commodity, term, dimension,
@@ -165,7 +168,7 @@ const generateRfq = async (req, res, next) => {
               ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
-              cleanOp || targetOp
+              targetOpName
             ]
           );
         }
@@ -182,7 +185,7 @@ const generateRfq = async (req, res, next) => {
             ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
-            cleanOp || targetOp
+            targetOpName
           ]
         );
 
