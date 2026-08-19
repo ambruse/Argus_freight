@@ -463,6 +463,7 @@ const createLike = async (newTable, baseTable) => {
         for (const r of tablesRes) {
           await addCol(r.table_name, 'operator', 'VARCHAR(100)');
           await addCol(r.table_name, 'cust_req_no', 'VARCHAR(50)');
+          await addCol(r.table_name, 'note', 'TEXT');
         }
       }
       await db.query("UPDATE shipments SET operator = 'jabir' WHERE operator IS NULL");

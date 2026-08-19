@@ -233,7 +233,7 @@ const query = async (req, sql, params) => {
 
          const userFilter = conds.length > 0 ? `(${conds.join(' OR ')})` : `(1=1)`;
 
-         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator`;
+         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, note, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator, created_at`;
          const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
          const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
 
@@ -278,7 +278,7 @@ const query = async (req, sql, params) => {
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
-         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator`;
+         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, note, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator, created_at`;
          const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
          const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
 
