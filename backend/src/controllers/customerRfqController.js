@@ -248,6 +248,23 @@ const generateCustomerRfq = async (req, res, next) => {
       ]
     );
 
+    // Also insert into main shipments table so it is globally available to assigned operator & admin
+    try {
+      await db.query(
+        `INSERT INTO shipments (
+          ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+          container, mode, weight, pickup_address, delivery_address,
+          dear_who, email, status, note, customer_id, customer_name, customer_email, operator
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+         ON CONFLICT (ref_no) DO NOTHING`,
+        [
+          ref_no, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
+          container || null, mode, weight || null, pickup_address || null, delivery_address || null,
+          'Multiple Agents', 'Broadcast', 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
+        ]
+      );
+    } catch (cErr) {}
+
     // Operator Sandbox insertion: Insert multiple rows (one for each recipient)
     const opRefs = await getNextOperatorRefNos(cleanOperator, resolvedRecipients.length);
 

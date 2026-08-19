@@ -145,16 +145,16 @@ const query = async (req, sql, params) => {
   const id = req?.params?.id || req?.body?.id || req?.query?.id;
   const isSelect = /^\s*(SELECT|WITH)\b/i.test(sql);
 
-  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
     if (isAdmin && req?.query?.user) {
       targetUser = req.query.user;
     } else if (ref_no || id) {
-      if (!isSelect && (req?.user?.role === 'sales' || req?.user?.role === 'customer')) {
+      if (!isSelect && (req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator')) {
         targetUser = req.user.username;
       } else {
         const foundUser = (await findUsernameForRefNo(ref_no)) || (await findUsernameForFileId(id));
         if (foundUser) {
-          if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+          if (req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
              const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
              let hasAccess = false;
              if (ref_no) {
@@ -188,7 +188,7 @@ const query = async (req, sql, params) => {
       
       let shipmentsUnion, repliesUnion, filesUnion;
 
-      if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+      if (req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
          const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
          await ensureUserTables(cleanRoleUser);
          const userSuffixes = suffixes.includes(cleanRoleUser) ? suffixes : [...suffixes, cleanRoleUser];
@@ -198,9 +198,15 @@ const query = async (req, sql, params) => {
          const safeUsername = (req.user.username || '').replace(/'/g, "''");
          const safeUserEmail = (req.user.email_address || '').replace(/'/g, "''");
          const safeCid = (req.user.customer_id || '').replace(/'/g, "''");
+         const safeUid = (req.user.user_id || req.user.id || '').replace(/'/g, "''");
 
          const conds = [];
-         if (req?.user?.role === 'sales') {
+         if (req?.user?.role === 'operator') {
+           conds.push(`LOWER(operator) = LOWER('${safeUsername}')`);
+           if (safeUid) {
+             conds.push(`operator_user_id = '${safeUid}'`);
+           }
+         } else if (req?.user?.role === 'sales') {
            conds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
            if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
              conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
