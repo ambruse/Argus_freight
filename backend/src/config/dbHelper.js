@@ -62,7 +62,7 @@ const getOperatorSuffixes = async () => {
   if (cachedOperatorSuffixes && (now - lastCacheTime < 10000)) return cachedOperatorSuffixes;
   try {
     const res = await db.query(
-      `SELECT LOWER(username) AS suffix FROM users WHERE role = 'operator' AND (is_deleted = 0 OR is_deleted IS NULL)`
+      `SELECT LOWER(username) AS suffix FROM users WHERE role = 'operator'`
     );
     const dbTablesRes = await db.query(
       `SELECT table_name FROM information_schema.tables 
@@ -145,16 +145,16 @@ const query = async (req, sql, params) => {
   const id = req?.params?.id || req?.body?.id || req?.query?.id;
   const isSelect = /^\s*(SELECT|WITH)\b/i.test(sql);
 
-  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
+  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer') {
     if (isAdmin && req?.query?.user) {
       targetUser = req.query.user;
     } else if (ref_no || id) {
-      if (!isSelect && (req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator')) {
+      if (!isSelect && (req?.user?.role === 'sales' || req?.user?.role === 'customer')) {
         targetUser = req.user.username;
       } else {
         const foundUser = (await findUsernameForRefNo(ref_no)) || (await findUsernameForFileId(id));
         if (foundUser) {
-          if (req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
+          if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
              const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
              let hasAccess = false;
              if (ref_no) {
@@ -188,7 +188,7 @@ const query = async (req, sql, params) => {
       
       let shipmentsUnion, repliesUnion, filesUnion;
 
-      if (req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
+      if (req?.user?.role === 'sales' || req?.user?.role === 'customer') {
          const cleanRoleUser = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
          await ensureUserTables(cleanRoleUser);
          const userSuffixes = suffixes.includes(cleanRoleUser) ? suffixes : [...suffixes, cleanRoleUser];
@@ -198,15 +198,9 @@ const query = async (req, sql, params) => {
          const safeUsername = (req.user.username || '').replace(/'/g, "''");
          const safeUserEmail = (req.user.email_address || '').replace(/'/g, "''");
          const safeCid = (req.user.customer_id || '').replace(/'/g, "''");
-         const safeUid = (req.user.user_id || req.user.id || '').replace(/'/g, "''");
 
          const conds = [];
-         if (req?.user?.role === 'operator') {
-           conds.push(`LOWER(operator) = LOWER('${safeUsername}')`);
-           if (safeUid) {
-             conds.push(`operator_user_id = '${safeUid}'`);
-           }
-         } else if (req?.user?.role === 'sales') {
+         if (req?.user?.role === 'sales') {
            conds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
            if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
              conds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
@@ -233,60 +227,10 @@ const query = async (req, sql, params) => {
 
          const userFilter = conds.length > 0 ? `(${conds.join(' OR ')})` : `(1=1)`;
 
-         const sandboxConds = [];
-         if (req?.user?.role === 'operator') {
-           sandboxConds.push(`LOWER(operator) = LOWER('${safeUsername}')`);
-           sandboxConds.push(`'${safeUser}' = '${safeUsername}'`);
-         } else if (req?.user?.role === 'sales') {
-           sandboxConds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
-           if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
-             sandboxConds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
-           }
-           sandboxConds.push(`(refer_by IS NULL OR refer_by = '')`);
-         } else if (req?.user?.role === 'customer') {
-           sandboxConds.push(`LOWER(email) = LOWER('${safeUsername}')`);
-           sandboxConds.push(`LOWER(customer_email) = LOWER('${safeUsername}')`);
-           if (safeUserEmail && safeUserEmail.toLowerCase() !== safeUsername.toLowerCase()) {
-             sandboxConds.push(`LOWER(email) = LOWER('${safeUserEmail}')`);
-             sandboxConds.push(`LOWER(customer_email) = LOWER('${safeUserEmail}')`);
-           }
-           sandboxConds.push(`LOWER(refer_by) = LOWER('${safeUsername}')`);
-           if (safeName && safeName.toLowerCase() !== safeUsername.toLowerCase()) {
-             sandboxConds.push(`LOWER(refer_by) = LOWER('${safeName}')`);
-             sandboxConds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeName}'))`);
-           } else if (safeUsername) {
-             sandboxConds.push(`(customer_name IS NOT NULL AND LOWER(customer_name) = LOWER('${safeUsername}'))`);
-           }
-           if (safeCid) {
-             sandboxConds.push(`(customer_id IS NOT NULL AND customer_id = '${safeCid}')`);
-           }
-         }
-         const sandboxFilter = sandboxConds.length > 0 ? `(${sandboxConds.join(' OR ')})` : `(1=1)`;
-
-         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, note, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator, created_at`;
-         const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
-         const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
-
-         const getExistingTables = async () => {
-           try {
-             const res = await db.query(
-               `SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()`
-             ).catch(() => []);
-             const rows = res.rows || res || [];
-             return new Set(rows.map(r => (r.table_name || r.TABLE_NAME || '').toLowerCase()));
-           } catch (e) {
-             return new Set();
-           }
-         };
-
-         const existingTables = await getExistingTables();
-
-         let sUnion = `SELECT 2 as __p, ${S_COLS} FROM \`shipments\` WHERE ${userFilter}`;
+         let sUnion = `SELECT 2 as __p, shipments.* FROM shipments WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
            await ensureUserTables(suffix);
-           if (existingTables.has(`shipments_${suffix}`)) {
-             sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${S_COLS} FROM \`shipments_${suffix}\` WHERE ${sandboxFilter}`;
-           }
+           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipments_${suffix}.* FROM shipments_${suffix} WHERE ${userFilter}`;
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
@@ -312,61 +256,33 @@ const query = async (req, sql, params) => {
               __p DESC
           ) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
-         let rUnion = `SELECT 2 as __p, ${R_COLS} FROM \`shipment_replies\` WHERE ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
+         let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           if (existingTables.has(`shipment_replies_${suffix}`)) {
-             rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${R_COLS} FROM \`shipment_replies_${suffix}\` WHERE ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
-           }
+           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
-         let fUnion = `SELECT 2 as __p, ${F_COLS} FROM \`files\` WHERE shipment_ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
+         let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           if (existingTables.has(`files_${suffix}`)) {
-             fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${F_COLS} FROM \`files_${suffix}\` WHERE shipment_ref_no IN (SELECT ref_no FROM \`shipments\` WHERE ${userFilter})`;
-           }
+           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
-         const getExistingTables = async () => {
-           try {
-             const res = await db.query(
-               `SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()`
-             ).catch(() => []);
-             const rows = res.rows || res || [];
-             return new Set(rows.map(r => (r.table_name || r.TABLE_NAME || '').toLowerCase()));
-           } catch (e) {
-             return new Set();
-           }
-         };
-
-         const existingTables = await getExistingTables();
-
-         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, note, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator, created_at`;
-         const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
-         const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
-
-         let sBase = `SELECT ${S_COLS} FROM \`shipments\``;
+         let sBase = `SELECT shipments.* FROM shipments`;
          for (const suffix of suffixes) {
-           if (existingTables.has(`shipments_${suffix}`)) {
-             sBase += ` UNION ALL SELECT ${S_COLS} FROM \`shipments_${suffix}\``;
-           }
+           sBase += ` UNION ALL SELECT shipments_${suffix}.* FROM shipments_${suffix}`;
          }
          shipmentsUnion = `(SELECT * FROM (${sBase}) _u_s_inner)`;
 
-         let rBase = `SELECT ${R_COLS} FROM \`shipment_replies\``;
+         let rBase = `SELECT shipment_replies.* FROM shipment_replies`;
          for (const suffix of suffixes) {
-           if (existingTables.has(`shipment_replies_${suffix}`)) {
-             rBase += ` UNION ALL SELECT ${R_COLS} FROM \`shipment_replies_${suffix}\``;
-           }
+           rBase += ` UNION ALL SELECT shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
          }
          repliesUnion = `(SELECT * FROM (${rBase}) _u_r_inner)`;
 
-         let fBase = `SELECT ${F_COLS} FROM \`files\``;
+         let fBase = `SELECT files.* FROM files`;
          for (const suffix of suffixes) {
-           if (existingTables.has(`files_${suffix}`)) {
-             fBase += ` UNION ALL SELECT ${F_COLS} FROM \`files_${suffix}\``;
-           }
+           fBase += ` UNION ALL SELECT files_${suffix}.* FROM files_${suffix}`;
          }
          filesUnion = `(SELECT * FROM (${fBase}) _u_f_inner)`;
       }

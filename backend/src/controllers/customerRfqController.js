@@ -120,8 +120,8 @@ const generateCustomerRfq = async (req, res, next) => {
 
     if (operator && operator.trim()) {
       const opMatch = await db.query(
-        `SELECT id, user_id, username, email_address, email_password FROM users 
-         WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin') AND (is_deleted = 0 OR is_deleted IS NULL)`,
+        `SELECT id, username, email_address, email_password FROM users 
+         WHERE LOWER(username) = LOWER($1) AND (role = 'operator' OR role = 'admin')`,
         [operator.trim()]
       );
       if (opMatch.rows.length === 0) {
@@ -134,9 +134,8 @@ const generateCustomerRfq = async (req, res, next) => {
     } else {
       // 2. Round-Robin Operator Assignment
       const opRes = await db.query(
-        `SELECT id, user_id, username, email_address, email_password FROM users 
+        `SELECT id, username, email_address, email_password FROM users 
          WHERE role = 'operator' 
-           AND (is_deleted = 0 OR is_deleted IS NULL)
            AND email_address IS NOT NULL AND email_address != '' 
            AND email_password IS NOT NULL AND email_password != '' 
          ORDER BY id ASC`
@@ -247,23 +246,6 @@ const generateCustomerRfq = async (req, res, next) => {
         'Multiple Agents', 'Broadcast', 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
       ]
     );
-
-    // Also insert into main shipments table so it is globally available to assigned operator & admin
-    try {
-      await db.query(
-        `INSERT INTO shipments (
-          ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
-          container, mode, weight, pickup_address, delivery_address,
-          dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
-         ON CONFLICT (ref_no) DO NOTHING`,
-        [
-          ref_no, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
-          container || null, mode, weight || null, pickup_address || null, delivery_address || null,
-          'Multiple Agents', 'Broadcast', 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
-        ]
-      );
-    } catch (cErr) {}
 
     // Operator Sandbox insertion: Insert multiple rows (one for each recipient)
     const opRefs = await getNextOperatorRefNos(cleanOperator, resolvedRecipients.length);

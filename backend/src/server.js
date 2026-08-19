@@ -377,27 +377,6 @@ const createLike = async (newTable, baseTable) => {
     await addCol('users', 'name', 'VARCHAR(255)');
     await addCol('users', 'contact_number', 'VARCHAR(100)');
     await addCol('users', 'customer_id', 'VARCHAR(5)');
-    await addCol('users', 'user_id', 'VARCHAR(36)');
-    await addCol('users', 'status', "VARCHAR(32) NOT NULL DEFAULT 'ACTIVE'");
-    await addCol('users', 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
-    await addCol('users', 'deleted_at', 'DATETIME NULL');
-    await addCol('shipments', 'owner_user_id', 'VARCHAR(36)');
-    await addCol('shipments', 'operator_user_id', 'VARCHAR(36)');
-    await addCol('files', 'owner_user_id', 'VARCHAR(36)');
-    await addCol('shipment_replies', 'user_id', 'VARCHAR(36)');
-
-    // Backfill user_id UUID for existing users missing user_id
-    try {
-      const crypto = require('crypto');
-      const missingUsers = await db.query("SELECT id FROM users WHERE user_id IS NULL OR user_id = ''");
-      for (const u of missingUsers.rows || missingUsers || []) {
-        if (u.id) {
-          const newUuid = crypto.randomUUID();
-          await db.query("UPDATE users SET user_id = $1 WHERE id = $2", [newUuid, u.id]);
-        }
-      }
-    } catch (uUuidErr) {}
-
     await addCol('users', 'address', 'TEXT');
     await addCol('users', 'company', 'VARCHAR(255)');
     await addCol('users', 'company_address', 'TEXT');
@@ -463,7 +442,6 @@ const createLike = async (newTable, baseTable) => {
         for (const r of tablesRes) {
           await addCol(r.table_name, 'operator', 'VARCHAR(100)');
           await addCol(r.table_name, 'cust_req_no', 'VARCHAR(50)');
-          await addCol(r.table_name, 'note', 'TEXT');
         }
       }
       await db.query("UPDATE shipments SET operator = 'jabir' WHERE operator IS NULL");

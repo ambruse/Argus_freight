@@ -67,18 +67,10 @@ const login = async (req, res, next) => {
     }
 
     // Look up user by username (case-insensitive)
-    let result;
-    try {
-      result = await db.query(
-        'SELECT id, user_id, username, password_hash, role, is_stalled, is_deleted, status, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted = 0 OR is_deleted IS NULL)',
-        [username]
-      );
-    } catch (qErr) {
-      result = await db.query(
-        'SELECT id, username, password_hash, role, is_stalled, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1)',
-        [username]
-      );
-    }
+    const result = await db.query(
+      'SELECT id, username, password_hash, role, is_stalled, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
 
     if (result.rows.length === 0) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
@@ -92,18 +84,15 @@ const login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
 
-    // Check if user account is stalled or deleted
-    if (user.is_stalled || user.status === 'DELETED') {
-      return res.status(403).json({ success: false, message: 'Your account is disabled or stalled. Please contact ARGUS Shipping or Admin.' });
+    // Check if user account is stalled
+    if (user.is_stalled) {
+      return res.status(403).json({ success: false, message: 'Your account is stalled. Please contact ARGUS Shipping or Admin.' });
     }
-
-    const finalUserId = user.user_id || String(user.id);
 
     // Sign JWT — expires per .env (default 8h)
     const token = jwt.sign(
       { 
-        id: user.id,
-        user_id: finalUserId,
+        id: user.id, 
         username: user.username, 
         role: user.role,
         name: user.name,
@@ -297,9 +286,9 @@ const register = async (req, res, next) => {
       }
     }
 
-    // 2. Check if active username already exists
+    // 2. Check if new username already exists
     const existingRes = await db.query(
-      'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted = 0 OR is_deleted IS NULL)',
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
       [newUsername]
     );
     if (existingRes.rows.length > 0) {
@@ -310,9 +299,7 @@ const register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Username must be alphanumeric and can only contain underscores.' });
     }
 
-    // 3. Create new user with UUID surrogate primary key
-    const crypto = require('crypto');
-    const newUserId = crypto.randomUUID();
+    // 3. Create new user
     const salt = await bcrypt.genSalt(10);
     const newHash = await bcrypt.hash(newPassword, salt);
     const validRoles = ['admin', 'sales', 'operator', 'calling_agent', 'customer'];
@@ -347,29 +334,9 @@ const register = async (req, res, next) => {
 
     const finalCountry = country && country.trim() ? country.trim() : 'Qatar';
     const insertRes = await db.query(
-      "INSERT INTO users (user_id, username, password_hash, role, status, name, email_address, contact_number, customer_id, agent_extension, country) VALUES ($1, $2, $3, $4, 'ACTIVE', $5, $6, $7, $8, $9, $10) RETURNING id, user_id, username, role, customer_id, country",
-      [newUserId, newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null, finalCountry]
+      'INSERT INTO users (username, password_hash, role, name, email_address, contact_number, customer_id, agent_extension, country) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, username, role, customer_id, country',
+      [newUsername, newHash, newRole, name || null, email_address || null, contact_number || null, finalCustomerId, agent_extension || null, finalCountry]
     );
-
-    // Bind user to role in user_roles
-    try {
-      const roleRes = await db.query("SELECT role_id FROM roles WHERE role_name = $1", [newRole]);
-      if (roleRes.rows.length > 0) {
-        await db.query("INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [newUserId, roleRes.rows[0].role_id]);
-      }
-    } catch (rErr) {}
-
-    // Record Audit Log
-    const { logAuditEvent } = require('../utils/auditLogger');
-    await logAuditEvent({
-      req,
-      actorUserId: newUserId,
-      actorUsername: newUsername,
-      action: 'USER_REGISTERED',
-      resourceType: 'users',
-      resourceId: newUserId,
-      payload: { username: newUsername, role: newRole }
-    });
 
     // 4. Create and seed user-specific tables
     const cleanUsername = newUsername.toLowerCase();
@@ -617,9 +584,8 @@ const updateAdminUserEmail = async (req, res, next) => {
 const getOperatorsList = async (req, res, next) => {
   try {
     const result = await db.query(
-      `SELECT user_id, username, email_address, country FROM users 
+      `SELECT username, email_address, country FROM users 
        WHERE role = 'operator' 
-         AND (is_deleted = 0 OR is_deleted IS NULL)
          AND email_address IS NOT NULL 
          AND email_address != ''
        ORDER BY username`
@@ -642,11 +608,12 @@ const createAdminOperator = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'All fields are required.' });
     }
 
-    const checkRes = await db.query(
-      'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted = 0 OR is_deleted IS NULL)',
+    // Check if username already exists
+    const existingRes = await db.query(
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
       [username]
     );
-    if (checkRes.rows.length > 0) {
+    if (existingRes.rows.length > 0) {
       return res.status(409).json({ success: false, message: 'Username is already taken.' });
     }
 
@@ -654,38 +621,31 @@ const createAdminOperator = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Username must be alphanumeric and can only contain underscores.' });
     }
 
-    // Verify email credentials via IMAP
-    const Imap = require('node-imap');
-    const testImap = new Imap({
-      user: email_address.trim(),
-      password: email_password.trim(),
-      host: process.env.IMAP_HOST || 'imap.gmail.com',
-      port: parseInt(process.env.IMAP_PORT || '993', 10),
-      tls: true,
-      tlsOptions: { rejectUnauthorized: false },
-      connTimeout: 10000,
-      authTimeout: 10000
+    // Test connection using ImapFlow
+    const host = process.env.IMAP_HOST || 'imap.gmail.com';
+    const port = parseInt(process.env.IMAP_PORT || '993', 10);
+    const { ImapFlow } = require('imapflow');
+    const testClient = new ImapFlow({
+      host,
+      port,
+      secure: true,
+      auth: {
+        user: email_address.trim(),
+        pass: email_password.trim(),
+      },
+      logger: false,
     });
 
-    await new Promise((resolve, reject) => {
-      testImap.once('ready', () => {
-        testImap.end();
-        resolve();
-      });
-      testImap.once('error', (err) => {
-        reject(err);
-      });
-      testImap.connect();
-    }).catch(connErr => {
+    try {
+      await testClient.connect();
+      await testClient.logout();
+    } catch (connErr) {
       console.error('[Admin Operator Creation Email Verification] Test connection failed:', connErr.message);
       return res.status(400).json({
         success: false,
-        message: 'Failed to verify email credentials. Please check that the email address and app password are correct.'
+        message: 'Failed to connect to the email server. Please check that the email address and app password are correct.'
       });
-    });
-
-    const crypto = require('crypto');
-    const newUserId = crypto.randomUUID();
+    }
 
     // Hash password
     const bcrypt = require('bcryptjs');
@@ -693,33 +653,13 @@ const createAdminOperator = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     const finalCountry = country && country.trim() ? country.trim() : 'Qatar';
-    // Insert user with UUID user_id
+    // Insert user
     const insertRes = await db.query(
-      `INSERT INTO users (user_id, username, password_hash, role, status, email_address, email_password, country) 
-       VALUES ($1, $2, $3, 'operator', 'ACTIVE', $4, $5, $6) 
-       RETURNING id, user_id, username, role, email_address, country`,
-      [newUserId, username, passwordHash, email_address.trim(), encrypt(email_password.trim()), finalCountry]
+      `INSERT INTO users (username, password_hash, role, email_address, email_password, country) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, username, role, email_address, country`,
+      [username, passwordHash, 'operator', email_address.trim(), encrypt(email_password.trim()), finalCountry]
     );
-
-    // Bind operator to role in user_roles
-    try {
-      const roleRes = await db.query("SELECT role_id FROM roles WHERE role_name = 'operator'");
-      if (roleRes.rows.length > 0) {
-        await db.query("INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [newUserId, roleRes.rows[0].role_id]);
-      }
-    } catch (rErr) {}
-
-    // Record Audit Event
-    const { logAuditEvent } = require('../utils/auditLogger');
-    await logAuditEvent({
-      req,
-      actorUserId: req.user.user_id || req.user.id,
-      actorUsername: req.user.username,
-      action: 'OPERATOR_CREATED',
-      resourceType: 'users',
-      resourceId: newUserId,
-      payload: { username, email_address: email_address.trim() }
-    });
 
     // Create sandbox tables for this new operator
     const cleanUsername = username.toLowerCase();
@@ -760,26 +700,16 @@ const deleteAdminUser = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
 
-    const userCheck = await db.query("SELECT id, user_id, username FROM users WHERE (id = $1 OR user_id = $1) AND (is_deleted = 0 OR is_deleted IS NULL)", [userId]);
+    const userCheck = await db.query("SELECT username FROM users WHERE id = $1", [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
     const targetUser = userCheck.rows[0];
 
-    // Soft delete user: set is_deleted = 1, status = 'DELETED', deleted_at = NOW()
-    await db.query("UPDATE users SET is_deleted = 1, status = 'DELETED', deleted_at = NOW() WHERE id = $1 OR user_id = $1", [userId]);
+    // Delete user
+    await db.query("DELETE FROM users WHERE id = $1", [userId]);
 
-    // Record audit event
-    const { logAuditEvent } = require('../utils/auditLogger');
-    await logAuditEvent({
-      req,
-      action: 'USER_SOFT_DELETED',
-      resourceType: 'users',
-      resourceId: targetUser.user_id || targetUser.id,
-      payload: { username: targetUser.username }
-    });
-
-    res.json({ success: true, message: `User ${targetUser.username} soft-deleted successfully.` });
+    res.json({ success: true, message: `User ${targetUser.username} removed successfully.` });
   } catch (err) {
     next(err);
   }
