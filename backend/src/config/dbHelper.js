@@ -49,6 +49,20 @@ const ensureUserTables = async (userOrSuffix) => {
   ensuredTables.add(suffix);
 };
 
+const getPhysicalSuffixes = async (prefix) => {
+  try {
+    const dbTablesRes = await db.query(
+      `SELECT table_name FROM information_schema.tables 
+       WHERE table_schema = DATABASE() AND table_name LIKE '${prefix}_%'`
+    ).catch(() => ({ rows: [] }));
+    return (dbTablesRes.rows || [])
+      .map(r => ((r.table_name || r.TABLE_NAME || '').replace(`${prefix}_`, '')))
+      .filter(suffix => suffix && suffix !== 'admin' && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats'));
+  } catch (err) {
+    return [];
+  }
+};
+
 let cachedAllSuffixes = null;
 let cachedOperatorSuffixes = null;
 let lastCacheTime = 0;
@@ -57,13 +71,7 @@ const getAllSuffixes = async () => {
   const now = Date.now();
   if (cachedAllSuffixes && (now - lastCacheTime < 10000)) return cachedAllSuffixes;
   try {
-    const dbTablesRes = await db.query(
-      `SELECT table_name FROM information_schema.tables 
-       WHERE table_name LIKE 'shipments_%' AND table_schema = DATABASE()`
-    ).catch(() => ({ rows: [] }));
-    const dbSuffixes = (dbTablesRes.rows || [])
-      .map(r => ((r.table_name || r.TABLE_NAME || '').replace('shipments_', '')))
-      .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats') && suffix !== 'admin');
+    const dbSuffixes = await getPhysicalSuffixes('shipments');
     cachedAllSuffixes = Array.from(new Set(dbSuffixes));
     lastCacheTime = now;
     return cachedAllSuffixes;
@@ -77,13 +85,7 @@ const getOperatorSuffixes = async () => {
   const now = Date.now();
   if (cachedOperatorSuffixes && (now - lastCacheTime < 10000)) return cachedOperatorSuffixes;
   try {
-    const dbTablesRes = await db.query(
-      `SELECT table_name FROM information_schema.tables 
-       WHERE table_name LIKE 'shipments_%' AND table_schema = DATABASE()`
-    ).catch(() => ({ rows: [] }));
-    const dbSuffixes = (dbTablesRes.rows || [])
-      .map(r => ((r.table_name || r.TABLE_NAME || '').replace('shipments_', '')))
-      .filter(suffix => suffix && !suffix.includes('replies') && !suffix.includes('files') && !suffix.includes('chats') && suffix !== 'admin');
+    const dbSuffixes = await getPhysicalSuffixes('shipments');
     cachedOperatorSuffixes = Array.from(new Set(dbSuffixes));
     lastCacheTime = now;
     return cachedOperatorSuffixes;
@@ -292,23 +294,48 @@ const query = async (req, sql, params) => {
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
-         let sBase = `SELECT shipments.* FROM shipments`;
-         for (const suffix of suffixes) {
-           sBase += ` UNION ALL SELECT shipments_${suffix}.* FROM shipments_${suffix}`;
+         const sSuffixes = await getPhysicalSuffixes('shipments');
+         let sBase = `SELECT 2 as __p, shipments.* FROM shipments`;
+         for (const suffix of sSuffixes) {
+           sBase += ` UNION ALL SELECT 1 as __p, shipments_${suffix}.* FROM shipments_${suffix}`;
          }
-         shipmentsUnion = `(SELECT * FROM (${sBase}) _u_s_inner)`;
+         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
+            ORDER BY 
+              CASE LOWER(TRIM(status))
+                WHEN 'confirmed' THEN 10
+                WHEN 'completed' THEN 9
+                WHEN 'customer review' THEN 8
+                WHEN 'under review' THEN 8
+                WHEN 'customer_review' THEN 8
+                WHEN 'under_review' THEN 8
+                WHEN 'review' THEN 8
+                WHEN 'quoted' THEN 7
+                WHEN 'quote sent' THEN 7
+                WHEN 'quote_sent' THEN 7
+                WHEN 'files pending' THEN 5
+                WHEN 'files_pending' THEN 5
+                WHEN 'return pending' THEN 4
+                WHEN 'return_pending' THEN 4
+                WHEN 'cancelled' THEN 2
+                ELSE 1
+              END DESC,
+              __p DESC
+          ) AS _rn FROM (${sBase}) _s) _ranked WHERE _rn = 1)`;
 
-         let rBase = `SELECT shipment_replies.* FROM shipment_replies`;
-         for (const suffix of suffixes) {
-           rBase += ` UNION ALL SELECT shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
+         const rSuffixes = await getPhysicalSuffixes('shipment_replies');
+         let rBase = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies`;
+         for (const suffix of rSuffixes) {
+           rBase += ` UNION ALL SELECT 1 as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
          }
-         repliesUnion = `(SELECT * FROM (${rBase}) _u_r_inner)`;
+         repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rBase}) _r) _ranked WHERE _rn = 1)`;
 
-         let fBase = `SELECT files.* FROM files`;
-         for (const suffix of suffixes) {
-           fBase += ` UNION ALL SELECT files_${suffix}.* FROM files_${suffix}`;
+         const fSuffixes = await getPhysicalSuffixes('files');
+         let fBase = `SELECT 2 as __p, files.* FROM files`;
+         for (const suffix of fSuffixes) {
+           fBase += ` UNION ALL SELECT 1 as __p, files_${suffix}.* FROM files_${suffix}`;
          }
-         filesUnion = `(SELECT * FROM (${fBase}) _u_f_inner)`;
+         filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fBase}) _f) _ranked WHERE _rn = 1)`;
       }
 
       const replaceTableWithUnion = (rawSql, tableName, unionSql, defaultAlias) => {
