@@ -233,10 +233,14 @@ const query = async (req, sql, params) => {
 
          const userFilter = conds.length > 0 ? `(${conds.join(' OR ')})` : `(1=1)`;
 
-         let sUnion = `SELECT 2 as __p, shipments.* FROM shipments WHERE ${userFilter}`;
+         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator`;
+         const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
+         const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
+
+         let sUnion = `SELECT 2 as __p, ${S_COLS} FROM shipments WHERE ${userFilter}`;
          for (const suffix of userSuffixes) {
            await ensureUserTables(suffix);
-           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipments_${suffix}.* FROM shipments_${suffix} WHERE ${userFilter}`;
+           sUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${S_COLS} FROM shipments_${suffix} WHERE ${userFilter}`;
          }
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
@@ -262,33 +266,37 @@ const query = async (req, sql, params) => {
               __p DESC
           ) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
          
-         let rUnion = `SELECT 2 as __p, shipment_replies.* FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
+         let rUnion = `SELECT 2 as __p, ${R_COLS} FROM shipment_replies WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, shipment_replies_${suffix}.* FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
+           rUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${R_COLS} FROM shipment_replies_${suffix} WHERE ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          repliesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${rUnion}) _r) _ranked WHERE _rn = 1)`;
          
-         let fUnion = `SELECT 2 as __p, files.* FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
+         let fUnion = `SELECT 2 as __p, ${F_COLS} FROM files WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          for (const suffix of userSuffixes) {
-           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, files_${suffix}.* FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
+           fUnion += ` UNION ALL SELECT ${suffix === safeUser ? 3 : 1} as __p, ${F_COLS} FROM files_${suffix} WHERE shipment_ref_no IN (SELECT ref_no FROM shipments WHERE ${userFilter})`;
          }
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
-         let sBase = `SELECT shipments.* FROM shipments`;
+         const S_COLS = `ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension, container, mode, weight, pickup_address, delivery_address, dear_who, email, status, last_follow_up, do_number, box_no, so_number, bl_number, track_status, carrier, etd, eta, cost, profit, customer_id, customer_name, customer_email, operator`;
+         const R_COLS = `id, ref_no, from_email, from_name, body, created_at, is_read, message_id, to_emails, cc_emails`;
+         const F_COLS = `id, shipment_ref_no, file_name, file_path, file_size, mime_type, uploaded_at`;
+
+         let sBase = `SELECT ${S_COLS} FROM shipments`;
          for (const suffix of suffixes) {
-           sBase += ` UNION ALL SELECT shipments_${suffix}.* FROM shipments_${suffix}`;
+           sBase += ` UNION ALL SELECT ${S_COLS} FROM shipments_${suffix}`;
          }
          shipmentsUnion = `(SELECT * FROM (${sBase}) _u_s_inner)`;
 
-         let rBase = `SELECT shipment_replies.* FROM shipment_replies`;
+         let rBase = `SELECT ${R_COLS} FROM shipment_replies`;
          for (const suffix of suffixes) {
-           rBase += ` UNION ALL SELECT shipment_replies_${suffix}.* FROM shipment_replies_${suffix}`;
+           rBase += ` UNION ALL SELECT ${R_COLS} FROM shipment_replies_${suffix}`;
          }
          repliesUnion = `(SELECT * FROM (${rBase}) _u_r_inner)`;
 
-         let fBase = `SELECT files.* FROM files`;
+         let fBase = `SELECT ${F_COLS} FROM files`;
          for (const suffix of suffixes) {
-           fBase += ` UNION ALL SELECT files_${suffix}.* FROM files_${suffix}`;
+           fBase += ` UNION ALL SELECT ${F_COLS} FROM files_${suffix}`;
          }
          filesUnion = `(SELECT * FROM (${fBase}) _u_f_inner)`;
       }
