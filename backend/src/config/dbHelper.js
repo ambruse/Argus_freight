@@ -221,7 +221,7 @@ const query = async (req, sql, params) => {
   const id = req?.params?.id || req?.body?.id || req?.query?.id;
   const isSelect = /^\s*(SELECT|WITH)\b/i.test(sql);
 
-  if (isSelect || isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer') {
+  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
     if (isAdmin && req?.query?.user) {
       targetUser = req.query.user;
     } else if (ref_no || id) {
