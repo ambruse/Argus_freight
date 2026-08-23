@@ -417,8 +417,18 @@ export default function ShipmentTracker({ initialRfq = '' }) {
                 <Package size={20} />
               </div>
               <div className="argus-detail-meta">
-                <span className="argus-detail-label">Cargo Weight</span>
-                <span className="argus-detail-value">{shipmentData.weight}</span>
+                <span className="argus-detail-label">Gross Weight (G.W.)</span>
+                <span className="argus-detail-value">{shipmentData.gross_weight || shipmentData.weight}</span>
+              </div>
+            </div>
+
+            <div className="argus-detail-card">
+              <div className="argus-detail-icon-wrap">
+                <Package size={20} />
+              </div>
+              <div className="argus-detail-meta">
+                <span className="argus-detail-label">Chargeable Weight</span>
+                <span className="argus-detail-value">{shipmentData.chargeable_weight || shipmentData.weight}</span>
               </div>
             </div>
           </div>

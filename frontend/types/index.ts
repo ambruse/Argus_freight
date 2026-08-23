@@ -50,6 +50,8 @@ export interface Shipment {
   container:        string | null;
   mode:             string | null;
   weight:           string | number | null;
+  gross_weight?:    string | number | null;
+  chargeable_weight?: string | number | null;
   pickup_address:   string | null;
   delivery_address: string | null;
   dear_who:         string | null;

@@ -206,6 +206,8 @@ router.get('/:ref', async (req, res) => {
           carrier: dbShipment.carrier || 'Argus Shipping Fleet',
           container_no: dbShipment.bl_number || dbShipment.box_no || `CNTR-${refCleaned}`,
           weight: dbShipment.weight || 'Standard Weight',
+          gross_weight: dbShipment.gross_weight || dbShipment.weight || 'Standard Weight',
+          chargeable_weight: dbShipment.chargeable_weight || dbShipment.weight || 'Standard Weight',
           packages: dbShipment.cargo_description || 'General Cargo',
           etd: dbShipment.etd || 'N/A',
           eta: dbShipment.eta || 'N/A',

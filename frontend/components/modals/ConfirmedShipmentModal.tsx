@@ -12,6 +12,7 @@ import { Shipment, ShipmentFile, ShipmentReply, CONFIRMED_TRACK_STATUSES } from 
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { cleanEmailBody } from "@/lib/emailParser";
+import { getCalculatedWeights } from "@/lib/weightUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { io, Socket } from "socket.io-client";
 
@@ -480,6 +481,8 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                       [shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number", "bl_number"],
                       ["SO Number",    "so_number"],
                       ["Box No.",      "box_no"],
+                      ["Gross Weight (G.W.)", "gross_weight"],
+                      ["Chargeable Weight", "chargeable_weight"],
                       ["Cost (QAR)",  "cost"],
                       ["Profit (QAR)", "profit"],
                       ["Customer Name", "customer_name"],
@@ -489,9 +492,10 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                         <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-1">{label}</p>
                         <input
                           className="input-sm"
-                          value={(editForm as any)[key] ?? ""}
+                          value={(editForm as any)[key] ?? (key === "gross_weight" ? (getCalculatedWeights(shipment).grossWeight !== "—" ? getCalculatedWeights(shipment).grossWeight : "") : key === "chargeable_weight" ? (getCalculatedWeights(shipment).chargeableWeight !== "—" ? getCalculatedWeights(shipment).chargeableWeight : "") : "")}
                           onChange={editSet(key as any)}
                           type={key === "cost" || key === "profit" ? "number" : "text"}
+                          placeholder={key === "gross_weight" ? "e.g. 1,450 KG" : key === "chargeable_weight" ? "e.g. 1,450 KG" : ""}
                         />
                       </div>
                     ))}
@@ -532,6 +536,8 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   <InfoField label={shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number"}    value={shipment.bl_number} />
                   <InfoField label="SO Number"    value={shipment.so_number} />
                   <InfoField label="Box No."      value={shipment.box_no} />
+                  <InfoField label="Gross Weight (G.W.)" value={shipment.gross_weight != null ? String(shipment.gross_weight) : getCalculatedWeights(shipment).grossWeight} />
+                  <InfoField label="Chargeable Weight" value={shipment.chargeable_weight != null ? String(shipment.chargeable_weight) : getCalculatedWeights(shipment).chargeableWeight} />
                   <InfoField label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
                   <InfoField label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
                   <InfoField label="Profit"       value={shipment.profit ? `QAR ${Number(shipment.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />

@@ -13,6 +13,7 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { cleanEmailBody } from "@/lib/emailParser";
+import { getCalculatedWeights } from "@/lib/weightUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { io, Socket } from "socket.io-client";
 
@@ -421,7 +422,8 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         <Field label="Term"         value={shipment.term} />
         <Field label="Commodity"    value={shipment.commodity} />
         <Field label="Container"    value={shipment.container} />
-        <Field label="Weight"       value={shipment.weight ? `${shipment.weight} kg` : null} />
+        <Field label="Gross Weight (G.W.)" value={shipment.gross_weight != null ? String(shipment.gross_weight) : getCalculatedWeights(shipment).grossWeight} />
+        <Field label="Chargeable Weight" value={shipment.chargeable_weight != null ? String(shipment.chargeable_weight) : getCalculatedWeights(shipment).chargeableWeight} />
         <Field label="Dimension"    value={shipment.dimension} />
         {user?.role !== "customer" && <Field label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />}
         <Field label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />

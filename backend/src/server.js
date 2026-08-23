@@ -202,6 +202,8 @@ const createLike = async (newTable, baseTable) => {
         container         VARCHAR(100),
         mode              VARCHAR(50),
         weight            VARCHAR(100),
+        gross_weight      VARCHAR(100),
+        chargeable_weight VARCHAR(100),
         pickup_address    TEXT,
         delivery_address  TEXT,
         dear_who          VARCHAR(255),
@@ -227,6 +229,9 @@ const createLike = async (newTable, baseTable) => {
         UNIQUE KEY (id)
       )
     `);
+
+    try { await db.query(`ALTER TABLE shipments ADD COLUMN gross_weight VARCHAR(100)`); } catch (e) {}
+    try { await db.query(`ALTER TABLE shipments ADD COLUMN chargeable_weight VARCHAR(100)`); } catch (e) {}
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS files (

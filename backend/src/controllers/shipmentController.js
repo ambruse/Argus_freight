@@ -383,20 +383,24 @@ const updateTracking = async (req, res, next) => {
     const { ref_no } = req.params;
     const {
       do_number, box_no, so_number, bl_number, track_status, carrier,
-      etd, eta, cost, profit, customer_name, customer_email
+      etd, eta, cost, profit, customer_name, customer_email,
+      gross_weight, chargeable_weight
     } = req.body;
 
     const result = await query(req, 
       `UPDATE shipments
        SET do_number=$1, box_no=$2, so_number=$3, bl_number=$4,
            track_status=$5, carrier=$6, etd=$7, eta=$8, cost=$9, profit=$10,
-           customer_name=$11, customer_email=$12
-       WHERE ref_no=$13
+           customer_name=$11, customer_email=$12,
+           gross_weight=COALESCE($13, gross_weight),
+           chargeable_weight=COALESCE($14, chargeable_weight)
+       WHERE ref_no=$15
        RETURNING *`,
       [
         do_number, box_no, so_number, bl_number, track_status, carrier,
         etd || null, eta || null, cost || null, profit || null,
         customer_name || null, customer_email || null,
+        gross_weight || null, chargeable_weight || null,
         ref_no
       ]
     );
