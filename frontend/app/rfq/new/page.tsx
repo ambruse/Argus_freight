@@ -1254,10 +1254,17 @@ export default function NewRFQPage() {
                             {normal.map(recipient => {
                               const selected = selectedOperator?.id === recipient.id;
                               return (
-                                <button key={recipient.id} type="button" onClick={() => handleOperatorClick(recipient)} className={["flex flex-col items-start px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all duration-200 select-none min-w-[160px]", selected ? "bg-blue/20 border-blue/60 shadow-[0_0_12px_rgba(59,120,200,0.3)]" : "bg-white/[0.04] border-white/10 hover:border-white/25"].join(" ")}>
-                                  <div className="flex items-center gap-2">
-                                    <span className={["w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200", selected ? "border-blue bg-blue/20" : "border-white/20"].join(" ")}>{selected && <span className="w-1.5 h-1.5 rounded-full bg-blue block" />}</span>
-                                    <span className={selected ? "text-blue" : "text-primary"}>{recipient.name}</span>
+                                <button key={recipient.id} type="button" onClick={() => handleOperatorClick(recipient)} className={["flex flex-col items-start px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all duration-200 select-none min-w-[180px]", selected ? "bg-blue/20 border-blue/60 shadow-[0_0_12px_rgba(59,120,200,0.3)]" : "bg-white/[0.04] border-white/10 hover:border-white/25"].join(" ")}>
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className={["w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200", selected ? "border-blue bg-blue/20" : "border-white/20"].join(" ")}>{selected && <span className="w-1.5 h-1.5 rounded-full bg-blue block" />}</span>
+                                      <span className={selected ? "text-blue font-bold" : "text-primary font-semibold"}>{recipient.name}</span>
+                                    </div>
+                                    {recipient.country && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gold font-medium flex items-center gap-1">
+                                        📍 {recipient.country}
+                                      </span>
+                                    )}
                                   </div>
                                   <span className="text-[10px] text-muted pl-5 mt-0.5">{recipient.email}</span>
                                 </button>

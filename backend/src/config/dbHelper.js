@@ -304,7 +304,7 @@ const query = async (req, sql, params) => {
 
          const sUnion = await buildAlignedUnion('shipments', userSuffixes, (s) => s === safeUser ? 3 : 1, userFilter);
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
-            PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
+            PARTITION BY CASE WHEN cust_req_no IS NOT NULL AND TRIM(cust_req_no) != '' THEN (CASE WHEN CHAR_LENGTH(TRIM(cust_req_no)) - CHAR_LENGTH(REPLACE(TRIM(cust_req_no), '-', '')) > 1 THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 2) ELSE TRIM(cust_req_no) END) WHEN ref_no LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN CHAR_LENGTH(ref_no) - CHAR_LENGTH(REPLACE(ref_no, '-', '')) > 1 THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN ref_no LIKE '%-%' THEN SUBSTRING_INDEX(ref_no, '-', 1) ELSE ref_no END 
             ORDER BY 
               CASE LOWER(TRIM(status))
                 WHEN 'confirmed' THEN 10
@@ -338,7 +338,7 @@ const query = async (req, sql, params) => {
          const sSuffixes = await getPhysicalSuffixes('shipments');
          const sBase = await buildAlignedUnion('shipments', sSuffixes, () => 1, '');
          shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
-            PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
+            PARTITION BY CASE WHEN cust_req_no IS NOT NULL AND TRIM(cust_req_no) != '' THEN (CASE WHEN CHAR_LENGTH(TRIM(cust_req_no)) - CHAR_LENGTH(REPLACE(TRIM(cust_req_no), '-', '')) > 1 THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 2) ELSE TRIM(cust_req_no) END) WHEN ref_no LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN CHAR_LENGTH(ref_no) - CHAR_LENGTH(REPLACE(ref_no, '-', '')) > 1 THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN ref_no LIKE '%-%' THEN SUBSTRING_INDEX(ref_no, '-', 1) ELSE ref_no END 
             ORDER BY 
               CASE LOWER(TRIM(status))
                 WHEN 'confirmed' THEN 10
