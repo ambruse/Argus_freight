@@ -302,8 +302,10 @@ const query = async (req, sql, params) => {
 
          const userFilter = conds.length > 0 ? `WHERE (${conds.join(' OR ')})` : '';
 
+         const isAggQuery = /SUM\(|COUNT\(|AVG\(|MIN\(|MAX\(/i.test(sql);
          const sUnion = await buildAlignedUnion('shipments', userSuffixes, (s) => s === safeUser ? 3 : 1, userFilter);
-         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
+
+         const sGroupedUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY CASE WHEN cust_req_no IS NOT NULL AND TRIM(cust_req_no) != '' THEN (CASE WHEN TRIM(cust_req_no) LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 2) WHEN TRIM(cust_req_no) LIKE '%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 1) ELSE TRIM(cust_req_no) END) WHEN ref_no LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN ref_no LIKE '%-%' THEN SUBSTRING_INDEX(ref_no, '-', 1) ELSE ref_no END 
             ORDER BY 
               CASE LOWER(TRIM(status))
@@ -326,6 +328,7 @@ const query = async (req, sql, params) => {
               END DESC,
               __p DESC
           ) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
+         shipmentsUnion = isAggQuery ? sGroupedUnion : `(${sUnion})`;
 
          const rFilter = `WHERE ref_no IN (SELECT ref_no FROM shipments ${userFilter})`;
          const rUnion = await buildAlignedUnion('shipment_replies', userSuffixes, (s) => s === safeUser ? 3 : 1, rFilter);
@@ -335,9 +338,10 @@ const query = async (req, sql, params) => {
          const fUnion = await buildAlignedUnion('files', userSuffixes, (s) => s === safeUser ? 3 : 1, fFilter);
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
+         const isAggQuery = /SUM\(|COUNT\(|AVG\(|MIN\(|MAX\(/i.test(sql);
          const sSuffixes = await getPhysicalSuffixes('shipments');
          const sBase = await buildAlignedUnion('shipments', sSuffixes, () => 1, '');
-         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
+         const sGroupedUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
             PARTITION BY CASE WHEN cust_req_no IS NOT NULL AND TRIM(cust_req_no) != '' THEN (CASE WHEN TRIM(cust_req_no) LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 2) WHEN TRIM(cust_req_no) LIKE '%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 1) ELSE TRIM(cust_req_no) END) WHEN ref_no LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN ref_no LIKE '%-%' THEN SUBSTRING_INDEX(ref_no, '-', 1) ELSE ref_no END 
             ORDER BY 
               CASE LOWER(TRIM(status))
@@ -360,6 +364,7 @@ const query = async (req, sql, params) => {
               END DESC,
               __p DESC
           ) AS _rn FROM (${sBase}) _s) _ranked WHERE _rn = 1)`;
+         shipmentsUnion = isAggQuery ? sGroupedUnion : `(${sBase})`;
 
          const rSuffixes = await getPhysicalSuffixes('shipment_replies');
          const rBase = await buildAlignedUnion('shipment_replies', rSuffixes, () => 1, '');
