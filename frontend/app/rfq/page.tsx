@@ -91,27 +91,19 @@ export default function RFQPage() {
   };
 
   const getGroupLabel = (basePrefix: string, originalShipments: Shipment[]) => {
-    if (originalShipments.length === 0) return basePrefix;
+    if (!originalShipments || originalShipments.length === 0) return basePrefix;
     
     const sorted = [...originalShipments].sort((a, b) => {
       return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
     });
 
     const firstRef = sorted[0].ref_no;
-    const lastRef = sorted[sorted.length - 1].ref_no;
-
-    const firstSeqMatch = firstRef.match(/-(\d+)/);
-    const lastSeqMatch = lastRef.match(/-(\d+)/);
-
+    const firstSeqMatch = firstRef.match(/-(\d+)$/);
     const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
-    let lastSeq = lastSeqMatch ? lastSeqMatch[1] : `${sorted.length}`;
+    
+    const totalCountStr = String(sorted.length).padStart(firstSeq.length, "0");
 
-    // If both matches yield single-digit integers or formatted sequence, format range correctly
-    if (firstSeqMatch && lastSeqMatch && firstSeq === lastSeq) {
-      lastSeq = String(sorted.length);
-    }
-
-    return `${basePrefix}-${firstSeq}-${lastSeq}`;
+    return `${basePrefix}-${firstSeq}-${totalCountStr}`;
   };
 
   const getGroupLastFollowUp = (shipmentsList: Shipment[]) => {
@@ -619,7 +611,7 @@ export default function RFQPage() {
                                        transition-all duration-150 group relative inline-flex items-center gap-1.5"
                             title="Click to copy REF NO"
                           >
-                            {isAdminOrOperator && <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>}
+                            <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>
                             <span>{groupLabel}</span>
                           </button>
                         </td>
@@ -733,8 +725,8 @@ export default function RFQPage() {
                           )}
                         </td>
                       </tr>
-                      {/* ── Expanded child rows (Admin & Operator only) ── */}
-                      {isAdminOrOperator && isExpanded && item.shipments.map((cs, cidx) => (
+                      {/* ── Expanded child rows ── */}
+                      {isExpanded && item.shipments.map((cs, cidx) => (
                         <tr
                           key={cs.ref_no}
                           onClick={() => handleRowClick(cs)}
