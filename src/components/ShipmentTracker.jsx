@@ -50,13 +50,16 @@ export default function ShipmentTracker({ initialRfq = '' }) {
 
     try {
       const res = await fetch(`/api/track/${encodeURIComponent(targetRef)}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          setShipmentData(json.data);
-          setIsLoading(false);
-          return;
-        }
+      const json = await res.json();
+      if (res.ok && json.success && json.data) {
+        setShipmentData(json.data);
+        setIsLoading(false);
+        return;
+      } else {
+        setShipmentData(null);
+        setErrorMsg(json.message || 'No tracking information found.');
+        setIsLoading(false);
+        return;
       }
     } catch {
       // Ignore network errors in local dev & fallback to dynamic mock generator
@@ -68,36 +71,8 @@ export default function ShipmentTracker({ initialRfq = '' }) {
       if (MOCK_DATA[upperRef]) {
         setShipmentData(MOCK_DATA[upperRef]);
       } else {
-        let hash = 0;
-        for (let i = 0; i < upperRef.length; i++) {
-          hash = upperRef.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const stageIdx = Math.abs(hash) % 6;
-
-        const generatedData = {
-          ref_no: upperRef,
-          status: STAGES[stageIdx].label,
-          currentStageIndex: stageIdx,
-          origin: { country: 'QATAR', city: 'Doha', code: 'DOH' },
-          destination: { country: 'UNITED KINGDOM', city: 'London', code: 'LHR' },
-          mode: 'Express Freight',
-          carrier: 'Argus Global Cargo',
-          container_no: `AWB-${Math.abs(hash % 899999) + 100000}`,
-          weight: `${(Math.abs(hash % 40) + 10) * 25} kg`,
-          packages: 'Express Shipment',
-          etd: 'Aug 21, 2026',
-          eta: 'Aug 27, 2026',
-          timeline: STAGES.map((s, idx) => ({
-            stage: s.label,
-            label: s.label,
-            date: idx <= stageIdx ? 'Aug 22, 2026' : 'Est. Aug 25',
-            time: idx <= stageIdx ? '10:00 AM' : 'Pending',
-            location: idx === 0 ? 'Doha, Qatar' : idx === 5 ? 'London, UK' : `Checkpoint ${idx + 1}`,
-            status: idx < stageIdx ? 'completed' : idx === stageIdx ? 'active' : 'upcoming',
-            description: s.desc
-          }))
-        };
-        setShipmentData(generatedData);
+        setShipmentData(null);
+        setErrorMsg('No tracking information found.');
       }
       setIsLoading(false);
     }, 400);
@@ -112,29 +87,6 @@ export default function ShipmentTracker({ initialRfq = '' }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     handleTrack(rfqInput);
-  };
-
-  // Simulation feature to advance stages interactively
-  const handleAdvanceStage = () => {
-    if (!shipmentData) return;
-    const nextIdx = (shipmentData.currentStageIndex + 1) % 6;
-    setShipmentData(prev => {
-      const updatedTimeline = STAGES.map((s, idx) => ({
-        stage: s.label,
-        label: s.label,
-        date: idx <= nextIdx ? 'Aug 23, 2026' : 'Pending',
-        time: idx <= nextIdx ? 'Live Update' : 'Pending',
-        location: idx === 0 ? prev.origin.city : idx === 5 ? prev.destination.city : `Transit Node #${idx + 1}`,
-        status: idx < nextIdx ? 'completed' : idx === nextIdx ? 'active' : 'upcoming',
-        description: s.desc
-      }));
-      return {
-        ...prev,
-        currentStageIndex: nextIdx,
-        status: STAGES[nextIdx].label,
-        timeline: updatedTimeline
-      };
-    });
   };
 
   const handleCopy = () => {
@@ -354,17 +306,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
           </div>
 
           {/* 5. INTERACTIVE ACTIONS & ACCORDION EXPANDER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <button 
-              type="button" 
-              className="argus-chip" 
-              onClick={handleAdvanceStage}
-              style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <RefreshCw size={14} />
-              Simulate Live Stage Progress
-            </button>
-
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <button 
               type="button" 
               onClick={() => setShowLog(!showLog)}

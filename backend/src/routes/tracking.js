@@ -159,7 +159,17 @@ router.get('/:ref', async (req, res) => {
     }
 
     if (dbShipment) {
-      const activeIdx = mapStatusToStageIndex(dbShipment.status || dbShipment.track_status);
+      const mainStatus = (dbShipment.status || '').toLowerCase();
+      // Live tracking is ONLY allowed if RFQ status is confirmed or completed
+      if (mainStatus !== 'confirmed' && mainStatus !== 'completed') {
+        return res.json({
+          success: false,
+          message: 'No tracking information found'
+        });
+      }
+
+      const currentTrackStatus = dbShipment.track_status || dbShipment.status || 'Confirmed';
+      const activeIdx = mapStatusToStageIndex(currentTrackStatus);
       const originCountry = dbShipment.origin_country || 'QATAR';
       const originCity = dbShipment.origin_city || 'Doha';
       const destCountry = dbShipment.dest_country || 'UNITED KINGDOM';
@@ -184,14 +194,14 @@ router.get('/:ref', async (req, res) => {
       return res.json({
         success: true,
         data: {
-          ref_no: dbShipment.ref_no || refUpper,
+          ref_no: dbShipment.ref_no || refCleaned || refUpper,
           status: STAGES[activeIdx],
           currentStageIndex: activeIdx,
           origin: { country: originCountry.toUpperCase(), city: originCity },
           destination: { country: destCountry.toUpperCase(), city: destCity },
           mode: dbShipment.freight_type || 'Cargo Freight',
           carrier: dbShipment.carrier || 'Argus Shipping Fleet',
-          container_no: dbShipment.bl_number || dbShipment.box_no || `CNTR-${refUpper}`,
+          container_no: dbShipment.bl_number || dbShipment.box_no || `CNTR-${refCleaned}`,
           weight: dbShipment.weight || 'Standard Weight',
           packages: dbShipment.cargo_description || 'General Cargo',
           etd: dbShipment.etd || 'N/A',
@@ -202,55 +212,10 @@ router.get('/:ref', async (req, res) => {
       });
     }
 
-    let hash = 0;
-    for (let i = 0; i < refUpper.length; i++) {
-      hash = refUpper.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const stageIdx = Math.abs(hash) % 6;
-
-    const pairs = [
-      { orig: { country: 'QATAR', city: 'Doha' }, dest: { country: 'UNITED KINGDOM', city: 'London' } },
-      { orig: { country: 'UNITED ARAB EMIRATES', city: 'Dubai' }, dest: { country: 'UNITED STATES', city: 'New York' } },
-      { orig: { country: 'GERMANY', city: 'Hamburg' }, dest: { country: 'QATAR', city: 'Doha' } },
-      { orig: { country: 'CHINA', city: 'Shenzhen' }, dest: { country: 'BAHRAIN', city: 'Manama' } },
-      { orig: { country: 'SINGAPORE', city: 'Singapore' }, dest: { country: 'SAUDI ARABIA', city: 'Riyadh' } }
-    ];
-    const selectedPair = pairs[Math.abs(hash) % pairs.length];
-
-    const timeline = STAGES.map((stageName, idx) => {
-      let status = 'upcoming';
-      if (idx < stageIdx) status = 'completed';
-      else if (idx === stageIdx) status = 'active';
-
-      return {
-        stage: stageName,
-        label: stageName,
-        date: idx <= stageIdx ? 'Aug 22, 2026' : 'Pending',
-        time: idx <= stageIdx ? '10:30 AM' : 'Pending',
-        location: idx === 0 ? `${selectedPair.orig.city}, ${selectedPair.orig.country}` : idx === 5 ? `${selectedPair.dest.city}, ${selectedPair.dest.country}` : `Argus Logistics Transit Hub`,
-        status: status,
-        description: `Shipment stage ${stageName} logged for ${refUpper}.`
-      };
-    });
-
+    // If RFQ is not in DB or mock data, return No tracking information found
     return res.json({
-      success: true,
-      data: {
-        ref_no: refUpper,
-        status: STAGES[stageIdx],
-        currentStageIndex: stageIdx,
-        origin: selectedPair.orig,
-        destination: selectedPair.dest,
-        mode: 'Air & Express Cargo',
-        carrier: 'Argus Priority Logistics',
-        container_no: `AWB-${Math.abs(hash % 899999) + 100000}`,
-        weight: `${(Math.abs(hash % 50) + 10) * 50} kg`,
-        packages: 'Standard Cargo Pallets',
-        etd: '2026-08-20',
-        eta: '2026-08-27',
-        updated_at: new Date().toISOString(),
-        timeline
-      }
+      success: false,
+      message: 'No tracking information found'
     });
 
   } catch (error) {
