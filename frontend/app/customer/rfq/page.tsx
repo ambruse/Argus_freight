@@ -54,20 +54,20 @@ export default function CustomerRFQListPage() {
   }, [fetchShipments]);
 
   const getBaseRef = useCallback((s: Partial<Shipment>) => {
-    if (s.cust_req_no && s.cust_req_no.trim()) {
-      return s.cust_req_no.trim();
+    const cleanCust = s.cust_req_no ? s.cust_req_no.trim() : "";
+    if (cleanCust) {
+      if (cleanCust.startsWith('ARG-')) {
+        const parts = cleanCust.split('-');
+        if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+      }
+      return cleanCust.replace(/(-[0-9]+)+$/, '');
     }
     const ref = s.ref_no || "";
-    if (ref.includes('-')) {
+    if (ref.startsWith('ARG-')) {
       const parts = ref.split('-');
-      if (parts.length > 2 && parts[0] === 'ARG') {
-        return `${parts[0]}-${parts[1]}`;
-      }
-      if (parts.length > 2) {
-        return `${parts[0]}-${parts[1]}`;
-      }
+      if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
     }
-    return ref;
+    return ref.replace(/(-[0-9]+)+$/, '');
   }, []);
 
   // ── Consolidate sub-shipments into ONE single row per request for Customer ────

@@ -361,24 +361,20 @@ export default function RFQPage() {
     const groups: { [key: string]: Shipment[] } = {};
     
     const getBasePrefix = (s: Shipment) => {
-      if (s.cust_req_no && s.cust_req_no.trim()) {
-        const clean = s.cust_req_no.trim();
-        const parts = clean.split('-');
-        if (parts.length > 2) {
-          return `${parts[0]}-${parts[1]}`;
+      const cleanCust = s.cust_req_no ? s.cust_req_no.trim() : "";
+      if (cleanCust) {
+        if (cleanCust.startsWith('ARG-')) {
+          const parts = cleanCust.split('-');
+          if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
         }
-        return clean;
+        return cleanCust.replace(/(-[0-9]+)+$/, '');
       }
       const ref = s.ref_no || "";
-      if (!ref.includes('-')) return ref;
-      const parts = ref.split('-');
-      if (parts[0] === 'ARG' && parts.length > 2) {
-        return `${parts[0]}-${parts[1]}`;
+      if (ref.startsWith('ARG-')) {
+        const parts = ref.split('-');
+        if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
       }
-      if (parts.length > 2) {
-        return `${parts[0]}-${parts[1]}`;
-      }
-      return parts[0];
+      return ref.replace(/(-[0-9]+)+$/, '');
     };
 
     shipments.forEach(s => {
