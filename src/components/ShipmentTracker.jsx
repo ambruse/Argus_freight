@@ -139,33 +139,43 @@ export default function ShipmentTracker({ initialRfq = '' }) {
     const targetRef = cleanSearchRef(rawTarget);
     setIsLoading(true);
     setErrorMsg('');
+    setShipmentData(null);
 
+    let networkError = false;
     try {
       const res = await fetch(`/api/track/${encodeURIComponent(targetRef)}`);
       const json = await res.json();
-      if (res.ok && json.success && json.data) {
+      if (json.success && json.data) {
         setShipmentData(json.data);
+        setIsLoading(false);
+        return;
+      } else {
+        // API responded clearly — ref not found or not confirmed
+        setShipmentData(null);
+        setErrorMsg('No tracking information found.');
         setIsLoading(false);
         return;
       }
     } catch {
-      // Ignore network errors in local dev & fallback to dynamic mock generator
+      // Network error (dev/offline) — fall through to mock lookup
+      networkError = true;
     }
 
-    // Fallback Mock Logic
-    setTimeout(() => {
-      const upperRef = targetRef.toUpperCase();
-      const rawUpper = rawTarget.toUpperCase();
-      const matchedData = MOCK_DATA[upperRef] || MOCK_DATA[rawUpper];
-
-      if (matchedData) {
-        setShipmentData(matchedData);
-      } else {
-        setShipmentData(null);
-        setErrorMsg('No tracking information found.');
-      }
-      setIsLoading(false);
-    }, 400);
+    if (networkError) {
+      // Offline/dev fallback: only show if in MOCK_DATA
+      setTimeout(() => {
+        const upperRef = targetRef.toUpperCase();
+        const rawUpper = rawTarget.toUpperCase();
+        const matchedData = MOCK_DATA[upperRef] || MOCK_DATA[rawUpper];
+        if (matchedData) {
+          setShipmentData(matchedData);
+        } else {
+          setShipmentData(null);
+          setErrorMsg('No tracking information found.');
+        }
+        setIsLoading(false);
+      }, 400);
+    }
   }, [rfqInput]);
 
   useEffect(() => {
