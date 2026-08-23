@@ -155,39 +155,11 @@ export default function ShipmentTracker({ initialRfq = '' }) {
     // Fallback Mock Logic
     setTimeout(() => {
       const upperRef = targetRef.toUpperCase();
-      if (MOCK_DATA[upperRef]) {
-        setShipmentData(MOCK_DATA[upperRef]);
-      } else if (upperRef.length >= 3) {
-        let hash = 0;
-        for (let i = 0; i < upperRef.length; i++) {
-          hash = upperRef.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const stageIdx = Math.abs(hash) % 6;
+      const rawUpper = rawTarget.toUpperCase();
+      const matchedData = MOCK_DATA[upperRef] || MOCK_DATA[rawUpper];
 
-        const generatedData = {
-          ref_no: upperRef,
-          status: STAGES[stageIdx].label,
-          currentStageIndex: stageIdx,
-          origin: { country: 'QATAR', city: 'Doha', code: 'DOH' },
-          destination: { country: 'UNITED KINGDOM', city: 'London', code: 'LHR' },
-          mode: 'Express Cargo',
-          carrier: 'Argus Global Logistics',
-          container_no: `AWB-${Math.abs(hash % 899999) + 100000}`,
-          weight: `${(Math.abs(hash % 40) + 10) * 25} kg`,
-          packages: 'Express Shipment',
-          etd: 'Aug 21, 2026',
-          eta: 'Aug 27, 2026',
-          timeline: STAGES.map((s, idx) => ({
-            stage: s.label,
-            label: s.label,
-            date: idx <= stageIdx ? 'Aug 22, 2026' : 'Est. Aug 25',
-            time: idx <= stageIdx ? '10:00 AM' : 'Pending',
-            location: idx === 0 ? 'Doha, Qatar' : idx === 5 ? 'London, UK' : `Checkpoint ${idx + 1}`,
-            status: idx < stageIdx ? 'completed' : idx === stageIdx ? 'active' : 'upcoming',
-            description: s.desc
-          }))
-        };
-        setShipmentData(generatedData);
+      if (matchedData) {
+        setShipmentData(matchedData);
       } else {
         setShipmentData(null);
         setErrorMsg('No tracking information found.');

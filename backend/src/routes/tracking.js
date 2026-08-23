@@ -5,6 +5,31 @@ const db = require('../config/db');
 
 // Sample mock tracking database for quick demonstration & fallback
 const MOCK_SHIPMENTS = {
+  '1AD08NQ26': {
+    ref_no: '1AD08NQ26',
+    status: 'In Transit',
+    currentStageIndex: 2,
+    origin: { country: 'QATAR', city: 'Doha', code: 'DOH' },
+    destination: { country: 'UNITED KINGDOM', city: 'London', code: 'LHR' },
+    mode: 'Air Freight',
+    carrier: 'Qatar Airways Cargo (QR 8140)',
+    container_no: 'AWB-157-9948201',
+    weight: '1,450 kg',
+    gross_weight: '1,450 kg',
+    chargeable_weight: '1,450 kg',
+    packages: '12 Pallets',
+    etd: '2026-08-20',
+    eta: '2026-08-26',
+    updated_at: '2026-08-23T14:30:00Z',
+    timeline: [
+      { stage: 'Confirmed', label: 'Confirmed', date: 'Aug 18, 2026', time: '09:00 AM', location: 'Doha HQ, Qatar', status: 'completed', description: 'RFQ confirmed & booking registered.' },
+      { stage: 'Scheduled', label: 'Scheduled', date: 'Aug 19, 2026', time: '02:15 PM', location: 'Hamad Int. Cargo Terminal', status: 'completed', description: 'Cargo slot reserved with carrier.' },
+      { stage: 'In Transit', label: 'In Transit', date: 'Aug 21, 2026', time: '11:45 AM', location: 'Over Airspace (En Route to LHR)', status: 'active', description: 'Flight departed. Cargo currently in transit.' },
+      { stage: 'Clearance', label: 'Clearance', date: 'Estimated Aug 24', time: 'Pending', location: 'London Heathrow Customs', status: 'upcoming', description: 'Customs declaration & document verification.' },
+      { stage: 'Warehouse', label: 'Warehouse', date: 'Estimated Aug 25', time: 'Pending', location: 'Argus LHR Logistics Hub', status: 'upcoming', description: 'Arrival & deconsolidation at hub.' },
+      { stage: 'Delivered', label: 'Delivered', date: 'Estimated Aug 26', time: 'Pending', location: 'Final Consignee Address', status: 'upcoming', description: 'Final door-to-door delivery completion.' }
+    ]
+  },
   'RFQ-2026-8842': {
     ref_no: 'RFQ-2026-8842',
     status: 'In Transit',
@@ -15,6 +40,8 @@ const MOCK_SHIPMENTS = {
     carrier: 'Qatar Airways Cargo (QR 8140)',
     container_no: 'AWB-157-9948201',
     weight: '1,450 kg',
+    gross_weight: '1,450 kg',
+    chargeable_weight: '1,450 kg',
     packages: '12 Pallets',
     etd: '2026-08-20',
     eta: '2026-08-26',
