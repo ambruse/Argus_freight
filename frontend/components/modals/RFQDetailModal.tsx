@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from "react";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
-import { Shipment, ALL_STATUSES, ShipmentStatus, ShipmentReply } from "@/types";
+import { Shipment, ALL_STATUSES, RFQ_STATUS_OPTIONS, ShipmentStatus, ShipmentReply } from "@/types";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -767,7 +767,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
                   onChange={(e) => setNewStatus(e.target.value as ShipmentStatus)}
                   className="select w-full"
                 >
-                  {ALL_STATUSES.map((s) => (
+                  {RFQ_STATUS_OPTIONS.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -810,7 +810,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
                 className="select flex-1 max-w-xs"
               >
                 <option value="">— Select new status —</option>
-                {ALL_STATUSES.filter((s) => s !== shipment.status).map((s) => (
+                {RFQ_STATUS_OPTIONS.filter((s) => s !== shipment.status).map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>

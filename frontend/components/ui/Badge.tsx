@@ -12,6 +12,10 @@ const STATUS_CONFIG: Record<ShipmentStatus, { dot: string; bg: string; border: s
   "Completed":       { dot: "#059669", bg: "rgba(5,150,105,0.12)",   border: "rgba(5,150,105,0.25)",   text: "#34D399" },
   "Return Pending":  { dot: "#F59E0B", bg: "rgba(245,158,11,0.10)",  border: "rgba(245,158,11,0.22)",  text: "#FBBF24" },
   "Cancelled":       { dot: "#F43F5E", bg: "rgba(244,63,94,0.10)",   border: "rgba(244,63,94,0.22)",   text: "#F43F5E" },
+  "In Scheduled":    { dot: "#F59E0B", bg: "rgba(245,158,11,0.10)",  border: "rgba(245,158,11,0.22)",  text: "#F59E0B" },
+  "In Transit":      { dot: "#38BDF8", bg: "rgba(56,189,248,0.10)",  border: "rgba(56,189,248,0.22)",  text: "#38BDF8" },
+  "Clearance":      { dot: "#8B5CF6", bg: "rgba(139,92,246,0.10)",  border: "rgba(139,92,246,0.22)",  text: "#A78BFA" },
+  "Delivered":      { dot: "#10B981", bg: "rgba(16,185,129,0.10)",  border: "rgba(16,185,129,0.22)",  text: "#10B981" },
 };
 
 const PULSE_STATUSES: ShipmentStatus[] = ["Pending", "Files Pending", "Return Pending"];

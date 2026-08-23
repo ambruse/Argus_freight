@@ -11,21 +11,31 @@ export type ShipmentStatus =
   | "Files Pending"
   | "Completed"
   | "Return Pending"
-  | "Cancelled";
+  | "Cancelled"
+  | "In Scheduled"
+  | "In Transit"
+  | "Clearance"
+  | "Delivered";
 
 export const ALL_STATUSES: ShipmentStatus[] = [
-  "Pending",
+  "Quoted",
   "Confirmed",
-  "Completed",
   "Cancelled",
 ];
 
-export const RFQ_STATUSES: ShipmentStatus[] = [
-  "Pending",
+export const RFQ_STATUS_OPTIONS: ShipmentStatus[] = [
+  "Quoted",
   "Confirmed",
-  "Completed",
   "Cancelled",
 ];
+
+export const CONFIRMED_TRACK_STATUSES = [
+  "In Scheduled",
+  "In Transit",
+  "Clearance",
+  "Delivered",
+  "Cancelled",
+] as const;
 
 export interface Shipment {
   id:               number;
