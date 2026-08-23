@@ -160,8 +160,11 @@ router.get('/:ref', async (req, res) => {
 
     if (dbShipment) {
       const mainStatus = (dbShipment.status || '').toLowerCase();
-      // Live tracking is ONLY allowed if RFQ status is confirmed or completed
-      if (mainStatus !== 'confirmed' && mainStatus !== 'completed') {
+      const isConfirmedOrActive = [
+        'confirmed', 'completed', 'in scheduled', 'in transit', 'clearance', 'warehouse', 'delivered', 'files pending'
+      ].includes(mainStatus);
+
+      if (!isConfirmedOrActive) {
         return res.json({
           success: false,
           message: 'No tracking information found'
