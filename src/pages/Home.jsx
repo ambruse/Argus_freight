@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, PhoneCall, Mail, Anchor, Package, MapPin } from 'lucide-react';
+import ShipmentTracker from '../components/ShipmentTracker';
 
 const LOGISTICS_MODES = [
   {
@@ -218,6 +219,13 @@ export default function Home({ onNavigate, onOpenQuote }) {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Real-Time Shipment Tracker Section */}
+      <section style={{ padding: '2rem 0', position: 'relative', zIndex: 10 }}>
+        <div className="container" style={{ maxWidth: '1100px' }}>
+          <ShipmentTracker />
         </div>
       </section>
 

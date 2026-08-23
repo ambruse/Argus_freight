@@ -25,6 +25,7 @@ const compulsoryEmailsRoutes = require('./routes/compulsoryEmails');
 const callEnquiryRoutes  = require('./routes/callEnquiries');
 const quotationRoutes    = require('./routes/quotation');
 const cxRoutes           = require('./routes/3cx');
+const trackingRoutes     = require('./routes/tracking');
 const errorHandler       = require('./middleware/errorHandler');
 const { startImapService } = require('./services/imapService');
 
@@ -633,6 +634,7 @@ app.use('/api/compulsory-emails', compulsoryEmailsRoutes);
 app.use('/api/call-enquiries', callEnquiryRoutes);
 app.use('/api/quotation', quotationRoutes);
 app.use('/api/3cx', cxRoutes);
+app.use('/api/track', trackingRoutes);
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {

@@ -203,6 +203,17 @@ export default function Navbar({ currentPath, setCurrentPath, onOpenQuote, isDar
 
             <li className="nav-item">
               <span 
+                className={`nav-link ${currentPath === '/tracking' ? 'active' : ''}`} 
+                onClick={() => handleNavigate('/tracking')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: currentPath === '/tracking' ? 'var(--accent)' : undefined }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }}></span>
+                Tracking
+              </span>
+            </li>
+
+            <li className="nav-item">
+              <span 
                 className={`nav-link ${currentPath === '/why-us' ? 'active' : ''}`} 
                 onClick={() => handleNavigate('/why-us')}
               >

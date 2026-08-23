@@ -1,0 +1,837 @@
+/* src/components/ShipmentTracker.css */
+
+/* ==========================================================================
+   Argus Shipping — Real-Time Shipment Tracker Stylesheet
+   Navy × Gold Theme (Matching Argus Shipping Site System)
+   ========================================================================== */
+
+.argus-tracker-card {
+  background: var(--bg-surface-2, #101828);
+  border: 1px solid var(--border-gold, rgba(245, 176, 55, 0.18));
+  border-radius: 24px;
+  box-shadow: var(--card-shadow, 0 20px 60px rgba(0, 0, 0, 0.45));
+  padding: 2.25rem;
+  margin: 2rem 0;
+  color: var(--text-primary, #eef2ff);
+  font-family: var(--font-main, 'Outfit', 'Inter', sans-serif);
+  transition: var(--transition-smooth, all 0.4s ease);
+  position: relative;
+  overflow: hidden;
+}
+
+body.light-theme .argus-tracker-card {
+  background: var(--bg-secondary, #ffffff);
+  border-color: var(--accent-border, rgba(180, 130, 20, 0.22));
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+  color: var(--text-primary, #1c1610);
+}
+
+/* Background Gold Radial Glow */
+.argus-tracker-card::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, var(--accent-glow, rgba(245, 176, 55, 0.25)) 0%, rgba(245, 176, 55, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Header & Search Section */
+.argus-tracker-search-box {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 2.5rem;
+}
+
+.argus-tracker-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.argus-tracker-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+}
+
+body.light-theme .argus-tracker-title {
+  color: var(--text-primary, #1c1610);
+}
+
+.argus-tracker-badge-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.95rem;
+  background: var(--accent-muted, rgba(245, 176, 55, 0.12));
+  border: 1px solid var(--accent-border, rgba(245, 176, 55, 0.25));
+  color: var(--accent, #f5b037);
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.argus-live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent, #f5b037);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--accent-glow, rgba(245, 176, 55, 0.6));
+  animation: argusPulseGold 1.8s infinite ease-in-out;
+}
+
+@keyframes argusPulseGold {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 var(--accent-glow, rgba(245, 176, 55, 0.7)); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(245, 176, 55, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 176, 55, 0); }
+}
+
+/* Input Form */
+.argus-input-group {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 680px;
+  width: 100%;
+}
+
+.argus-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.argus-input-icon {
+  position: absolute;
+  left: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #94a3b8);
+  width: 20px;
+  height: 20px;
+}
+
+.argus-tracker-input {
+  width: 100%;
+  padding: 0.95rem 1.1rem 0.95rem 3rem;
+  background: var(--bg-surface-3, rgba(15, 23, 42, 0.6));
+  border: 1.5px solid var(--border-gold, rgba(245, 176, 55, 0.15));
+  border-radius: 14px;
+  color: var(--text-primary, #ffffff);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: var(--transition-fast, all 0.25s ease);
+  outline: none;
+}
+
+body.light-theme .argus-tracker-input {
+  background: var(--bg-surface-2, #f4f1eb);
+  border-color: var(--accent-border, rgba(180, 130, 20, 0.22));
+  color: var(--text-primary, #1c1610);
+}
+
+.argus-tracker-input:focus {
+  border-color: var(--accent, #f5b037);
+  box-shadow: 0 0 0 4px var(--accent-muted, rgba(245, 176, 55, 0.18));
+  background: var(--bg-surface-4, rgba(15, 23, 42, 0.9));
+}
+
+body.light-theme .argus-tracker-input:focus {
+  background: #ffffff;
+}
+
+/* Primary CTA Button (Gold Theme matching Site CTA) */
+.argus-track-btn {
+  background: linear-gradient(135deg, var(--accent, #f5b037) 0%, var(--accent-hover, #d4831a) 100%);
+  color: var(--text-on-accent, #080c14);
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.95rem 1.8rem;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 6px 20px var(--accent-glow, rgba(245, 176, 55, 0.35));
+  transition: var(--transition-fast, all 0.25s ease);
+  white-space: nowrap;
+}
+
+.argus-track-btn:hover {
+  background: linear-gradient(135deg, var(--accent-bright, #f5e070) 0%, var(--accent, #f5b037) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px var(--accent-glow, rgba(245, 176, 55, 0.5));
+}
+
+.argus-track-btn:active {
+  transform: translateY(0);
+}
+
+.argus-sample-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.argus-chip {
+  background: var(--accent-muted, rgba(245, 176, 55, 0.1));
+  border: 1px solid var(--accent-border, rgba(245, 176, 55, 0.2));
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  color: var(--accent, #f5b037);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+body.light-theme .argus-chip {
+  background: var(--accent-muted, rgba(180, 130, 20, 0.09));
+  border-color: var(--accent-border, rgba(180, 130, 20, 0.22));
+  color: var(--accent, #b48214);
+}
+
+.argus-chip:hover {
+  background: var(--accent, #f5b037);
+  color: var(--text-on-accent, #080c14);
+  border-color: var(--accent);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TOP HEADER INFO (Origin / Destination & Gold Dashed Line)
+   ───────────────────────────────────────────────────────────── */
+
+.argus-origin-dest-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.75rem 2rem;
+  background: var(--bg-surface-3, rgba(15, 23, 42, 0.4));
+  border-radius: 18px;
+  border: 1px solid var(--border-gold, rgba(245, 176, 55, 0.15));
+  margin-bottom: 2.5rem;
+}
+
+body.light-theme .argus-origin-dest-header {
+  background: var(--bg-surface-2, #f4f1eb);
+  border-color: var(--accent-border, rgba(180, 130, 20, 0.22));
+}
+
+/* Dashed connecting line across top header */
+.argus-header-dashed-line {
+  position: absolute;
+  top: 50%;
+  left: 140px;
+  right: 140px;
+  height: 2px;
+  border-top: 2px dashed var(--accent, #f5b037);
+  opacity: 0.4;
+  transform: translateY(-50%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+body.light-theme .argus-header-dashed-line {
+  border-top-color: var(--accent, #b48214);
+  opacity: 0.35;
+}
+
+.argus-header-mode-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-surface-2, #101828);
+  border: 1.5px solid var(--accent, #f5b037);
+  border-radius: 50px;
+  padding: 0.4rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent, #f5b037);
+  z-index: 2;
+  box-shadow: 0 4px 15px var(--accent-glow, rgba(245, 176, 55, 0.25));
+}
+
+body.light-theme .argus-header-mode-badge {
+  background: #ffffff;
+  color: var(--accent, #b48214);
+}
+
+.argus-origin-dest-box {
+  z-index: 2;
+  position: relative;
+  background: var(--bg-surface-2, #101828);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+}
+
+body.light-theme .argus-origin-dest-box {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.argus-meta-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #94a3b8); /* muted grey */
+  margin-bottom: 0.25rem;
+}
+
+.argus-country-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary, #ffffff);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+body.light-theme .argus-country-name {
+  color: var(--text-primary, #1c1610);
+}
+
+.argus-city-highlight {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent, #f5b037); /* Gold Highlight */
+  margin-top: 0.15rem;
+}
+
+body.light-theme .argus-city-highlight {
+  color: var(--accent, #b48214);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PROGRESS TIMELINE (6-STAGE STEPPER - GOLD THEME)
+   ───────────────────────────────────────────────────────────── */
+
+.argus-stepper-container {
+  margin: 3rem 0;
+  position: relative;
+}
+
+/* Horizontal Track for Desktop */
+.argus-stepper-track-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 0;
+}
+
+/* Connecting lines background behind nodes */
+.argus-progress-bar-bg {
+  position: absolute;
+  top: 36px;
+  left: 35px;
+  right: 35px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  z-index: 1;
+}
+
+body.light-theme .argus-progress-bar-bg {
+  background: #e2e8f0;
+}
+
+/* Solid Gold fill progress line */
+.argus-progress-bar-fill {
+  position: absolute;
+  top: 36px;
+  left: 35px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent, #f5b037) 0%, var(--accent-bright, #f5e070) 100%);
+  border-radius: 4px;
+  z-index: 2;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 14px var(--accent-glow, rgba(245, 176, 55, 0.6));
+}
+
+/* Individual Stage Step */
+.argus-step-item {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  text-align: center;
+}
+
+/* Node Container */
+.argus-node-wrapper {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* 1. COMPLETED STAGE NODE (Solid Gold Circle with Icon) */
+.argus-node-completed {
+  width: 44px;
+  height: 44px;
+  background: var(--accent, #f5b037);
+  border-radius: 50%;
+  color: var(--text-on-accent, #080c14); /* Dark checkmark on gold node */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px var(--accent-glow, rgba(245, 176, 55, 0.4));
+  transition: all 0.3s ease;
+}
+
+.argus-node-completed:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px var(--accent-glow, rgba(245, 176, 55, 0.6));
+}
+
+/* 2. ACTIVE STAGE NODE (3D Package Icon + Glowing Gold Halo) */
+.argus-node-active-wrapper {
+  position: relative;
+}
+
+.argus-node-active-halo {
+  position: absolute;
+  inset: -8px;
+  background: radial-gradient(circle, var(--accent-glow, rgba(245, 176, 55, 0.5)) 0%, rgba(245, 176, 55, 0) 75%);
+  border-radius: 50%;
+  animation: argusGlowPulseGold 2s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes argusGlowPulseGold {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 25px var(--accent-glow, rgba(245, 176, 55, 0.75)); }
+  100% { transform: scale(0.95); opacity: 0.7; }
+}
+
+.argus-node-active {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, var(--accent-bright, #f5e070) 0%, var(--accent, #f5b037) 100%);
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  color: var(--text-on-accent, #080c14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 25px var(--accent-glow, rgba(245, 176, 55, 0.8)), 0 8px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 2;
+  animation: argusActiveNodeBounce 3s infinite ease-in-out;
+}
+
+@keyframes argusActiveNodeBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* 3D Box Icon Styling inside Active Node */
+.argus-3d-box-icon {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* 3. UPCOMING STAGE NODE */
+.argus-node-upcoming {
+  width: 42px;
+  height: 42px;
+  background: var(--bg-surface-3, rgba(15, 23, 42, 0.4));
+  border: 2px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 50%;
+  color: var(--text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+body.light-theme .argus-node-upcoming {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #cbd5e1;
+}
+
+/* STAGE LABELS & TIMESTAMPS */
+.argus-stage-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-top: 0.3rem;
+  transition: color 0.3s ease;
+}
+
+.argus-label-completed {
+  color: var(--text-primary, #e2e8f0);
+  font-weight: 700;
+}
+
+body.light-theme .argus-label-completed {
+  color: #1e293b;
+}
+
+.argus-label-active {
+  color: var(--accent, #f5b037);
+  font-weight: 800; /* Bold active stage label */
+  font-size: 1rem;
+}
+
+body.light-theme .argus-label-active {
+  color: var(--accent, #b48214);
+}
+
+.argus-label-upcoming {
+  color: var(--text-muted, #64748b); /* Light grey / muted text */
+  font-weight: 500;
+}
+
+body.light-theme .argus-label-upcoming {
+  color: #94a3b8;
+}
+
+.argus-stage-date {
+  font-size: 0.74rem;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 0.2rem;
+  font-weight: 500;
+}
+
+/* Active Status Pill under Stage */
+.argus-active-pill {
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  background: var(--accent-muted, rgba(245, 176, 55, 0.15));
+  border: 1px solid var(--accent-border, rgba(245, 176, 55, 0.3));
+  color: var(--accent, #f5b037);
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+body.light-theme .argus-active-pill {
+  color: var(--accent, #b48214);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SHIPMENT METADATA CARDS GRID
+   ───────────────────────────────────────────────────────────── */
+
+.argus-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-gold, rgba(245, 176, 55, 0.12));
+}
+
+body.light-theme .argus-details-grid {
+  border-top-color: var(--accent-border, rgba(180, 130, 20, 0.22));
+}
+
+.argus-detail-card {
+  background: var(--bg-surface-3, rgba(15, 23, 42, 0.3));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+body.light-theme .argus-detail-card {
+  background: var(--bg-surface-2, #f4f1eb);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+.argus-detail-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--accent-muted, rgba(245, 176, 55, 0.12));
+  color: var(--accent, #f5b037);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+body.light-theme .argus-detail-icon-wrap {
+  color: var(--accent, #b48214);
+}
+
+.argus-detail-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.argus-detail-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.argus-detail-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+  margin-top: 0.15rem;
+}
+
+body.light-theme .argus-detail-value {
+  color: var(--text-primary, #1c1610);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TIMELINE LOG ACCORDION
+   ───────────────────────────────────────────────────────────── */
+
+.argus-log-section {
+  margin-top: 2rem;
+  background: var(--bg-surface-3, rgba(15, 23, 42, 0.25));
+  border: 1px solid var(--border-gold, rgba(245, 176, 55, 0.12));
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+body.light-theme .argus-log-section {
+  background: var(--bg-surface-2, #f4f1eb);
+  border-color: var(--accent-border, rgba(180, 130, 20, 0.22));
+}
+
+.argus-log-toggle {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #ffffff);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  outline: none;
+}
+
+body.light-theme .argus-log-toggle {
+  color: var(--text-primary, #1c1610);
+}
+
+.argus-log-list {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.argus-log-item {
+  display: flex;
+  gap: 1.25rem;
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+
+.argus-log-item:last-child {
+  padding-bottom: 0;
+}
+
+.argus-log-item::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.light-theme .argus-log-item::before {
+  background: #e2e8f0;
+}
+
+.argus-log-item:last-child::before {
+  display: none;
+}
+
+.argus-log-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--text-on-accent, #080c14);
+  z-index: 1;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.argus-log-dot.completed {
+  background: var(--accent, #f5b037);
+}
+
+.argus-log-dot.active {
+  background: var(--accent-bright, #f5e070);
+  box-shadow: 0 0 10px var(--accent-glow, rgba(245, 176, 55, 0.8));
+}
+
+.argus-log-content {
+  flex: 1;
+}
+
+.argus-log-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.argus-log-stage-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+}
+
+body.light-theme .argus-log-stage-name {
+  color: var(--text-primary, #1c1610);
+}
+
+.argus-log-time {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.argus-log-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary, #cbd5e1);
+  margin-top: 0.25rem;
+}
+
+body.light-theme .argus-log-desc {
+  color: var(--text-secondary, #5c5043);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE RESPONSIVE ADAPTATION (< 768px Vertical Timeline)
+   ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .argus-tracker-card {
+    padding: 1.5rem 1.25rem;
+    border-radius: 18px;
+  }
+
+  .argus-input-group {
+    flex-direction: column;
+  }
+
+  .argus-track-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .argus-origin-dest-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.25rem;
+  }
+
+  .argus-header-dashed-line {
+    display: none;
+  }
+
+  .argus-header-mode-badge {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    align-self: flex-start;
+    margin: 0.25rem 0;
+  }
+
+  /* Switch Stepper to Vertical Layout on Mobile */
+  .argus-stepper-track-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.75rem;
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+  }
+
+  .argus-progress-bar-bg {
+    top: 25px;
+    bottom: 25px;
+    left: 34px;
+    width: 4px;
+    height: auto;
+    right: auto;
+  }
+
+  .argus-progress-bar-fill {
+    top: 25px;
+    left: 34px;
+    width: 4px !important;
+    height: auto;
+    right: auto;
+    box-shadow: 0 0 10px var(--accent-glow, rgba(245, 176, 55, 0.6));
+  }
+
+  .argus-step-item {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 1.25rem;
+    width: 100%;
+  }
+
+  .argus-node-wrapper {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .argus-stage-label {
+    margin-top: 0;
+    text-align: left;
+  }
+
+  .argus-stage-date {
+    text-align: left;
+  }
+
+  .argus-active-pill {
+    align-self: flex-start;
+  }
+}

@@ -9,6 +9,7 @@ import Team from './pages/Team';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import ChairmanMessage from './pages/ChairmanMessage';
+import Tracking from './pages/Tracking';
 import { Mail, Phone, MapPin, Anchor } from 'lucide-react';
 
 export default function App() {
@@ -106,6 +107,8 @@ export default function App() {
         return <Team />;
       case '/contact':
         return <Contact />;
+      case '/tracking':
+        return <Tracking onNavigate={handleNavigate} onOpenQuote={handleOpenQuote} />;
       case '/chairman-message':
         return <ChairmanMessage />;
       case '/login':
