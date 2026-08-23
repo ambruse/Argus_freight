@@ -604,12 +604,12 @@ export default function RFQPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              copyRefNo(e, groupLabel);
+                              toggleGroup(item.basePrefix);
                             }}
                             className="font-mono text-xs font-bold text-amber hover:text-amber-bright
                                        px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
                                        transition-all duration-150 group relative inline-flex items-center gap-1.5"
-                            title="Click to copy REF NO"
+                            title="Click to expand/collapse group"
                           >
                             <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>
                             <span>{groupLabel}</span>
