@@ -403,7 +403,7 @@ const query = async (req, sql, params) => {
   }
 
   // Non-admin or targeted admin query
-  const targetSuffix = getUserSuffixFromReq(req);
+  const targetSuffix = getUserSuffix(targetUser || getUserSuffixFromReq(req));
   await ensureUserTables(targetSuffix);
 
   const tables = (targetSuffix === 'admin') ? {

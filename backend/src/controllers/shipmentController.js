@@ -56,20 +56,76 @@ const resolveReplyRecipients = (shipment, latestMessage, myEmail) => {
 };
 
 const syncShipmentToCustomer = async (shipment) => {
-  if (!shipment || !shipment.cust_req_no || !shipment.customer_id) return;
-  try {
-    // Find customer user
-    const custUserRes = await db.query(
-      `SELECT id, username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
-      [shipment.customer_id]
-    );
-    if (custUserRes.rows.length === 0) return;
-    const { getUserSuffix } = require('../config/dbHelper');
-    const custSuffix = getUserSuffix(custUserRes.rows[0]);
+  if (!shipment) return;
+  const custReqNo = shipment.cust_req_no || shipment.ref_no;
+  const customerId = shipment.customer_id;
+  if (!custReqNo && !customerId) return;
 
-    // Update customer sandbox table shipments_suffix
+  try {
+    // Find customer user either by customer_id or customer_email
+    let custUserRes = { rows: [] };
+    if (customerId) {
+      custUserRes = await db.query(
+        `SELECT id, username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
+        [customerId]
+      );
+    }
+    if (custUserRes.rows.length === 0 && shipment.customer_email) {
+      custUserRes = await db.query(
+        `SELECT id, username FROM users WHERE LOWER(email_address) = LOWER($1) AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
+        [shipment.customer_email]
+      );
+    }
+
+    if (custUserRes.rows.length > 0) {
+      const { getUserSuffix, ensureUserTables } = require('../config/dbHelper');
+      const custSuffix = getUserSuffix(custUserRes.rows[0]);
+      await ensureUserTables(custSuffix);
+
+      // Update customer sandbox table
+      await db.query(
+        `UPDATE shipments_${custSuffix} SET
+           status = $1,
+           do_number = $2,
+           box_no = $3,
+           so_number = $4,
+           bl_number = $5,
+           track_status = $6,
+           carrier = $7,
+           etd = $8,
+           eta = $9,
+           cost = $10,
+           profit = $11,
+           last_follow_up = $12,
+           gross_weight = COALESCE($13, gross_weight),
+           chargeable_weight = COALESCE($14, chargeable_weight),
+           updated_at = NOW()
+         WHERE ref_no = $15 OR cust_req_no = $15 OR ref_no = $16 OR cust_req_no = $16`,
+        [
+          shipment.status,
+          shipment.do_number,
+          shipment.box_no,
+          shipment.so_number,
+          shipment.bl_number,
+          shipment.track_status,
+          shipment.carrier,
+          shipment.etd,
+          shipment.eta,
+          shipment.cost,
+          shipment.profit,
+          shipment.last_follow_up,
+          shipment.gross_weight || null,
+          shipment.chargeable_weight || null,
+          custReqNo,
+          shipment.ref_no
+        ]
+      );
+      console.log(`[Sync] Synced shipment ${shipment.ref_no} updates to customer ${custSuffix}`);
+    }
+
+    // Also ensure main shipments table has updated status/weights
     await db.query(
-      `UPDATE shipments_${custSuffix} SET
+      `UPDATE shipments SET
          status = $1,
          do_number = $2,
          box_no = $3,
@@ -82,8 +138,10 @@ const syncShipmentToCustomer = async (shipment) => {
          cost = $10,
          profit = $11,
          last_follow_up = $12,
+         gross_weight = COALESCE($13, gross_weight),
+         chargeable_weight = COALESCE($14, chargeable_weight),
          updated_at = NOW()
-       WHERE ref_no = $13`,
+       WHERE ref_no = $15 OR (cust_req_no = $16 AND email = 'Broadcast')`,
       [
         shipment.status,
         shipment.do_number,
@@ -97,10 +155,12 @@ const syncShipmentToCustomer = async (shipment) => {
         shipment.cost,
         shipment.profit,
         shipment.last_follow_up,
-        shipment.cust_req_no
+        shipment.gross_weight || null,
+        shipment.chargeable_weight || null,
+        shipment.ref_no,
+        custReqNo
       ]
-    );
-    console.log(`[Sync] Synced shipment ${shipment.ref_no} updates to customer ${custSuffix} ref_no ${shipment.cust_req_no}`);
+    ).catch(() => {});
   } catch (err) {
     console.error(`[Sync] Failed to sync shipment ${shipment.ref_no} to customer:`, err.message);
   }
@@ -310,7 +370,7 @@ const updateShipment = async (req, res, next) => {
       customer_name, customer_email,
     } = req.body;
 
-    const result = await query(req, 
+    let result = await query(req, 
       `UPDATE shipments SET
         refer_by=$1, pol=$2, pod=$3, commodity=$4, term=$5, dimension=$6,
         container=$7, mode=$8, weight=$9, pickup_address=$10, delivery_address=$11,
@@ -330,6 +390,65 @@ const updateShipment = async (req, res, next) => {
         ref_no,
       ]
     );
+
+    if (result.rows.length === 0) {
+      const { getAllSuffixes } = require('../config/dbHelper');
+      const suffixes = await getAllSuffixes();
+      for (const suffix of suffixes) {
+        try {
+          const sRes = await db.query(
+            `UPDATE shipments_${suffix} SET
+              refer_by=$1, pol=$2, pod=$3, commodity=$4, term=$5, dimension=$6,
+              container=$7, mode=$8, weight=$9, pickup_address=$10, delivery_address=$11,
+              dear_who=$12, email=$13, status=$14, do_number=$15, box_no=$16,
+              so_number=$17, bl_number=$18, track_status=$19, carrier=$20,
+              etd=$21, eta=$22, cost=$23, profit=$24, note=$25,
+              customer_name=$26, customer_email=$27
+            WHERE ref_no=$28
+            RETURNING *`,
+            [
+              refer_by, pol, pod, commodity, term, dimension,
+              container, mode, weight || null, pickup_address, delivery_address,
+              dear_who, email, status,
+              do_number, box_no, so_number, bl_number, track_status, carrier,
+              etd || null, eta || null, cost || null, profit || null, note,
+              customer_name || null, customer_email || null,
+              ref_no,
+            ]
+          );
+          if (sRes.rows.length > 0) {
+            result = sRes;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (result.rows.length === 0) {
+      try {
+        const mRes = await db.query(
+          `UPDATE shipments SET
+            refer_by=$1, pol=$2, pod=$3, commodity=$4, term=$5, dimension=$6,
+            container=$7, mode=$8, weight=$9, pickup_address=$10, delivery_address=$11,
+            dear_who=$12, email=$13, status=$14, do_number=$15, box_no=$16,
+            so_number=$17, bl_number=$18, track_status=$19, carrier=$20,
+            etd=$21, eta=$22, cost=$23, profit=$24, note=$25,
+            customer_name=$26, customer_email=$27
+          WHERE ref_no=$28
+          RETURNING *`,
+          [
+            refer_by, pol, pod, commodity, term, dimension,
+            container, mode, weight || null, pickup_address, delivery_address,
+            dear_who, email, status,
+            do_number, box_no, so_number, bl_number, track_status, carrier,
+            etd || null, eta || null, cost || null, profit || null, note,
+            customer_name || null, customer_email || null,
+            ref_no,
+          ]
+        );
+        if (mRes.rows.length > 0) result = mRes;
+      } catch (e) {}
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
@@ -352,7 +471,7 @@ const updateStatus = async (req, res, next) => {
     const { ref_no } = req.params;
     const { status, cost, profit } = req.body;
 
-    const result = await query(req, 
+    let result = await query(req, 
       `UPDATE shipments SET 
          status = COALESCE($1, status),
          cost = COALESCE($2, cost),
@@ -362,6 +481,45 @@ const updateStatus = async (req, res, next) => {
        RETURNING *`,
       [status, cost, profit, ref_no]
     );
+
+    if (result.rows.length === 0) {
+      const { getAllSuffixes } = require('../config/dbHelper');
+      const suffixes = await getAllSuffixes();
+      for (const suffix of suffixes) {
+        try {
+          const sRes = await db.query(
+            `UPDATE shipments_${suffix} SET 
+               status = COALESCE($1, status),
+               cost = COALESCE($2, cost),
+               profit = COALESCE($3, profit),
+               last_follow_up = CASE WHEN COALESCE($1, status) = 'Cancelled' THEN NULL ELSE NOW() END
+             WHERE ref_no = $4
+             RETURNING *`,
+            [status, cost, profit, ref_no]
+          );
+          if (sRes.rows.length > 0) {
+            result = sRes;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (result.rows.length === 0) {
+      try {
+        const mRes = await db.query(
+          `UPDATE shipments SET 
+             status = COALESCE($1, status),
+             cost = COALESCE($2, cost),
+             profit = COALESCE($3, profit),
+             last_follow_up = CASE WHEN COALESCE($1, status) = 'Cancelled' THEN NULL ELSE NOW() END
+           WHERE ref_no = $4
+           RETURNING *`,
+          [status, cost, profit, ref_no]
+        );
+        if (mRes.rows.length > 0) result = mRes;
+      } catch (e) {}
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
@@ -387,7 +545,7 @@ const updateTracking = async (req, res, next) => {
       gross_weight, chargeable_weight
     } = req.body;
 
-    const result = await query(req, 
+    let result = await query(req, 
       `UPDATE shipments
        SET do_number=$1, box_no=$2, so_number=$3, bl_number=$4,
            track_status=$5, carrier=$6, etd=$7, eta=$8, cost=$9, profit=$10,
@@ -404,6 +562,59 @@ const updateTracking = async (req, res, next) => {
         ref_no
       ]
     );
+
+    if (result.rows.length === 0) {
+      const { getAllSuffixes } = require('../config/dbHelper');
+      const suffixes = await getAllSuffixes();
+      for (const suffix of suffixes) {
+        try {
+          const sRes = await db.query(
+            `UPDATE shipments_${suffix}
+             SET do_number=$1, box_no=$2, so_number=$3, bl_number=$4,
+                 track_status=$5, carrier=$6, etd=$7, eta=$8, cost=$9, profit=$10,
+                 customer_name=$11, customer_email=$12,
+                 gross_weight=COALESCE($13, gross_weight),
+                 chargeable_weight=COALESCE($14, chargeable_weight)
+             WHERE ref_no=$15
+             RETURNING *`,
+            [
+              do_number, box_no, so_number, bl_number, track_status, carrier,
+              etd || null, eta || null, cost || null, profit || null,
+              customer_name || null, customer_email || null,
+              gross_weight || null, chargeable_weight || null,
+              ref_no
+            ]
+          );
+          if (sRes.rows.length > 0) {
+            result = sRes;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (result.rows.length === 0) {
+      try {
+        const mRes = await db.query(
+          `UPDATE shipments
+           SET do_number=$1, box_no=$2, so_number=$3, bl_number=$4,
+               track_status=$5, carrier=$6, etd=$7, eta=$8, cost=$9, profit=$10,
+               customer_name=$11, customer_email=$12,
+               gross_weight=COALESCE($13, gross_weight),
+               chargeable_weight=COALESCE($14, chargeable_weight)
+           WHERE ref_no=$15
+           RETURNING *`,
+          [
+            do_number, box_no, so_number, bl_number, track_status, carrier,
+            etd || null, eta || null, cost || null, profit || null,
+            customer_name || null, customer_email || null,
+            gross_weight || null, chargeable_weight || null,
+            ref_no
+          ]
+        );
+        if (mRes.rows.length > 0) result = mRes;
+      } catch (e) {}
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
