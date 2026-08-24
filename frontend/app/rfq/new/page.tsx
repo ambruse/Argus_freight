@@ -443,11 +443,18 @@ export default function NewRFQPage() {
       }
     } else {
       // Admin/Operator validation
-      if (!form.dear_who || !form.email) {
-        toast.error("Please provide Receiver Email and Dear Who.");
+      const emailList = (form.email || "").split(/[,;\n]+/).map(e => e.trim()).filter(Boolean);
+      const dearWhoList = (form.dear_who || "").split(/[,;\n]+/).map(d => d.trim()).filter(Boolean);
+
+      if (emailList.length === 0) {
+        toast.error("Please provide Receiver Email.");
         return;
       }
-      resolvedRecipients = [{ email: form.email, dear_who: form.dear_who }];
+
+      resolvedRecipients = emailList.map((email, idx) => ({
+        email,
+        dear_who: dearWhoList[idx] || dearWhoList[0] || form.dear_who || "Agent"
+      }));
     }
 
     setSubmitting(true);
