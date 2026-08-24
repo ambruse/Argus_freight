@@ -643,6 +643,17 @@ export default function NewRFQPage() {
       return;
     }
 
+    // Auto-populate the form fields with all matched agent emails & names
+    const emailsJoined = unique.map(u => u.email).join(", ");
+    const dearWhoJoined = unique.map(u => u.dear_who).join(", ");
+    setForm(prev => ({
+      ...prev,
+      email: emailsJoined,
+      dear_who: dearWhoJoined
+    }));
+
+    toast.success(`✓ Loaded ${unique.length} matching agents for ${form.pol_country} (${form.mode})!`);
+
     // Open Preview Modal in Auto-Receiver Mode
     setIsAutoReceiverPreview(true);
     setPreviewIndex(0);
