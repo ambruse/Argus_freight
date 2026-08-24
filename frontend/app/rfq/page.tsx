@@ -639,7 +639,14 @@ export default function RFQPage() {
                         </td>
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(firstShipment.customer_id, firstShipment.customer_name)}</td>
-                        {!isSales && <td>{firstShipment.dear_who ?? "—"}</td>}
+                        {!isSales && (
+                          <td>
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-amber text-xs">{item.shipments.length} Recipients</span>
+                              <span className="text-[10px] text-muted">Click row to view emails</span>
+                            </div>
+                          </td>
+                        )}
                         {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{firstShipment.refer_by || "—"}</td>
                         )}
@@ -773,7 +780,16 @@ export default function RFQPage() {
                           <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">{cs.cust_req_no ?? "—"}</td>
                           <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{cs.operator ?? "—"}</td>
                           <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(cs.customer_id, cs.customer_name)}</td>
-                          {!isSales && <td>{cs.dear_who ?? "—"}</td>}
+                          {!isSales && (
+                            <td>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-primary">{cs.dear_who || "—"}</span>
+                                {cs.email && cs.email !== 'Broadcast' && (
+                                  <span className="text-[10px] text-blue font-mono">{cs.email}</span>
+                                )}
+                              </div>
+                            </td>
+                          )}
                           {isAdminOrOperator && (
                             <td className="text-xs font-semibold text-amber bg-white/[0.02]">{cs.refer_by || "—"}</td>
                           )}
