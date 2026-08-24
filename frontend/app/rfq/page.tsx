@@ -626,12 +626,16 @@ export default function RFQPage() {
                               toggleGroup(item.basePrefix);
                             }}
                             className="font-mono text-xs font-bold text-amber hover:text-amber-bright
-                                       px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
-                                       transition-all duration-150 group relative inline-flex items-center gap-1.5"
-                            title="Click to expand/collapse group"
+                                       px-3 py-1.5 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/30 hover:border-amber/50
+                                       transition-all duration-200 group relative inline-flex items-center gap-2 shadow-sm"
+                            title="Click down arrow to view individual emails"
                           >
-                            <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>
                             <span>{groupLabel}</span>
+                            <span 
+                              className={`text-[10px] bg-amber/20 hover:bg-amber/30 text-amber px-1.5 py-0.5 rounded transition-transform duration-200 inline-flex items-center justify-center ${isExpanded ? 'rotate-180' : ''}`}
+                            >
+                              ▼
+                            </span>
                           </button>
                         </td>
                         <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
@@ -641,10 +645,17 @@ export default function RFQPage() {
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(firstShipment.customer_id, firstShipment.customer_name)}</td>
                         {!isSales && (
                           <td>
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-amber text-xs">{item.shipments.length} Recipients</span>
-                              <span className="text-[10px] text-muted">Click row to view emails</span>
-                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleGroup(item.basePrefix);
+                              }}
+                              className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-amber/10 border border-white/[0.06] hover:border-amber/30 transition-all text-left"
+                              title="Click down arrow to view all recipient emails"
+                            >
+                              <span className="font-semibold text-amber text-xs">{item.shipments.length} Emails</span>
+                              <span className={`text-[9px] text-amber transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
+                            </button>
                           </td>
                         )}
                         {isAdminOrOperator && (
