@@ -450,27 +450,14 @@ export default function NewRFQPage() {
       resolvedRecipients = [{ email: form.email, dear_who: form.dear_who }];
     }
 
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
-    
-    const randomLetters = () => {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)];
-    };
-    
-    const xx1 = randomLetters();
-    const xx2 = randomLetters();
-    const basePrefix = `${dd}${xx1}${mm}${xx2}${yy}`;
-
     setSubmitting(true);
     try {
-      // Send to each recipient separately so it logs as multiple sends in RFQ sent
+      // Send to each recipient separately linked to the same ARG-ddmmyyn enquiry base
+      let basePrefix = "";
       let index = 0;
       for (const recipient of resolvedRecipients) {
-        const nn = String(index + 1).padStart(2, "0");
-        const customRef = `${basePrefix}-${nn}`;
+        const customRef = basePrefix ? `${basePrefix}-${index + 1}` : undefined;
+
         // 1. Generate RFQ and Log to Database
         const payload = {
           ...form,
@@ -481,10 +468,14 @@ export default function NewRFQPage() {
           pol: targetPol,
           operator: isSales && selectedOperator ? selectedOperator.name : undefined,
           ref_no: customRef,
+          cust_req_no: basePrefix || undefined,
         };
 
         const genRes = await api.post("/rfq/generate", payload);
         const ref_no = genRes.data.data.ref_no;
+        if (!basePrefix && ref_no) {
+          basePrefix = ref_no.replace(/-\d+$/, '');
+        }
 
         // 2. Upload Files if selected
         if (files.length > 0) {

@@ -98,13 +98,16 @@ const generateRfq = async (req, res, next) => {
 
     ref_no = req.body.ref_no;
 
-    while (!isLogged && attempts < maxAttempts) {
-      if (!ref_no) {
-        const baseRfq = generateId();
-        // Fallback for collision (mimicking Python logic)
-        ref_no = attempts > 0 ? `${baseRfq}_${attempts}` : baseRfq;
-      }
+    const { generateEnquiryRef } = require('../utils/refGenerator');
 
+    if (!ref_no) {
+      const enq = await generateEnquiryRef();
+      ref_no = `${enq.refNo}-1`;
+    }
+
+    const finalCustReqNo = req.body.cust_req_no || ref_no.replace(/-\d+$/, '');
+
+    while (!isLogged && attempts < maxAttempts) {
       try {
         const { getUserSuffix, getUserSuffixFromReq, ensureUserTables } = require('../config/dbHelper');
         const targetOpName = targetOpUser ? targetOpUser.username : (operator || req.user.username);
@@ -114,16 +117,16 @@ const generateRfq = async (req, res, next) => {
 
         const result = await query(req,
           `INSERT INTO shipments (
-            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
-          ) RETURNING ref_no, refer_by, pol, pod, commodity, term, dimension,
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
+          ) RETURNING ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
                      container, mode, weight, pickup_address, delivery_address,
                      dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at`,
           [
-            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
@@ -138,17 +141,18 @@ const generateRfq = async (req, res, next) => {
 
         await ensureUserTables(cleanOp);
         await ensureUserTables(cleanUser);
+        await ensureUserTables('admin');
 
         if (cleanOp && cleanOp !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanOp} (
-              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -159,13 +163,13 @@ const generateRfq = async (req, res, next) => {
         if (cleanUser && cleanUser !== cleanOp && cleanUser !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanUser} (
-              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -176,13 +180,13 @@ const generateRfq = async (req, res, next) => {
         // Also ensure main shipments table has a copy if query mapped to user sandbox
         await db.query(
           `INSERT INTO shipments (
-            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
            ON CONFLICT (ref_no) DO NOTHING`,
           [
-            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName

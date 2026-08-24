@@ -187,7 +187,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
             <input
               type="text"
               className="argus-tracker-input"
-              placeholder="Enter RFQ Reference Number (e.g. RFQ-2026-8842)..."
+              placeholder="Enter Reference Number (e.g. ARG-2408261 or ARG-2408261-1)..."
               value={rfqInput}
               onChange={(e) => setRfqInput(e.target.value)}
             />

@@ -329,7 +329,7 @@ export default function CustomerNewRFQPage() {
         console.error("Email notification error:", emailErr);
       }
 
-      toast.success("Quote Request submitted successfully! The assigned Operator will follow up with you.");
+      toast.success(`Quote Request submitted successfully! Ref No: ${ref_no}`, { duration: 6000 });
       handleClear();
 
     } catch (err: any) {

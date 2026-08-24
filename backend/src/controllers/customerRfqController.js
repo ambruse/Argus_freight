@@ -170,12 +170,10 @@ const generateCustomerRfq = async (req, res, next) => {
       assignedOperator = selectedOp.username;
     }
 
-    // 3. Resolve Request Number
-    const customerId = req.user.customer_id;
-    if (!customerId) {
-      return res.status(400).json({ success: false, message: 'User does not have a unique Customer ID associated.' });
-    }
-    const ref_no = await generateCustomerRefNo(req, customerId, cleanUsername);
+    // 3. Resolve Request Number (Format: ARG-ddmmyyn)
+    const { generateEnquiryRef } = require('../utils/refGenerator');
+    const customerId = req.user.customer_id || 'CUST';
+    const { refNo: ref_no } = await generateEnquiryRef();
 
     // 4. Resolve Recipients from Contacts & Compulsory Emails
     const contactsRes = await db.query(
@@ -240,7 +238,7 @@ const generateCustomerRfq = async (req, res, next) => {
     await ensureUserTables(cleanOperator);
     await ensureUserTables('admin');
 
-    // Customer Sandbox insertion: Insert ONE row representing the request
+    // Customer Sandbox insertion: Insert ONE row representing the enquiry
     await db.query(
       `INSERT INTO shipments_${custSuffix} (
         ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -255,7 +253,7 @@ const generateCustomerRfq = async (req, res, next) => {
       ]
     );
 
-    // Also insert customer request into main shipments table
+    // Also insert customer enquiry into main shipments table
     await db.query(
       `INSERT INTO shipments (
         ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -270,11 +268,10 @@ const generateCustomerRfq = async (req, res, next) => {
       ]
     );
 
-    // Operator & Main shipments insertion: Insert individual sub-rows (one for each recipient)
+    // Operator & Main shipments insertion: Insert individual RFQ revision rows (ARG-ddmmyyn-1, ARG-ddmmyyn-2, etc.)
     for (let i = 0; i < resolvedRecipients.length; i++) {
       const recipient = resolvedRecipients[i];
-      const nn = String(i + 1).padStart(2, '0');
-      const opRef = `${ref_no}-${nn}`;
+      const opRef = `${ref_no}-${i + 1}`;
 
       // Insert into Operator sandbox
       if (cleanOperator !== 'admin') {
