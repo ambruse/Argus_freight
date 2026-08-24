@@ -32,17 +32,11 @@ const calculateCbm = (dimensionStr) => {
   return 0;
 };
 
-// ── ID Generator ─────────────────────────────────────────────
-// Pattern: xxyyxyxx (x = digit, y = letter)
-const generateId = () => {
-  const rD = () => Math.floor(Math.random() * 10).toString();
-  const rL = () => String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
-  return `${rD()}${rD()}${rL()}${rL()}${rD()}${rL()}${rD()}${rD()}`;
-};
+const { generateEnquiryRefNo, generateRfqRefNo } = require('../utils/refGenerator');
 
 // ─────────────────────────────────────────────────────────────
 //  POST /api/rfq/generate
-//  Generates unique ID, saves to DB with 'Pending' status.
+//  Generates unique RFQ Ref No (ARG-ddmmyyn-x), saves to DB with 'Pending' status.
 // ─────────────────────────────────────────────────────────────
 const generateRfq = async (req, res, next) => {
   try {
@@ -50,7 +44,7 @@ const generateRfq = async (req, res, next) => {
       refer_by, pol, pod, commodity, term, dimension,
       container, mode, weight, pickup_address, delivery_address,
       dear_who, email, note, customer_name, customer_email, operator,
-      pol_country
+      pol_country, cust_req_no
     } = req.body;
 
     let isLogged = false;
@@ -97,12 +91,18 @@ const generateRfq = async (req, res, next) => {
     }
 
     ref_no = req.body.ref_no;
+    let finalCustReqNo = cust_req_no || null;
 
     while (!isLogged && attempts < maxAttempts) {
       if (!ref_no) {
-        const baseRfq = generateId();
-        // Fallback for collision (mimicking Python logic)
-        ref_no = attempts > 0 ? `${baseRfq}_${attempts}` : baseRfq;
+        if (!finalCustReqNo) {
+          finalCustReqNo = await generateEnquiryRefNo(); // ARG-ddmmyyn
+        }
+        ref_no = await generateRfqRefNo(finalCustReqNo); // ARG-ddmmyyn-x
+      } else {
+        if (!finalCustReqNo) {
+          finalCustReqNo = ref_no.replace(/-\d+$/, '');
+        }
       }
 
       try {
@@ -114,16 +114,16 @@ const generateRfq = async (req, res, next) => {
 
         const result = await query(req,
           `INSERT INTO shipments (
-            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
-          ) RETURNING ref_no, refer_by, pol, pod, commodity, term, dimension,
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
+          ) RETURNING ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
                      container, mode, weight, pickup_address, delivery_address,
                      dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at`,
           [
-            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName

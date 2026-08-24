@@ -280,6 +280,7 @@ const createLike = async (newTable, baseTable) => {
     await db.query(`
       CREATE TABLE IF NOT EXISTS call_enquiries (
         id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        ref_no           VARCHAR(50),
         customer_name    VARCHAR(255) NOT NULL,
         company          VARCHAR(255),
         type             VARCHAR(255),
@@ -296,6 +297,8 @@ const createLike = async (newTable, baseTable) => {
         updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+
+    try { await db.query(`ALTER TABLE call_enquiries ADD COLUMN ref_no VARCHAR(50)`); } catch (e) {}
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS shipment_replies (

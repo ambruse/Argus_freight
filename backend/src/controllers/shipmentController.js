@@ -106,22 +106,12 @@ const syncShipmentToCustomer = async (shipment) => {
   }
 };
 
+const { generateRfqRefNo } = require('../utils/refGenerator');
+
 // ── Helper: generate next auto REF NO ────────────────────────
-//  Pattern: ARG-XXXX  (e.g. ARG-1001)
-//  Finds the highest existing numeric suffix and increments it.
+//  Format: ARG-ddmmyyn-x (e.g. ARG-2408261-1)
 const generateRefNo = async (req) => {
-  const result = await query(req,
-    `SELECT ref_no FROM shipments
-     WHERE ref_no REGEXP '^ARG-[0-9]+$'
-     ORDER BY CAST(SUBSTRING(ref_no, 5) AS UNSIGNED) DESC
-     LIMIT 1`
-  );
-
-  if (result.rows.length === 0) return 'ARG-1001';
-
-  const last = result.rows[0].ref_no; // e.g. ARG-1005
-  const num  = parseInt(last.split('-')[1], 10);
-  return `ARG-${num + 1}`;
+  return await generateRfqRefNo();
 };
 
 

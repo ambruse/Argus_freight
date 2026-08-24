@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { generateEnquiryRefNo } = require('../utils/refGenerator');
 
 // ── Helper for Round Robin Assignment ───────────────────────
 async function getNextSalesUser() {
@@ -43,14 +44,15 @@ const createEnquiry = async (req, res, next) => {
       });
     }
     const calling_agent = req.user.username;
+    const ref_no = await generateEnquiryRefNo(); // ARG-ddmmyyn
 
     const result = await db.query(
       `INSERT INTO call_enquiries 
-       (customer_name, company, type, customer_number, customer_email, customer_address, details, status, calling_agent, assigned_sales, is_lead, call_duration)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       (ref_no, customer_name, company, type, customer_number, customer_email, customer_address, details, status, calling_agent, assigned_sales, is_lead, call_duration)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
-        customer_name, company || null, type || null, customer_number,
+        ref_no, customer_name, company || null, type || null, customer_number,
         customer_email || null, customer_address || null, details, status,
         calling_agent, assigned_sales, isLeadVal, call_duration || null
       ]

@@ -27,53 +27,17 @@ const calculateCbm = (dimensionStr) => {
   return 0;
 };
 
-// Helper to generate the customer's next request number
-const generateCustomerRefNo = async (req, customerId, cleanUsername) => {
-  // Query customer's own sandbox shipments table
-  const result = await db.query(
-    `SELECT ref_no FROM shipments_${cleanUsername} 
-     WHERE ref_no LIKE $1 
-     ORDER BY CAST(SUBSTRING_INDEX(ref_no, '-', -1) AS UNSIGNED) DESC 
-     LIMIT 1`,
-    [`${customerId}-%`]
-  );
-  
-  if (result.rows.length === 0) {
-    return `${customerId}-01`;
-  }
-  
-  const lastRef = result.rows[0].ref_no; // e.g. "12345-02"
-  const parts = lastRef.split('-');
-  const lastNum = parseInt(parts[parts.length - 1], 10);
-  const nextNum = isNaN(lastNum) ? 1 : lastNum + 1;
-  const paddedNum = nextNum.toString().padStart(2, '0');
-  return `${customerId}-${paddedNum}`;
+const { generateEnquiryRefNo, generateBulkRfqRefNos } = require('../utils/refGenerator');
+
+// Helper to generate the customer's next request number: ARG-ddmmyyn
+const generateCustomerRefNo = async () => {
+  return await generateEnquiryRefNo();
 };
 
-// Helper to generate sequential operator reference numbers (e.g. ARG-1001)
-const getNextOperatorRefNos = async (cleanOperator, count) => {
-  const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
-  const result = await db.query(
-    `SELECT ref_no FROM ${opTableName}
-     WHERE ref_no REGEXP '^ARG-[0-9]+$'
-     ORDER BY CAST(SUBSTRING(ref_no FROM 5) AS INTEGER) DESC
-     LIMIT 1`
-  );
-
-  let startNum = 1001;
-  if (result.rows.length > 0) {
-    const last = result.rows[0].ref_no;
-    const num = parseInt(last.split('-')[1], 10);
-    if (!isNaN(num)) {
-      startNum = num + 1;
-    }
-  }
-
-  const refs = [];
-  for (let i = 0; i < count; i++) {
-    refs.push(`ARG-${startNum + i}`);
-  }
-  return refs;
+// Helper to generate sequential operator RFQ reference numbers: ARG-ddmmyyn-x
+const getNextOperatorRefNos = async (enquiryRef, count) => {
+  const { rfqRefs } = await generateBulkRfqRefNos(enquiryRef, count);
+  return rfqRefs;
 };
 
 // POST /api/rfq/customer-generate
@@ -170,12 +134,12 @@ const generateCustomerRfq = async (req, res, next) => {
       assignedOperator = selectedOp.username;
     }
 
-    // 3. Resolve Request Number
+    // 3. Resolve Request Number: ARG-ddmmyyn
     const customerId = req.user.customer_id;
     if (!customerId) {
       return res.status(400).json({ success: false, message: 'User does not have a unique Customer ID associated.' });
     }
-    const ref_no = await generateCustomerRefNo(req, customerId, cleanUsername);
+    const ref_no = await generateCustomerRefNo();
 
     // 4. Resolve Recipients from Contacts & Compulsory Emails
     const contactsRes = await db.query(
@@ -251,8 +215,8 @@ const generateCustomerRfq = async (req, res, next) => {
       ]
     );
 
-    // Operator Sandbox insertion: Insert multiple rows (one for each recipient)
-    const opRefs = await getNextOperatorRefNos(cleanOperator, resolvedRecipients.length);
+    // Operator Sandbox insertion: Insert multiple rows (one for each recipient: ARG-ddmmyyn-1, ARG-ddmmyyn-2, ...)
+    const opRefs = await getNextOperatorRefNos(ref_no, resolvedRecipients.length);
 
     for (let i = 0; i < resolvedRecipients.length; i++) {
       const recipient = resolvedRecipients[i];
