@@ -217,6 +217,23 @@ export default function NewRFQPage() {
   }, [user]);
 
   const [termSelect, setTermSelect] = useState("");
+  const [extraRecipients, setExtraRecipients] = useState<{ email: string; dear_who: string }[]>([]);
+
+  const addExtraRecipient = (email = "", dear_who = "") => {
+    setExtraRecipients(prev => [...prev, { email, dear_who }]);
+  };
+
+  const removeExtraRecipient = (index: number) => {
+    setExtraRecipients(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateExtraRecipient = (index: number, field: "email" | "dear_who", value: string) => {
+    setExtraRecipients(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (["EXW", "FOB", "CIF", "DDP", "FCA"].includes(form.term)) {
@@ -442,19 +459,45 @@ export default function NewRFQPage() {
         return;
       }
     } else {
-      // Admin/Operator validation
+      // Admin/Operator validation - Collect primary recipient and all extra recipients
+      const allList: { email: string; dear_who: string }[] = [];
+
+      // Primary email/dear_who
       const emailList = (form.email || "").split(/[,;\n]+/).map(e => e.trim()).filter(Boolean);
       const dearWhoList = (form.dear_who || "").split(/[,;\n]+/).map(d => d.trim()).filter(Boolean);
+      emailList.forEach((email, idx) => {
+        allList.push({
+          email,
+          dear_who: dearWhoList[idx] || dearWhoList[0] || form.dear_who || "Agent"
+        });
+      });
 
-      if (emailList.length === 0) {
-        toast.error("Please provide Receiver Email.");
+      // Extra recipients
+      extraRecipients.forEach(r => {
+        const rEmails = (r.email || "").split(/[,;\n]+/).map(e => e.trim()).filter(Boolean);
+        const rDears = (r.dear_who || "").split(/[,;\n]+/).map(d => d.trim()).filter(Boolean);
+        rEmails.forEach((email, idx) => {
+          allList.push({
+            email,
+            dear_who: rDears[idx] || rDears[0] || r.dear_who || "Agent"
+          });
+        });
+      });
+
+      // De-duplicate by email
+      const seen = new Set<string>();
+      allList.forEach(r => {
+        const eLower = r.email.toLowerCase();
+        if (!seen.has(eLower)) {
+          seen.add(eLower);
+          resolvedRecipients.push(r);
+        }
+      });
+
+      if (resolvedRecipients.length === 0) {
+        toast.error("Please provide at least one Receiver Email.");
         return;
       }
-
-      resolvedRecipients = emailList.map((email, idx) => ({
-        email,
-        dear_who: dearWhoList[idx] || dearWhoList[0] || form.dear_who || "Agent"
-      }));
     }
 
     setSubmitting(true);
@@ -1222,6 +1265,62 @@ export default function NewRFQPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
               {!isSales && (
                 <>
+                  {/* ── Quick-Select Matching Agents from Address Book ── */}
+                  {(() => {
+                    const matched = getOperatorAutoRecipients();
+                    if (matched.length === 0) return null;
+                    return (
+                      <div className="md:col-span-2 p-3 rounded-xl bg-blue/10 border border-blue/20 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-blue flex items-center gap-1.5">
+                            ⚡ Matching Agents in Address Book ({matched.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (matched.length > 0) {
+                                setForm(prev => ({
+                                  ...prev,
+                                  dear_who: matched[0].dear_who,
+                                  email: matched[0].email
+                                }));
+                                setExtraRecipients(matched.slice(1).map(m => ({ email: m.email, dear_who: m.dear_who })));
+                                toast.success(`✓ Selected all ${matched.length} matching agents!`);
+                              }
+                            }}
+                            className="text-[11px] font-bold px-3 py-1 rounded-lg bg-blue text-white hover:bg-blue-bright transition-all shadow-sm flex items-center gap-1"
+                          >
+                            + Select All ({matched.length} Agents)
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {matched.map((m, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                if (!form.email) {
+                                  setForm(prev => ({ ...prev, dear_who: m.dear_who, email: m.email }));
+                                } else if (!extraRecipients.some(er => er.email.toLowerCase() === m.email.toLowerCase())) {
+                                  addExtraRecipient(m.email, m.dear_who);
+                                }
+                              }}
+                              className="text-[11px] px-2.5 py-1 rounded-lg bg-surface-3 hover:bg-surface-4 border border-white/10 text-primary hover:border-blue/40 transition-all flex items-center gap-1.5"
+                            >
+                              <span className="font-semibold text-blue">{m.dear_who}</span>
+                              <span className="text-muted text-[10px]">({m.email})</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Primary Recipient (Agent 1) */}
+                  <div className="md:col-span-2 flex items-center justify-between border-b border-white/[0.04] pb-1">
+                    <span className="text-xs font-bold text-amber">Agent 1 (Primary)</span>
+                    <span className="text-[10px] text-muted">Sub-ref: -01</span>
+                  </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
                       DEAR WHO (Name/Salutation) *
@@ -1231,6 +1330,7 @@ export default function NewRFQPage() {
                       value={form.dear_who}
                       onChange={handleChange}
                       className="input w-full"
+                      placeholder="e.g. John Doe"
                       required
                     />
                   </div>
@@ -1252,6 +1352,58 @@ export default function NewRFQPage() {
                         }));
                       }}
                     />
+                  </div>
+
+                  {/* Additional Recipient Rows (Agent 2, 3, 4...) */}
+                  {extraRecipients.map((er, idx) => (
+                    <div key={idx} className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                      <div className="md:col-span-2 flex items-center justify-between">
+                        <span className="text-xs font-bold text-amber">Agent {idx + 2}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted font-mono">Sub-ref: -{String(idx + 2).padStart(2, "0")}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeExtraRecipient(idx)}
+                            className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                          DEAR WHO *
+                        </label>
+                        <input
+                          value={er.dear_who}
+                          onChange={(e) => updateExtraRecipient(idx, "dear_who", e.target.value)}
+                          className="input w-full"
+                          placeholder="e.g. Agent Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
+                          RECEIVER EMAIL *
+                        </label>
+                        <input
+                          type="email"
+                          value={er.email}
+                          onChange={(e) => updateExtraRecipient(idx, "email", e.target.value)}
+                          className="input w-full"
+                          placeholder="e.g. agent@example.com"
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="md:col-span-2 flex justify-start">
+                    <button
+                      type="button"
+                      onClick={() => addExtraRecipient()}
+                      className="text-xs font-semibold px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-primary hover:border-amber/40 transition-all flex items-center gap-1.5"
+                    >
+                      + Add Another Agent / Recipient
+                    </button>
                   </div>
                 </>
               )}
