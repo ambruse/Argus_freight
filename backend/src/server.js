@@ -278,19 +278,8 @@ const createLike = async (newTable, baseTable) => {
     `);
 
     await db.query(`
-      CREATE TABLE IF NOT EXISTS daily_sequences (
-        date_stamp  VARCHAR(10) PRIMARY KEY,
-        current_seq INT NOT NULL DEFAULT 0,
-        updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
-    await db.query(`
       CREATE TABLE IF NOT EXISTS call_enquiries (
         id               INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        ref_no           VARCHAR(50) UNIQUE,
-        date_stamp       VARCHAR(10),
-        daily_sequence   INT,
         customer_name    VARCHAR(255) NOT NULL,
         company          VARCHAR(255),
         type             VARCHAR(255),
@@ -422,9 +411,6 @@ const createLike = async (newTable, baseTable) => {
     await addCol('cc_recipients', 'multi_select', 'TINYINT(1) NOT NULL DEFAULT 0');
     await addCol('call_enquiries', 'call_duration', 'INT');
     await addCol('call_enquiries', 'is_lead', 'TINYINT(1) DEFAULT 0');
-    await addCol('call_enquiries', 'ref_no', 'VARCHAR(50)');
-    await addCol('call_enquiries', 'date_stamp', 'VARCHAR(10)');
-    await addCol('call_enquiries', 'daily_sequence', 'INT');
     await addCol('quotations', 'mode', 'VARCHAR(255)');
     await addCol('quotations', 'carrier_name', 'VARCHAR(255)');
     await addCol('quotations', 'currency', 'VARCHAR(10)');

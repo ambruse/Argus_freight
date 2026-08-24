@@ -86,7 +86,7 @@ export default function HistoricalRFQModal({ isOpen, onClose, onCreated }: Props
       <form id="add-historical-form" onSubmit={handleSubmit}>
         {/* REF NO hint */}
         <div className="mb-5 p-3 rounded-xl bg-blue/5 border border-blue/10 text-xs text-blue/80">
-          💡 Leave <strong>REF NO</strong> blank to auto-generate (e.g. ARG-1011).
+          💡 Leave <strong>REF NO</strong> blank to auto-generate (e.g. ARG-2408261).
         </div>
 
         {/* ── Section: Identity ─────────────────────────── */}

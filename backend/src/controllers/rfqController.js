@@ -32,17 +32,21 @@ const calculateCbm = (dimensionStr) => {
   return 0;
 };
 
-// ── ID Generator ─────────────────────────────────────────────
-// Pattern: xxyyxyxx (x = digit, y = letter)
-const generateId = () => {
-  const rD = () => Math.floor(Math.random() * 10).toString();
-  const rL = () => String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
-  return `${rD()}${rD()}${rL()}${rL()}${rD()}${rL()}${rD()}${rD()}`;
+// ── ID Generator: ARG-ddmmyyn ─────────────────────────────────
+const { getNextDailyRefNo } = require('../utils/refGenerator');
+
+const getNextRef = async (req, res, next) => {
+  try {
+    const ref_no = await getNextDailyRefNo();
+    res.json({ success: true, ref_no });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ─────────────────────────────────────────────────────────────
 //  POST /api/rfq/generate
-//  Generates unique ID, saves to DB with 'Pending' status.
+//  Generates unique ID in format ARG-ddmmyyn, saves to DB with 'Pending' status.
 // ─────────────────────────────────────────────────────────────
 const generateRfq = async (req, res, next) => {
   try {
@@ -56,7 +60,7 @@ const generateRfq = async (req, res, next) => {
     let isLogged = false;
     let attempts = 0;
     const maxAttempts = 5;
-    let ref_no = '';
+    let ref_no = req.body.ref_no;
     let shipmentData = null;
     let finalCustomerId = null;
 
@@ -96,18 +100,11 @@ const generateRfq = async (req, res, next) => {
       }
     }
 
-    ref_no = req.body.ref_no;
-
-    const { generateEnquiryRef } = require('../utils/refGenerator');
-
-    if (!ref_no) {
-      const enq = await generateEnquiryRef();
-      ref_no = `${enq.refNo}-1`;
-    }
-
-    const finalCustReqNo = req.body.cust_req_no || ref_no.replace(/-\d+$/, '');
-
     while (!isLogged && attempts < maxAttempts) {
+      if (!ref_no) {
+        ref_no = await getNextDailyRefNo();
+      }
+
       try {
         const { getUserSuffix, getUserSuffixFromReq, ensureUserTables } = require('../config/dbHelper');
         const targetOpName = targetOpUser ? targetOpUser.username : (operator || req.user.username);
@@ -117,16 +114,16 @@ const generateRfq = async (req, res, next) => {
 
         const result = await query(req,
           `INSERT INTO shipments (
-            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
-          ) RETURNING ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
+          ) RETURNING ref_no, refer_by, pol, pod, commodity, term, dimension,
                      container, mode, weight, pickup_address, delivery_address,
                      dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at`,
           [
-            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
@@ -141,18 +138,17 @@ const generateRfq = async (req, res, next) => {
 
         await ensureUserTables(cleanOp);
         await ensureUserTables(cleanUser);
-        await ensureUserTables('admin');
 
         if (cleanOp && cleanOp !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanOp} (
-              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -163,13 +159,13 @@ const generateRfq = async (req, res, next) => {
         if (cleanUser && cleanUser !== cleanOp && cleanUser !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanUser} (
-              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -180,13 +176,13 @@ const generateRfq = async (req, res, next) => {
         // Also ensure main shipments table has a copy if query mapped to user sandbox
         await db.query(
           `INSERT INTO shipments (
-            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
            ON CONFLICT (ref_no) DO NOTHING`,
           [
-            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
@@ -506,4 +502,4 @@ const sendRfqEmail = async (req, res, next) => {
   }
 };
 
-module.exports = { generateRfq, sendRfqEmail };
+module.exports = { generateRfq, sendRfqEmail, getNextRef };

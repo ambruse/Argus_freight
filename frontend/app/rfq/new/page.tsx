@@ -452,12 +452,25 @@ export default function NewRFQPage() {
 
     setSubmitting(true);
     try {
-      // Send to each recipient separately linked to the same ARG-ddmmyyn enquiry base
       let basePrefix = "";
+      try {
+        const { data: refData } = await api.get("/rfq/next-ref");
+        if (refData && refData.ref_no) {
+          basePrefix = refData.ref_no;
+        }
+      } catch {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, "0");
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const yy = String(now.getFullYear()).slice(-2);
+        basePrefix = `ARG-${dd}${mm}${yy}1`;
+      }
+
+      // Send to each recipient separately so it logs as multiple sends in RFQ sent
       let index = 0;
       for (const recipient of resolvedRecipients) {
-        const customRef = basePrefix ? `${basePrefix}-${index + 1}` : undefined;
-
+        const nn = String(index + 1).padStart(2, "0");
+        const customRef = `${basePrefix}-${nn}`;
         // 1. Generate RFQ and Log to Database
         const payload = {
           ...form,
@@ -468,14 +481,10 @@ export default function NewRFQPage() {
           pol: targetPol,
           operator: isSales && selectedOperator ? selectedOperator.name : undefined,
           ref_no: customRef,
-          cust_req_no: basePrefix || undefined,
         };
 
         const genRes = await api.post("/rfq/generate", payload);
         const ref_no = genRes.data.data.ref_no;
-        if (!basePrefix && ref_no) {
-          basePrefix = ref_no.replace(/-\d+$/, '');
-        }
 
         // 2. Upload Files if selected
         if (files.length > 0) {
@@ -640,22 +649,22 @@ export default function NewRFQPage() {
     const targetPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
     const { dimensionStr, weightStr } = formatDimensionAndWeight(form);
 
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
-    
-    const randomLetters = () => {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)];
-    };
-    
-    const xx1 = randomLetters();
-    const xx2 = randomLetters();
-    const basePrefix = `${dd}${xx1}${mm}${xx2}${yy}`;
-
     setSubmitting(true);
     try {
+      let basePrefix = "";
+      try {
+        const { data: refData } = await api.get("/rfq/next-ref");
+        if (refData && refData.ref_no) {
+          basePrefix = refData.ref_no;
+        }
+      } catch {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, "0");
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const yy = String(now.getFullYear()).slice(-2);
+        basePrefix = `ARG-${dd}${mm}${yy}1`;
+      }
+
       let index = 0;
       for (const recipient of unique) {
         const nn = String(index + 1).padStart(2, "0");

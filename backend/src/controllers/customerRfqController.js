@@ -27,54 +27,8 @@ const calculateCbm = (dimensionStr) => {
   return 0;
 };
 
-// Helper to generate the customer's next request number
-const generateCustomerRefNo = async (req, customerId, cleanUsername) => {
-  // Query customer's own sandbox shipments table
-  const result = await db.query(
-    `SELECT ref_no FROM shipments_${cleanUsername} 
-     WHERE ref_no LIKE $1 
-     ORDER BY CAST(SUBSTRING_INDEX(ref_no, '-', -1) AS UNSIGNED) DESC 
-     LIMIT 1`,
-    [`${customerId}-%`]
-  );
-  
-  if (result.rows.length === 0) {
-    return `${customerId}-01`;
-  }
-  
-  const lastRef = result.rows[0].ref_no; // e.g. "12345-02"
-  const parts = lastRef.split('-');
-  const lastNum = parseInt(parts[parts.length - 1], 10);
-  const nextNum = isNaN(lastNum) ? 1 : lastNum + 1;
-  const paddedNum = nextNum.toString().padStart(2, '0');
-  return `${customerId}-${paddedNum}`;
-};
-
-// Helper to generate sequential operator reference numbers (e.g. ARG-1001)
-const getNextOperatorRefNos = async (cleanOperator, count) => {
-  const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
-  const result = await db.query(
-    `SELECT ref_no FROM ${opTableName}
-     WHERE ref_no REGEXP '^ARG-[0-9]+$'
-     ORDER BY CAST(SUBSTRING(ref_no FROM 5) AS INTEGER) DESC
-     LIMIT 1`
-  );
-
-  let startNum = 1001;
-  if (result.rows.length > 0) {
-    const last = result.rows[0].ref_no;
-    const num = parseInt(last.split('-')[1], 10);
-    if (!isNaN(num)) {
-      startNum = num + 1;
-    }
-  }
-
-  const refs = [];
-  for (let i = 0; i < count; i++) {
-    refs.push(`ARG-${startNum + i}`);
-  }
-  return refs;
-};
+// Helper for sequential daily reference numbers ARG-ddmmyyn
+const { getNextDailyRefNo } = require('../utils/refGenerator');
 
 // POST /api/rfq/customer-generate
 const generateCustomerRfq = async (req, res, next) => {
@@ -170,10 +124,8 @@ const generateCustomerRfq = async (req, res, next) => {
       assignedOperator = selectedOp.username;
     }
 
-    // 3. Resolve Request Number (Format: ARG-ddmmyyn)
-    const { generateEnquiryRef } = require('../utils/refGenerator');
-    const customerId = req.user.customer_id || 'CUST';
-    const { refNo: ref_no } = await generateEnquiryRef();
+    // 3. Resolve Request Number in ARG-ddmmyyn format
+    const ref_no = await getNextDailyRefNo();
 
     // 4. Resolve Recipients from Contacts & Compulsory Emails
     const contactsRes = await db.query(
@@ -238,7 +190,7 @@ const generateCustomerRfq = async (req, res, next) => {
     await ensureUserTables(cleanOperator);
     await ensureUserTables('admin');
 
-    // Customer Sandbox insertion: Insert ONE row representing the enquiry
+    // Customer Sandbox insertion: Insert ONE row representing the request
     await db.query(
       `INSERT INTO shipments_${custSuffix} (
         ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -253,7 +205,7 @@ const generateCustomerRfq = async (req, res, next) => {
       ]
     );
 
-    // Also insert customer enquiry into main shipments table
+    // Also insert customer request into main shipments table
     await db.query(
       `INSERT INTO shipments (
         ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -268,10 +220,11 @@ const generateCustomerRfq = async (req, res, next) => {
       ]
     );
 
-    // Operator & Main shipments insertion: Insert individual RFQ revision rows (ARG-ddmmyyn-1, ARG-ddmmyyn-2, etc.)
+    // Operator & Main shipments insertion: Insert individual sub-rows (one for each recipient)
     for (let i = 0; i < resolvedRecipients.length; i++) {
       const recipient = resolvedRecipients[i];
-      const opRef = `${ref_no}-${i + 1}`;
+      const nn = String(i + 1).padStart(2, '0');
+      const opRef = `${ref_no}-${nn}`;
 
       // Insert into Operator sandbox
       if (cleanOperator !== 'admin') {

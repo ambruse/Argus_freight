@@ -21,49 +21,14 @@ export default function QuoteModal({ isOpen, onClose }) {
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const [generatedRef, setGeneratedRef] = useState('');
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem("freight_token");
-      const res = await fetch("/api/call-enquiries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { "Authorization": `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          customer_name: formData.name,
-          customer_email: formData.email,
-          customer_number: formData.phone,
-          details: `Service: ${formData.service || 'General'}. Message: ${formData.message || 'No additional message'}`,
-          status: "Lead",
-          is_lead: true
-        })
-      });
-      const data = await res.json();
-      if (data.success && data.data?.ref_no) {
-        setGeneratedRef(data.data.ref_no);
-      } else {
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const yy = String(today.getFullYear()).slice(-2);
-        setGeneratedRef(`ARG-${dd}${mm}${yy}1`);
-      }
-    } catch (err) {
-      const today = new Date();
-      const dd = String(today.getDate()).padStart(2, '0');
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const yy = String(today.getFullYear()).slice(-2);
-      setGeneratedRef(`ARG-${dd}${mm}${yy}1`);
-    } finally {
+    setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
       setFormData({ name: '', email: '', phone: '', service: '', message: '' });
-    }
+    }, 1500);
   };
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -132,25 +97,9 @@ export default function QuoteModal({ isOpen, onClose }) {
             }}>
               <Check size={36} />
             </div>
-            <h3 className="modal-title" style={{ marginBottom: '0.5rem' }}>Quote Requested!</h3>
-            {generatedRef && (
-              <div style={{
-                display: 'inline-block',
-                background: 'rgba(245,176,55,0.12)',
-                border: '1px solid rgba(245,176,55,0.3)',
-                padding: '0.4rem 1rem',
-                borderRadius: '8px',
-                margin: '0.5rem auto 1rem',
-                fontFamily: 'monospace',
-                fontSize: '1rem',
-                fontWeight: 700,
-                color: '#F5B037'
-              }}>
-                Ref No: {generatedRef}
-              </div>
-            )}
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, maxWidth: 340, margin: '0 auto 1.5rem' }}>
-              Your inquiry reference has been generated. Use this code to track progress on our Live Tracking network. Our team will contact you shortly.
+            <h3 className="modal-title" style={{ marginBottom: '0.75rem' }}>Quote Requested!</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7, maxWidth: 320, margin: '0 auto 2rem' }}>
+              Thank you for choosing Argus Shipping. Our logistics representative will contact you within 24 hours.
             </p>
             <button className="cta-button" onClick={() => { setIsSuccess(false); onClose(); }}>
               Close Window

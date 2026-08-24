@@ -177,15 +177,17 @@ export default function ConfirmedPage() {
       if (cleanCust.startsWith('ARG-')) {
         const parts = cleanCust.split('-');
         if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+        return cleanCust;
       }
-      return cleanCust.replace(/(-[0-9]+)+$/, '');
+      return cleanCust;
     }
     const ref = s.ref_no || "";
     if (ref.startsWith('ARG-')) {
       const parts = ref.split('-');
       if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+      return ref;
     }
-    return ref.replace(/(-[0-9]+)+$/, '');
+    return ref.replace(/-\d+$/, '');
   };
 
   const groupedItems = (() => {

@@ -21,8 +21,6 @@ async function getNextSalesUser() {
   return salesUsers[nextIdx];
 }
 
-const { generateEnquiryRef } = require('../utils/refGenerator');
-
 // ── POST /api/call-enquiries ─────────────────────────────────
 const createEnquiry = async (req, res, next) => {
   try {
@@ -46,16 +44,12 @@ const createEnquiry = async (req, res, next) => {
     }
     const calling_agent = req.user.username;
 
-    // Generate atomic reference number in ARG-ddmmyyn format
-    const { refNo, dateStamp, sequence } = await generateEnquiryRef();
-
     const result = await db.query(
       `INSERT INTO call_enquiries 
-       (ref_no, date_stamp, daily_sequence, customer_name, company, type, customer_number, customer_email, customer_address, details, status, calling_agent, assigned_sales, is_lead, call_duration)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+       (customer_name, company, type, customer_number, customer_email, customer_address, details, status, calling_agent, assigned_sales, is_lead, call_duration)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        refNo, dateStamp, sequence,
         customer_name, company || null, type || null, customer_number,
         customer_email || null, customer_address || null, details, status,
         calling_agent, assigned_sales, isLeadVal, call_duration || null
