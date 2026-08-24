@@ -5,7 +5,7 @@
 //  • Click REF NO → clipboard copy + toast
 //  • Double-click row → detail modal
 // ─────────────────────────────────────────────────────────────
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Badge from "@/components/ui/Badge";
 import RFQDetailModal from "@/components/modals/RFQDetailModal";
@@ -27,6 +27,8 @@ const SkeletonRow = () => (
   </tr>
 );
 
+type CustomerShipmentItem = Shipment & { subShipments?: Shipment[] };
+
 export default function CustomerRFQListPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,16 @@ export default function CustomerRFQListPage() {
   const [statusFilter, setStatusFilter] = useState("Active");
   const [selected, setSelected] = useState<Shipment | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  };
 
   // Double-click detection
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,7 +96,7 @@ export default function CustomerRFQListPage() {
       groups[key].push(s);
     });
 
-    const result: Shipment[] = [];
+    const result: CustomerShipmentItem[] = [];
 
     Object.keys(groups).forEach((groupKey) => {
       const groupList = groups[groupKey];
@@ -115,6 +127,10 @@ export default function CustomerRFQListPage() {
       const totalUnreadReplies = groupList.reduce((sum, s) => sum + (Number(s.unread_replies_count) || 0), 0);
       const totalReplies = groupList.reduce((sum, s) => sum + (Number(s.replies_count) || 0), 0);
       const totalUnreadChat = groupList.reduce((sum, s) => sum + (Number(s.unread_chat_count) || 0), 0);
+
+      const sortedSub = [...groupList].sort((a, b) => {
+        return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
+      });
 
       result.push({
         ...primary,
