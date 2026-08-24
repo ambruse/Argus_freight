@@ -398,7 +398,7 @@ export default function RFQPage() {
 
     shipments.forEach(s => {
       const base = getBasePrefix(s);
-      if (base && groups[base] && groups[base].length > 1) {
+      if (base && groups[base]) {
         if (!processedGroups.has(base)) {
           processedGroups.add(base);
           const sortedGroup = [...groups[base]].sort((a, b) => {
@@ -410,11 +410,6 @@ export default function RFQPage() {
             shipments: sortedGroup,
             originalShipments: sortedGroup
           });
-        }
-      } else if (base && groups[base] && groups[base].length === 1) {
-        if (!processedGroups.has(base)) {
-          processedGroups.add(base);
-          items.push(groups[base][0]);
         }
       } else if (!base) {
         items.push(s);
