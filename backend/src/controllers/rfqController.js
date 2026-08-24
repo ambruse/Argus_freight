@@ -111,19 +111,27 @@ const generateRfq = async (req, res, next) => {
         const finalReferBy = (refer_by && String(refer_by).trim() !== '')
           ? String(refer_by).trim()
           : (req.user ? (req.user.name || req.user.username) : null);
+        
+        const finalCustReqNo = req.body.cust_req_no || (() => {
+          if (ref_no && ref_no.startsWith('ARG-')) {
+            const parts = ref_no.split('-');
+            if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+          }
+          return null;
+        })();
 
         const result = await query(req,
           `INSERT INTO shipments (
-            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
-          ) RETURNING ref_no, refer_by, pol, pod, commodity, term, dimension,
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
+          ) RETURNING ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
                      container, mode, weight, pickup_address, delivery_address,
                      dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at`,
           [
-            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
@@ -142,13 +150,13 @@ const generateRfq = async (req, res, next) => {
         if (cleanOp && cleanOp !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanOp} (
-              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -159,13 +167,13 @@ const generateRfq = async (req, res, next) => {
         if (cleanUser && cleanUser !== cleanOp && cleanUser !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanUser} (
-              ref_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -176,13 +184,13 @@ const generateRfq = async (req, res, next) => {
         // Also ensure main shipments table has a copy if query mapped to user sandbox
         await db.query(
           `INSERT INTO shipments (
-            ref_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
            ON CONFLICT (ref_no) DO NOTHING`,
           [
-            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
