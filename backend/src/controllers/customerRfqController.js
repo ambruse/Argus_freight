@@ -230,11 +230,15 @@ const generateCustomerRfq = async (req, res, next) => {
     const customerName = req.user.name || req.user.username;
     const customerEmail = req.user.email_address;
 
-    // 5. Create shipment records in both Customer's and Operator's sandboxes
-    const { getUserSuffix, getUserSuffixFromReq } = require('../config/dbHelper');
+    // 5. Create shipment records in Customer's, Operator's, and Main shipments table
+    const { getUserSuffix, getUserSuffixFromReq, ensureUserTables } = require('../config/dbHelper');
     const custSuffix = getUserSuffixFromReq(req);
     const cleanOperator = getUserSuffix(assignedOperator);
     const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
+
+    await ensureUserTables(custSuffix);
+    await ensureUserTables(cleanOperator);
+    await ensureUserTables('admin');
 
     // Customer Sandbox insertion: Insert ONE row representing the request
     await db.query(
@@ -251,15 +255,47 @@ const generateCustomerRfq = async (req, res, next) => {
       ]
     );
 
-    // Operator Sandbox insertion: Insert multiple rows (one for each recipient)
-    const opRefs = await getNextOperatorRefNos(cleanOperator, resolvedRecipients.length);
+    // Also insert customer request into main shipments table
+    await db.query(
+      `INSERT INTO shipments (
+        ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+        container, mode, weight, pickup_address, delivery_address,
+        dear_who, email, status, note, customer_id, customer_name, customer_email, operator
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+       ON CONFLICT (ref_no) DO NOTHING`,
+      [
+        ref_no, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
+        container || null, mode, weight || null, pickup_address || null, delivery_address || null,
+        'Multiple Agents', 'Broadcast', 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
+      ]
+    );
 
+    // Operator & Main shipments insertion: Insert individual sub-rows (one for each recipient)
     for (let i = 0; i < resolvedRecipients.length; i++) {
       const recipient = resolvedRecipients[i];
-      const opRef = opRefs[i];
+      const nn = String(i + 1).padStart(2, '0');
+      const opRef = `${ref_no}-${nn}`;
 
+      // Insert into Operator sandbox
+      if (cleanOperator !== 'admin') {
+        await db.query(
+          `INSERT INTO ${opTableName} (
+            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+            container, mode, weight, pickup_address, delivery_address,
+            dear_who, email, status, note, customer_id, customer_name, customer_email, operator
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+           ON CONFLICT (ref_no) DO NOTHING`,
+          [
+            opRef, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
+            container || null, mode, weight || null, pickup_address || null, delivery_address || null,
+            recipient.dear_who, recipient.email, 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
+          ]
+        );
+      }
+
+      // Insert into Main shipments table
       await db.query(
-        `INSERT INTO ${opTableName} (
+        `INSERT INTO shipments (
           ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
           container, mode, weight, pickup_address, delivery_address,
           dear_who, email, status, note, customer_id, customer_name, customer_email, operator

@@ -59,15 +59,17 @@ export default function CustomerRFQListPage() {
       if (cleanCust.startsWith('ARG-')) {
         const parts = cleanCust.split('-');
         if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+        return cleanCust;
       }
-      return cleanCust.replace(/(-[0-9]+)+$/, '');
+      return cleanCust;
     }
     const ref = s.ref_no || "";
     if (ref.startsWith('ARG-')) {
       const parts = ref.split('-');
       if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+      return ref;
     }
-    return ref.replace(/(-[0-9]+)+$/, '');
+    return ref.replace(/-\d+$/, '');
   }, []);
 
   // ── Consolidate sub-shipments into ONE single row per request for Customer ────

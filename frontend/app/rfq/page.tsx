@@ -358,15 +358,17 @@ export default function RFQPage() {
         if (cleanCust.startsWith('ARG-')) {
           const parts = cleanCust.split('-');
           if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+          return cleanCust;
         }
-        return cleanCust.replace(/(-[0-9]+)+$/, '');
+        return cleanCust;
       }
       const ref = s.ref_no || "";
       if (ref.startsWith('ARG-')) {
         const parts = ref.split('-');
         if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+        return ref;
       }
-      return ref.replace(/(-[0-9]+)+$/, '');
+      return ref.replace(/-\d+$/, '');
     };
 
     shipments.forEach(s => {
@@ -376,6 +378,15 @@ export default function RFQPage() {
           groups[base] = [];
         }
         groups[base].push(s);
+      }
+    });
+
+    // If a group has specific recipient rows, exclude the duplicate summary/broadcast row
+    Object.keys(groups).forEach(base => {
+      const list = groups[base];
+      const hasSpecific = list.some(s => s.email !== 'Broadcast' && s.ref_no !== base);
+      if (hasSpecific) {
+        groups[base] = list.filter(s => s.email !== 'Broadcast' && s.ref_no !== base);
       }
     });
 
@@ -397,7 +408,12 @@ export default function RFQPage() {
             originalShipments: sortedGroup
           });
         }
-      } else {
+      } else if (base && groups[base] && groups[base].length === 1) {
+        if (!processedGroups.has(base)) {
+          processedGroups.add(base);
+          items.push(groups[base][0]);
+        }
+      } else if (!base) {
         items.push(s);
       }
     });
