@@ -233,18 +233,24 @@ const generateRfq = async (req, res, next) => {
         }
       } catch (err) {
         console.error("Error inserting RFQ:", err);
-        if (req.body.ref_no) {
-          if (err.code === '23505') {
-            // If custom reference number failed, return error immediately
-            return res.status(409).json({ success: false, message: `Reference number ${ref_no} already exists.` });
+        const isDuplicate = err && (
+          err.code === 'ER_DUP_ENTRY' ||
+          err.errno === 1062 ||
+          err.code === '23505' ||
+          (err.message && err.message.includes('Duplicate entry'))
+        );
+
+        if (isDuplicate) {
+          if (req.body.ref_no && attempts === 0) {
+            // Try generating next sequential reference instead of crashing
+            ref_no = '';
+            attempts++;
+            continue;
           } else {
-            throw err;
+            ref_no = '';
+            attempts++;
+            continue;
           }
-        }
-        // 23505 is PostgreSQL unique violation code
-        if (err.code === '23505') {
-          ref_no = '';
-          attempts++;
         } else {
           throw err;
         }
