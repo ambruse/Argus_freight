@@ -20,10 +20,11 @@ const getUserSuffix = (input) => {
   return 'admin';
 };
 
-const ensureUserTables = async (userOrSuffix) => {
+const ensureUserTables = async (userOrSuffix, force = false) => {
   if (!userOrSuffix || userOrSuffix === 'admin') return;
   const suffix = getUserSuffix(userOrSuffix);
-  if (suffix === 'admin' || ensuredTables.has(suffix)) return;
+  if (suffix === 'admin') return;
+  if (!force && ensuredTables.has(suffix)) return;
 
   try {
     await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} (LIKE shipments INCLUDING ALL)`);
@@ -421,7 +422,15 @@ const query = async (req, sql, params) => {
     .replace(/\bshipment_replies\b/g, tables.replies)
     .replace(/\bfiles\b/g, tables.files);
 
-  return db.query(modifiedSql, params);
+  try {
+    return await db.query(modifiedSql, params);
+  } catch (err) {
+    if (err && (err.code === 'ER_NO_SUCH_TABLE' || (err.message && err.message.includes("doesn't exist")))) {
+      await ensureUserTables(targetSuffix, true);
+      return await db.query(modifiedSql, params);
+    }
+    throw err;
+  }
 };
 
 module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes, ensureUserTables, getUserSuffix, getUserSuffixFromReq };

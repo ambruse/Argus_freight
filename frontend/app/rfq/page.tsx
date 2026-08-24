@@ -101,9 +101,12 @@ export default function RFQPage() {
     const firstSeqMatch = firstRef.match(/-(\d+)$/);
     const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
     
-    const totalCountStr = String(sorted.length).padStart(firstSeq.length, "0");
+    const lastRef = sorted[sorted.length - 1].ref_no;
+    const lastSeqMatch = lastRef.match(/-(\d+)$/);
+    const lastSeq = lastSeqMatch ? lastSeqMatch[1] : String(sorted.length).padStart(firstSeq.length, "0");
 
-    return `${basePrefix}-${firstSeq}-${totalCountStr}`;
+    if (firstSeq === lastSeq) return `${basePrefix}-${firstSeq}`;
+    return `${basePrefix}-${firstSeq}-${lastSeq}`;
   };
 
   const getGroupLastFollowUp = (shipmentsList: Shipment[]) => {
