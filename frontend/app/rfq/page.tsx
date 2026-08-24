@@ -97,16 +97,24 @@ export default function RFQPage() {
       return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
     });
 
+    if (sorted.length > 1) {
+      const firstRef = sorted[0].ref_no;
+      const firstSeqMatch = firstRef.match(/-(\d+)$/);
+      const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
+
+      const lastRef = sorted[sorted.length - 1].ref_no;
+      const lastSeqMatch = lastRef.match(/-(\d+)$/);
+      const lastSeq = (lastSeqMatch && lastSeqMatch[1] !== firstSeq) 
+        ? lastSeqMatch[1] 
+        : String(sorted.length).padStart(2, "0");
+
+      return `${basePrefix}-${firstSeq}-${lastSeq}`;
+    }
+
     const firstRef = sorted[0].ref_no;
     const firstSeqMatch = firstRef.match(/-(\d+)$/);
     const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
-    
-    const lastRef = sorted[sorted.length - 1].ref_no;
-    const lastSeqMatch = lastRef.match(/-(\d+)$/);
-    const lastSeq = lastSeqMatch ? lastSeqMatch[1] : String(sorted.length).padStart(firstSeq.length, "0");
-
-    if (firstSeq === lastSeq) return `${basePrefix}-${firstSeq}`;
-    return `${basePrefix}-${firstSeq}-${lastSeq}`;
+    return `${basePrefix}-${firstSeq}`;
   };
 
   const getGroupLastFollowUp = (shipmentsList: Shipment[]) => {
