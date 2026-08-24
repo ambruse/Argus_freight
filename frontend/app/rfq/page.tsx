@@ -91,30 +91,27 @@ export default function RFQPage() {
   };
 
   const getGroupLabel = (basePrefix: string, originalShipments: Shipment[]) => {
-    if (!originalShipments || originalShipments.length === 0) return basePrefix;
+    if (originalShipments.length === 0) return basePrefix;
     
     const sorted = [...originalShipments].sort((a, b) => {
       return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
     });
 
-    if (sorted.length > 1) {
-      const firstRef = sorted[0].ref_no;
-      const firstSeqMatch = firstRef.match(/-(\d+)$/);
-      const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
+    const firstRef = sorted[0].ref_no;
+    const lastRef = sorted[sorted.length - 1].ref_no;
 
-      const lastRef = sorted[sorted.length - 1].ref_no;
-      const lastSeqMatch = lastRef.match(/-(\d+)$/);
-      const lastSeq = (lastSeqMatch && lastSeqMatch[1] !== firstSeq) 
-        ? lastSeqMatch[1] 
-        : String(sorted.length).padStart(2, "0");
+    const firstSeqMatch = firstRef.match(/-(\d+)/);
+    const lastSeqMatch = lastRef.match(/-(\d+)/);
 
-      return `${basePrefix}-${firstSeq}-${lastSeq}`;
+    const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
+    let lastSeq = lastSeqMatch ? lastSeqMatch[1] : `${sorted.length}`;
+
+    // If both matches yield single-digit integers or formatted sequence, format range correctly
+    if (firstSeqMatch && lastSeqMatch && firstSeq === lastSeq) {
+      lastSeq = String(sorted.length);
     }
 
-    const firstRef = sorted[0].ref_no;
-    const firstSeqMatch = firstRef.match(/-(\d+)$/);
-    const firstSeq = firstSeqMatch ? firstSeqMatch[1] : "01";
-    return `${basePrefix}-${firstSeq}`;
+    return `${basePrefix}-${firstSeq}-${lastSeq}`;
   };
 
   const getGroupLastFollowUp = (shipmentsList: Shipment[]) => {
@@ -364,22 +361,24 @@ export default function RFQPage() {
     const groups: { [key: string]: Shipment[] } = {};
     
     const getBasePrefix = (s: Shipment) => {
-      const cleanCust = s.cust_req_no ? s.cust_req_no.trim() : "";
-      if (cleanCust) {
-        if (cleanCust.startsWith('ARG-')) {
-          const parts = cleanCust.split('-');
-          if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
-          return cleanCust;
+      if (s.cust_req_no && s.cust_req_no.trim()) {
+        const clean = s.cust_req_no.trim();
+        const parts = clean.split('-');
+        if (parts.length > 2) {
+          return `${parts[0]}-${parts[1]}`;
         }
-        return cleanCust;
+        return clean;
       }
       const ref = s.ref_no || "";
-      if (ref.startsWith('ARG-')) {
-        const parts = ref.split('-');
-        if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
-        return ref;
+      if (!ref.includes('-')) return ref;
+      const parts = ref.split('-');
+      if (parts[0] === 'ARG' && parts.length > 2) {
+        return `${parts[0]}-${parts[1]}`;
       }
-      return ref.replace(/-\d+$/, '');
+      if (parts.length > 2) {
+        return `${parts[0]}-${parts[1]}`;
+      }
+      return parts[0];
     };
 
     shipments.forEach(s => {
@@ -392,21 +391,12 @@ export default function RFQPage() {
       }
     });
 
-    // If a group has specific recipient rows, exclude the duplicate summary/broadcast row
-    Object.keys(groups).forEach(base => {
-      const list = groups[base];
-      const hasSpecific = list.some(s => s.email !== 'Broadcast' && s.ref_no !== base);
-      if (hasSpecific) {
-        groups[base] = list.filter(s => s.email !== 'Broadcast' && s.ref_no !== base);
-      }
-    });
-
     const items: (Shipment | { isGroup: true; basePrefix: string; shipments: Shipment[]; originalShipments: Shipment[] })[] = [];
     const processedGroups = new Set<string>();
 
     shipments.forEach(s => {
       const base = getBasePrefix(s);
-      if (base && groups[base]) {
+      if (base && groups[base] && groups[base].length > 1) {
         if (!processedGroups.has(base)) {
           processedGroups.add(base);
           const sortedGroup = [...groups[base]].sort((a, b) => {
@@ -419,7 +409,7 @@ export default function RFQPage() {
             originalShipments: sortedGroup
           });
         }
-      } else if (!base) {
+      } else {
         items.push(s);
       }
     });
@@ -622,63 +612,27 @@ export default function RFQPage() {
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title={isAdminOrOperator ? "Click to expand, double-click to input rate" : "Click to expand/collapse group"}
                       >
-                        <td className="whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1.5">
-                            {item.shipments.length > 1 && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleGroup(item.basePrefix);
-                                }}
-                                className="w-5 h-5 rounded bg-blue/10 hover:bg-blue/20 border border-blue/20 text-blue hover:text-blue-bright transition-all duration-150 flex items-center justify-center shrink-0"
-                                title={isExpanded ? "Collapse sub-records" : "Expand to view sub-records"}
-                              >
-                                <span className={`text-[9px] font-bold transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`}>
-                                  ▼
-                                </span>
-                              </button>
-                            )}
-                            <button
-                              onClick={(e) => copyRefNo(e, groupLabel)}
-                              className="font-mono text-xs font-bold text-blue hover:text-blue-bright px-2 py-1 rounded-lg bg-blue/10 hover:bg-blue/20 border border-blue/20 transition-all duration-150 group relative inline-flex items-center"
-                              title="Click to copy"
-                            >
-                              {groupLabel}
-                              <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-surface-4 text-primary text-[10px] px-2 py-0.5 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                Click to copy
-                              </span>
-                            </button>
-                          </div>
+                        <td>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyRefNo(e, groupLabel);
+                            }}
+                            className="font-mono text-xs font-bold text-amber hover:text-amber-bright
+                                       px-2.5 py-1 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/20
+                                       transition-all duration-150 group relative inline-flex items-center gap-1.5"
+                            title="Click to copy REF NO"
+                          >
+                            {isAdminOrOperator && <span className="mr-1 text-[9px] opacity-60">{isExpanded ? '▼' : '▶'}</span>}
+                            <span>{groupLabel}</span>
+                          </button>
                         </td>
                         <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
                           {firstShipment.cust_req_no ?? "—"}
                         </td>
                         <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{firstShipment.operator ?? "—"}</td>
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(firstShipment.customer_id, firstShipment.customer_name)}</td>
-                        {!isSales && (
-                          <td>
-                            {item.shipments.length > 1 ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleGroup(item.basePrefix);
-                                }}
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-amber/10 border border-white/[0.06] hover:border-amber/30 transition-all text-left"
-                                title="Click down arrow to view all recipient emails"
-                              >
-                                <span className="font-semibold text-amber text-xs">{item.shipments.length} Emails</span>
-                                <span className={`text-[9px] text-amber transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
-                              </button>
-                            ) : (
-                              <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-primary">{firstShipment.dear_who || "—"}</span>
-                                {firstShipment.email && firstShipment.email !== 'Broadcast' && (
-                                  <span className="text-[10px] text-blue font-mono">{firstShipment.email}</span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                        )}
+                        {!isSales && <td>{firstShipment.dear_who ?? "—"}</td>}
                         {isAdminOrOperator && (
                           <td className="text-xs font-semibold text-amber bg-white/[0.02]">{firstShipment.refer_by || "—"}</td>
                         )}
@@ -783,8 +737,8 @@ export default function RFQPage() {
                           )}
                         </td>
                       </tr>
-                      {/* ── Expanded child rows ── */}
-                      {isExpanded && item.shipments.map((cs, cidx) => (
+                      {/* ── Expanded child rows (Admin & Operator only) ── */}
+                      {isAdminOrOperator && isExpanded && item.shipments.map((cs, cidx) => (
                         <tr
                           key={cs.ref_no}
                           onClick={() => handleRowClick(cs)}
@@ -812,16 +766,7 @@ export default function RFQPage() {
                           <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">{cs.cust_req_no ?? "—"}</td>
                           <td className="text-xs font-semibold text-emerald bg-white/[0.02]">{cs.operator ?? "—"}</td>
                           <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(cs.customer_id, cs.customer_name)}</td>
-                          {!isSales && (
-                            <td>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-primary">{cs.dear_who || "—"}</span>
-                                {cs.email && cs.email !== 'Broadcast' && (
-                                  <span className="text-[10px] text-blue font-mono">{cs.email}</span>
-                                )}
-                              </div>
-                            </td>
-                          )}
+                          {!isSales && <td>{cs.dear_who ?? "—"}</td>}
                           {isAdminOrOperator && (
                             <td className="text-xs font-semibold text-amber bg-white/[0.02]">{cs.refer_by || "—"}</td>
                           )}

@@ -8,11 +8,10 @@
 import { useState, useEffect, useRef, useCallback, DragEvent, ChangeEvent } from "react";
 import Modal from "@/components/ui/Modal";
 import api from "@/lib/api";
-import { Shipment, ShipmentFile, ShipmentReply, CONFIRMED_TRACK_STATUSES } from "@/types";
+import { Shipment, ShipmentFile, ShipmentReply } from "@/types";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { cleanEmailBody } from "@/lib/emailParser";
-import { getCalculatedWeights } from "@/lib/weightUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { io, Socket } from "socket.io-client";
 
@@ -309,18 +308,8 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
     setSaving(true);
     try {
       const { data } = await api.patch(`/shipments/${shipment.ref_no}/tracking`, editForm);
-      let updatedShipment = data.data;
-
-      if (editForm.track_status === "Cancelled") {
-        const { data: statusData } = await api.patch(`/shipments/${shipment.ref_no}/status`, { status: "Cancelled" });
-        updatedShipment = { ...updatedShipment, status: statusData.data.status };
-      } else if (editForm.track_status === "Delivered") {
-        const { data: statusData } = await api.patch(`/shipments/${shipment.ref_no}/status`, { status: "Completed" });
-        updatedShipment = { ...updatedShipment, status: statusData.data.status };
-      }
-
       toast.success("Tracking info updated.");
-      onUpdated(updatedShipment);
+      onUpdated(data.data);
       setEditing(false);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? "Save failed.");
@@ -408,7 +397,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
   if (!shipment) return null;
 
   const editSet = (k: keyof typeof editForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setEditForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
@@ -481,8 +470,6 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                       [shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number", "bl_number"],
                       ["SO Number",    "so_number"],
                       ["Box No.",      "box_no"],
-                      ["Gross Weight (G.W.)", "gross_weight"],
-                      ["Chargeable Weight", "chargeable_weight"],
                       ["Cost (QAR)",  "cost"],
                       ["Profit (QAR)", "profit"],
                       ["Customer Name", "customer_name"],
@@ -492,10 +479,9 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                         <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-1">{label}</p>
                         <input
                           className="input-sm"
-                          value={(editForm as any)[key] ?? (key === "gross_weight" ? (getCalculatedWeights(shipment).grossWeight !== "—" ? getCalculatedWeights(shipment).grossWeight : "") : key === "chargeable_weight" ? (getCalculatedWeights(shipment).chargeableWeight !== "—" ? getCalculatedWeights(shipment).chargeableWeight : "") : "")}
+                          value={(editForm as any)[key] ?? ""}
                           onChange={editSet(key as any)}
                           type={key === "cost" || key === "profit" ? "number" : "text"}
-                          placeholder={key === "gross_weight" ? "e.g. 1,450 KG" : key === "chargeable_weight" ? "e.g. 1,450 KG" : ""}
                         />
                       </div>
                     ))}
@@ -510,16 +496,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-1">Track Status</p>
-                    <select
-                      className="select-sm w-full bg-surface-1 border border-white/[0.08] rounded-lg p-2 text-sm text-primary focus:border-blue/50 focus:outline-none"
-                      value={editForm.track_status as string}
-                      onChange={editSet("track_status")}
-                    >
-                      <option value="">— Select Track Status —</option>
-                      {CONFIRMED_TRACK_STATUSES.map((st) => (
-                        <option key={st} value={st}>{st}</option>
-                      ))}
-                    </select>
+                    <input className="input-sm" value={editForm.track_status as string} onChange={editSet("track_status")} />
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button onClick={handleSaveTracking} disabled={saving} className="btn-primary text-sm">
@@ -536,8 +513,6 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   <InfoField label={shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number"}    value={shipment.bl_number} />
                   <InfoField label="SO Number"    value={shipment.so_number} />
                   <InfoField label="Box No."      value={shipment.box_no} />
-                  <InfoField label="Gross Weight (G.W.)" value={shipment.gross_weight != null ? String(shipment.gross_weight) : getCalculatedWeights(shipment).grossWeight} />
-                  <InfoField label="Chargeable Weight" value={shipment.chargeable_weight != null ? String(shipment.chargeable_weight) : getCalculatedWeights(shipment).chargeableWeight} />
                   <InfoField label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
                   <InfoField label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
                   <InfoField label="Profit"       value={shipment.profit ? `QAR ${Number(shipment.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />

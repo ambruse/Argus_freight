@@ -20,11 +20,10 @@ const getUserSuffix = (input) => {
   return 'admin';
 };
 
-const ensureUserTables = async (userOrSuffix, force = false) => {
+const ensureUserTables = async (userOrSuffix) => {
   if (!userOrSuffix || userOrSuffix === 'admin') return;
   const suffix = getUserSuffix(userOrSuffix);
-  if (suffix === 'admin') return;
-  if (!force && ensuredTables.has(suffix)) return;
+  if (suffix === 'admin' || ensuredTables.has(suffix)) return;
 
   try {
     await db.query(`CREATE TABLE IF NOT EXISTS shipments_${suffix} (LIKE shipments INCLUDING ALL)`);
@@ -222,7 +221,7 @@ const query = async (req, sql, params) => {
   const id = req?.params?.id || req?.body?.id || req?.query?.id;
   const isSelect = /^\s*(SELECT|WITH)\b/i.test(sql);
 
-  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer' || req?.user?.role === 'operator') {
+  if (isAdmin || req?.user?.role === 'sales' || req?.user?.role === 'customer') {
     if (isAdmin && req?.query?.user) {
       targetUser = req.query.user;
     } else if (ref_no || id) {
@@ -303,11 +302,9 @@ const query = async (req, sql, params) => {
 
          const userFilter = conds.length > 0 ? `WHERE (${conds.join(' OR ')})` : '';
 
-         const isAggQuery = /SUM\(|COUNT\(|AVG\(|MIN\(|MAX\(/i.test(sql);
          const sUnion = await buildAlignedUnion('shipments', userSuffixes, (s) => s === safeUser ? 3 : 1, userFilter);
-
-         const sGroupedUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
-            PARTITION BY CASE WHEN cust_req_no IS NOT NULL AND TRIM(cust_req_no) != '' THEN (CASE WHEN TRIM(cust_req_no) LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 2) WHEN TRIM(cust_req_no) LIKE '%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 1) ELSE TRIM(cust_req_no) END) WHEN ref_no LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN ref_no LIKE '%-%' THEN SUBSTRING_INDEX(ref_no, '-', 1) ELSE ref_no END 
+         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
             ORDER BY 
               CASE LOWER(TRIM(status))
                 WHEN 'confirmed' THEN 10
@@ -329,7 +326,6 @@ const query = async (req, sql, params) => {
               END DESC,
               __p DESC
           ) AS _rn FROM (${sUnion}) _s) _ranked WHERE _rn = 1)`;
-         shipmentsUnion = isAggQuery ? sGroupedUnion : `(${sUnion})`;
 
          const rFilter = `WHERE ref_no IN (SELECT ref_no FROM shipments ${userFilter})`;
          const rUnion = await buildAlignedUnion('shipment_replies', userSuffixes, (s) => s === safeUser ? 3 : 1, rFilter);
@@ -339,11 +335,10 @@ const query = async (req, sql, params) => {
          const fUnion = await buildAlignedUnion('files', userSuffixes, (s) => s === safeUser ? 3 : 1, fFilter);
          filesUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY __p ASC) AS _rn FROM (${fUnion}) _f) _ranked WHERE _rn = 1)`;
       } else {
-         const isAggQuery = /SUM\(|COUNT\(|AVG\(|MIN\(|MAX\(/i.test(sql);
          const sSuffixes = await getPhysicalSuffixes('shipments');
          const sBase = await buildAlignedUnion('shipments', sSuffixes, () => 1, '');
-         const sGroupedUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
-            PARTITION BY CASE WHEN cust_req_no IS NOT NULL AND TRIM(cust_req_no) != '' THEN (CASE WHEN TRIM(cust_req_no) LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 2) WHEN TRIM(cust_req_no) LIKE '%-%' THEN SUBSTRING_INDEX(TRIM(cust_req_no), '-', 1) ELSE TRIM(cust_req_no) END) WHEN ref_no LIKE 'ARG-%-%' THEN SUBSTRING_INDEX(ref_no, '-', 2) WHEN ref_no LIKE '%-%' THEN SUBSTRING_INDEX(ref_no, '-', 1) ELSE ref_no END 
+         shipmentsUnion = `(SELECT * FROM (SELECT *, ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(NULLIF(cust_req_no, ''), ref_no) 
             ORDER BY 
               CASE LOWER(TRIM(status))
                 WHEN 'confirmed' THEN 10
@@ -365,7 +360,6 @@ const query = async (req, sql, params) => {
               END DESC,
               __p DESC
           ) AS _rn FROM (${sBase}) _s) _ranked WHERE _rn = 1)`;
-         shipmentsUnion = isAggQuery ? sGroupedUnion : `(${sBase})`;
 
          const rSuffixes = await getPhysicalSuffixes('shipment_replies');
          const rBase = await buildAlignedUnion('shipment_replies', rSuffixes, () => 1, '');
@@ -404,7 +398,7 @@ const query = async (req, sql, params) => {
   }
 
   // Non-admin or targeted admin query
-  const targetSuffix = getUserSuffix(targetUser || getUserSuffixFromReq(req));
+  const targetSuffix = getUserSuffixFromReq(req);
   await ensureUserTables(targetSuffix);
 
   const tables = (targetSuffix === 'admin') ? {
@@ -422,15 +416,7 @@ const query = async (req, sql, params) => {
     .replace(/\bshipment_replies\b/g, tables.replies)
     .replace(/\bfiles\b/g, tables.files);
 
-  try {
-    return await db.query(modifiedSql, params);
-  } catch (err) {
-    if (err && (err.code === 'ER_NO_SUCH_TABLE' || (err.message && err.message.includes("doesn't exist")))) {
-      await ensureUserTables(targetSuffix, true);
-      return await db.query(modifiedSql, params);
-    }
-    throw err;
-  }
+  return db.query(modifiedSql, params);
 };
 
 module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes, ensureUserTables, getUserSuffix, getUserSuffixFromReq };

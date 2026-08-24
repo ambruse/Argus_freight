@@ -8,12 +8,11 @@
 import { useState, useEffect, useRef } from "react";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
-import { Shipment, ALL_STATUSES, RFQ_STATUS_OPTIONS, ShipmentStatus, ShipmentReply } from "@/types";
+import { Shipment, ALL_STATUSES, ShipmentStatus, ShipmentReply } from "@/types";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { cleanEmailBody } from "@/lib/emailParser";
-import { getCalculatedWeights } from "@/lib/weightUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { io, Socket } from "socket.io-client";
 
@@ -422,8 +421,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         <Field label="Term"         value={shipment.term} />
         <Field label="Commodity"    value={shipment.commodity} />
         <Field label="Container"    value={shipment.container} />
-        <Field label="Gross Weight (G.W.)" value={shipment.gross_weight != null ? String(shipment.gross_weight) : getCalculatedWeights(shipment).grossWeight} />
-        <Field label="Chargeable Weight" value={shipment.chargeable_weight != null ? String(shipment.chargeable_weight) : getCalculatedWeights(shipment).chargeableWeight} />
+        <Field label="Weight"       value={shipment.weight ? `${shipment.weight} kg` : null} />
         <Field label="Dimension"    value={shipment.dimension} />
         {user?.role !== "customer" && <Field label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />}
         <Field label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
@@ -769,7 +767,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
                   onChange={(e) => setNewStatus(e.target.value as ShipmentStatus)}
                   className="select w-full"
                 >
-                  {RFQ_STATUS_OPTIONS.map((s) => (
+                  {ALL_STATUSES.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -812,7 +810,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
                 className="select flex-1 max-w-xs"
               >
                 <option value="">— Select new status —</option>
-                {RFQ_STATUS_OPTIONS.filter((s) => s !== shipment.status).map((s) => (
+                {ALL_STATUSES.filter((s) => s !== shipment.status).map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>

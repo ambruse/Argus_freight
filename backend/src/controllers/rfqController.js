@@ -32,21 +32,17 @@ const calculateCbm = (dimensionStr) => {
   return 0;
 };
 
-// ── ID Generator: ARG-ddmmyyn ─────────────────────────────────
-const { getNextDailyRefNo } = require('../utils/refGenerator');
-
-const getNextRef = async (req, res, next) => {
-  try {
-    const ref_no = await getNextDailyRefNo();
-    res.json({ success: true, ref_no });
-  } catch (err) {
-    next(err);
-  }
+// ── ID Generator ─────────────────────────────────────────────
+// Pattern: xxyyxyxx (x = digit, y = letter)
+const generateId = () => {
+  const rD = () => Math.floor(Math.random() * 10).toString();
+  const rL = () => String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  return `${rD()}${rD()}${rL()}${rL()}${rD()}${rL()}${rD()}${rD()}`;
 };
 
 // ─────────────────────────────────────────────────────────────
 //  POST /api/rfq/generate
-//  Generates unique ID in format ARG-ddmmyyn, saves to DB with 'Pending' status.
+//  Generates unique ID, saves to DB with 'Pending' status.
 // ─────────────────────────────────────────────────────────────
 const generateRfq = async (req, res, next) => {
   try {
@@ -60,7 +56,7 @@ const generateRfq = async (req, res, next) => {
     let isLogged = false;
     let attempts = 0;
     const maxAttempts = 5;
-    let ref_no = req.body.ref_no;
+    let ref_no = '';
     let shipmentData = null;
     let finalCustomerId = null;
 
@@ -100,9 +96,13 @@ const generateRfq = async (req, res, next) => {
       }
     }
 
+    ref_no = req.body.ref_no;
+
     while (!isLogged && attempts < maxAttempts) {
       if (!ref_no) {
-        ref_no = await getNextDailyRefNo();
+        const baseRfq = generateId();
+        // Fallback for collision (mimicking Python logic)
+        ref_no = attempts > 0 ? `${baseRfq}_${attempts}` : baseRfq;
       }
 
       try {
@@ -111,27 +111,19 @@ const generateRfq = async (req, res, next) => {
         const finalReferBy = (refer_by && String(refer_by).trim() !== '')
           ? String(refer_by).trim()
           : (req.user ? (req.user.name || req.user.username) : null);
-        
-        const finalCustReqNo = req.body.cust_req_no || (() => {
-          if (ref_no && ref_no.startsWith('ARG-')) {
-            const parts = ref_no.split('-');
-            if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
-          }
-          return null;
-        })();
 
         const result = await query(req,
           `INSERT INTO shipments (
-            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21
-          ) RETURNING ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
+          ) RETURNING ref_no, refer_by, pol, pod, commodity, term, dimension,
                      container, mode, weight, pickup_address, delivery_address,
                      dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at`,
           [
-            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
@@ -150,13 +142,13 @@ const generateRfq = async (req, res, next) => {
         if (cleanOp && cleanOp !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanOp} (
-              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -167,13 +159,13 @@ const generateRfq = async (req, res, next) => {
         if (cleanUser && cleanUser !== cleanOp && cleanUser !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanUser} (
-              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+              ref_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
              ON CONFLICT (ref_no) DO NOTHING`,
             [
-              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+              ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
               dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
@@ -184,13 +176,13 @@ const generateRfq = async (req, res, next) => {
         // Also ensure main shipments table has a copy if query mapped to user sandbox
         await db.query(
           `INSERT INTO shipments (
-            ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+            ref_no, refer_by, pol, pod, commodity, term, dimension,
             container, mode, weight, pickup_address, delivery_address,
             dear_who, email, status, note, customer_id, customer_name, customer_email, operator
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
            ON CONFLICT (ref_no) DO NOTHING`,
           [
-            ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+            ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
             dear_who, email, 'Pending', note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
@@ -241,24 +233,18 @@ const generateRfq = async (req, res, next) => {
         }
       } catch (err) {
         console.error("Error inserting RFQ:", err);
-        const isDuplicate = err && (
-          err.code === 'ER_DUP_ENTRY' ||
-          err.errno === 1062 ||
-          err.code === '23505' ||
-          (err.message && err.message.includes('Duplicate entry'))
-        );
-
-        if (isDuplicate) {
-          if (req.body.ref_no && attempts === 0) {
-            // Try generating next sequential reference instead of crashing
-            ref_no = '';
-            attempts++;
-            continue;
+        if (req.body.ref_no) {
+          if (err.code === '23505') {
+            // If custom reference number failed, return error immediately
+            return res.status(409).json({ success: false, message: `Reference number ${ref_no} already exists.` });
           } else {
-            ref_no = '';
-            attempts++;
-            continue;
+            throw err;
           }
+        }
+        // 23505 is PostgreSQL unique violation code
+        if (err.code === '23505') {
+          ref_no = '';
+          attempts++;
         } else {
           throw err;
         }
@@ -516,4 +502,4 @@ const sendRfqEmail = async (req, res, next) => {
   }
 };
 
-module.exports = { generateRfq, sendRfqEmail, getNextRef };
+module.exports = { generateRfq, sendRfqEmail };

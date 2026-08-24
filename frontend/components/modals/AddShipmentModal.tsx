@@ -87,7 +87,7 @@ export default function AddShipmentModal({ isOpen, onClose, onCreated }: Props) 
       <form id="add-shipment-form" onSubmit={handleSubmit}>
         {/* REF NO hint */}
         <div className="mb-5 p-3 rounded-xl bg-blue/5 border border-blue/10 text-xs text-blue/80">
-          💡 Leave <strong>REF NO</strong> blank to auto-generate (e.g. ARG-2408261).
+          💡 Leave <strong>REF NO</strong> blank to auto-generate (e.g. ARG-1011).
         </div>
 
         {/* ── Section: Identity ─────────────────────────── */}

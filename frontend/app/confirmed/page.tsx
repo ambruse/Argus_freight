@@ -171,30 +171,12 @@ export default function ConfirmedPage() {
     return `${basePrefix}-${minSeq}-${maxSeq}`;
   };
 
-  const getBasePrefix = (s: Shipment) => {
-    const cleanCust = s.cust_req_no ? s.cust_req_no.trim() : "";
-    if (cleanCust) {
-      if (cleanCust.startsWith('ARG-')) {
-        const parts = cleanCust.split('-');
-        if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
-        return cleanCust;
-      }
-      return cleanCust;
-    }
-    const ref = s.ref_no || "";
-    if (ref.startsWith('ARG-')) {
-      const parts = ref.split('-');
-      if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
-      return ref;
-    }
-    return ref.replace(/-\d+$/, '');
-  };
-
   const groupedItems = (() => {
     const groups: { [key: string]: Shipment[] } = {};
     shipments.forEach(s => {
-      const base = getBasePrefix(s);
-      if (base) {
+      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
+      if (match) {
+        const base = match[1];
         if (!groups[base]) {
           groups[base] = [];
         }
@@ -206,23 +188,28 @@ export default function ConfirmedPage() {
     const processedGroups = new Set<string>();
 
     shipments.forEach(s => {
-      const base = getBasePrefix(s);
-      if (base && groups[base] && groups[base].length > 1) {
-        if (!processedGroups.has(base)) {
-          processedGroups.add(base);
-          const sortedGroup = [...groups[base]].sort((a, b) => {
-            const aMatch = a.ref_no.match(/-(\d+)$/);
-            const bMatch = b.ref_no.match(/-(\d+)$/);
-            const aSeq = aMatch ? parseInt(aMatch[1]) : 0;
-            const bSeq = bMatch ? parseInt(bMatch[1]) : 0;
-            return aSeq - bSeq;
-          });
-          items.push({
-            isGroup: true,
-            basePrefix: base,
-            shipments: sortedGroup,
-            originalShipments: sortedGroup
-          });
+      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
+      if (match) {
+        const base = match[1];
+        if (groups[base].length > 1) {
+          if (!processedGroups.has(base)) {
+            processedGroups.add(base);
+            const sortedGroup = [...groups[base]].sort((a, b) => {
+              const aMatch = a.ref_no.match(/-(\d+)$/);
+              const bMatch = b.ref_no.match(/-(\d+)$/);
+              const aSeq = aMatch ? parseInt(aMatch[1]) : 0;
+              const bSeq = bMatch ? parseInt(bMatch[1]) : 0;
+              return aSeq - bSeq;
+            });
+            items.push({
+              isGroup: true,
+              basePrefix: base,
+              shipments: sortedGroup,
+              originalShipments: sortedGroup
+            });
+          }
+        } else {
+          items.push(s);
         }
       } else {
         items.push(s);
