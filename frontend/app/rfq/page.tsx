@@ -619,24 +619,31 @@ export default function RFQPage() {
                         style={{ animation: `fade-in 0.3s ease-out ${idx * 20}ms both` }}
                         title={isAdminOrOperator ? "Click to expand, double-click to input rate" : "Click to expand/collapse group"}
                       >
-                        <td>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleGroup(item.basePrefix);
-                            }}
-                            className="font-mono text-xs font-bold text-amber hover:text-amber-bright
-                                       px-3 py-1.5 rounded-lg bg-amber/10 hover:bg-amber/20 border border-amber/30 hover:border-amber/50
-                                       transition-all duration-200 group relative inline-flex items-center gap-2 shadow-sm"
-                            title="Click down arrow to view individual emails"
-                          >
-                            <span>{groupLabel}</span>
-                            <span 
-                              className={`text-[10px] bg-amber/20 hover:bg-amber/30 text-amber px-1.5 py-0.5 rounded transition-transform duration-200 inline-flex items-center justify-center ${isExpanded ? 'rotate-180' : ''}`}
+                        <td className="whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleGroup(item.basePrefix);
+                              }}
+                              className="w-5 h-5 rounded bg-blue/10 hover:bg-blue/20 border border-blue/20 text-blue hover:text-blue-bright transition-all duration-150 flex items-center justify-center shrink-0"
+                              title={isExpanded ? "Collapse sub-records" : "Expand to view sub-records"}
                             >
-                              ▼
-                            </span>
-                          </button>
+                              <span className={`text-[9px] font-bold transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`}>
+                                ▼
+                              </span>
+                            </button>
+                            <button
+                              onClick={(e) => copyRefNo(e, groupLabel)}
+                              className="font-mono text-xs font-bold text-blue hover:text-blue-bright px-2 py-1 rounded-lg bg-blue/10 hover:bg-blue/20 border border-blue/20 transition-all duration-150 group relative inline-flex items-center"
+                              title="Click to copy"
+                            >
+                              {groupLabel}
+                              <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-surface-4 text-primary text-[10px] px-2 py-0.5 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                Click to copy
+                              </span>
+                            </button>
+                          </div>
                         </td>
                         <td className="text-xs font-mono font-semibold text-blue bg-white/[0.02]">
                           {firstShipment.cust_req_no ?? "—"}
