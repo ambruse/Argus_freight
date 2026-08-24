@@ -616,18 +616,20 @@ export default function RFQPage() {
                       >
                         <td className="whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleGroup(item.basePrefix);
-                              }}
-                              className="w-5 h-5 rounded bg-blue/10 hover:bg-blue/20 border border-blue/20 text-blue hover:text-blue-bright transition-all duration-150 flex items-center justify-center shrink-0"
-                              title={isExpanded ? "Collapse sub-records" : "Expand to view sub-records"}
-                            >
-                              <span className={`text-[9px] font-bold transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`}>
-                                ▼
-                              </span>
-                            </button>
+                            {item.shipments.length > 1 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleGroup(item.basePrefix);
+                                }}
+                                className="w-5 h-5 rounded bg-blue/10 hover:bg-blue/20 border border-blue/20 text-blue hover:text-blue-bright transition-all duration-150 flex items-center justify-center shrink-0"
+                                title={isExpanded ? "Collapse sub-records" : "Expand to view sub-records"}
+                              >
+                                <span className={`text-[9px] font-bold transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`}>
+                                  ▼
+                                </span>
+                              </button>
+                            )}
                             <button
                               onClick={(e) => copyRefNo(e, groupLabel)}
                               className="font-mono text-xs font-bold text-blue hover:text-blue-bright px-2 py-1 rounded-lg bg-blue/10 hover:bg-blue/20 border border-blue/20 transition-all duration-150 group relative inline-flex items-center"
@@ -647,17 +649,26 @@ export default function RFQPage() {
                         <td className="text-muted font-mono bg-white/[0.03] text-xs font-semibold">{formatCustIdName(firstShipment.customer_id, firstShipment.customer_name)}</td>
                         {!isSales && (
                           <td>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleGroup(item.basePrefix);
-                              }}
-                              className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-amber/10 border border-white/[0.06] hover:border-amber/30 transition-all text-left"
-                              title="Click down arrow to view all recipient emails"
-                            >
-                              <span className="font-semibold text-amber text-xs">{item.shipments.length} Emails</span>
-                              <span className={`text-[9px] text-amber transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
-                            </button>
+                            {item.shipments.length > 1 ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleGroup(item.basePrefix);
+                                }}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-amber/10 border border-white/[0.06] hover:border-amber/30 transition-all text-left"
+                                title="Click down arrow to view all recipient emails"
+                              >
+                                <span className="font-semibold text-amber text-xs">{item.shipments.length} Emails</span>
+                                <span className={`text-[9px] text-amber transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
+                              </button>
+                            ) : (
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-primary">{firstShipment.dear_who || "—"}</span>
+                                {firstShipment.email && firstShipment.email !== 'Broadcast' && (
+                                  <span className="text-[10px] text-blue font-mono">{firstShipment.email}</span>
+                                )}
+                              </div>
+                            )}
                           </td>
                         )}
                         {isAdminOrOperator && (
