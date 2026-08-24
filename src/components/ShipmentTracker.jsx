@@ -389,10 +389,56 @@ export default function ShipmentTracker({ initialRfq = '' }) {
                 <Truck size={20} />
               </div>
               <div className="argus-detail-meta">
-                <span className="argus-detail-label">Carrier / AWB</span>
-                <span className="argus-detail-value">{shipmentData.container_no}</span>
+                <span className="argus-detail-label">Carrier</span>
+                <span className="argus-detail-value">{shipmentData.carrier || '—'}</span>
               </div>
             </div>
+
+            <div className="argus-detail-card">
+              <div className="argus-detail-icon-wrap">
+                <ShieldCheck size={20} />
+              </div>
+              <div className="argus-detail-meta">
+                <span className="argus-detail-label">{(shipmentData.mode || '').toLowerCase().includes('air') ? 'AWB Number' : 'BL / DO Number'}</span>
+                <span className="argus-detail-value">{shipmentData.container_no || '—'}</span>
+              </div>
+            </div>
+
+            {shipmentData.commodity && shipmentData.commodity !== '—' && (
+              <div className="argus-detail-card">
+                <div className="argus-detail-icon-wrap">
+                  <Package size={20} />
+                </div>
+                <div className="argus-detail-meta">
+                  <span className="argus-detail-label">Commodity</span>
+                  <span className="argus-detail-value">{shipmentData.commodity}</span>
+                </div>
+              </div>
+            )}
+
+            {shipmentData.dimension && shipmentData.dimension !== '—' && (
+              <div className="argus-detail-card">
+                <div className="argus-detail-icon-wrap">
+                  <Package size={20} />
+                </div>
+                <div className="argus-detail-meta">
+                  <span className="argus-detail-label">Dimensions</span>
+                  <span className="argus-detail-value">{shipmentData.dimension}</span>
+                </div>
+              </div>
+            )}
+
+            {shipmentData.container && shipmentData.container !== '—' && (
+              <div className="argus-detail-card">
+                <div className="argus-detail-icon-wrap">
+                  <Package size={20} />
+                </div>
+                <div className="argus-detail-meta">
+                  <span className="argus-detail-label">Container</span>
+                  <span className="argus-detail-value">{shipmentData.container}</span>
+                </div>
+              </div>
+            )}
 
             <div className="argus-detail-card">
               <div className="argus-detail-icon-wrap">
@@ -400,7 +446,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               </div>
               <div className="argus-detail-meta">
                 <span className="argus-detail-label">Gross Weight (G.W.)</span>
-                <span className="argus-detail-value">{shipmentData.gross_weight || shipmentData.weight}</span>
+                <span className="argus-detail-value">{shipmentData.gross_weight || shipmentData.weight || '—'}</span>
               </div>
             </div>
 
@@ -410,7 +456,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               </div>
               <div className="argus-detail-meta">
                 <span className="argus-detail-label">Chargeable Weight</span>
-                <span className="argus-detail-value">{shipmentData.chargeable_weight || shipmentData.weight}</span>
+                <span className="argus-detail-value">{shipmentData.chargeable_weight || shipmentData.gross_weight || shipmentData.weight || '—'}</span>
               </div>
             </div>
           </div>

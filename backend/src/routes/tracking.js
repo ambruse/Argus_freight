@@ -200,10 +200,59 @@ router.get('/:ref', async (req, res) => {
 
       const currentTrackStatus = dbShipment.track_status || dbShipment.status || 'Confirmed';
       const activeIdx = mapStatusToStageIndex(currentTrackStatus);
-      const originCountry = dbShipment.origin_country || 'QATAR';
-      const originCity = dbShipment.origin_city || 'Doha';
-      const destCountry = dbShipment.dest_country || 'UNITED KINGDOM';
-      const destCity = dbShipment.dest_city || 'London';
+
+      // ── Map actual DB fields (pol, pod, mode) ──────────────
+      const polRaw = dbShipment.pol || '';
+      const podRaw = dbShipment.pod || '';
+
+      // Parse "City, Country" from pol/pod strings
+      const parsePort = (portStr) => {
+        if (!portStr) return { city: '—', country: '—' };
+        const parts = portStr.split(',').map(s => s.trim());
+        if (parts.length >= 2) {
+          return { city: parts[0], country: parts.slice(1).join(', ') };
+        }
+        return { city: portStr, country: portStr };
+      };
+
+      const originParsed = parsePort(polRaw);
+      const destParsed = parsePort(podRaw);
+
+      const originCity = originParsed.city;
+      const originCountry = originParsed.country.toUpperCase();
+      const destCity = destParsed.city;
+      const destCountry = destParsed.country.toUpperCase();
+
+      // ── Calculate Chargeable Weight from dimension + weight ─
+      const rawWeight = parseFloat(String(dbShipment.weight || '').replace(/[^0-9.]/g, '')) || 0;
+      let gwNum = rawWeight;
+      let volumetricKg = 0;
+      const dimStr = String(dbShipment.dimension || '').trim();
+
+      const cbmMatch = dimStr.match(/([\d.]+)\s*CBM/i);
+      if (cbmMatch) {
+        volumetricKg = (parseFloat(cbmMatch[1]) || 0) * 167;
+      } else {
+        const dimRegex = /([\d.]+)\s*[xX*]\s*([\d.]+)\s*[xX*]\s*([\d.]+)(?:[^\d]*Qty:\s*(\d+))?/gi;
+        let m;
+        let totalCbm = 0;
+        while ((m = dimRegex.exec(dimStr)) !== null) {
+          const l = parseFloat(m[1]) || 0;
+          const w = parseFloat(m[2]) || 0;
+          const h = parseFloat(m[3]) || 0;
+          const qty = parseInt(m[4] || '1', 10) || 1;
+          totalCbm += ((l * w * h) / 1000000) * qty;
+        }
+        volumetricKg = totalCbm * 167;
+      }
+
+      const chargeableNum = Math.max(gwNum, volumetricKg);
+      const weightUnit = String(dbShipment.weight || '').replace(/[\d.,\s]/g, '').trim().toUpperCase() || 'KG';
+
+      const computedGW = dbShipment.gross_weight ||
+        (rawWeight > 0 ? `${rawWeight} ${weightUnit}` : (dbShipment.weight || '—'));
+      const computedCW = dbShipment.chargeable_weight ||
+        (chargeableNum > 0 ? `${parseFloat(chargeableNum.toFixed(2))} ${weightUnit}` : computedGW);
 
       const timeline = STAGES.map((stageName, idx) => {
         let status = 'upcoming';
@@ -215,7 +264,7 @@ router.get('/:ref', async (req, res) => {
           label: stageName,
           date: idx <= activeIdx ? (dbShipment.updated_at ? new Date(dbShipment.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent') : 'Pending',
           time: idx <= activeIdx ? 'Completed' : 'Pending',
-          location: idx === 0 ? `${originCity}, ${originCountry}` : idx === 5 ? `${destCity}, ${destCountry}` : `Logistics Checkpoint #${idx + 1}`,
+          location: idx === 0 ? (polRaw || `${originCity}`) : idx === 5 ? (podRaw || `${destCity}`) : `Logistics Checkpoint #${idx + 1}`,
           status: status,
           description: `Stage ${idx + 1}: ${stageName} status logged.`
         };
@@ -227,15 +276,19 @@ router.get('/:ref', async (req, res) => {
           ref_no: dbShipment.ref_no || refCleaned || refUpper,
           status: STAGES[activeIdx],
           currentStageIndex: activeIdx,
-          origin: { country: originCountry.toUpperCase(), city: originCity },
-          destination: { country: destCountry.toUpperCase(), city: destCity },
-          mode: dbShipment.freight_type || 'Cargo Freight',
+          origin: { country: originCountry || polRaw.toUpperCase(), city: originCity || polRaw },
+          destination: { country: destCountry || podRaw.toUpperCase(), city: destCity || podRaw },
+          mode: dbShipment.mode || 'Cargo Freight',
           carrier: dbShipment.carrier || 'Argus Shipping Fleet',
-          container_no: dbShipment.bl_number || dbShipment.box_no || `CNTR-${refCleaned}`,
-          weight: dbShipment.weight || 'Standard Weight',
-          gross_weight: dbShipment.gross_weight || dbShipment.weight || 'Standard Weight',
-          chargeable_weight: dbShipment.chargeable_weight || dbShipment.weight || 'Standard Weight',
-          packages: dbShipment.cargo_description || 'General Cargo',
+          container_no: dbShipment.bl_number || dbShipment.do_number || dbShipment.box_no || `CNTR-${refCleaned}`,
+          commodity: dbShipment.commodity || '—',
+          term: dbShipment.term || '—',
+          dimension: dbShipment.dimension || '—',
+          container: dbShipment.container || '—',
+          weight: dbShipment.weight || '—',
+          gross_weight: computedGW,
+          chargeable_weight: computedCW,
+          packages: dbShipment.container || dbShipment.commodity || 'General Cargo',
           etd: dbShipment.etd || 'N/A',
           eta: dbShipment.eta || 'N/A',
           updated_at: dbShipment.updated_at || new Date().toISOString(),
