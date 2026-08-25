@@ -66,8 +66,9 @@ export default function ShipmentTracker({ initialRfq = '' }) {
   };
 
   const handleCopy = () => {
-    if (shipmentData?.ref_no) {
-      navigator.clipboard.writeText(shipmentData.ref_no);
+    const textToCopy = shipmentData?.cust_req_no || shipmentData?.ref_no;
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -236,17 +237,24 @@ export default function ShipmentTracker({ initialRfq = '' }) {
                 <ShieldCheck size={20} />
               </div>
               <div className="argus-detail-meta">
-                <span className="argus-detail-label">RFQ Reference</span>
+                <span className="argus-detail-label">
+                  {shipmentData.cust_req_no ? 'Enquiry / RFQ Ref' : 'RFQ Reference'}
+                </span>
                 <span className="argus-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  {shipmentData.ref_no}
+                  {shipmentData.cust_req_no || shipmentData.ref_no}
                   <button 
                     onClick={handleCopy} 
                     style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
-                    title="Copy RFQ Reference"
+                    title="Copy Reference"
                   >
                     {copied ? <CheckCircle2 size={14} style={{ color: '#10b981' }} /> : <Copy size={14} />}
                   </button>
                 </span>
+                {shipmentData.cust_req_no && shipmentData.ref_no && shipmentData.cust_req_no !== shipmentData.ref_no && (
+                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.1rem' }}>
+                    RFQ Ref: {shipmentData.ref_no}
+                  </span>
+                )}
               </div>
             </div>
 

@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { getAllSuffixes } = require('../config/dbHelper');
 
 const STAGES = ['Confirmed', 'Scheduled', 'In Transit', 'Clearance', 'Warehouse', 'Delivered'];
 
@@ -76,30 +77,41 @@ router.get('/:ref', async (req, res) => {
     const refCleaned = cleanSearchRef(rawRef);
 
     let dbShipment = null;
+
+    // 1. Check central shipments table
     if (db && db.query) {
       try {
         const queryRes = await db.query(
           `SELECT * FROM shipments 
-           WHERE UPPER(ref_no) = $1 
-              OR UPPER(cust_req_no) = $1 
+           WHERE UPPER(cust_req_no) = $1 
+              OR UPPER(ref_no) = $1 
               OR UPPER(bl_number) = $1
-              OR UPPER(ref_no) = $2 
               OR UPPER(cust_req_no) = $2 
+              OR UPPER(ref_no) = $2 
               OR UPPER(bl_number) = $2
-              OR UPPER(ref_no) LIKE $3
               OR UPPER(cust_req_no) LIKE $3
-              OR UPPER(ref_no) LIKE $4
+              OR UPPER(ref_no) LIKE $3
               OR UPPER(cust_req_no) LIKE $4
-              OR UPPER(ref_no) LIKE $5
+              OR UPPER(ref_no) LIKE $4
               OR UPPER(cust_req_no) LIKE $5
+              OR UPPER(ref_no) LIKE $5
            ORDER BY 
              CASE 
-               WHEN UPPER(ref_no) = $1 THEN 1
-               WHEN UPPER(ref_no) = $2 THEN 2
-               WHEN UPPER(ref_no) LIKE $3 THEN 3
-               WHEN UPPER(ref_no) LIKE $4 THEN 4
-               ELSE 5
-             END
+               WHEN LOWER(status) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
+               ELSE 2
+             END ASC,
+             CASE 
+               WHEN UPPER(cust_req_no) = $1 THEN 1
+               WHEN UPPER(ref_no) = $1 THEN 2
+               WHEN UPPER(cust_req_no) = $2 THEN 3
+               WHEN UPPER(ref_no) = $2 THEN 4
+               WHEN UPPER(cust_req_no) LIKE $3 THEN 5
+               WHEN UPPER(ref_no) LIKE $3 THEN 6
+               WHEN UPPER(cust_req_no) LIKE $4 THEN 7
+               WHEN UPPER(ref_no) LIKE $4 THEN 8
+               ELSE 9
+             END ASC,
+             updated_at DESC, id DESC
            LIMIT 1`,
           [
             refUpper,
@@ -113,8 +125,93 @@ router.get('/:ref', async (req, res) => {
           dbShipment = queryRes.rows[0];
         }
       } catch (err) {
-        console.warn('[Tracking API] DB query notice:', err.message);
+        console.warn('[Tracking API] Central DB query notice:', err.message);
       }
+    }
+
+    // 2. If not found in central table, query sandbox tables
+    if (!dbShipment) {
+      try {
+        const suffixes = await getAllSuffixes();
+        for (const suffix of suffixes) {
+          if (!suffix || suffix === 'admin') continue;
+          const sRes = await db.query(
+            `SELECT * FROM shipments_${suffix}
+             WHERE UPPER(cust_req_no) = $1 
+                OR UPPER(ref_no) = $1 
+                OR UPPER(bl_number) = $1
+                OR UPPER(cust_req_no) = $2 
+                OR UPPER(ref_no) = $2 
+                OR UPPER(bl_number) = $2
+                OR UPPER(cust_req_no) LIKE $3
+                OR UPPER(ref_no) LIKE $3
+                OR UPPER(cust_req_no) LIKE $4
+                OR UPPER(ref_no) LIKE $4
+                OR UPPER(cust_req_no) LIKE $5
+                OR UPPER(ref_no) LIKE $5
+             ORDER BY 
+               CASE 
+                 WHEN LOWER(status) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
+                 ELSE 2
+               END ASC,
+               CASE 
+                 WHEN UPPER(cust_req_no) = $1 THEN 1
+                 WHEN UPPER(ref_no) = $1 THEN 2
+                 WHEN UPPER(cust_req_no) = $2 THEN 3
+                 WHEN UPPER(ref_no) = $2 THEN 4
+                 WHEN UPPER(cust_req_no) LIKE $3 THEN 5
+                 WHEN UPPER(ref_no) LIKE $3 THEN 6
+                 WHEN UPPER(cust_req_no) LIKE $4 THEN 7
+                 WHEN UPPER(ref_no) LIKE $4 THEN 8
+                 ELSE 9
+               END ASC,
+               updated_at DESC, id DESC
+             LIMIT 1`,
+            [
+              refUpper,
+              refCleaned,
+              `${refUpper}%`,
+              `${refCleaned}%`,
+              `%${refCleaned}%`
+            ]
+          ).catch(() => ({ rows: [] }));
+
+          if (sRes.rows && sRes.rows.length > 0) {
+            dbShipment = sRes.rows[0];
+            break;
+          }
+        }
+      } catch (err) {
+        console.warn('[Tracking API] Sandbox DB query notice:', err.message);
+      }
+    }
+
+    // 3. If still not found, check call_enquiries
+    if (!dbShipment) {
+      try {
+        const callRes = await db.query(
+          `SELECT * FROM call_enquiries 
+           WHERE UPPER(ref_no) = $1 OR UPPER(ref_no) = $2 
+           ORDER BY updated_at DESC LIMIT 1`,
+          [refUpper, refCleaned]
+        ).catch(() => ({ rows: [] }));
+
+        if (callRes.rows && callRes.rows.length > 0) {
+          const cRow = callRes.rows[0];
+          dbShipment = {
+            ref_no: cRow.ref_no,
+            cust_req_no: cRow.ref_no,
+            pol: cRow.pol,
+            pod: cRow.pod,
+            mode: cRow.mode || 'Air',
+            commodity: cRow.commodity,
+            status: cRow.status || 'Confirmed',
+            track_status: cRow.track_status || 'Confirmed',
+            created_at: cRow.created_at,
+            updated_at: cRow.updated_at
+          };
+        }
+      } catch (e) {}
     }
 
     if (!dbShipment) {
@@ -139,16 +236,15 @@ router.get('/:ref', async (req, res) => {
     const currentTrackStatus = dbShipment.track_status || dbShipment.status || 'Confirmed';
     const activeIdx = mapStatusToStageIndex(currentTrackStatus);
 
-    // ── Parse POL & POD ──────────────────────────────────────
+    // ── Smart Origin & Destination Parsing ───────────────────
     const polRaw = dbShipment.pol || '';
     const podRaw = dbShipment.pod || '';
     const originParsed = parsePort(polRaw);
     const destParsed = parsePort(podRaw);
 
-    // ── Gross Weight & Chargeable Weight ─────────────────────
-    const rawWeight = parseFloat(String(dbShipment.weight || '').replace(/[^0-9.]/g, '')) || 0;
-    const dimStr = String(dbShipment.dimension || '').trim();
-
+    // ── Gross Weight & Chargeable Weight Calculations ────────
+    const rawWeight = parseFloat(String(dbShipment.weight || '0').replace(/[^\d.]/g, '')) || 0;
+    const dimStr = dbShipment.dimension || '';
     let volumetricKg = 0;
     const cbmMatch = dimStr.match(/([\d.]+)\s*CBM/i);
     if (cbmMatch) {
@@ -215,11 +311,14 @@ router.get('/:ref', async (req, res) => {
 
     const modeStr = dbShipment.mode || 'Air';
     const docNumber = dbShipment.bl_number || dbShipment.do_number || dbShipment.so_number || dbShipment.box_no || '—';
+    const custReqNoVal = dbShipment.cust_req_no || (refUpper.startsWith('ARG-') && !refUpper.slice(4).includes('-') ? refUpper : '');
 
     return res.json({
       success: true,
       data: {
         ref_no: dbShipment.ref_no || refUpper,
+        cust_req_no: custReqNoVal,
+        search_ref: rawRef,
         status: STAGES[activeIdx] || currentTrackStatus,
         currentStageIndex: activeIdx,
         origin: originParsed,
