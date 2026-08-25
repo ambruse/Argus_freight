@@ -15,7 +15,7 @@ export default function AdminRegisterUserPage() {
   const [role, setRole] = useState("operator");
   const [name, setName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
+  const [contactNumber, setContactNumber] = useState("+974 ");
   const [agentExtension, setAgentExtension] = useState("");
   const [country, setCountry] = useState("Qatar");
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
@@ -161,6 +161,7 @@ export default function AdminRegisterUserPage() {
         newPassword: secureNewPassword,
         role,
         email_address: emailAddress.trim(),
+        contact_number: contactNumber.trim(),
         adminUsername,
         adminPassword: secureAdminPassword,
         agent_extension: agentExtension || undefined,
@@ -174,6 +175,7 @@ export default function AdminRegisterUserPage() {
       setConfirmPassword("");
       setRole("operator");
       setEmailAddress("");
+      setContactNumber("+974 ");
       setAgentExtension("");
       setShowAdminModal(false);
       setAdminPassword("");
@@ -331,6 +333,20 @@ export default function AdminRegisterUserPage() {
               </select>
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                Contact Number <span className="text-amber-500 font-bold">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                className="input w-full font-mono text-[13px]"
+                placeholder="e.g. +974 30512233"
+              />
+            </div>
+
             {role === "calling_agent" && (
               <div className="space-y-1.5 animate-slide-up">
                 <label className="text-xs font-medium text-muted uppercase tracking-wider">3CX Extension</label>
@@ -345,30 +361,17 @@ export default function AdminRegisterUserPage() {
             )}
 
             {role === "customer" && (
-              <>
-                <div className="space-y-1.5 animate-slide-up">
-                  <label className="text-xs font-medium text-muted uppercase tracking-wider">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input w-full"
-                    placeholder="e.g. John Doe"
-                  />
-                </div>
-                <div className="space-y-1.5 animate-slide-up">
-                  <label className="text-xs font-medium text-muted uppercase tracking-wider">Contact Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={contactNumber}
-                    onChange={(e) => setContactNumber(e.target.value)}
-                    className="input w-full"
-                    placeholder="e.g. +974 30512233"
-                  />
-                </div>
-              </>
+              <div className="space-y-1.5 animate-slide-up">
+                <label className="text-xs font-medium text-muted uppercase tracking-wider">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input w-full"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
             )}
 
             <button type="submit" className="btn-primary w-full justify-center py-2.5 mt-2">

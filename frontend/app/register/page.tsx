@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const [role,            setRole]            = useState("operator");
   const [name,            setName]            = useState("");
   const [emailAddress,    setEmailAddress]    = useState("");
-  const [contactNumber,   setContactNumber]   = useState("");
+  const [contactNumber,   setContactNumber]   = useState("+974 ");
   const [country,         setCountry]         = useState("Qatar");
   const [isRoleLocked,    setIsRoleLocked]    = useState(false);
 
@@ -80,7 +80,7 @@ export default function RegisterPage() {
       setLoading(true);
       try {
         const securePassword = await encryptPassword(newPassword);
-        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress.trim(), contact_number: contactNumber, country });
+        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress.trim(), contact_number: contactNumber.trim(), country });
         toast.success("Account created successfully!");
         router.push("/login");
       } catch (err: any) {
@@ -101,7 +101,7 @@ export default function RegisterPage() {
     try {
       const secureNewPassword = await encryptPassword(newPassword);
       const secureAdminPassword = await encryptPassword(adminPassword);
-      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, email_address: emailAddress.trim(), adminUsername, adminPassword: secureAdminPassword, country });
+      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, email_address: emailAddress.trim(), contact_number: contactNumber.trim(), adminUsername, adminPassword: secureAdminPassword, country });
       toast.success("Account created successfully!");
       router.push("/login");
     } catch (err: any) {
@@ -213,17 +213,25 @@ export default function RegisterPage() {
             </select>
           </div>
 
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>
+              Contact Number <span className="text-amber-500 font-bold">*</span>
+            </label>
+            <input 
+              type="text" 
+              required 
+              value={contactNumber} 
+              onChange={(e) => setContactNumber(e.target.value)} 
+              className="input w-full font-mono text-[13px]" 
+              placeholder="e.g. +974 30512233" 
+            />
+          </div>
+
           {role === "customer" && (
-            <>
-              <div className="space-y-1.5 animate-slide-up">
-                <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Full Name</label>
-                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input w-full" placeholder="e.g. John Doe" />
-              </div>
-              <div className="space-y-1.5 animate-slide-up">
-                <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Contact Number</label>
-                <input type="text" required value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} className="input w-full" placeholder="e.g. +974 30512233" />
-              </div>
-            </>
+            <div className="space-y-1.5 animate-slide-up">
+              <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Full Name</label>
+              <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input w-full" placeholder="e.g. John Doe" />
+            </div>
           )}
 
           <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 mt-2">
