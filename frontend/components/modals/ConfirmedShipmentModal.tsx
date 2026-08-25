@@ -179,7 +179,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
         box_no:       shipment.box_no       ?? "",
         so_number:    shipment.so_number    ?? "",
         bl_number:    shipment.bl_number    ?? "",
-        track_status: shipment.track_status ?? "",
+        track_status: shipment.track_status || "Confirmed",
         carrier:      shipment.carrier      ?? "",
         etd:          shipment.etd          ? format(new Date(shipment.etd), "yyyy-MM-dd") : "",
         eta:          shipment.eta          ? format(new Date(shipment.eta), "yyyy-MM-dd") : "",
@@ -397,7 +397,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
   if (!shipment) return null;
 
   const editSet = (k: keyof typeof editForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setEditForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
@@ -496,7 +496,18 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-1">Track Status</p>
-                    <input className="input-sm" value={editForm.track_status as string} onChange={editSet("track_status")} />
+                    <select
+                      className="select-sm w-full font-semibold text-emerald bg-slate-900 border border-emerald/30 focus:border-emerald"
+                      value={editForm.track_status || "Confirmed"}
+                      onChange={editSet("track_status")}
+                    >
+                      <option value="Confirmed">Confirmed (Default)</option>
+                      <option value="Scheduled">Scheduled</option>
+                      <option value="In Transit">In Transit</option>
+                      <option value="Clearance">Clearance</option>
+                      <option value="Warehouse">Warehouse</option>
+                      <option value="Delivered">Delivered</option>
+                    </select>
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button onClick={handleSaveTracking} disabled={saving} className="btn-primary text-sm">
@@ -520,7 +531,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   <InfoField label="ETA"          value={shipment.eta ? format(new Date(shipment.eta), "dd MMM yyyy") : null} />
                   <InfoField label="Customer Name"  value={shipment.customer_name} />
                   <InfoField label="Customer Email" value={shipment.customer_email} />
-                  <InfoField label="Track Status" value={shipment.track_status} />
+                  <InfoField label="Track Status" value={shipment.track_status || "Confirmed"} />
                 </div>
               )}
 

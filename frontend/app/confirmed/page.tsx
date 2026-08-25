@@ -406,9 +406,9 @@ export default function ConfirmedPage() {
                       <td className="font-mono text-xs">{s.so_number ?? "—"}</td>
                       <td className="font-mono text-xs">{s.bl_number ?? "—"}</td>
                       <td>
-                        {s.track_status
-                          ? <span className="text-xs text-blue-bright">{s.track_status}</span>
-                          : <span className="text-muted text-xs">—</span>}
+                        <span className="text-xs font-semibold text-blue-bright">
+                          {s.track_status || "Confirmed"}
+                        </span>
                       </td>
                       <td>
                         {totalReplies > 0 && unreadReplies > 0 ? (

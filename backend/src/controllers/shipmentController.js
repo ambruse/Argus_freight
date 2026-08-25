@@ -347,6 +347,10 @@ const updateStatus = async (req, res, next) => {
          status = COALESCE($1, status),
          cost = COALESCE($2, cost),
          profit = COALESCE($3, profit),
+         track_status = CASE 
+           WHEN LOWER(COALESCE($1, status)) = 'confirmed' AND (track_status IS NULL OR track_status = '' OR LOWER(track_status) = 'pending') THEN 'Confirmed'
+           ELSE track_status
+         END,
          last_follow_up = CASE WHEN COALESCE($1, status) = 'Cancelled' THEN NULL ELSE NOW() END
        WHERE ref_no = $4
        RETURNING *`,

@@ -8,12 +8,14 @@ const STAGES = ['Confirmed', 'Scheduled', 'In Transit', 'Clearance', 'Warehouse'
 function mapStatusToStageIndex(statusStr) {
   if (!statusStr) return 0;
   const s = statusStr.toLowerCase().trim();
+  
+  if (s === 'delivered' || s.includes('deliver') || s.includes('complete') || s.includes('close') || s.includes('signed')) return 5;
+  if (s === 'warehouse' || s === 'wearhouse' || s.includes('warehous') || s.includes('wearhous') || s.includes('arrived') || s.includes('hub') || s.includes('sort') || s.includes('facility')) return 4;
+  if (s === 'clearance' || s === 'clearence' || s.includes('clear') || s.includes('custom') || s.includes('inspect') || s.includes('declaration')) return 3;
+  if (s === 'in transit' || s.includes('transit') || s.includes('depart') || s.includes('shipped') || s.includes('sailing') || s.includes('flight')) return 2;
+  if (s === 'scheduled' || s.includes('schedul') || s.includes('assign') || s.includes('dispatch')) return 1;
   if (s === 'confirmed' || s.includes('confirm') || s.includes('booked') || s.includes('draft') || s.includes('new')) return 0;
-  if (s.includes('schedul') || s.includes('assign') || s.includes('dispatch')) return 1;
-  if (s.includes('transit') || s.includes('depart') || s.includes('shipped') || s.includes('sailing') || s.includes('flight')) return 2;
-  if (s.includes('clear') || s.includes('custom') || s.includes('inspect') || s.includes('declaration')) return 3;
-  if (s.includes('warehous') || s.includes('arrived') || s.includes('hub') || s.includes('sort') || s.includes('facility')) return 4;
-  if (s.includes('deliver') || s.includes('complete') || s.includes('close') || s.includes('signed')) return 5;
+  
   return 0;
 }
 
