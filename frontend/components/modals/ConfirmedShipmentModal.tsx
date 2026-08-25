@@ -23,11 +23,11 @@ interface Props {
 }
 
 // ── Reusable field display ────────────────────────────────────
-function InfoField({ label, value }: { label: string; value?: string | null }) {
+function InfoField({ label, value }: { label: string; value?: string | number | null }) {
   return (
     <div>
       <p className="text-[10px] uppercase tracking-widest font-semibold text-muted">{label}</p>
-      <p className="text-sm text-primary mt-0.5">{value || <span className="text-faint">—</span>}</p>
+      <p className="text-sm text-primary mt-0.5">{value != null && value !== "" ? String(value) : <span className="text-faint">—</span>}</p>
     </div>
   );
 }
@@ -175,18 +175,20 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
       setTab("details");
       setEditing(false);
       setEditForm({
-        do_number:    shipment.do_number    ?? "",
-        box_no:       shipment.box_no       ?? "",
-        so_number:    shipment.so_number    ?? "",
-        bl_number:    shipment.bl_number    ?? "",
-        track_status: shipment.track_status || "Confirmed",
-        carrier:      shipment.carrier      ?? "",
-        etd:          shipment.etd          ? format(new Date(shipment.etd), "yyyy-MM-dd") : "",
-        eta:          shipment.eta          ? format(new Date(shipment.eta), "yyyy-MM-dd") : "",
-        cost:         shipment.cost         != null ? String(shipment.cost) : "",
-        profit:       shipment.profit       != null ? String(shipment.profit) : "",
-        customer_name:  shipment.customer_name  ?? "",
-        customer_email: shipment.customer_email ?? "",
+        do_number:         shipment.do_number         ?? "",
+        box_no:            shipment.box_no            ?? "",
+        so_number:         shipment.so_number         ?? "",
+        bl_number:         shipment.bl_number         ?? "",
+        gross_weight:      shipment.gross_weight      ?? (shipment.weight ? String(shipment.weight) : ""),
+        chargeable_weight: shipment.chargeable_weight ?? "",
+        track_status:      shipment.track_status      || "Confirmed",
+        carrier:           shipment.carrier           ?? "",
+        etd:               shipment.etd               ? format(new Date(shipment.etd), "yyyy-MM-dd") : "",
+        eta:               shipment.eta               ? format(new Date(shipment.eta), "yyyy-MM-dd") : "",
+        cost:              shipment.cost              != null ? String(shipment.cost) : "",
+        profit:            shipment.profit            != null ? String(shipment.profit) : "",
+        customer_name:     shipment.customer_name     ?? "",
+        customer_email:    shipment.customer_email    ?? "",
       });
       if (user?.role !== "customer") {
         fetchFiles(shipment.ref_no);
@@ -465,15 +467,17 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[
-                      ["Carrier",      "carrier"],
-                      ["Job/DO Number", "do_number"],
+                      ["Carrier",           "carrier"],
+                      ["Job/DO Number",     "do_number"],
                       [shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number", "bl_number"],
-                      ["SO Number",    "so_number"],
-                      ["Box No.",      "box_no"],
-                      ["Cost (QAR)",  "cost"],
-                      ["Profit (QAR)", "profit"],
-                      ["Customer Name", "customer_name"],
-                      ["Customer Email", "customer_email"],
+                      ["SO Number",         "so_number"],
+                      ["Box No.",           "box_no"],
+                      ["Gross Weight",      "gross_weight"],
+                      ["Chargeable Weight", "chargeable_weight"],
+                      ["Cost (QAR)",        "cost"],
+                      ["Profit (QAR)",      "profit"],
+                      ["Customer Name",     "customer_name"],
+                      ["Customer Email",    "customer_email"],
                     ].map(([label, key]) => (
                       <div key={key}>
                         <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-1">{label}</p>
@@ -519,19 +523,21 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
               ) : (
                 /* ── Read View ──────────────────────────────── */
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
-                  <InfoField label="Carrier"      value={shipment.carrier} />
-                  <InfoField label="Job/DO Number"    value={shipment.do_number} />
-                  <InfoField label={shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number"}    value={shipment.bl_number} />
-                  <InfoField label="SO Number"    value={shipment.so_number} />
-                  <InfoField label="Box No."      value={shipment.box_no} />
-                  <InfoField label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
-                  <InfoField label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
-                  <InfoField label="Profit"       value={shipment.profit ? `QAR ${Number(shipment.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
-                  <InfoField label="ETD"          value={shipment.etd ? format(new Date(shipment.etd), "dd MMM yyyy") : null} />
-                  <InfoField label="ETA"          value={shipment.eta ? format(new Date(shipment.eta), "dd MMM yyyy") : null} />
-                  <InfoField label="Customer Name"  value={shipment.customer_name} />
-                  <InfoField label="Customer Email" value={shipment.customer_email} />
-                  <InfoField label="Track Status" value={shipment.track_status || "Confirmed"} />
+                  <InfoField label="Carrier"           value={shipment.carrier} />
+                  <InfoField label="Job/DO Number"     value={shipment.do_number} />
+                  <InfoField label={shipment.mode?.toUpperCase() === "AIR" ? "AWB Number" : "BL Number"} value={shipment.bl_number} />
+                  <InfoField label="SO Number"         value={shipment.so_number} />
+                  <InfoField label="Box No."           value={shipment.box_no} />
+                  <InfoField label="Gross Weight"      value={shipment.gross_weight || (shipment.weight ? String(shipment.weight) : null)} />
+                  <InfoField label="Chargeable Weight" value={shipment.chargeable_weight || shipment.gross_weight || (shipment.weight ? String(shipment.weight) : null)} />
+                  <InfoField label="Cost"              value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
+                  <InfoField label="Customer Price"    value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
+                  <InfoField label="Profit"            value={shipment.profit ? `QAR ${Number(shipment.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
+                  <InfoField label="ETD"               value={shipment.etd ? format(new Date(shipment.etd), "dd MMM yyyy") : null} />
+                  <InfoField label="ETA"               value={shipment.eta ? format(new Date(shipment.eta), "dd MMM yyyy") : null} />
+                  <InfoField label="Customer Name"     value={shipment.customer_name} />
+                  <InfoField label="Customer Email"    value={shipment.customer_email} />
+                  <InfoField label="Track Status"      value={shipment.track_status || "Confirmed"} />
                 </div>
               )}
 
