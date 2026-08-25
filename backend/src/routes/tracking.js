@@ -94,20 +94,12 @@ router.get('/:ref', async (req, res) => {
               OR UPPER(cust_req_no) LIKE $5
            ORDER BY 
              CASE 
-               WHEN LOWER(status) IN ('confirmed', 'completed', 'in scheduled', 'scheduled', 'in transit', 'clearance', 'clearence', 'warehouse', 'wearhouse', 'delivered', 'files pending') 
-                 OR LOWER(track_status) IN ('confirmed', 'completed', 'in scheduled', 'scheduled', 'in transit', 'clearance', 'clearence', 'warehouse', 'wearhouse', 'delivered') THEN 0
-               ELSE 1
-             END,
-             CASE 
                WHEN UPPER(ref_no) = $1 THEN 1
-               WHEN UPPER(cust_req_no) = $1 THEN 2
-               WHEN UPPER(ref_no) = $2 THEN 3
-               WHEN UPPER(cust_req_no) = $2 THEN 4
-               WHEN UPPER(ref_no) LIKE $3 THEN 5
-               WHEN UPPER(cust_req_no) LIKE $3 THEN 6
-               ELSE 7
-             END,
-             updated_at DESC
+               WHEN UPPER(ref_no) = $2 THEN 2
+               WHEN UPPER(ref_no) LIKE $3 THEN 3
+               WHEN UPPER(ref_no) LIKE $4 THEN 4
+               ELSE 5
+             END
            LIMIT 1`,
           [
             refUpper,
@@ -119,44 +111,6 @@ router.get('/:ref', async (req, res) => {
         );
         if (queryRes.rows && queryRes.rows.length > 0) {
           dbShipment = queryRes.rows[0];
-        }
-
-        // Fallback: Check sandbox tables if not found in main shipments table
-        if (!dbShipment) {
-          try {
-            const { getAllSuffixes } = require('../config/dbHelper');
-            const suffixes = await getAllSuffixes();
-            for (const sfx of suffixes) {
-              const sRes = await db.query(
-                `SELECT * FROM \`shipments_${sfx}\`
-                 WHERE UPPER(ref_no) = $1 
-                    OR UPPER(cust_req_no) = $1 
-                    OR UPPER(bl_number) = $1
-                    OR UPPER(ref_no) = $2 
-                    OR UPPER(cust_req_no) = $2 
-                    OR UPPER(bl_number) = $2
-                    OR UPPER(ref_no) LIKE $3
-                    OR UPPER(cust_req_no) LIKE $3
-                    OR UPPER(ref_no) LIKE $4
-                    OR UPPER(cust_req_no) LIKE $4
-                    OR UPPER(ref_no) LIKE $5
-                    OR UPPER(cust_req_no) LIKE $5
-                 ORDER BY 
-                   CASE 
-                     WHEN LOWER(status) IN ('confirmed', 'completed', 'in scheduled', 'scheduled', 'in transit', 'clearance', 'clearence', 'warehouse', 'wearhouse', 'delivered', 'files pending') 
-                       OR LOWER(track_status) IN ('confirmed', 'completed', 'in scheduled', 'scheduled', 'in transit', 'clearance', 'clearence', 'warehouse', 'wearhouse', 'delivered') THEN 0
-                     ELSE 1
-                   END,
-                   updated_at DESC
-                 LIMIT 1`,
-                [refUpper, refCleaned, `${refUpper}%`, `${refCleaned}%`, `%${refCleaned}%`]
-              );
-              if (sRes.rows && sRes.rows.length > 0) {
-                dbShipment = sRes.rows[0];
-                break;
-              }
-            }
-          } catch (e) {}
         }
       } catch (err) {
         console.warn('[Tracking API] DB query notice:', err.message);
@@ -170,11 +124,10 @@ router.get('/:ref', async (req, res) => {
       });
     }
 
-    const mainStatus = (dbShipment.status || '').toLowerCase().trim();
-    const currentTrackStatus = (dbShipment.track_status || '').toLowerCase().trim();
+    const mainStatus = (dbShipment.status || '').toLowerCase();
     const isConfirmedOrActive = [
-      'confirmed', 'completed', 'in scheduled', 'scheduled', 'in transit', 'clearance', 'clearence', 'warehouse', 'wearhouse', 'delivered', 'files pending'
-    ].some(st => mainStatus.includes(st) || currentTrackStatus.includes(st));
+      'confirmed', 'completed', 'in scheduled', 'in transit', 'clearance', 'warehouse', 'delivered', 'files pending'
+    ].includes(mainStatus);
 
     if (!isConfirmedOrActive) {
       return res.json({
@@ -290,8 +243,8 @@ router.get('/:ref', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[Tracking API Error]', error?.message || error);
-    return res.json({ success: false, message: 'No tracking information found' });
+    console.error('[Tracking API Error]', error);
+    res.status(500).json({ success: false, error: 'Failed to retrieve shipment tracking details.' });
   }
 });
 
