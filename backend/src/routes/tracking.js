@@ -83,32 +83,32 @@ router.get('/:ref', async (req, res) => {
       try {
         const queryRes = await db.query(
           `SELECT * FROM shipments 
-           WHERE UPPER(cust_req_no) = $1 
-              OR UPPER(ref_no) = $1 
+           WHERE UPPER(ref_no) = $1 
+              OR UPPER(cust_req_no) = $1 
               OR UPPER(bl_number) = $1
-              OR UPPER(cust_req_no) = $2 
               OR UPPER(ref_no) = $2 
+              OR UPPER(cust_req_no) = $2 
               OR UPPER(bl_number) = $2
-              OR UPPER(cust_req_no) LIKE $3
               OR UPPER(ref_no) LIKE $3
-              OR UPPER(cust_req_no) LIKE $4
+              OR UPPER(cust_req_no) LIKE $3
               OR UPPER(ref_no) LIKE $4
-              OR UPPER(cust_req_no) LIKE $5
+              OR UPPER(cust_req_no) LIKE $4
               OR UPPER(ref_no) LIKE $5
+              OR UPPER(cust_req_no) LIKE $5
            ORDER BY 
              CASE 
                WHEN LOWER(status) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
                ELSE 2
              END ASC,
              CASE 
-               WHEN UPPER(cust_req_no) = $1 THEN 1
-               WHEN UPPER(ref_no) = $1 THEN 2
-               WHEN UPPER(cust_req_no) = $2 THEN 3
-               WHEN UPPER(ref_no) = $2 THEN 4
-               WHEN UPPER(cust_req_no) LIKE $3 THEN 5
-               WHEN UPPER(ref_no) LIKE $3 THEN 6
-               WHEN UPPER(cust_req_no) LIKE $4 THEN 7
-               WHEN UPPER(ref_no) LIKE $4 THEN 8
+               WHEN UPPER(ref_no) = $1 THEN 1
+               WHEN UPPER(cust_req_no) = $1 THEN 2
+               WHEN UPPER(ref_no) = $2 THEN 3
+               WHEN UPPER(cust_req_no) = $2 THEN 4
+               WHEN UPPER(ref_no) LIKE $3 THEN 5
+               WHEN UPPER(cust_req_no) LIKE $3 THEN 6
+               WHEN UPPER(ref_no) LIKE $4 THEN 7
+               WHEN UPPER(cust_req_no) LIKE $4 THEN 8
                ELSE 9
              END ASC,
              updated_at DESC, id DESC
@@ -137,32 +137,32 @@ router.get('/:ref', async (req, res) => {
           if (!suffix || suffix === 'admin') continue;
           const sRes = await db.query(
             `SELECT * FROM shipments_${suffix}
-             WHERE UPPER(cust_req_no) = $1 
-                OR UPPER(ref_no) = $1 
+             WHERE UPPER(ref_no) = $1 
+                OR UPPER(cust_req_no) = $1 
                 OR UPPER(bl_number) = $1
-                OR UPPER(cust_req_no) = $2 
                 OR UPPER(ref_no) = $2 
+                OR UPPER(cust_req_no) = $2 
                 OR UPPER(bl_number) = $2
-                OR UPPER(cust_req_no) LIKE $3
                 OR UPPER(ref_no) LIKE $3
-                OR UPPER(cust_req_no) LIKE $4
+                OR UPPER(cust_req_no) LIKE $3
                 OR UPPER(ref_no) LIKE $4
-                OR UPPER(cust_req_no) LIKE $5
+                OR UPPER(cust_req_no) LIKE $4
                 OR UPPER(ref_no) LIKE $5
+                OR UPPER(cust_req_no) LIKE $5
              ORDER BY 
                CASE 
                  WHEN LOWER(status) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
                  ELSE 2
                END ASC,
                CASE 
-                 WHEN UPPER(cust_req_no) = $1 THEN 1
-                 WHEN UPPER(ref_no) = $1 THEN 2
-                 WHEN UPPER(cust_req_no) = $2 THEN 3
-                 WHEN UPPER(ref_no) = $2 THEN 4
-                 WHEN UPPER(cust_req_no) LIKE $3 THEN 5
-                 WHEN UPPER(ref_no) LIKE $3 THEN 6
-                 WHEN UPPER(cust_req_no) LIKE $4 THEN 7
-                 WHEN UPPER(ref_no) LIKE $4 THEN 8
+                 WHEN UPPER(ref_no) = $1 THEN 1
+                 WHEN UPPER(cust_req_no) = $1 THEN 2
+                 WHEN UPPER(ref_no) = $2 THEN 3
+                 WHEN UPPER(cust_req_no) = $2 THEN 4
+                 WHEN UPPER(ref_no) LIKE $3 THEN 5
+                 WHEN UPPER(cust_req_no) LIKE $3 THEN 6
+                 WHEN UPPER(ref_no) LIKE $4 THEN 7
+                 WHEN UPPER(cust_req_no) LIKE $4 THEN 8
                  ELSE 9
                END ASC,
                updated_at DESC, id DESC
