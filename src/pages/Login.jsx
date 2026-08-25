@@ -159,14 +159,14 @@ export default function Login() {
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="form-group">
-            <label className="form-label" htmlFor="login-email">Portal Username</label>
+            <label className="form-label" htmlFor="login-email">Username or Email Address</label>
             <div style={{ position: 'relative' }}>
               <input
                 id="login-email"
-                type="email"
+                type="text"
                 required
                 className="form-input"
-                placeholder="client@company.com"
+                placeholder="username or user@company.com"
                 style={{ width: '100%' }}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

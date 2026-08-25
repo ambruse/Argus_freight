@@ -66,10 +66,13 @@ const login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Username and password are required.' });
     }
 
-    // Look up user by username (case-insensitive)
+    // Look up user by username or email (case-insensitive)
     const result = await db.query(
-      'SELECT id, username, password_hash, role, is_stalled, name, email_address, contact_number, customer_id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE)',
-      [username]
+      `SELECT id, username, password_hash, role, is_stalled, name, email_address, contact_number, customer_id, country 
+       FROM users 
+       WHERE (LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1)) 
+         AND (is_deleted IS NOT TRUE)`,
+      [username.trim()]
     );
 
     if (result.rows.length === 0) {
@@ -242,23 +245,36 @@ const register = async (req, res, next) => {
     newPassword = decryptPassword(newPassword);
     adminPassword = decryptPassword(adminPassword);
 
+    if (!newUsername || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Username and Password are required.' });
+    }
+
+    if (!email_address || !email_address.trim()) {
+      return res.status(400).json({ success: false, message: 'Email address (Gmail / Email) is compulsory for registration.' });
+    }
+
+    const emailTrimmed = email_address.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address format (e.g. name@gmail.com).' });
+    }
+
     if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long and contain both letters and numbers.' });
     }
 
     if (role === 'customer') {
-      if (!newUsername || !newPassword || !name || !email_address || !contact_number) {
-        return res.status(400).json({ success: false, message: 'All fields (Name, Mail Address, Contact Number, Username, Password) are required for Customer registration.' });
+      if (!name || !contact_number) {
+        return res.status(400).json({ success: false, message: 'All fields (Name, Email Address, Contact Number, Username, Password) are required for Customer registration.' });
       }
     } else {
-      if (!newUsername || !newPassword || !adminUsername || !adminPassword) {
-        return res.status(400).json({ success: false, message: 'All fields are required.' });
+      if (!adminUsername || !adminPassword) {
+        return res.status(400).json({ success: false, message: 'Admin authorization username and password are required.' });
       }
 
       // 1. Authenticate the Admin
       const adminRes = await db.query(
-        'SELECT password_hash, role FROM users WHERE LOWER(username) = LOWER($1)',
-        [adminUsername]
+        'SELECT password_hash, role FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE)',
+        [adminUsername.trim()]
       );
 
       if (adminRes.rows.length === 0) {
@@ -276,16 +292,25 @@ const register = async (req, res, next) => {
       }
     }
 
-    // 2. Check if new username already exists among active users
+    // 2. Check if new username already exists among active users (Strictly no two usernames can ever be the same)
     const existingRes = await db.query(
       'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE)',
-      [newUsername]
+      [newUsername.trim()]
     );
     if (existingRes.rows.length > 0) {
-      return res.status(409).json({ success: false, message: 'Username is already taken.' });
+      return res.status(409).json({ success: false, message: 'Username is already taken. No two accounts can have the same username.' });
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
+    // 3. Check if email already exists among active users
+    const existingEmailRes = await db.query(
+      'SELECT id FROM users WHERE LOWER(email_address) = LOWER($1) AND (is_deleted IS NOT TRUE)',
+      [emailTrimmed]
+    );
+    if (existingEmailRes.rows.length > 0) {
+      return res.status(409).json({ success: false, message: 'An account with this email address already exists.' });
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(newUsername.trim())) {
       return res.status(400).json({ success: false, message: 'Username must be alphanumeric and can only contain underscores.' });
     }
 
@@ -585,19 +610,33 @@ const createAdminOperator = async (req, res, next) => {
     password = decryptPassword(password);
 
     if (!username || !password || !email_address || !email_password) {
-      return res.status(400).json({ success: false, message: 'All fields are required.' });
+      return res.status(400).json({ success: false, message: 'All fields (Username, Password, Email Address, App Password) are required.' });
     }
 
-    // Check if username already exists among active users
+    const emailTrimmed = email_address.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address format (e.g. name@gmail.com).' });
+    }
+
+    // Check if username already exists among active users (Strictly no duplicate usernames)
     const existingRes = await db.query(
       'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE)',
-      [username]
+      [username.trim()]
     );
     if (existingRes.rows.length > 0) {
-      return res.status(409).json({ success: false, message: 'Username is already taken.' });
+      return res.status(409).json({ success: false, message: 'Username is already taken. No two accounts can have the same username.' });
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    // Check if email already exists among active users
+    const existingEmailRes = await db.query(
+      'SELECT id FROM users WHERE LOWER(email_address) = LOWER($1) AND (is_deleted IS NOT TRUE)',
+      [emailTrimmed]
+    );
+    if (existingEmailRes.rows.length > 0) {
+      return res.status(409).json({ success: false, message: 'An account with this email address already exists.' });
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
       return res.status(400).json({ success: false, message: 'Username must be alphanumeric and can only contain underscores.' });
     }
 

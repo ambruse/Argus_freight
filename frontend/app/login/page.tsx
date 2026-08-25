@@ -54,7 +54,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     if (!username.trim() || !password.trim()) {
-      setError("Please enter your username and password.");
+      setError("Please enter your username or email address and password.");
       return;
     }
     setLoading(true);
@@ -240,12 +240,12 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username */}
+            {/* Username or Email */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: "var(--text-muted)", opacity: 0.8 }} htmlFor="login-username"
               >
-                Username
+                Username or Email Address
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm"
@@ -259,7 +259,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  placeholder="your username"
+                  placeholder="e.g. admin or user@gmail.com"
                   className="input pl-9"
                   disabled={loading}
                 />

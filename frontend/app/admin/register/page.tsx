@@ -87,6 +87,14 @@ export default function AdminRegisterUserPage() {
 
   const handleInitialSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!emailAddress.trim()) {
+      toast.error("Email address (Gmail / Email) is compulsory.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress.trim())) {
+      toast.error("Please provide a valid email address format (e.g. name@gmail.com).");
+      return;
+    }
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match.");
       return;
@@ -109,7 +117,7 @@ export default function AdminRegisterUserPage() {
           newPassword: securePassword,
           role,
           name,
-          email_address: emailAddress,
+          email_address: emailAddress.trim(),
           contact_number: contactNumber,
           country
         });
@@ -139,6 +147,10 @@ export default function AdminRegisterUserPage() {
       toast.error("Admin credentials are required.");
       return;
     }
+    if (!emailAddress.trim()) {
+      toast.error("Email address (Gmail / Email) is compulsory.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -148,6 +160,7 @@ export default function AdminRegisterUserPage() {
         newUsername,
         newPassword: secureNewPassword,
         role,
+        email_address: emailAddress.trim(),
         adminUsername,
         adminPassword: secureAdminPassword,
         agent_extension: agentExtension || undefined,
@@ -160,6 +173,7 @@ export default function AdminRegisterUserPage() {
       setNewPassword("");
       setConfirmPassword("");
       setRole("operator");
+      setEmailAddress("");
       setAgentExtension("");
       setShowAdminModal(false);
       setAdminPassword("");
@@ -287,6 +301,20 @@ export default function AdminRegisterUserPage() {
             </div>
 
             <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                Email Address (Gmail / Email) <span className="text-amber-500 font-bold">*</span>
+              </label>
+              <input
+                type="email"
+                required
+                value={emailAddress}
+                onChange={(e) => setEmailAddress(e.target.value)}
+                className="input w-full"
+                placeholder="e.g. user@gmail.com"
+              />
+            </div>
+
+            <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted uppercase tracking-wider">Country</label>
               <select
                 value={country}
@@ -327,17 +355,6 @@ export default function AdminRegisterUserPage() {
                     onChange={(e) => setName(e.target.value)}
                     className="input w-full"
                     placeholder="e.g. John Doe"
-                  />
-                </div>
-                <div className="space-y-1.5 animate-slide-up">
-                  <label className="text-xs font-medium text-muted uppercase tracking-wider">Mail Address</label>
-                  <input
-                    type="email"
-                    required
-                    value={emailAddress}
-                    onChange={(e) => setEmailAddress(e.target.value)}
-                    className="input w-full"
-                    placeholder="e.g. john@example.com"
                   />
                 </div>
                 <div className="space-y-1.5 animate-slide-up">

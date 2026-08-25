@@ -67,6 +67,8 @@ export default function RegisterPage() {
 
   const handleInitialSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!emailAddress.trim()) { toast.error("Email address (Gmail / Email) is compulsory."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress.trim())) { toast.error("Please provide a valid email address."); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords do not match."); return; }
     if (newPassword.length < 8) { toast.error("Password must be at least 8 characters."); return; }
     if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
@@ -78,7 +80,7 @@ export default function RegisterPage() {
       setLoading(true);
       try {
         const securePassword = await encryptPassword(newPassword);
-        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress, contact_number: contactNumber, country });
+        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress.trim(), contact_number: contactNumber, country });
         toast.success("Account created successfully!");
         router.push("/login");
       } catch (err: any) {
@@ -94,11 +96,12 @@ export default function RegisterPage() {
   const handleFinalRegister = async (e: FormEvent) => {
     e.preventDefault();
     if (!adminUsername || !adminPassword) { toast.error("Admin credentials are required."); return; }
+    if (!emailAddress.trim()) { toast.error("Email address (Gmail / Email) is compulsory."); return; }
     setLoading(true);
     try {
       const secureNewPassword = await encryptPassword(newPassword);
       const secureAdminPassword = await encryptPassword(adminPassword);
-      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, adminUsername, adminPassword: secureAdminPassword, country });
+      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, email_address: emailAddress.trim(), adminUsername, adminPassword: secureAdminPassword, country });
       toast.success("Account created successfully!");
       router.push("/login");
     } catch (err: any) {
@@ -180,6 +183,20 @@ export default function RegisterPage() {
           )}
 
           <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>
+              Email Address (Gmail / Email) <span className="text-amber-500 font-bold">*</span>
+            </label>
+            <input 
+              type="email" 
+              required 
+              value={emailAddress} 
+              onChange={(e) => setEmailAddress(e.target.value)} 
+              className="input w-full" 
+              placeholder="e.g. user@gmail.com" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Country</label>
             <select
               value={country}
@@ -201,10 +218,6 @@ export default function RegisterPage() {
               <div className="space-y-1.5 animate-slide-up">
                 <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Full Name</label>
                 <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input w-full" placeholder="e.g. John Doe" />
-              </div>
-              <div className="space-y-1.5 animate-slide-up">
-                <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Mail Address</label>
-                <input type="email" required value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} className="input w-full" placeholder="e.g. john@example.com" />
               </div>
               <div className="space-y-1.5 animate-slide-up">
                 <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)", opacity: 0.8 }}>Contact Number</label>
