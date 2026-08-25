@@ -23,18 +23,18 @@ function getTodayDateCode(date = new Date()) {
 async function generateEnquiryRefNo() {
   const dateCode = getTodayDateCode();
   const prefix = `ARG-${dateCode}`;
-
   let maxSeq = 0;
+  const regex = new RegExp(`^ARG-${dateCode}(\\d+)(?:-\\d+)?$`, 'i');
+
   try {
+    // 1. Query central shipments table
     const result = await db.query(
       `SELECT ref_no, cust_req_no FROM shipments 
        WHERE ref_no LIKE $1 OR cust_req_no LIKE $1`,
       [`${prefix}%`]
     );
 
-    const regex = new RegExp(`^ARG-${dateCode}(\\d+)(?:-\\d+)?$`, 'i');
-
-    for (const row of result.rows) {
+    for (const row of (result.rows || [])) {
       for (const val of [row.ref_no, row.cust_req_no]) {
         if (val) {
           const match = String(val).trim().match(regex);
@@ -47,6 +47,56 @@ async function generateEnquiryRefNo() {
         }
       }
     }
+
+    // 2. Query call_enquiries table
+    try {
+      const callRes = await db.query(
+        `SELECT ref_no FROM call_enquiries WHERE ref_no LIKE $1`,
+        [`${prefix}%`]
+      );
+      for (const row of (callRes.rows || [])) {
+        if (row.ref_no) {
+          const match = String(row.ref_no).trim().match(regex);
+          if (match && match[1]) {
+            const n = parseInt(match[1], 10);
+            if (!isNaN(n) && n > maxSeq) {
+              maxSeq = n;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 3. Query sandbox shipments tables if present
+    try {
+      const tablesRes = await db.query(
+        `SELECT table_name FROM information_schema.tables 
+         WHERE table_schema = DATABASE() AND table_name LIKE 'shipments_%'`
+      );
+      for (const tRow of (tablesRes.rows || [])) {
+        const tbl = tRow.table_name || tRow.TABLE_NAME;
+        if (tbl) {
+          const sRes = await db.query(
+            `SELECT ref_no, cust_req_no FROM \`${tbl}\` WHERE ref_no LIKE $1 OR cust_req_no LIKE $1`,
+            [`${prefix}%`]
+          );
+          for (const row of (sRes.rows || [])) {
+            for (const val of [row.ref_no, row.cust_req_no]) {
+              if (val) {
+                const match = String(val).trim().match(regex);
+                if (match && match[1]) {
+                  const n = parseInt(match[1], 10);
+                  if (!isNaN(n) && n > maxSeq) {
+                    maxSeq = n;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
   } catch (err) {
     console.error('[RefGenerator] Error querying max enquiry seq:', err.message);
   }
@@ -60,7 +110,7 @@ async function generateEnquiryRefNo() {
  * Suffix -x tracks how many RFQs have been issued for that specific enquiry (starts at 1).
  */
 async function generateRfqRefNo(enquiryRef) {
-  let baseRef = enquiryRef ? enquiryRef.trim() : '';
+  let baseRef = enquiryRef ? String(enquiryRef).trim() : '';
   if (!baseRef) {
     baseRef = await generateEnquiryRefNo();
   } else {
@@ -69,15 +119,17 @@ async function generateRfqRefNo(enquiryRef) {
   }
 
   let maxSuffix = 0;
+  const regex = new RegExp(`^${baseRef}-(\\d+)$`, 'i');
+
   try {
+    // 1. Query central shipments
     const result = await db.query(
       `SELECT ref_no FROM shipments 
        WHERE cust_req_no = $1 OR ref_no LIKE $2`,
       [baseRef, `${baseRef}-%`]
     );
 
-    const regex = new RegExp(`^${baseRef}-(\\d+)$`, 'i');
-    for (const row of result.rows) {
+    for (const row of (result.rows || [])) {
       if (row.ref_no) {
         const match = String(row.ref_no).trim().match(regex);
         if (match && match[1]) {
@@ -88,6 +140,35 @@ async function generateRfqRefNo(enquiryRef) {
         }
       }
     }
+
+    // 2. Query sandbox shipments tables
+    try {
+      const tablesRes = await db.query(
+        `SELECT table_name FROM information_schema.tables 
+         WHERE table_schema = DATABASE() AND table_name LIKE 'shipments_%'`
+      );
+      for (const tRow of (tablesRes.rows || [])) {
+        const tbl = tRow.table_name || tRow.TABLE_NAME;
+        if (tbl) {
+          const sRes = await db.query(
+            `SELECT ref_no FROM \`${tbl}\` WHERE cust_req_no = $1 OR ref_no LIKE $2`,
+            [baseRef, `${baseRef}-%`]
+          );
+          for (const row of (sRes.rows || [])) {
+            if (row.ref_no) {
+              const match = String(row.ref_no).trim().match(regex);
+              if (match && match[1]) {
+                const s = parseInt(match[1], 10);
+                if (!isNaN(s) && s > maxSuffix) {
+                  maxSuffix = s;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
   } catch (err) {
     console.error('[RefGenerator] Error querying max RFQ suffix:', err.message);
   }
@@ -101,7 +182,7 @@ async function generateRfqRefNo(enquiryRef) {
  * e.g. for count = 3: [ARG-2408261-1, ARG-2408261-2, ARG-2408261-3]
  */
 async function generateBulkRfqRefNos(enquiryRef, count = 1) {
-  let baseRef = enquiryRef ? enquiryRef.trim() : '';
+  let baseRef = enquiryRef ? String(enquiryRef).trim() : '';
   if (!baseRef) {
     baseRef = await generateEnquiryRefNo();
   } else {
@@ -109,6 +190,8 @@ async function generateBulkRfqRefNos(enquiryRef, count = 1) {
   }
 
   let maxSuffix = 0;
+  const regex = new RegExp(`^${baseRef}-(\\d+)$`, 'i');
+
   try {
     const result = await db.query(
       `SELECT ref_no FROM shipments 
@@ -116,8 +199,7 @@ async function generateBulkRfqRefNos(enquiryRef, count = 1) {
       [baseRef, `${baseRef}-%`]
     );
 
-    const regex = new RegExp(`^${baseRef}-(\\d+)$`, 'i');
-    for (const row of result.rows) {
+    for (const row of (result.rows || [])) {
       if (row.ref_no) {
         const match = String(row.ref_no).trim().match(regex);
         if (match && match[1]) {
@@ -128,6 +210,34 @@ async function generateBulkRfqRefNos(enquiryRef, count = 1) {
         }
       }
     }
+
+    try {
+      const tablesRes = await db.query(
+        `SELECT table_name FROM information_schema.tables 
+         WHERE table_schema = DATABASE() AND table_name LIKE 'shipments_%'`
+      );
+      for (const tRow of (tablesRes.rows || [])) {
+        const tbl = tRow.table_name || tRow.TABLE_NAME;
+        if (tbl) {
+          const sRes = await db.query(
+            `SELECT ref_no FROM \`${tbl}\` WHERE cust_req_no = $1 OR ref_no LIKE $2`,
+            [baseRef, `${baseRef}-%`]
+          );
+          for (const row of (sRes.rows || [])) {
+            if (row.ref_no) {
+              const match = String(row.ref_no).trim().match(regex);
+              if (match && match[1]) {
+                const s = parseInt(match[1], 10);
+                if (!isNaN(s) && s > maxSuffix) {
+                  maxSuffix = s;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
+
   } catch (err) {
     console.error('[RefGenerator] Error querying bulk RFQ suffix:', err.message);
   }
