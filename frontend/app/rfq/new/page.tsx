@@ -450,29 +450,13 @@ export default function NewRFQPage() {
       resolvedRecipients = [{ email: form.email, dear_who: form.dear_who }];
     }
 
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
-    
-    const randomLetters = () => {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)];
-    };
-    
-    const xx1 = randomLetters();
-    const xx2 = randomLetters();
-    const basePrefix = `${dd}${xx1}${mm}${xx2}${yy}`;
-
     setSubmitting(true);
     try {
       // Send to each recipient separately so it logs as multiple sends in RFQ sent
-      let index = 0;
+      let sharedCustReqNo: string | undefined = undefined;
       for (const recipient of resolvedRecipients) {
-        const nn = String(index + 1).padStart(2, "0");
-        const customRef = `${basePrefix}-${nn}`;
-        // 1. Generate RFQ and Log to Database
-        const payload = {
+        // 1. Generate RFQ and Log to Database (Backend auto-generates ARG-ddmmyyn-1, ARG-ddmmyyn-2, etc.)
+        const payload: any = {
           ...form,
           dimension: dimensionStr,
           weight: weightStr,
@@ -480,11 +464,14 @@ export default function NewRFQPage() {
           dear_who: recipient.dear_who,
           pol: targetPol,
           operator: isSales && selectedOperator ? selectedOperator.name : undefined,
-          ref_no: customRef,
+          cust_req_no: sharedCustReqNo,
         };
 
         const genRes = await api.post("/rfq/generate", payload);
         const ref_no = genRes.data.data.ref_no;
+        if (!sharedCustReqNo && genRes.data.data.cust_req_no) {
+          sharedCustReqNo = genRes.data.data.cust_req_no;
+        }
 
         // 2. Upload Files if selected
         if (files.length > 0) {
@@ -503,7 +490,6 @@ export default function NewRFQPage() {
         await api.post(`/rfq/${ref_no}/send-email`, {
           cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
         });
-        index++;
       }
 
       toast.success(isSales 
@@ -649,39 +635,26 @@ export default function NewRFQPage() {
     const targetPol = form.pol_country ? `${form.pol_country}, ${form.pol}` : form.pol;
     const { dimensionStr, weightStr } = formatDimensionAndWeight(form);
 
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yy = String(now.getFullYear()).slice(-2);
-    
-    const randomLetters = () => {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)];
-    };
-    
-    const xx1 = randomLetters();
-    const xx2 = randomLetters();
-    const basePrefix = `${dd}${xx1}${mm}${xx2}${yy}`;
-
     setSubmitting(true);
     try {
-      let index = 0;
+      let sharedCustReqNo: string | undefined = undefined;
       for (const recipient of unique) {
-        const nn = String(index + 1).padStart(2, "0");
-        const customRef = `${basePrefix}-${nn}`;
-        // 1. Generate RFQ and Log to Database
-        const payload = {
+        // 1. Generate RFQ and Log to Database (Backend auto-generates ARG-ddmmyyn-1, ARG-ddmmyyn-2, etc.)
+        const payload: any = {
           ...form,
           dimension: dimensionStr,
           weight: weightStr,
           email: recipient.email,
           dear_who: recipient.dear_who,
           pol: targetPol,
-          ref_no: customRef,
+          cust_req_no: sharedCustReqNo,
         };
 
         const genRes = await api.post("/rfq/generate", payload);
         const ref_no = genRes.data.data.ref_no;
+        if (!sharedCustReqNo && genRes.data.data.cust_req_no) {
+          sharedCustReqNo = genRes.data.data.cust_req_no;
+        }
 
         // 2. Upload Files if selected
         if (files.length > 0) {
@@ -699,7 +672,6 @@ export default function NewRFQPage() {
         await api.post(`/rfq/${ref_no}/send-email`, {
           cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
         });
-        index++;
       }
 
       toast.success(`RFQs successfully generated and emailed to ${unique.length} matching agents.`);

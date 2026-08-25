@@ -164,8 +164,8 @@ export default function ConfirmedPage() {
       .sort((a, b) => a - b);
 
     if (seqNums.length === 0) return basePrefix;
-    const minSeq = String(seqNums[0]).padStart(2, "0");
-    const maxSeq = String(seqNums[seqNums.length - 1]).padStart(2, "0");
+    const minSeq = String(seqNums[0]);
+    const maxSeq = String(seqNums[seqNums.length - 1]);
 
     if (minSeq === maxSeq) return `${basePrefix}-${minSeq}`;
     return `${basePrefix}-${minSeq}-${maxSeq}`;
@@ -173,10 +173,31 @@ export default function ConfirmedPage() {
 
   const groupedItems = (() => {
     const groups: { [key: string]: Shipment[] } = {};
+    
+    const getBasePrefix = (s: Shipment) => {
+      if (s.cust_req_no && s.cust_req_no.trim()) {
+        const clean = s.cust_req_no.trim();
+        const parts = clean.split('-');
+        if (parts.length > 2) {
+          return `${parts[0]}-${parts[1]}`;
+        }
+        return clean;
+      }
+      const ref = s.ref_no || "";
+      if (!ref.includes('-')) return ref;
+      const parts = ref.split('-');
+      if (parts[0] === 'ARG' && parts.length > 2) {
+        return `${parts[0]}-${parts[1]}`;
+      }
+      if (parts.length > 2) {
+        return `${parts[0]}-${parts[1]}`;
+      }
+      return parts[0];
+    };
+
     shipments.forEach(s => {
-      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
-      if (match) {
-        const base = match[1];
+      const base = getBasePrefix(s);
+      if (base) {
         if (!groups[base]) {
           groups[base] = [];
         }
@@ -188,28 +209,19 @@ export default function ConfirmedPage() {
     const processedGroups = new Set<string>();
 
     shipments.forEach(s => {
-      const match = s.ref_no.match(/^([0-9]{2}[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{2})-(\d+)$/);
-      if (match) {
-        const base = match[1];
-        if (groups[base].length > 1) {
-          if (!processedGroups.has(base)) {
-            processedGroups.add(base);
-            const sortedGroup = [...groups[base]].sort((a, b) => {
-              const aMatch = a.ref_no.match(/-(\d+)$/);
-              const bMatch = b.ref_no.match(/-(\d+)$/);
-              const aSeq = aMatch ? parseInt(aMatch[1]) : 0;
-              const bSeq = bMatch ? parseInt(bMatch[1]) : 0;
-              return aSeq - bSeq;
-            });
-            items.push({
-              isGroup: true,
-              basePrefix: base,
-              shipments: sortedGroup,
-              originalShipments: sortedGroup
-            });
-          }
-        } else {
-          items.push(s);
+      const base = getBasePrefix(s);
+      if (base && groups[base] && groups[base].length > 1) {
+        if (!processedGroups.has(base)) {
+          processedGroups.add(base);
+          const sortedGroup = [...groups[base]].sort((a, b) => {
+            return a.ref_no.localeCompare(b.ref_no, undefined, { numeric: true, sensitivity: 'base' });
+          });
+          items.push({
+            isGroup: true,
+            basePrefix: base,
+            shipments: sortedGroup,
+            originalShipments: sortedGroup
+          });
         }
       } else {
         items.push(s);
