@@ -15,7 +15,7 @@ function mapStatusToStageIndex(statusStr) {
   if (s === 'clearance' || s === 'clearence' || s.includes('clear') || s.includes('custom') || s.includes('inspect') || s.includes('declaration')) return 3;
   if (s === 'in transit' || s.includes('transit') || s.includes('depart') || s.includes('shipped') || s.includes('sailing') || s.includes('flight')) return 2;
   if (s === 'scheduled' || s.includes('schedul') || s.includes('assign') || s.includes('dispatch')) return 1;
-  if (s === 'confirmed' || s.includes('confirm') || s.includes('booked') || s.includes('draft') || s.includes('new')) return 0;
+  if (s === 'confirmed' || s.includes('confirm') || s.includes('booked') || s.includes('draft') || s.includes('new') || s.includes('pending')) return 0;
   
   return 0;
 }
@@ -23,11 +23,19 @@ function mapStatusToStageIndex(statusStr) {
 function cleanSearchRef(input) {
   if (!input) return '';
   let cleaned = input.trim().toUpperCase();
-  // Strip sequence suffix like -06, -01, -2
-  cleaned = cleaned.replace(/-\d+$/, '');
-  // Normalize leading 11 to 1 if followed by letters (e.g. 11AD08NQ26 -> 1AD08NQ26)
-  if (/^11[A-Z]/.test(cleaned)) {
-    cleaned = cleaned.replace(/^11/, '1');
+  
+  // If format is ARG-ddmmyyn-x (has two hyphens like ARG-2408261-1), strip the last -x to get ARG-2408261
+  const argParts = cleaned.split('-');
+  if (argParts[0] === 'ARG' && argParts.length > 2) {
+    return `${argParts[0]}-${argParts[1]}`;
+  }
+  
+  // For old format like 11AD08NQ26-01
+  if (!cleaned.startsWith('ARG-')) {
+    cleaned = cleaned.replace(/-\d+$/, '');
+    if (/^11[A-Z]/.test(cleaned)) {
+      cleaned = cleaned.replace(/^11/, '1');
+    }
   }
   return cleaned;
 }
@@ -97,7 +105,7 @@ router.get('/:ref', async (req, res) => {
               OR UPPER(cust_req_no) LIKE $5
            ORDER BY 
              CASE 
-               WHEN LOWER(status) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
+               WHEN LOWER(COALESCE(status, '')) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
                ELSE 2
              END ASC,
              CASE 
@@ -151,7 +159,7 @@ router.get('/:ref', async (req, res) => {
                 OR UPPER(cust_req_no) LIKE $5
              ORDER BY 
                CASE 
-                 WHEN LOWER(status) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
+                 WHEN LOWER(COALESCE(status, '')) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
                  ELSE 2
                END ASC,
                CASE 
@@ -222,11 +230,7 @@ router.get('/:ref', async (req, res) => {
     }
 
     const mainStatus = (dbShipment.status || '').toLowerCase();
-    const isConfirmedOrActive = [
-      'confirmed', 'completed', 'in scheduled', 'in transit', 'clearance', 'warehouse', 'delivered', 'files pending'
-    ].includes(mainStatus);
-
-    if (!isConfirmedOrActive) {
+    if (mainStatus === 'cancelled' || mainStatus === 'deleted') {
       return res.json({
         success: false,
         message: 'No tracking information found'
