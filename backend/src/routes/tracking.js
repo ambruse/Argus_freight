@@ -290,8 +290,8 @@ router.get('/:ref', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[Tracking API Error]', error);
-    res.status(500).json({ success: false, error: 'Failed to retrieve shipment tracking details.' });
+    console.error('[Tracking API Error]', error?.message || error);
+    return res.json({ success: false, message: 'No tracking information found' });
   }
 });
 
