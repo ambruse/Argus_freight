@@ -419,4 +419,4 @@ const query = async (req, sql, params) => {
   return db.query(modifiedSql, params);
 };
 
-module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getOperatorSuffixes, ensureUserTables, getUserSuffix, getUserSuffixFromReq };
+module.exports = { getTables, query, findUsernameForRefNo, findUsernameForFileId, getAllSuffixes, getOperatorSuffixes, ensureUserTables, getUserSuffix, getUserSuffixFromReq };
