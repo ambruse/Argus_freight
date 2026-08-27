@@ -552,15 +552,24 @@ const approveCustomerRfq = async (req, res, next) => {
     }
 
     const { ref_no } = req.params; // This is the cust_req_no / enquiry ref
-    const operatorName = req.user.username;
-    const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-    const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
+    const { getAllSuffixes } = require('../config/dbHelper');
 
-    // 1. Get all operator sub-rows for this enquiry
-    const opShipmentsRes = await db.query(
-      `SELECT * FROM ${opTableName} WHERE cust_req_no = $1 OR ref_no = $1`,
+    // 1. Get all operator sub-rows for this enquiry (search main shipments table, sandbox, and all physical tables)
+    let opShipmentsRes = await db.query(
+      `SELECT * FROM shipments WHERE cust_req_no = $1 OR ref_no = $1`,
       [ref_no]
     ).catch(() => ({ rows: [] }));
+
+    if (opShipmentsRes.rows.length === 0) {
+      const suffixes = await getAllSuffixes();
+      for (const sfx of suffixes) {
+        const check = await db.query(`SELECT * FROM shipments_${sfx} WHERE cust_req_no = $1 OR ref_no = $1`, [ref_no]).catch(() => ({ rows: [] }));
+        if (check.rows.length > 0) {
+          opShipmentsRes = check;
+          break;
+        }
+      }
+    }
 
     if (opShipmentsRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'No RFQ shipments found for this enquiry.' });
@@ -570,17 +579,21 @@ const approveCustomerRfq = async (req, res, next) => {
     const firstShipment = shipments[0];
     const customerId = firstShipment.customer_id;
     const submitterUsername = (firstShipment.refer_by || '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const actualCustReqNo = firstShipment.cust_req_no || ref_no;
 
-    // 2. Update status to 'Pending' on all operator sub-rows
+    // 2. Update status to 'Pending' on ALL operator sub-rows and all tables
     await db.query(
-      `UPDATE ${opTableName} SET status = 'Pending', updated_at = NOW() WHERE cust_req_no = $1`,
-      [ref_no]
+      `UPDATE shipments SET status = 'Pending', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`,
+      [ref_no, actualCustReqNo]
     ).catch(() => {});
-    // Also update main shipments table
-    await db.query(
-      `UPDATE shipments SET status = 'Pending', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1`,
-      [ref_no]
-    ).catch(() => {});
+
+    const suffixes = await getAllSuffixes();
+    for (const sfx of suffixes) {
+      await db.query(
+        `UPDATE shipments_${sfx} SET status = 'Pending', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`,
+        [ref_no, actualCustReqNo]
+      ).catch(() => {});
+    }
 
     // 3. Update customer sandbox row
     if (customerId) {
@@ -593,8 +606,8 @@ const approveCustomerRfq = async (req, res, next) => {
           const { getUserSuffix } = require('../config/dbHelper');
           const custSuffix = getUserSuffix(custUserRes.rows[0]);
           await db.query(
-            `UPDATE shipments_${custSuffix} SET status = 'Pending', updated_at = NOW() WHERE ref_no = $1`,
-            [ref_no]
+            `UPDATE shipments_${custSuffix} SET status = 'Pending', updated_at = NOW() WHERE ref_no = $1 OR cust_req_no = $1 OR ref_no = $2 OR cust_req_no = $2`,
+            [ref_no, actualCustReqNo]
           ).catch(() => {});
         }
       } catch (syncErr) {
@@ -605,7 +618,7 @@ const approveCustomerRfq = async (req, res, next) => {
     // 4. Send the emails using existing sendCustomerRfqEmail logic
     const fakeReq = {
       ...req,
-      params: { ref_no },
+      params: { ref_no: actualCustReqNo },
       body: {}
     };
     await new Promise((resolve) => {
@@ -620,14 +633,14 @@ const approveCustomerRfq = async (req, res, next) => {
     try {
       if (global.io && submitterUsername) {
         global.io.to(`user_${submitterUsername}`).emit('rfq_approval_result', {
-          ref_no,
+          ref_no: actualCustReqNo,
           outcome: 'accepted',
-          message: `Your quote request ${ref_no} was approved. Agents have been notified.`
+          message: `Your quote request ${actualCustReqNo} was approved. Agents have been notified.`
         });
       }
     } catch (e) {}
 
-    res.json({ success: true, ref_no, status: 'Pending', message: 'Customer RFQ approved and emails dispatched.' });
+    res.json({ success: true, ref_no: actualCustReqNo, status: 'Pending', message: 'Customer RFQ approved and emails dispatched.' });
   } catch (err) {
     next(err);
   }
@@ -644,28 +657,46 @@ const rejectCustomerRfq = async (req, res, next) => {
     }
 
     const { ref_no } = req.params;
-    const operatorName = req.user.username;
-    const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-    const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
+    const { getAllSuffixes } = require('../config/dbHelper');
 
     // 1. Get operator sub-rows to find customer info
-    const opShipmentsRes = await db.query(
-      `SELECT customer_id, refer_by FROM ${opTableName} WHERE cust_req_no = $1 OR ref_no = $1 LIMIT 1`,
+    let opShipmentsRes = await db.query(
+      `SELECT customer_id, refer_by, cust_req_no, ref_no FROM shipments WHERE cust_req_no = $1 OR ref_no = $1 LIMIT 1`,
       [ref_no]
     ).catch(() => ({ rows: [] }));
 
+    if (opShipmentsRes.rows.length === 0) {
+      const suffixes = await getAllSuffixes();
+      for (const sfx of suffixes) {
+        const check = await db.query(`SELECT customer_id, refer_by, cust_req_no, ref_no FROM shipments_${sfx} WHERE cust_req_no = $1 OR ref_no = $1 LIMIT 1`, [ref_no]).catch(() => ({ rows: [] }));
+        if (check.rows.length > 0) {
+          opShipmentsRes = check;
+          break;
+        }
+      }
+    }
+
+    if (opShipmentsRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'No RFQ shipments found for this enquiry.' });
+    }
+
     const customerId = opShipmentsRes.rows[0]?.customer_id;
     const submitterUsername = (opShipmentsRes.rows[0]?.refer_by || '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const actualCustReqNo = opShipmentsRes.rows[0]?.cust_req_no || ref_no;
 
-    // 2. Update status to 'Cancelled' on all operator sub-rows
+    // 2. Update status to 'Cancelled' on all tables
     await db.query(
-      `UPDATE ${opTableName} SET status = 'Cancelled', updated_at = NOW() WHERE cust_req_no = $1`,
-      [ref_no]
+      `UPDATE shipments SET status = 'Cancelled', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`,
+      [ref_no, actualCustReqNo]
     ).catch(() => {});
-    await db.query(
-      `UPDATE shipments SET status = 'Cancelled', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1`,
-      [ref_no]
-    ).catch(() => {});
+
+    const suffixes = await getAllSuffixes();
+    for (const sfx of suffixes) {
+      await db.query(
+        `UPDATE shipments_${sfx} SET status = 'Cancelled', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`,
+        [ref_no, actualCustReqNo]
+      ).catch(() => {});
+    }
 
     // 3. Update customer sandbox
     if (customerId) {
@@ -678,8 +709,8 @@ const rejectCustomerRfq = async (req, res, next) => {
           const { getUserSuffix } = require('../config/dbHelper');
           const custSuffix = getUserSuffix(custUserRes.rows[0]);
           await db.query(
-            `UPDATE shipments_${custSuffix} SET status = 'Cancelled', updated_at = NOW() WHERE ref_no = $1`,
-            [ref_no]
+            `UPDATE shipments_${custSuffix} SET status = 'Cancelled', updated_at = NOW() WHERE ref_no = $1 OR cust_req_no = $1 OR ref_no = $2 OR cust_req_no = $2`,
+            [ref_no, actualCustReqNo]
           ).catch(() => {});
         }
       } catch (syncErr) {
@@ -691,14 +722,14 @@ const rejectCustomerRfq = async (req, res, next) => {
     try {
       if (global.io && submitterUsername) {
         global.io.to(`user_${submitterUsername}`).emit('rfq_approval_result', {
-          ref_no,
+          ref_no: actualCustReqNo,
           outcome: 'rejected',
-          message: `Your quote request ${ref_no} was not accepted by the operator.`
+          message: `Your quote request ${actualCustReqNo} was not accepted by the operator.`
         });
       }
     } catch (e) {}
 
-    res.json({ success: true, ref_no, status: 'Cancelled', message: 'Customer RFQ rejected.' });
+    res.json({ success: true, ref_no: actualCustReqNo, status: 'Cancelled', message: 'Customer RFQ rejected.' });
   } catch (err) {
     next(err);
   }

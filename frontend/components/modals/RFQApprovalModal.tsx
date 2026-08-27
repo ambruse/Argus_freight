@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 // components/modals/RFQApprovalModal.tsx
 // Full-screen operator approval gate for incoming RFQs.
 import { useState } from "react";
@@ -42,7 +42,18 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
       const endpoint = isCustomer
         ? `/rfq/customer-approve/${item.cust_req_no || item.ref_no}`
         : `/rfq/${item.ref_no}/approve`;
-      await api.post(endpoint);
+      try {
+        await api.post(endpoint);
+      } catch (firstErr: any) {
+        if (firstErr?.response?.status === 404) {
+          const fallbackEndpoint = isCustomer
+            ? `/rfq/${item.ref_no}/approve`
+            : `/rfq/customer-approve/${item.cust_req_no || item.ref_no}`;
+          await api.post(fallbackEndpoint);
+        } else {
+          throw firstErr;
+        }
+      }
       toast.success(`RFQ ${item.ref_no} approved — email dispatched!`, { duration: 5000 });
       onItemProcessed(item.ref_no);
       if (currentIndex >= items.length - 1) {
@@ -61,7 +72,18 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
       const endpoint = isCustomer
         ? `/rfq/customer-reject/${item.cust_req_no || item.ref_no}`
         : `/rfq/${item.ref_no}/reject`;
-      await api.post(endpoint);
+      try {
+        await api.post(endpoint);
+      } catch (firstErr: any) {
+        if (firstErr?.response?.status === 404) {
+          const fallbackEndpoint = isCustomer
+            ? `/rfq/${item.ref_no}/reject`
+            : `/rfq/customer-reject/${item.cust_req_no || item.ref_no}`;
+          await api.post(fallbackEndpoint);
+        } else {
+          throw firstErr;
+        }
+      }
       toast.success(`RFQ ${item.ref_no} rejected.`, { duration: 5000 });
       onItemProcessed(item.ref_no);
       if (currentIndex >= items.length - 1) {
