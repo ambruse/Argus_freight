@@ -4,7 +4,7 @@
 //  All queries are parameterised to prevent SQL injection.
 // ─────────────────────────────────────────────────────────────
 const db = require('../config/db');
-const { query } = require('../config/dbHelper');
+const { query, findUsernameForRefNo } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
 const { PDFDocument } = require('pdf-lib');
 const { decrypt } = require('../utils/crypto');
@@ -381,8 +381,17 @@ const updateTracking = async (req, res, next) => {
       gross_weight, chargeable_weight
     } = req.body;
 
-    const result = await query(req, 
-      `UPDATE shipments
+    // Always resolve the table that actually owns this shipment row.
+    // This is crucial: operators and sales who do a PATCH must write to the
+    // correct table (could be 'shipments' for admin-owned rows, or
+    // 'shipments_u{id}' for operator-owned rows) rather than their own sandbox.
+    const ownerSuffix = await findUsernameForRefNo(ref_no);
+    const targetTable = (!ownerSuffix || ownerSuffix === 'admin')
+      ? 'shipments'
+      : `shipments_${ownerSuffix}`;
+
+    const result = await db.query(
+      `UPDATE ${targetTable}
        SET do_number=$1, box_no=$2, so_number=$3, bl_number=$4,
            track_status=$5, carrier=$6, etd=$7, eta=$8, cost=$9, profit=$10,
            customer_name=$11, customer_email=$12,
