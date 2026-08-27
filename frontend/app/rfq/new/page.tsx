@@ -487,14 +487,19 @@ export default function NewRFQPage() {
         // 3. Send Email
         const actualCcEmails = form.cc_emails;
 
-        await api.post(`/rfq/${ref_no}/send-email`, {
-          cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
-        });
+        try {
+          await api.post(`/rfq/${ref_no}/send-email`, {
+            cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
+          });
+        } catch (emailErr: any) {
+          // 403 means RFQ is awaiting operator approval — this is expected
+          if (emailErr?.response?.status !== 403) throw emailErr;
+        }
       }
 
       toast.success(isSales 
-        ? `RFQs successfully generated and emailed to ${resolvedRecipients.length} agents.`
-        : `RFQ successfully generated and emailed.`
+        ? `RFQ submitted! The operator will review and send to ${resolvedRecipients.length} agent(s) upon approval.`
+        : `RFQ submitted! Awaiting operator approval before sending.`
       );
       
       // Clear form
@@ -669,12 +674,16 @@ export default function NewRFQPage() {
 
         // 3. Send Email
         const actualCcEmails = form.cc_emails;
-        await api.post(`/rfq/${ref_no}/send-email`, {
-          cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
-        });
+        try {
+          await api.post(`/rfq/${ref_no}/send-email`, {
+            cc: actualCcEmails.length > 0 ? actualCcEmails.join(", ") : undefined,
+          });
+        } catch (emailErr: any) {
+          if (emailErr?.response?.status !== 403) throw emailErr;
+        }
       }
 
-      toast.success(`RFQs successfully generated and emailed to ${unique.length} matching agents.`);
+      toast.success(`RFQ submitted and awaiting operator approval. It will be emailed upon approval.`);
       
       // Close modal & clear auto-receiver preview state
       setPreviewOpen(false);

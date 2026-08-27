@@ -409,6 +409,13 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         <span className="text-xs text-muted">Last follow-up: {fmtDate(shipment.last_follow_up)}</span>
       </div>
 
+      {shipment.status === "Awaiting Approval" && (
+        <div className="mb-6 p-3.5 rounded-xl text-xs flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/25 text-amber-400">
+          <span className="flex-shrink-0">⚠️</span>
+          <span>This RFQ is currently awaiting operator approval before it is officially dispatched.</span>
+        </div>
+      )}
+
       {/* Detail grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-5 mb-6">
         <Field label="REF NO"       value={shipment.ref_no} />

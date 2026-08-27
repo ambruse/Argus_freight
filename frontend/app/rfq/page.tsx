@@ -288,7 +288,7 @@ export default function RFQPage() {
   const canDeleteShipment = (role: string | undefined, status: string | undefined) => {
     const s = (status || '').toLowerCase();
     if (s === 'confirmed' || s === 'completed') return false;
-    if (role === 'operator') return s === 'pending';
+    if (role === 'operator') return s === 'pending' || s === 'awaiting approval';
     return true;
   };
 
@@ -301,8 +301,8 @@ export default function RFQPage() {
       toast.error("Confirmed and Completed shipments cannot be deleted.");
       return;
     }
-    if (user?.role === 'operator' && currentStatus !== 'pending') {
-      toast.error("Operators can only delete shipments with Pending status.");
+    if (user?.role === 'operator' && currentStatus !== 'pending' && currentStatus !== 'awaiting approval') {
+      toast.error("Operators can only delete shipments with Pending or Awaiting Approval status.");
       return;
     }
     setPasswordPrompt({
@@ -327,8 +327,8 @@ export default function RFQPage() {
       toast.error("Confirmed and Completed shipments cannot be deleted.");
       return;
     }
-    if (user?.role === 'operator' && groupShipments.some((s) => (s.status || '').toLowerCase() !== 'pending')) {
-      toast.error("Operators can only delete shipments with Pending status.");
+    if (user?.role === 'operator' && groupShipments.some((s) => !['pending', 'awaiting approval'].includes((s.status || '').toLowerCase()))) {
+      toast.error("Operators can only delete shipments with Pending or Awaiting Approval status.");
       return;
     }
     const groupLabel = getGroupLabel(basePrefix, groupShipments);
@@ -518,6 +518,7 @@ export default function RFQPage() {
           >
             <option value="Active">Active (Hide Cancelled)</option>
             <option value="All">All Statuses</option>
+            <option value="Awaiting Approval">Awaiting Approval</option>
             <option value="Pending">Pending</option>
             <option value="Confirmed">Confirmed</option>
             <option value="Completed">Completed</option>

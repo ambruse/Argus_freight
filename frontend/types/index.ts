@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────────────────────
 
 export type ShipmentStatus =
+  | "Awaiting Approval"
   | "Pending"
   | "Quoted"
   | "Customer Review"
@@ -14,6 +15,7 @@ export type ShipmentStatus =
   | "Cancelled";
 
 export const ALL_STATUSES: ShipmentStatus[] = [
+  "Awaiting Approval",
   "Pending",
   "Confirmed",
   "Completed",
@@ -21,6 +23,7 @@ export const ALL_STATUSES: ShipmentStatus[] = [
 ];
 
 export const RFQ_STATUSES: ShipmentStatus[] = [
+  "Awaiting Approval",
   "Pending",
   "Confirmed",
   "Completed",

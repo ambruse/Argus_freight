@@ -211,7 +211,7 @@ const generateCustomerRfq = async (req, res, next) => {
       [
         ref_no, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
         container || null, mode, weight || null, pickup_address || null, delivery_address || null,
-        'Multiple Agents', 'Broadcast', 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
+        'Multiple Agents', 'Broadcast', 'Awaiting Approval', note || null, customerId, customerName, customerEmail, assignedOperator
       ]
     );
 
@@ -232,9 +232,35 @@ const generateCustomerRfq = async (req, res, next) => {
         [
           opRef, ref_no, operator || null, targetPol, pod, commodity, term, dimension || null,
           container || null, mode, weight || null, pickup_address || null, delivery_address || null,
-          recipient.dear_who, recipient.email, 'Pending', note || null, customerId, customerName, customerEmail, assignedOperator
+          recipient.dear_who, recipient.email, 'Awaiting Approval', note || null, customerId, customerName, customerEmail, assignedOperator
         ]
       );
+    }
+
+    // ── Notify assigned operator via Socket.IO ─────────────────────
+    try {
+      const opSocketRoom = `user_${assignedOperator.toLowerCase()}`;
+      if (global.io && opSocketRoom) {
+        global.io.to(opSocketRoom).emit('rfq_pending_approval', {
+          type: 'customer',
+          ref_no: ref_no,
+          cust_req_no: ref_no,
+          pol: targetPol,
+          pod: pod,
+          commodity: commodity,
+          mode: mode,
+          container: container || null,
+          dimension: dimension || null,
+          customer_name: customerName,
+          refer_by: req.user.username,
+          submitter_username: req.user.username,
+          submitter_role: 'customer',
+          recipients_count: resolvedRecipients.length,
+        });
+        console.log(`[RFQ Approval] Customer RFQ socket emitted rfq_pending_approval to ${opSocketRoom}`);
+      }
+    } catch (socketErr) {
+      console.error('[RFQ Approval] Customer RFQ socket emit failed:', socketErr.message);
     }
 
     res.status(201).json({
@@ -273,6 +299,14 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     }
 
     const customerShipment = shipRes.rows[0];
+
+    // Block email if RFQ is awaiting operator approval
+    if (customerShipment.status === 'Awaiting Approval') {
+      return res.status(403).json({
+        success: false,
+        message: 'This RFQ is awaiting operator approval. Email will be dispatched automatically upon approval.'
+      });
+    }
 
     // 2. Fetch all attached files
     let attachedFiles = [];
@@ -507,7 +541,172 @@ const sendCustomerRfqEmail = async (req, res, next) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+//  POST /api/rfq/customer-approve/:ref_no
+//  Operator approves a customer RFQ (enquiry ref = ref_no)
+// ─────────────────────────────────────────────────────────────
+const approveCustomerRfq = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'operator' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only operators and admins can approve RFQs.' });
+    }
+
+    const { ref_no } = req.params; // This is the cust_req_no / enquiry ref
+    const operatorName = req.user.username;
+    const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
+
+    // 1. Get all operator sub-rows for this enquiry
+    const opShipmentsRes = await db.query(
+      `SELECT * FROM ${opTableName} WHERE cust_req_no = $1 OR ref_no = $1`,
+      [ref_no]
+    ).catch(() => ({ rows: [] }));
+
+    if (opShipmentsRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'No RFQ shipments found for this enquiry.' });
+    }
+
+    const shipments = opShipmentsRes.rows;
+    const firstShipment = shipments[0];
+    const customerId = firstShipment.customer_id;
+    const submitterUsername = (firstShipment.refer_by || '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+
+    // 2. Update status to 'Pending' on all operator sub-rows
+    await db.query(
+      `UPDATE ${opTableName} SET status = 'Pending', updated_at = NOW() WHERE cust_req_no = $1`,
+      [ref_no]
+    ).catch(() => {});
+    // Also update main shipments table
+    await db.query(
+      `UPDATE shipments SET status = 'Pending', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1`,
+      [ref_no]
+    ).catch(() => {});
+
+    // 3. Update customer sandbox row
+    if (customerId) {
+      try {
+        const custUserRes = await db.query(
+          `SELECT id, username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
+          [customerId]
+        );
+        if (custUserRes.rows.length > 0) {
+          const { getUserSuffix } = require('../config/dbHelper');
+          const custSuffix = getUserSuffix(custUserRes.rows[0]);
+          await db.query(
+            `UPDATE shipments_${custSuffix} SET status = 'Pending', updated_at = NOW() WHERE ref_no = $1`,
+            [ref_no]
+          ).catch(() => {});
+        }
+      } catch (syncErr) {
+        console.error('[approveCustomerRfq] Sync to customer failed:', syncErr.message);
+      }
+    }
+
+    // 4. Send the emails using existing sendCustomerRfqEmail logic
+    const fakeReq = {
+      ...req,
+      params: { ref_no },
+      body: {}
+    };
+    await new Promise((resolve) => {
+      const fakeRes = {
+        status: (code) => ({ json: (d) => resolve() }),
+        json: (d) => resolve()
+      };
+      sendCustomerRfqEmail(fakeReq, fakeRes, (err) => resolve());
+    });
+
+    // 5. Notify customer via socket
+    try {
+      if (global.io && submitterUsername) {
+        global.io.to(`user_${submitterUsername}`).emit('rfq_approval_result', {
+          ref_no,
+          outcome: 'accepted',
+          message: `Your quote request ${ref_no} was approved. Agents have been notified.`
+        });
+      }
+    } catch (e) {}
+
+    res.json({ success: true, ref_no, status: 'Pending', message: 'Customer RFQ approved and emails dispatched.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  POST /api/rfq/customer-reject/:ref_no
+//  Operator rejects a customer RFQ (enquiry ref = ref_no)
+// ─────────────────────────────────────────────────────────────
+const rejectCustomerRfq = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'operator' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only operators and admins can reject RFQs.' });
+    }
+
+    const { ref_no } = req.params;
+    const operatorName = req.user.username;
+    const cleanOperator = operatorName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const opTableName = cleanOperator === 'admin' ? 'shipments' : `shipments_${cleanOperator}`;
+
+    // 1. Get operator sub-rows to find customer info
+    const opShipmentsRes = await db.query(
+      `SELECT customer_id, refer_by FROM ${opTableName} WHERE cust_req_no = $1 OR ref_no = $1 LIMIT 1`,
+      [ref_no]
+    ).catch(() => ({ rows: [] }));
+
+    const customerId = opShipmentsRes.rows[0]?.customer_id;
+    const submitterUsername = (opShipmentsRes.rows[0]?.refer_by || '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+
+    // 2. Update status to 'Cancelled' on all operator sub-rows
+    await db.query(
+      `UPDATE ${opTableName} SET status = 'Cancelled', updated_at = NOW() WHERE cust_req_no = $1`,
+      [ref_no]
+    ).catch(() => {});
+    await db.query(
+      `UPDATE shipments SET status = 'Cancelled', updated_at = NOW() WHERE cust_req_no = $1 OR ref_no = $1`,
+      [ref_no]
+    ).catch(() => {});
+
+    // 3. Update customer sandbox
+    if (customerId) {
+      try {
+        const custUserRes = await db.query(
+          `SELECT id, username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
+          [customerId]
+        );
+        if (custUserRes.rows.length > 0) {
+          const { getUserSuffix } = require('../config/dbHelper');
+          const custSuffix = getUserSuffix(custUserRes.rows[0]);
+          await db.query(
+            `UPDATE shipments_${custSuffix} SET status = 'Cancelled', updated_at = NOW() WHERE ref_no = $1`,
+            [ref_no]
+          ).catch(() => {});
+        }
+      } catch (syncErr) {
+        console.error('[rejectCustomerRfq] Sync to customer failed:', syncErr.message);
+      }
+    }
+
+    // 4. Notify customer via socket
+    try {
+      if (global.io && submitterUsername) {
+        global.io.to(`user_${submitterUsername}`).emit('rfq_approval_result', {
+          ref_no,
+          outcome: 'rejected',
+          message: `Your quote request ${ref_no} was not accepted by the operator.`
+        });
+      }
+    } catch (e) {}
+
+    res.json({ success: true, ref_no, status: 'Cancelled', message: 'Customer RFQ rejected.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   generateCustomerRfq,
-  sendCustomerRfqEmail
+  sendCustomerRfqEmail,
+  approveCustomerRfq,
+  rejectCustomerRfq,
 };

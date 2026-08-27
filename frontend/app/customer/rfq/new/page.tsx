@@ -329,7 +329,7 @@ export default function CustomerNewRFQPage() {
         console.error("Email notification error:", emailErr);
       }
 
-      toast.success("Quote Request submitted successfully! The assigned Operator will follow up with you.");
+      toast.success("Quote Request submitted! The operator will review and process your request.");
       handleClear();
 
     } catch (err: any) {

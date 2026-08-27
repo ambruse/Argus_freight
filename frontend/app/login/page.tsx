@@ -70,7 +70,59 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex overflow-hidden" style={{ background: "var(--surface)" }}>
+    <div className="min-h-screen flex flex-col overflow-hidden" style={{ background: "var(--surface)" }}>
+
+      {/* ── TOP NAVBAR ──────────────────────────────────────── */}
+      <nav className="relative z-50 flex items-center justify-between px-6 md:px-10 py-3 border-b"
+        style={{
+          background: "var(--sidebar-bg)",
+          borderColor: "var(--sidebar-border)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        {/* Logo */}
+        <a href="/" className="flex items-center gap-2 shrink-0">
+          <img src="/images/logo.png" alt="ARGUS" className="h-8 w-auto object-contain" />
+        </a>
+
+        {/* Nav links */}
+        <div className="hidden md:flex items-center gap-1">
+          {[
+            { label: "Home",     href: "/" },
+            { label: "Services", href: "/services.html" },
+            { label: "Tracking", href: "/tracking", dot: true },
+            { label: "Why Us",   href: "/why-us.html" },
+            { label: "Our Team", href: "/team.html" },
+            { label: "Contact",  href: "/contact.html" },
+          ].map(({ label, href, dot }) => (
+            <a
+              key={label}
+              href={href}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-150 hover:text-amber-400"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {dot && (
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--accent, #F5B037)" }} />
+              )}
+              {label}
+            </a>
+          ))}
+        </div>
+
+        {/* Sign In label (current page indicator) */}
+        <span className="text-[12px] font-semibold px-3 py-1 rounded-lg"
+          style={{
+            background: "rgba(245,176,55,0.10)",
+            border: "1px solid rgba(245,176,55,0.20)",
+            color: "var(--sidebar-avatar-text)",
+          }}
+        >
+          Sign In
+        </span>
+      </nav>
+
+      {/* ── SPLIT PANELS ──────────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
 
       {/* ── LEFT PANEL — Brand ─────────────────────────────── */}
       <div className="hidden lg:flex lg:w-[52%] relative flex-col overflow-hidden"
@@ -359,6 +411,7 @@ export default function LoginPage() {
           {theme === "dark" ? "☀" : "🌙"}
         </button>
       </div>
+      </div> {/* end split panels */}
     </div>
   );
 }
