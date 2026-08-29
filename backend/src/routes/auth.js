@@ -6,7 +6,8 @@ const {
   getEmailSettings, updateEmailSettings, getAdminUsers, 
   updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
   updateUserExtension, updateUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature,
-  forgotPassword, verifyResetToken, resetPassword
+  forgotPassword, verifyResetToken, resetPassword,
+  getAdminResetEmailSettings, updateAdminResetEmailSettings
 } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { authRateLimiter } = require('../middleware/rateLimiter');
@@ -44,7 +45,7 @@ router.get('/operators', authenticateToken, getOperatorsList);
 // Protected — list of active sales users (for customer dropdown)
 router.get('/sales', authenticateToken, getSalesList);
 
-// Admin only — manage other users email settings
+// Admin only — manage other users email settings & system reset email
 router.get('/admin/users', authenticateToken, getAdminUsers);
 router.post('/admin/update-user-email', authenticateToken, updateAdminUserEmail);
 router.post('/admin/create-operator', authenticateToken, createAdminOperator);
@@ -52,4 +53,6 @@ router.post('/admin/delete-user', authenticateToken, deleteAdminUser);
 router.post('/admin/toggle-stall', authenticateToken, toggleStallUser);
 router.post('/admin/update-extension', authenticateToken, updateUserExtension);
 router.post('/admin/update-country', authenticateToken, updateUserCountry);
+router.get('/admin/reset-email-settings', authenticateToken, getAdminResetEmailSettings);
+router.post('/admin/reset-email-settings', authenticateToken, updateAdminResetEmailSettings);
 module.exports = router;

@@ -6,7 +6,6 @@
 import { useState, FormEvent, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { encryptPassword } from "@/lib/crypto";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -99,17 +98,13 @@ function ResetPasswordForm() {
 
     setLoading(true);
     try {
-      // 2048-bit RSA-OAEP transit encryption to prevent Man-in-the-Middle eavesdropping
-      const secureNewPassword = await encryptPassword(newPassword);
-      const secureConfirmPassword = confirmPassword ? await encryptPassword(confirmPassword) : "";
-
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token: token.trim(),
-          newPassword: secureNewPassword,
-          confirmPassword: secureConfirmPassword,
+          newPassword,
+          confirmPassword,
         }),
       });
 

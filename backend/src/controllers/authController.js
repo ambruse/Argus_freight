@@ -945,26 +945,52 @@ const getSalesList = async (req, res, next) => {
 //  Password Reset Functions with Per-Account Rate Limiting
 // ─────────────────────────────────────────────────────────────
 
-const createPasswordResetTransporter = async () => {
-  const authUser = process.env.AUTH_EMAIL_USER || 'Argusdonotreply@gmail.com';
-  const authPass = process.env.AUTH_EMAIL_PASS || 'zcvf zdzw yfth kiea';
+const getAppSetting = async (key) => {
+  try {
+    const res = await db.query("SELECT value FROM app_settings WHERE `key` = $1", [key]);
+    return res.rows.length > 0 ? res.rows[0].value : null;
+  } catch (e) {
+    return null;
+  }
+};
 
-  if (authUser && authPass) {
-    return {
-      transporter: nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false,
-        auth: {
-          user: authUser,
-          pass: authPass.replace(/"/g, '')
-        },
-        tls: { rejectUnauthorized: false }
-      }),
-      user: authUser
-    };
+const setAppSetting = async (key, value) => {
+  const check = await db.query("SELECT `key` FROM app_settings WHERE `key` = $1", [key]);
+  if (check.rows.length > 0) {
+    await db.query("UPDATE app_settings SET value = $1 WHERE `key` = $2", [value, key]);
+  } else {
+    await db.query("INSERT INTO app_settings (`key`, value) VALUES ($1, $2)", [key, value]);
+  }
+};
+
+const createPasswordResetTransporter = async () => {
+  // 1. Check custom reset email settings configured by admin in app_settings
+  try {
+    const customEmail = await getAppSetting('reset_email_address');
+    const customPassEnc = await getAppSetting('reset_email_password');
+    if (customEmail && customPassEnc) {
+      const customPass = decrypt(customPassEnc);
+      if (customPass) {
+        return {
+          transporter: nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.SMTP_PORT) || 587,
+            secure: false,
+            auth: {
+              user: customEmail,
+              pass: customPass
+            },
+            tls: { rejectUnauthorized: false }
+          }),
+          user: customEmail
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('[PasswordReset] Failed to load app_settings reset email:', e.message);
   }
 
+  // 2. Fallback to admin user credentials in users table
   try {
     const adminRes = await db.query(
       `SELECT email_address, email_password FROM users WHERE role = 'admin' AND email_address IS NOT NULL AND email_password IS NOT NULL LIMIT 1`
@@ -988,6 +1014,7 @@ const createPasswordResetTransporter = async () => {
     console.warn('[PasswordReset] Could not load admin credentials, falling back to environment:', e.message);
   }
 
+  // 3. Fallback to environment variables
   const defaultUser = process.env.SMTP_USER || 'Argusdonotreply@gmail.com';
   return {
     transporter: nodemailer.createTransport({
@@ -996,12 +1023,102 @@ const createPasswordResetTransporter = async () => {
       secure: false,
       auth: {
         user: defaultUser,
-        pass: (process.env.SMTP_PASS || '').replace(/"/g, '')
+        pass: process.env.SMTP_PASS || ''
       },
       tls: { rejectUnauthorized: false }
     }),
     user: defaultUser
   };
+};
+
+/**
+ * GET /api/auth/admin/reset-email-settings
+ * Admin only — get configured reset email address & presence of password
+ */
+const getAdminResetEmailSettings = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required.' });
+    }
+
+    const emailVal = await getAppSetting('reset_email_address');
+    const passVal = await getAppSetting('reset_email_password');
+
+    res.json({
+      success: true,
+      data: {
+        email_address: emailVal || 'Argusdonotreply@gmail.com',
+        has_password: !!passVal
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/auth/admin/reset-email-settings
+ * Admin only — verify & update reset email sender address and App Password
+ */
+const updateAdminResetEmailSettings = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required.' });
+    }
+
+    const { email_address, email_password } = req.body;
+    if (!email_address || !email_address.trim()) {
+      return res.status(400).json({ success: false, message: 'Reset sender email address is required.' });
+    }
+
+    const cleanEmail = email_address.trim().toLowerCase();
+    let passToTest = email_password ? email_password.trim() : '';
+
+    if (!passToTest) {
+      // If not passed, use existing saved encrypted password
+      const existingEnc = await getAppSetting('reset_email_password');
+      if (existingEnc) {
+        passToTest = decrypt(existingEnc);
+      }
+    }
+
+    if (!passToTest) {
+      return res.status(400).json({ success: false, message: 'App password is required.' });
+    }
+
+    // Verify SMTP connection via Nodemailer
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: {
+        user: cleanEmail,
+        pass: passToTest
+      },
+      tls: { rejectUnauthorized: false }
+    });
+
+    try {
+      await transporter.verify();
+    } catch (smtpErr) {
+      console.error('[Reset Email Settings] SMTP verification failed:', smtpErr.message);
+      return res.status(400).json({
+        success: false,
+        message: 'SMTP authentication failed. Please verify that the email address and Google App Password are correct.'
+      });
+    }
+
+    // Save to app_settings
+    await setAppSetting('reset_email_address', cleanEmail);
+    await setAppSetting('reset_email_password', encrypt(passToTest));
+
+    res.json({
+      success: true,
+      message: 'Reset email sender credentials verified and saved successfully.'
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 /**
@@ -1284,5 +1401,6 @@ module.exports = {
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
   getAdminUsers, updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
   updateUserExtension, updateUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature,
-  forgotPassword, verifyResetToken, resetPassword
+  forgotPassword, verifyResetToken, resetPassword,
+  getAdminResetEmailSettings, updateAdminResetEmailSettings
 };

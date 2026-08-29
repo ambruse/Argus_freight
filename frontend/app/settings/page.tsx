@@ -202,6 +202,13 @@ export default function SettingsPage() {
   const [draftGloballyEnabled, setDraftGloballyEnabled] = useState(false);
   const [togglingDraft, setTogglingDraft] = useState(false);
 
+  // ── Password Reset Email Sender (admin only) ───────────────
+  const [resetSenderEmail, setResetSenderEmail] = useState("Argusdonotreply@gmail.com");
+  const [resetSenderPassword, setResetSenderPassword] = useState("");
+  const [hasResetPassword, setHasResetPassword] = useState(false);
+  const [savingResetEmail, setSavingResetEmail] = useState(false);
+  const [showResetPass, setShowResetPass] = useState(false);
+
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
     if (!token) return;
@@ -240,6 +247,14 @@ export default function SettingsPage() {
         .catch(() => {});
       api.get("/quotation/draft-settings")
         .then(res => setDraftGloballyEnabled(res.data.enabled))
+        .catch(() => {});
+      api.get("/auth/admin/reset-email-settings")
+        .then(res => {
+          if (res.data?.data?.email_address) {
+            setResetSenderEmail(res.data.data.email_address);
+          }
+          setHasResetPassword(res.data?.data?.has_password || false);
+        })
         .catch(() => {});
     }
 
@@ -534,6 +549,25 @@ export default function SettingsPage() {
       setTogglingDraft(false);
     }
   };
+
+  const handleUpdateResetEmailSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingResetEmail(true);
+    try {
+      await api.post("/auth/admin/reset-email-settings", {
+        email_address: resetSenderEmail.trim(),
+        email_password: resetSenderPassword.trim(),
+      });
+      toast.success("Reset email sender credentials verified and saved successfully!");
+      setHasResetPassword(true);
+      setResetSenderPassword("");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to save reset email credentials.");
+    } finally {
+      setSavingResetEmail(false);
+    }
+  };
+
   return (
     <AppLayout
       title="Settings"
@@ -1291,6 +1325,86 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Password Reset Email Sender Card — admin only */}
+        {user?.role === "admin" && (
+          <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">
+            <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
+              <span>📧</span> Password Reset Email Sender
+            </h2>
+            <p className="text-sm text-muted mb-6">
+              Configure the sender email and Google App Password used to automatically dispatch password reset emails.
+            </p>
+
+            <form onSubmit={handleUpdateResetEmailSettings} className="space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-wider font-semibold text-muted mb-2">
+                  Sender Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  className="input w-full"
+                  value={resetSenderEmail}
+                  onChange={(e) => setResetSenderEmail(e.target.value)}
+                  placeholder="e.g. Argusdonotreply@gmail.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-wider font-semibold text-muted mb-2 flex items-center justify-between">
+                  <span>
+                    Google App Password{" "}
+                    {hasResetPassword && (
+                      <span className="text-[10px] text-emerald font-semibold normal-case ml-1 bg-emerald/10 border border-emerald/20 px-1.5 py-0.5 rounded">
+                        ✓ Configured
+                      </span>
+                    )}
+                  </span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showResetPass ? "text" : "password"}
+                    className="input w-full pr-16"
+                    value={resetSenderPassword}
+                    onChange={(e) => setResetSenderPassword(e.target.value)}
+                    placeholder={hasResetPassword ? "•••••••• (Leave blank to keep existing)" : "Enter 16-character App Password"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPass(!showResetPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-primary transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showResetPass ? "HIDE" : "SHOW"}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted/80 mt-1.5 leading-relaxed">
+                  💡 Generate a 16-character App Password from your Google Account security settings (2-Step Verification ➔ App Passwords).
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={savingResetEmail}
+                  className="btn-primary w-full justify-center py-2.5 text-xs font-bold"
+                >
+                  {savingResetEmail ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
+                      </svg>
+                      Verifying SMTP Connection…
+                    </span>
+                  ) : (
+                    "Verify & Save Reset Email Credentials"
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
