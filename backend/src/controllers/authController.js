@@ -1194,15 +1194,15 @@ const forgotPassword = async (req, res, next) => {
         [user.id, cleanEmail, tokenHash, ip]
       );
 
-      // Construct Reset URL
-      const clientBase = process.env.CLIENT_URL || 'http://localhost:5173';
+      // Construct Reset URL with domain argusshipping.co
+      const clientBase = process.env.RESET_PASSWORD_BASE_URL || 'https://argusshipping.co';
       const resetUrl = `${clientBase.replace(/\/$/, '')}/reset-password?token=${rawToken}&email=${encodeURIComponent(cleanEmail)}`;
 
       // Dispatch professional transactional HTML email
       try {
-        const { transporter } = await createPasswordResetTransporter();
+        const { transporter, user: senderEmail } = await createPasswordResetTransporter();
         const mailOptions = {
-          from: `"ARGUS Shipping" <Argusdonotreply@gmail.com>`,
+          from: `"ARGUS Shipping" <${senderEmail || 'Argusdonotreply@gmail.com'}>`,
           to: targetEmail,
           subject: 'ARGUS Shipping — Password Reset Request',
           html: `
