@@ -2650,8 +2650,7 @@ body.light-theme .footer-location-card:hover {
   }
 
   .hero-subtitle {
-    margin-left: auto !important;
-    margin-right: auto !important;
+    display: none !important;
   }
 
   .hero-logo-container {
