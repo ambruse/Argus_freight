@@ -86,26 +86,26 @@ router.get('/:ref', async (req, res) => {
 
     let dbShipment = null;
 
-    // 1. Check central shipments table (ONLY confirmed status)
+    // 1. Check central shipments table
     if (db && db.query) {
       try {
         const queryRes = await db.query(
           `SELECT * FROM shipments 
-           WHERE LOWER(COALESCE(status, '')) = 'confirmed'
-             AND (
-               UPPER(ref_no) = $1 
-               OR UPPER(cust_req_no) = $1 
-               OR UPPER(bl_number) = $1
-               OR UPPER(ref_no) = $2 
-               OR UPPER(cust_req_no) = $2 
-               OR UPPER(bl_number) = $2
-               OR UPPER(ref_no) LIKE $3
-               OR UPPER(cust_req_no) LIKE $3
-               OR UPPER(ref_no) LIKE $4
-               OR UPPER(cust_req_no) LIKE $4
-               OR UPPER(ref_no) LIKE $5
-               OR UPPER(cust_req_no) LIKE $5
-             )
+           WHERE (
+              UPPER(ref_no) = $1 
+              OR UPPER(cust_req_no) = $1 
+              OR UPPER(bl_number) = $1
+              OR UPPER(ref_no) = $2 
+              OR UPPER(cust_req_no) = $2 
+              OR UPPER(bl_number) = $2
+              OR UPPER(ref_no) LIKE $3
+              OR UPPER(cust_req_no) LIKE $3
+              OR UPPER(ref_no) LIKE $4
+              OR UPPER(cust_req_no) LIKE $4
+              OR UPPER(ref_no) LIKE $5
+              OR UPPER(cust_req_no) LIKE $5
+           )
+           AND LOWER(COALESCE(status, '')) = 'confirmed'
            ORDER BY 
              CASE 
                WHEN UPPER(ref_no) = $1 THEN 1
@@ -136,7 +136,7 @@ router.get('/:ref', async (req, res) => {
       }
     }
 
-    // 2. If not found in central table, query sandbox tables (ONLY confirmed status)
+    // 2. If not found in central table, query sandbox tables
     if (!dbShipment) {
       try {
         const suffixes = await getAllSuffixes();
@@ -144,21 +144,21 @@ router.get('/:ref', async (req, res) => {
           if (!suffix || suffix === 'admin') continue;
           const sRes = await db.query(
             `SELECT * FROM shipments_${suffix}
-             WHERE LOWER(COALESCE(status, '')) = 'confirmed'
-               AND (
-                 UPPER(ref_no) = $1 
-                 OR UPPER(cust_req_no) = $1 
-                 OR UPPER(bl_number) = $1
-                 OR UPPER(ref_no) = $2 
-                 OR UPPER(cust_req_no) = $2 
-                 OR UPPER(bl_number) = $2
-                 OR UPPER(ref_no) LIKE $3
-                 OR UPPER(cust_req_no) LIKE $3
-                 OR UPPER(ref_no) LIKE $4
-                 OR UPPER(cust_req_no) LIKE $4
-                 OR UPPER(ref_no) LIKE $5
-                 OR UPPER(cust_req_no) LIKE $5
-               )
+             WHERE (
+                UPPER(ref_no) = $1 
+                OR UPPER(cust_req_no) = $1 
+                OR UPPER(bl_number) = $1
+                OR UPPER(ref_no) = $2 
+                OR UPPER(cust_req_no) = $2 
+                OR UPPER(bl_number) = $2
+                OR UPPER(ref_no) LIKE $3
+                OR UPPER(cust_req_no) LIKE $3
+                OR UPPER(ref_no) LIKE $4
+                OR UPPER(cust_req_no) LIKE $4
+                OR UPPER(ref_no) LIKE $5
+                OR UPPER(cust_req_no) LIKE $5
+             )
+             AND LOWER(COALESCE(status, '')) = 'confirmed'
              ORDER BY 
                CASE 
                  WHEN UPPER(ref_no) = $1 THEN 1
@@ -192,13 +192,13 @@ router.get('/:ref', async (req, res) => {
       }
     }
 
-    // 3. If still not found, check call_enquiries (ONLY confirmed status)
+    // 3. If still not found, check call_enquiries
     if (!dbShipment) {
       try {
         const callRes = await db.query(
           `SELECT * FROM call_enquiries 
-           WHERE LOWER(COALESCE(status, '')) = 'confirmed'
-             AND (UPPER(ref_no) = $1 OR UPPER(ref_no) = $2)
+           WHERE (UPPER(ref_no) = $1 OR UPPER(ref_no) = $2)
+             AND LOWER(COALESCE(status, '')) = 'confirmed'
            ORDER BY updated_at DESC LIMIT 1`,
           [refUpper, refCleaned]
         ).catch(() => ({ rows: [] }));
@@ -221,8 +221,15 @@ router.get('/:ref', async (req, res) => {
       } catch (e) {}
     }
 
-    // Strictly enforce: Only show tracking info if shipment status is 'Confirmed'
-    if (!dbShipment || (dbShipment.status || '').toLowerCase().trim() !== 'confirmed') {
+    if (!dbShipment) {
+      return res.json({
+        success: false,
+        message: 'No tracking information found'
+      });
+    }
+
+    const mainStatus = (dbShipment.status || '').trim().toLowerCase();
+    if (mainStatus !== 'confirmed') {
       return res.json({
         success: false,
         message: 'No tracking information found'
