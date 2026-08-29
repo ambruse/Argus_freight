@@ -86,28 +86,27 @@ router.get('/:ref', async (req, res) => {
 
     let dbShipment = null;
 
-    // 1. Check central shipments table
+    // 1. Check central shipments table (ONLY confirmed status)
     if (db && db.query) {
       try {
         const queryRes = await db.query(
           `SELECT * FROM shipments 
-           WHERE UPPER(ref_no) = $1 
-              OR UPPER(cust_req_no) = $1 
-              OR UPPER(bl_number) = $1
-              OR UPPER(ref_no) = $2 
-              OR UPPER(cust_req_no) = $2 
-              OR UPPER(bl_number) = $2
-              OR UPPER(ref_no) LIKE $3
-              OR UPPER(cust_req_no) LIKE $3
-              OR UPPER(ref_no) LIKE $4
-              OR UPPER(cust_req_no) LIKE $4
-              OR UPPER(ref_no) LIKE $5
-              OR UPPER(cust_req_no) LIKE $5
+           WHERE LOWER(COALESCE(status, '')) = 'confirmed'
+             AND (
+               UPPER(ref_no) = $1 
+               OR UPPER(cust_req_no) = $1 
+               OR UPPER(bl_number) = $1
+               OR UPPER(ref_no) = $2 
+               OR UPPER(cust_req_no) = $2 
+               OR UPPER(bl_number) = $2
+               OR UPPER(ref_no) LIKE $3
+               OR UPPER(cust_req_no) LIKE $3
+               OR UPPER(ref_no) LIKE $4
+               OR UPPER(cust_req_no) LIKE $4
+               OR UPPER(ref_no) LIKE $5
+               OR UPPER(cust_req_no) LIKE $5
+             )
            ORDER BY 
-             CASE 
-               WHEN LOWER(COALESCE(status, '')) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
-               ELSE 2
-             END ASC,
              CASE 
                WHEN UPPER(ref_no) = $1 THEN 1
                WHEN UPPER(cust_req_no) = $1 THEN 2
@@ -137,7 +136,7 @@ router.get('/:ref', async (req, res) => {
       }
     }
 
-    // 2. If not found in central table, query sandbox tables
+    // 2. If not found in central table, query sandbox tables (ONLY confirmed status)
     if (!dbShipment) {
       try {
         const suffixes = await getAllSuffixes();
@@ -145,23 +144,22 @@ router.get('/:ref', async (req, res) => {
           if (!suffix || suffix === 'admin') continue;
           const sRes = await db.query(
             `SELECT * FROM shipments_${suffix}
-             WHERE UPPER(ref_no) = $1 
-                OR UPPER(cust_req_no) = $1 
-                OR UPPER(bl_number) = $1
-                OR UPPER(ref_no) = $2 
-                OR UPPER(cust_req_no) = $2 
-                OR UPPER(bl_number) = $2
-                OR UPPER(ref_no) LIKE $3
-                OR UPPER(cust_req_no) LIKE $3
-                OR UPPER(ref_no) LIKE $4
-                OR UPPER(cust_req_no) LIKE $4
-                OR UPPER(ref_no) LIKE $5
-                OR UPPER(cust_req_no) LIKE $5
+             WHERE LOWER(COALESCE(status, '')) = 'confirmed'
+               AND (
+                 UPPER(ref_no) = $1 
+                 OR UPPER(cust_req_no) = $1 
+                 OR UPPER(bl_number) = $1
+                 OR UPPER(ref_no) = $2 
+                 OR UPPER(cust_req_no) = $2 
+                 OR UPPER(bl_number) = $2
+                 OR UPPER(ref_no) LIKE $3
+                 OR UPPER(cust_req_no) LIKE $3
+                 OR UPPER(ref_no) LIKE $4
+                 OR UPPER(cust_req_no) LIKE $4
+                 OR UPPER(ref_no) LIKE $5
+                 OR UPPER(cust_req_no) LIKE $5
+               )
              ORDER BY 
-               CASE 
-                 WHEN LOWER(COALESCE(status, '')) IN ('confirmed', 'completed', 'in transit', 'delivered', 'scheduled', 'clearance', 'warehouse', 'files pending') THEN 1
-                 ELSE 2
-               END ASC,
                CASE 
                  WHEN UPPER(ref_no) = $1 THEN 1
                  WHEN UPPER(cust_req_no) = $1 THEN 2
@@ -194,12 +192,13 @@ router.get('/:ref', async (req, res) => {
       }
     }
 
-    // 3. If still not found, check call_enquiries
+    // 3. If still not found, check call_enquiries (ONLY confirmed status)
     if (!dbShipment) {
       try {
         const callRes = await db.query(
           `SELECT * FROM call_enquiries 
-           WHERE UPPER(ref_no) = $1 OR UPPER(ref_no) = $2 
+           WHERE LOWER(COALESCE(status, '')) = 'confirmed'
+             AND (UPPER(ref_no) = $1 OR UPPER(ref_no) = $2)
            ORDER BY updated_at DESC LIMIT 1`,
           [refUpper, refCleaned]
         ).catch(() => ({ rows: [] }));
@@ -222,15 +221,8 @@ router.get('/:ref', async (req, res) => {
       } catch (e) {}
     }
 
-    if (!dbShipment) {
-      return res.json({
-        success: false,
-        message: 'No tracking information found'
-      });
-    }
-
-    const mainStatus = (dbShipment.status || '').toLowerCase();
-    if (mainStatus === 'cancelled' || mainStatus === 'deleted') {
+    // Strictly enforce: Only show tracking info if shipment status is 'Confirmed'
+    if (!dbShipment || (dbShipment.status || '').toLowerCase().trim() !== 'confirmed') {
       return res.json({
         success: false,
         message: 'No tracking information found'
