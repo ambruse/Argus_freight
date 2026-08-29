@@ -60,7 +60,15 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
         setCurrentIndex(0);
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to approve RFQ.");
+      if (err?.response?.status === 400) {
+        toast(err?.response?.data?.message || "This RFQ has already been processed.", { icon: "ℹ️" });
+        onItemProcessed(item.ref_no);
+        if (currentIndex >= items.length - 1) {
+          setCurrentIndex(0);
+        }
+      } else {
+        toast.error(err?.response?.data?.message || "Failed to approve RFQ.");
+      }
     } finally {
       setLoading(null);
     }
@@ -90,7 +98,15 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
         setCurrentIndex(0);
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to reject RFQ.");
+      if (err?.response?.status === 400) {
+        toast(err?.response?.data?.message || "This RFQ has already been processed.", { icon: "ℹ️" });
+        onItemProcessed(item.ref_no);
+        if (currentIndex >= items.length - 1) {
+          setCurrentIndex(0);
+        }
+      } else {
+        toast.error(err?.response?.data?.message || "Failed to reject RFQ.");
+      }
     } finally {
       setLoading(null);
     }

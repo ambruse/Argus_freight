@@ -49,6 +49,12 @@ export default function NotificationListener() {
     const socket = io(socketUrl);
     
     socket.emit("joinRoom", `user_${user.username.toLowerCase()}`);
+    if (user.role === "admin") {
+      socket.emit("joinRoom", "role_admin");
+    }
+    if (user.role === "operator") {
+      socket.emit("joinRoom", "role_operator");
+    }
     
     // Calling agent: post-call modal
     if (user.role === "calling_agent") {
@@ -69,6 +75,20 @@ export default function NotificationListener() {
         seenApprovalRefs.current.push(data.ref_no);
         playNotificationSound();
         setApprovalQueue((prev) => [...prev, data]);
+      });
+
+      // Dismiss from queue as soon as ANY operator or admin processes it
+      socket.on("rfq_approval_processed", (data: { ref_no: string; cust_req_no?: string; outcome?: string; processed_by?: string }) => {
+        const targets = [data.ref_no, data.cust_req_no].filter(Boolean) as string[];
+        setApprovalQueue((prev) => prev.filter(item => 
+          !targets.includes(item.ref_no) && 
+          (!item.cust_req_no || !targets.includes(item.cust_req_no))
+        ));
+        targets.forEach(t => {
+          if (!seenApprovalRefs.current.includes(t)) {
+            seenApprovalRefs.current.push(t);
+          }
+        });
       });
     }
 

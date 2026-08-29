@@ -192,23 +192,29 @@ const generateRfq = async (req, res, next) => {
         // ── Notify assigned operator via Socket.IO ─────────────────────
         try {
           const opSocketRoom = `user_${(targetOpName || '').toLowerCase()}`;
-          if (global.io && opSocketRoom && opSocketRoom !== 'user_') {
-            global.io.to(opSocketRoom).emit('rfq_pending_approval', {
-              type: 'operator',
-              ref_no: ref_no,
-              cust_req_no: finalCustReqNo,
-              pol: pol,
-              pod: pod,
-              commodity: commodity,
-              mode: mode,
-              container: container || null,
-              dimension: dimension || null,
-              customer_name: customer_name || null,
-              refer_by: finalReferBy || req.user.username,
-              submitter_username: req.user.username,
-              submitter_role: req.user.role,
-            });
-            console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom}`);
+          const payload = {
+            type: 'operator',
+            ref_no: ref_no,
+            cust_req_no: finalCustReqNo,
+            pol: pol,
+            pod: pod,
+            commodity: commodity,
+            mode: mode,
+            container: container || null,
+            dimension: dimension || null,
+            customer_name: customer_name || null,
+            refer_by: finalReferBy || req.user.username,
+            submitter_username: req.user.username,
+            submitter_role: req.user.role,
+          };
+
+          if (global.io) {
+            if (opSocketRoom && opSocketRoom !== 'user_') {
+              global.io.to(opSocketRoom).emit('rfq_pending_approval', payload);
+            }
+            // Also notify all admins in role_admin room
+            global.io.to('role_admin').emit('rfq_pending_approval', payload);
+            console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom} & role_admin`);
           }
         } catch (socketErr) {
           console.error('[RFQ Approval] Failed to emit socket event:', socketErr.message);
@@ -584,6 +590,14 @@ const approveRfq = async (req, res, next) => {
     }
     const shipment = shipRes.rows[0];
 
+    // Check if already approved or rejected
+    if (shipment.status !== 'Awaiting Approval') {
+      return res.status(400).json({
+        success: false,
+        message: `This RFQ has already been processed (current status: ${shipment.status}).`
+      });
+    }
+
     // 2. Update status to 'Pending' across ALL tables
     const actualRefNo = shipment.ref_no || ref_no;
     const actualCustReqNo = shipment.cust_req_no || actualRefNo;
@@ -628,14 +642,23 @@ const approveRfq = async (req, res, next) => {
       sendRfqEmail(fakeReq, fakeRes, (err) => resolve());
     });
 
-    // 5. Notify submitter via socket
+    // 5. Notify submitter and broadcast dismissal to all operators & admins
     try {
-      const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
-      if (global.io && submitterRoom) {
-        global.io.to(submitterRoom).emit('rfq_approval_result', {
+      if (global.io) {
+        const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
+        if (submitterRoom && submitterRoom !== 'user_') {
+          global.io.to(submitterRoom).emit('rfq_approval_result', {
+            ref_no: actualRefNo,
+            outcome: 'accepted',
+            message: `Your RFQ ${actualRefNo} was approved and sent by the operator.`
+          });
+        }
+        // Broadcast to all operators and admins so modal immediately dismisses everywhere
+        global.io.emit('rfq_approval_processed', {
           ref_no: actualRefNo,
+          cust_req_no: actualCustReqNo,
           outcome: 'accepted',
-          message: `Your RFQ ${actualRefNo} was approved and sent by the operator.`
+          processed_by: req.user.username
         });
       }
     } catch (e) {}
@@ -680,6 +703,14 @@ const rejectRfq = async (req, res, next) => {
     }
     const shipment = shipRes.rows[0];
 
+    // Check if already approved or rejected
+    if (shipment.status !== 'Awaiting Approval') {
+      return res.status(400).json({
+        success: false,
+        message: `This RFQ has already been processed (current status: ${shipment.status}).`
+      });
+    }
+
     // 2. Update status to 'Cancelled' across ALL tables
     const actualRefNo = shipment.ref_no || ref_no;
     const actualCustReqNo = shipment.cust_req_no || actualRefNo;
@@ -710,14 +741,23 @@ const rejectRfq = async (req, res, next) => {
       }
     }
 
-    // 4. Notify submitter via socket
+    // 4. Notify submitter and broadcast dismissal to all operators & admins
     try {
-      const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
-      if (global.io && submitterRoom) {
-        global.io.to(submitterRoom).emit('rfq_approval_result', {
+      if (global.io) {
+        const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
+        if (submitterRoom && submitterRoom !== 'user_') {
+          global.io.to(submitterRoom).emit('rfq_approval_result', {
+            ref_no: actualRefNo,
+            outcome: 'rejected',
+            message: `Your RFQ ${actualRefNo} was rejected by the operator.`
+          });
+        }
+        // Broadcast to all operators and admins so modal immediately dismisses everywhere
+        global.io.emit('rfq_approval_processed', {
           ref_no: actualRefNo,
+          cust_req_no: actualCustReqNo,
           outcome: 'rejected',
-          message: `Your RFQ ${actualRefNo} was rejected by the operator.`
+          processed_by: req.user.username
         });
       }
     } catch (e) {}
