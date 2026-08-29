@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const db     = require('../config/db');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { encrypt, decrypt } = require('../utils/crypto');
 
 // Generate ephemeral 2048-bit RSA keypair for password transit encryption
@@ -940,8 +941,348 @@ const getSalesList = async (req, res, next) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+//  Password Reset Functions with Per-Account Rate Limiting
+// ─────────────────────────────────────────────────────────────
+
+const createPasswordResetTransporter = async () => {
+  const authUser = process.env.AUTH_EMAIL_USER || 'Argusdonotreply@gmail.com';
+  const authPass = process.env.AUTH_EMAIL_PASS || 'zcvf zdzw yfth kiea';
+
+  if (authUser && authPass) {
+    return {
+      transporter: nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: false,
+        auth: {
+          user: authUser,
+          pass: authPass.replace(/"/g, '')
+        },
+        tls: { rejectUnauthorized: false }
+      }),
+      user: authUser
+    };
+  }
+
+  try {
+    const adminRes = await db.query(
+      `SELECT email_address, email_password FROM users WHERE role = 'admin' AND email_address IS NOT NULL AND email_password IS NOT NULL LIMIT 1`
+    );
+    if (adminRes.rows.length > 0 && adminRes.rows[0].email_address && adminRes.rows[0].email_password) {
+      return {
+        transporter: nodemailer.createTransport({
+          host: process.env.SMTP_HOST || 'smtp.gmail.com',
+          port: parseInt(process.env.SMTP_PORT) || 587,
+          secure: false,
+          auth: {
+            user: adminRes.rows[0].email_address,
+            pass: decrypt(adminRes.rows[0].email_password)
+          },
+          tls: { rejectUnauthorized: false }
+        }),
+        user: adminRes.rows[0].email_address
+      };
+    }
+  } catch (e) {
+    console.warn('[PasswordReset] Could not load admin credentials, falling back to environment:', e.message);
+  }
+
+  const defaultUser = process.env.SMTP_USER || 'Argusdonotreply@gmail.com';
+  return {
+    transporter: nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: {
+        user: defaultUser,
+        pass: (process.env.SMTP_PASS || '').replace(/"/g, '')
+      },
+      tls: { rejectUnauthorized: false }
+    }),
+    user: defaultUser
+  };
+};
+
+/**
+ * POST /api/auth/forgot-password
+ * Body: { email }
+ * Implements per-email rate limiting (max 5/hr, max 20/day) & user enumeration prevention
+ */
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'A valid email address is required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || null;
+
+    // Rate Limiting: Max 5 requests per hour for this email
+    const hourCheck = await db.query(
+      `SELECT COUNT(*) AS cnt FROM password_reset_tokens 
+       WHERE LOWER(email) = LOWER($1) AND created_at >= NOW() - INTERVAL 1 HOUR`,
+      [cleanEmail]
+    );
+    const countHour = parseInt(hourCheck.rows[0]?.cnt || 0, 10);
+    if (countHour >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many password reset requests for this email address. Please wait an hour before trying again.'
+      });
+    }
+
+    // Rate Limiting: Max 20 requests per day for this email
+    const dayCheck = await db.query(
+      `SELECT COUNT(*) AS cnt FROM password_reset_tokens 
+       WHERE LOWER(email) = LOWER($1) AND created_at >= NOW() - INTERVAL 24 HOUR`,
+      [cleanEmail]
+    );
+    const countDay = parseInt(dayCheck.rows[0]?.cnt || 0, 10);
+    if (countDay >= 20) {
+      return res.status(429).json({
+        success: false,
+        message: 'Daily password reset request limit reached for this email address. Please try again tomorrow.'
+      });
+    }
+
+    // Account Verification: Look up user in DB
+    const userRes = await db.query(
+      `SELECT id, username, email_address, name, role, is_stalled 
+       FROM users 
+       WHERE (LOWER(email_address) = LOWER($1) OR LOWER(username) = LOWER($1))
+         AND (is_deleted IS NOT TRUE)
+       LIMIT 1`,
+      [cleanEmail]
+    );
+
+    if (userRes.rows.length > 0) {
+      const user = userRes.rows[0];
+      const targetEmail = user.email_address || (emailRegex.test(user.username) ? user.username : cleanEmail);
+
+      // Generate cryptographically secure 32-byte reset token
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+      // Insert token into database with 30 minute expiration
+      await db.query(
+        `INSERT INTO password_reset_tokens (user_id, email, token_hash, expires_at, ip_address)
+         VALUES ($1, $2, $3, NOW() + INTERVAL 30 MINUTE, $4)`,
+        [user.id, cleanEmail, tokenHash, ip]
+      );
+
+      // Construct Reset URL
+      const clientBase = process.env.CLIENT_URL || 'http://localhost:5173';
+      const resetUrl = `${clientBase.replace(/\/$/, '')}/reset-password?token=${rawToken}&email=${encodeURIComponent(cleanEmail)}`;
+
+      // Dispatch professional transactional HTML email
+      try {
+        const { transporter } = await createPasswordResetTransporter();
+        const mailOptions = {
+          from: `"ARGUS Shipping" <Argusdonotreply@gmail.com>`,
+          to: targetEmail,
+          subject: 'ARGUS Shipping — Password Reset Request',
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Reset Your Password</title>
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b0f19; color: #e2e8f0; margin: 0; padding: 0; }
+                .container { max-width: 560px; margin: 40px auto; background: #131b2e; border: 1px solid rgba(245,176,55,0.25); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+                .header { background: #0f172a; padding: 32px 40px; text-align: center; border-bottom: 1px solid rgba(245,176,55,0.2); }
+                .header h1 { margin: 0; font-size: 24px; color: #F5B037; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; }
+                .content { padding: 40px; color: #cbd5e1; font-size: 15px; line-height: 1.6; }
+                .btn { display: inline-block; background: linear-gradient(135deg, #F5B037 0%, #D4831A 100%); color: #0b0f19 !important; font-weight: 700; font-size: 15px; text-decoration: none; padding: 14px 32px; border-radius: 8px; margin: 24px 0; text-align: center; }
+                .token-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; font-family: monospace; font-size: 13px; color: #F5B037; word-break: break-all; margin: 12px 0 20px; }
+                .footer { padding: 24px 40px; background: #0b0f19; font-size: 12px; color: #64748b; text-align: center; border-top: 1px solid #1e293b; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>ARGUS SHIPPING</h1>
+                  <p style="margin: 6px 0 0; font-size: 12px; color: #94a3b8; letter-spacing: 1px;">CARGO & FREIGHT MANAGEMENT</p>
+                </div>
+                <div class="content">
+                  <p style="font-size: 17px; font-weight: 600; color: #f8fafc; margin-top: 0;">Hello ${user.name || user.username},</p>
+                  <p>We received a request to reset the password for your ARGUS account associated with <strong>${cleanEmail}</strong>.</p>
+                  <p>Click the button below to choose a new password. This reset link is valid for <strong>30 minutes</strong>.</p>
+                  <div style="text-align: center;">
+                    <a href="${resetUrl}" class="btn" target="_blank">Reset My Password</a>
+                  </div>
+                  <p style="font-size: 13px; color: #94a3b8;">If the button above does not work, copy and paste this link into your browser:</p>
+                  <div class="token-box">${resetUrl}</div>
+                  <p style="font-size: 13px; color: #94a3b8;">Alternatively, you can manually enter your reset token on the reset page:</p>
+                  <div class="token-box">${rawToken}</div>
+                  <hr style="border: 0; border-top: 1px solid #1e293b; margin: 24px 0;" />
+                  <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">If you did not request this password reset, please ignore this email or contact support. Your password will remain unchanged.</p>
+                </div>
+                <div class="footer">
+                  © ${new Date().getFullYear()} ARGUS Shipping · All rights reserved.<br />
+                  This is an automated transactional security notification.
+                </div>
+              </div>
+            </body>
+            </html>
+          `
+        };
+        await transporter.sendMail(mailOptions);
+        console.log(`[PasswordReset] Reset email dispatched to ${targetEmail}`);
+      } catch (mailErr) {
+        console.error('[PasswordReset] Failed to deliver email:', mailErr.message);
+      }
+    } else {
+      // Simulate constant execution delay to mitigate user enumeration timing attacks
+      await new Promise(r => setTimeout(r, 150));
+    }
+
+    // Always respond with generic feedback to prevent user enumeration
+    res.json({
+      success: true,
+      message: 'If an account exists with this email address, a password reset link and token have been sent.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/auth/verify-reset-token
+ * Body: { token }
+ * Checks if a token is valid and not yet expired/used
+ */
+const verifyResetToken = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token || typeof token !== 'string' || !token.trim()) {
+      return res.status(400).json({ success: false, valid: false, message: 'Password reset token is required.' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const tokenRes = await db.query(
+      `SELECT t.id, t.user_id, t.email, t.expires_at, t.used_at, u.username
+       FROM password_reset_tokens t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > NOW()
+       ORDER BY t.id DESC LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (tokenRes.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'This password reset link is invalid or has expired. Please request a new one.'
+      });
+    }
+
+    res.json({
+      success: true,
+      valid: true,
+      email: tokenRes.rows[0].email,
+      username: tokenRes.rows[0].username
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/auth/reset-password
+ * Body: { token, newPassword, confirmPassword }
+ * Updates password upon valid token verification and invalidates all user tokens
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    let { token, newPassword, confirmPassword } = req.body;
+    newPassword = decryptPassword(newPassword);
+
+    if (!token || typeof token !== 'string' || !token.trim()) {
+      return res.status(400).json({ success: false, message: 'Password reset token is required.' });
+    }
+
+    if (!newPassword || typeof newPassword !== 'string') {
+      return res.status(400).json({ success: false, message: 'New password is required.' });
+    }
+
+    if (confirmPassword) {
+      const decryptedConfirm = decryptPassword(confirmPassword);
+      if (newPassword !== decryptedConfirm) {
+        return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+      }
+    }
+
+    // Validate Password Complexity (min 8 chars, 1 uppercase, 1 lowercase, 1 digit)
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long.' });
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one uppercase letter.' });
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one lowercase letter.' });
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one number.' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+
+    // Verify token validity
+    const tokenRes = await db.query(
+      `SELECT t.id, t.user_id, t.email, t.expires_at, t.used_at 
+       FROM password_reset_tokens t
+       WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > NOW()
+       ORDER BY t.id DESC LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (tokenRes.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This reset token is invalid or has expired. Please request a new password reset.'
+      });
+    }
+
+    const resetRecord = tokenRes.rows[0];
+
+    // Securely hash new password with bcrypt
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+
+    // Update password in database
+    await db.query(
+      `UPDATE users SET password_hash = $1 WHERE id = $2`,
+      [newHash, resetRecord.user_id]
+    );
+
+    // Clear / invalidate all active reset tokens for this user
+    await db.query(
+      `UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1`,
+      [resetRecord.user_id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Your password has been successfully reset. Please sign in with your new password.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = { 
   login, me, verifyPassword, changePassword, register, getEmailSettings, updateEmailSettings,
   getAdminUsers, updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
+  updateUserExtension, updateUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature,
+  forgotPassword, verifyResetToken, resetPassword
 };

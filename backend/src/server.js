@@ -113,7 +113,7 @@ if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
       'login', 'register', 'dashboard', 'rfq', 'confirmed',
       'customers', 'customer', 'contacts', 'quotation',
       'calling-agent', 'sales', 'settings', 'summary',
-      'admin', 'calculator'
+      'admin', 'calculator', 'reset-password'
     ];
     appRoutes.forEach(route => {
       app.get(`/${route}`, (req, res) => {
@@ -376,6 +376,22 @@ const createLike = async (newTable, baseTable) => {
         shipment_ref    VARCHAR(255),
         email_payload   TEXT,
         FOREIGN KEY (created_by) REFERENCES users(id)
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id          INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        user_id     INT NOT NULL,
+        email       VARCHAR(255) NOT NULL,
+        token_hash  VARCHAR(255) NOT NULL,
+        expires_at  DATETIME NOT NULL,
+        used_at     DATETIME DEFAULT NULL,
+        created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ip_address  VARCHAR(45) DEFAULT NULL,
+        KEY idx_email_created (email, created_at),
+        KEY idx_token_hash (token_hash),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 

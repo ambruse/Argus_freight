@@ -5,7 +5,8 @@ const {
   login, me, verifyPassword, changePassword, register, 
   getEmailSettings, updateEmailSettings, getAdminUsers, 
   updateAdminUserEmail, getOperatorsList, getSalesList, createAdminOperator, deleteAdminUser, toggleStallUser,
-  updateUserExtension, updateUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature
+  updateUserExtension, updateUserCountry, updateProfile, getProfile, getPublicKey, getSignature, updateSignature,
+  forgotPassword, verifyResetToken, resetPassword
 } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 const { authRateLimiter } = require('../middleware/rateLimiter');
@@ -14,6 +15,9 @@ const { authRateLimiter } = require('../middleware/rateLimiter');
 router.get('/public-key', getPublicKey);
 router.post('/login', authRateLimiter, login);
 router.post('/register', authRateLimiter, register);
+router.post('/forgot-password', authRateLimiter, forgotPassword);
+router.post('/verify-reset-token', authRateLimiter, verifyResetToken);
+router.post('/reset-password', authRateLimiter, resetPassword);
 
 // Protected — verify token and return user info
 router.get('/me', authenticateToken, me);

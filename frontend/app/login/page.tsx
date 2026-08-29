@@ -20,6 +20,14 @@ export default function LoginPage() {
   const [theme,    setTheme]    = useState<"dark" | "light">("dark");
   const [error,    setError]    = useState("");
 
+  // Forgot password modal state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail,     setForgotEmail]     = useState("");
+  const [forgotLoading,   setForgotLoading]   = useState(false);
+  const [forgotSent,      setForgotSent]      = useState(false);
+  const [forgotMessage,   setForgotMessage]   = useState("");
+  const [forgotError,     setForgotError]     = useState("");
+
   useEffect(() => {
     const sync = () => {
       const saved = (localStorage.getItem("theme") as "dark" | "light") || "dark";
@@ -66,6 +74,34 @@ export default function LoginPage() {
       setError(err.response?.data?.message || "Username or password is incorrect.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setForgotError("");
+    setForgotMessage("");
+    if (!forgotEmail.trim()) {
+      setForgotError("Please enter your email address.");
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to process request");
+      }
+      setForgotSent(true);
+      setForgotMessage(data.message || "If an account exists with this email address, a password reset link and token have been sent.");
+    } catch (err: any) {
+      setForgotError(err.message || "Unable to send reset email. Please try again.");
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -353,15 +389,29 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Register link */}
-            <div className="flex justify-end">
+            {/* Actions beneath password */}
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotError("");
+                  setForgotMessage("");
+                  setForgotSent(false);
+                  setForgotEmail(username.includes("@") ? username : "");
+                  setShowForgotModal(true);
+                }}
+                className="text-[12px] font-semibold transition-colors hover:underline"
+                style={{ color: "var(--sidebar-avatar-text)" }}
+              >
+                Forgot Password?
+              </button>
               <button
                 type="button"
                 onClick={() => router.push("/register?role=customer")}
                 className="text-[12px] font-semibold transition-colors hover:underline"
-                style={{ color: "var(--sidebar-avatar-text)" }}
+                style={{ color: "var(--text-muted)" }}
               >
-                New here? Register as Customer →
+                Register as Customer →
               </button>
             </div>
 
@@ -392,6 +442,153 @@ export default function LoginPage() {
             © {new Date().getFullYear()} ARGUS Shipping · Secure Login
           </p>
         </div>
+
+        {/* ── FORGOT PASSWORD MODAL ─────────────────────────── */}
+        {showForgotModal && (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.80)", backdropFilter: "blur(8px)" }}
+          >
+            <div
+              className="relative w-full max-w-md rounded-2xl p-6 sm:p-8 animate-fade-in"
+              style={{
+                background: "var(--surface-1, #151b2e)",
+                border: "1px solid var(--border-gold, rgba(245,176,55,0.30))",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.60)",
+              }}
+            >
+              {/* Top Accent Line */}
+              <div
+                className="h-[1.5px] w-full mb-6 rounded-full"
+                style={{ background: "linear-gradient(90deg, transparent, var(--border-gold-glow, #F5B037), transparent)" }}
+              />
+
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3
+                    className="text-xl font-bold"
+                    style={{ color: "var(--text-primary)", fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    Reset Your Password
+                  </h3>
+                  <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                    Enter your email to receive a secure reset link & token
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(false)}
+                  className="p-1.5 rounded-lg text-lg transition-opacity hover:opacity-100 opacity-60"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Error Message */}
+              {forgotError && (
+                <div
+                  className="rounded-xl p-3.5 mb-4 flex items-start gap-3 animate-fade-in"
+                  style={{ background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.20)" }}
+                >
+                  <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="#F43F5E" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  <p className="text-xs leading-relaxed" style={{ color: "#F43F5E" }}>{forgotError}</p>
+                </div>
+              )}
+
+              {/* Success Message (Generic to prevent enumeration) */}
+              {forgotSent ? (
+                <div className="space-y-4 animate-fade-in py-2">
+                  <div
+                    className="rounded-xl p-4 flex items-start gap-3"
+                    style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)" }}
+                  >
+                    <svg className="w-5 h-5 shrink-0 text-emerald mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs font-semibold text-emerald mb-1">Check Your Inbox</p>
+                      <p className="text-xs leading-relaxed text-[#cbd5e1]">
+                        {forgotMessage}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg text-[11px]" style={{ background: "rgba(245,176,55,0.06)", color: "var(--text-muted)" }}>
+                    💡 Tokens expire in <strong>30 minutes</strong>. If you already received a token or reset link, you can proceed directly to the reset page.
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotModal(false);
+                        router.push(`/reset-password?email=${encodeURIComponent(forgotEmail)}`);
+                      }}
+                      className="btn-primary w-full justify-center py-2.5 text-xs font-bold"
+                    >
+                      Enter Reset Token Manually →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(false)}
+                      className="btn-secondary w-full justify-center py-2.5 text-xs"
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+                      Account Email Address
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="e.g. user@example.com"
+                      className="input"
+                      disabled={forgotLoading}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="flex gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(false)}
+                      disabled={forgotLoading}
+                      className="btn-secondary flex-1 justify-center py-2.5 text-xs"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="btn-primary flex-1 justify-center py-2.5 text-xs"
+                    >
+                      {forgotLoading ? (
+                        <span className="flex items-center gap-1.5">
+                          <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
+                          </svg>
+                          Sending…
+                        </span>
+                      ) : (
+                        "Send Reset Link"
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Theme toggle */}
         <button
