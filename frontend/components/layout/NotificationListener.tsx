@@ -78,8 +78,8 @@ export default function NotificationListener() {
       });
 
       // Dismiss from queue as soon as ANY operator or admin processes it
-      socket.on("rfq_approval_processed", (data: { ref_no: string; cust_req_no?: string; outcome?: string; processed_by?: string }) => {
-        const targets = [data.ref_no, data.cust_req_no].filter(Boolean) as string[];
+      socket.on("rfq_approval_processed", (data: { ref_no: string; cust_req_no?: string; all_ref_nos?: string[]; outcome?: string; processed_by?: string }) => {
+        const targets = [data.ref_no, data.cust_req_no, ...(data.all_ref_nos || [])].filter(Boolean) as string[];
         setApprovalQueue((prev) => prev.filter(item => 
           !targets.includes(item.ref_no) && 
           (!item.cust_req_no || !targets.includes(item.cust_req_no))
@@ -583,8 +583,12 @@ export default function NotificationListener() {
     };
   }, [pathname]);
 
-  const handleApprovalItemProcessed = (ref_no: string) => {
-    setApprovalQueue((prev) => prev.filter((item) => item.ref_no !== ref_no));
+  const handleApprovalItemProcessed = (ref_no: string, cust_req_no?: string, all_ref_nos?: string[]) => {
+    const targets = [ref_no, cust_req_no, ...(all_ref_nos || [])].filter(Boolean) as string[];
+    setApprovalQueue((prev) => prev.filter((item) => 
+      !targets.includes(item.ref_no) && 
+      (!item.cust_req_no || !targets.includes(item.cust_req_no))
+    ));
     window.dispatchEvent(new CustomEvent("rfq-list-update"));
   };
 

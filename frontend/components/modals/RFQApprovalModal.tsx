@@ -1,7 +1,8 @@
 "use client";
 // components/modals/RFQApprovalModal.tsx
 // Full-screen operator approval gate for incoming RFQs.
-import { useState } from "react";
+// Groups Auto Receiver batches and sends all sub-RFQs together in one click.
+import { useState, useMemo } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -19,51 +20,85 @@ export interface RFQApprovalItem {
   refer_by?: string | null;
   submitter_role?: string;
   recipients_count?: number;
+  email?: string;
+  dear_who?: string;
 }
 
 interface Props {
   items: RFQApprovalItem[];
-  onItemProcessed: (ref_no: string) => void;
+  onItemProcessed: (ref_no: string, cust_req_no?: string, all_ref_nos?: string[]) => void;
 }
 
 export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState<"accept" | "reject" | null>(null);
 
-  if (items.length === 0) return null;
+  // Group items by root enquiry reference (cust_req_no or ref_no) so Auto Receiver batches appear as 1 validation card
+  const groupedItems = useMemo(() => {
+    const groups: { [key: string]: RFQApprovalItem[] } = {};
+    for (const item of items) {
+      const key = (item.cust_req_no || item.ref_no || "").trim();
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
+    }
 
-  const item = items[currentIndex] ?? items[0];
-  const isCustomer = item.type === "customer";
-  const total = items.length;
+    return Object.entries(groups).map(([groupKey, groupList]) => {
+      const rep = groupList[0];
+      const batchCount = Math.max(groupList.length, rep.recipients_count || 1);
+      return {
+        ...rep,
+        groupKey,
+        groupItems: groupList,
+        batchCount,
+        allRefNos: groupList.map((i) => i.ref_no),
+      };
+    });
+  }, [items]);
+
+  if (groupedItems.length === 0) return null;
+
+  const currentGroup = groupedItems[currentIndex] ?? groupedItems[0];
+  const isCustomer = currentGroup.type === "customer";
+  const totalGroups = groupedItems.length;
+  const isAutoReceiverBatch = currentGroup.batchCount > 1;
 
   const handleAccept = async () => {
     setLoading("accept");
     try {
+      const refToApprove = currentGroup.cust_req_no || currentGroup.ref_no;
       const endpoint = isCustomer
-        ? `/rfq/customer-approve/${item.cust_req_no || item.ref_no}`
-        : `/rfq/${item.ref_no}/approve`;
+        ? `/rfq/customer-approve/${refToApprove}`
+        : `/rfq/${refToApprove}/approve`;
+
       try {
         await api.post(endpoint);
       } catch (firstErr: any) {
         if (firstErr?.response?.status === 404) {
           const fallbackEndpoint = isCustomer
-            ? `/rfq/${item.ref_no}/approve`
-            : `/rfq/customer-approve/${item.cust_req_no || item.ref_no}`;
+            ? `/rfq/${currentGroup.ref_no}/approve`
+            : `/rfq/customer-approve/${refToApprove}`;
           await api.post(fallbackEndpoint);
         } else {
           throw firstErr;
         }
       }
-      toast.success(`RFQ ${item.ref_no} approved — email dispatched!`, { duration: 5000 });
-      onItemProcessed(item.ref_no);
-      if (currentIndex >= items.length - 1) {
+
+      toast.success(
+        isAutoReceiverBatch
+          ? `Auto Receiver set (${currentGroup.batchCount} RFQs) approved — all emails dispatched!`
+          : `RFQ ${currentGroup.ref_no} approved — email dispatched!`,
+        { duration: 5000 }
+      );
+
+      onItemProcessed(currentGroup.ref_no, currentGroup.cust_req_no, currentGroup.allRefNos);
+      if (currentIndex >= groupedItems.length - 1) {
         setCurrentIndex(0);
       }
     } catch (err: any) {
       if (err?.response?.status === 400) {
         toast(err?.response?.data?.message || "This RFQ has already been processed.", { icon: "ℹ️" });
-        onItemProcessed(item.ref_no);
-        if (currentIndex >= items.length - 1) {
+        onItemProcessed(currentGroup.ref_no, currentGroup.cust_req_no, currentGroup.allRefNos);
+        if (currentIndex >= groupedItems.length - 1) {
           setCurrentIndex(0);
         }
       } else {
@@ -77,31 +112,40 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
   const handleReject = async () => {
     setLoading("reject");
     try {
+      const refToReject = currentGroup.cust_req_no || currentGroup.ref_no;
       const endpoint = isCustomer
-        ? `/rfq/customer-reject/${item.cust_req_no || item.ref_no}`
-        : `/rfq/${item.ref_no}/reject`;
+        ? `/rfq/customer-reject/${refToReject}`
+        : `/rfq/${refToReject}/reject`;
+
       try {
         await api.post(endpoint);
       } catch (firstErr: any) {
         if (firstErr?.response?.status === 404) {
           const fallbackEndpoint = isCustomer
-            ? `/rfq/${item.ref_no}/reject`
-            : `/rfq/customer-reject/${item.cust_req_no || item.ref_no}`;
+            ? `/rfq/${currentGroup.ref_no}/reject`
+            : `/rfq/customer-reject/${refToReject}`;
           await api.post(fallbackEndpoint);
         } else {
           throw firstErr;
         }
       }
-      toast.success(`RFQ ${item.ref_no} rejected.`, { duration: 5000 });
-      onItemProcessed(item.ref_no);
-      if (currentIndex >= items.length - 1) {
+
+      toast.success(
+        isAutoReceiverBatch
+          ? `Auto Receiver set (${currentGroup.batchCount} RFQs) rejected.`
+          : `RFQ ${currentGroup.ref_no} rejected.`,
+        { duration: 5000 }
+      );
+
+      onItemProcessed(currentGroup.ref_no, currentGroup.cust_req_no, currentGroup.allRefNos);
+      if (currentIndex >= groupedItems.length - 1) {
         setCurrentIndex(0);
       }
     } catch (err: any) {
       if (err?.response?.status === 400) {
         toast(err?.response?.data?.message || "This RFQ has already been processed.", { icon: "ℹ️" });
-        onItemProcessed(item.ref_no);
-        if (currentIndex >= items.length - 1) {
+        onItemProcessed(currentGroup.ref_no, currentGroup.cust_req_no, currentGroup.allRefNos);
+        if (currentIndex >= groupedItems.length - 1) {
           setCurrentIndex(0);
         }
       } else {
@@ -112,7 +156,7 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
     }
   };
 
-  const goNext = () => setCurrentIndex((i) => Math.min(i + 1, items.length - 1));
+  const goNext = () => setCurrentIndex((i) => Math.min(i + 1, groupedItems.length - 1));
   const goPrev = () => setCurrentIndex((i) => Math.max(i - 1, 0));
 
   return (
@@ -154,18 +198,23 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
           </span>
           <div className="flex-1">
             <p
-              className="text-xs font-bold uppercase tracking-widest"
+              className="text-xs font-bold uppercase tracking-widest flex items-center gap-2"
               style={{ color: "#F97316" }}
             >
               RFQ Requires Your Approval
+              {isAutoReceiverBatch && (
+                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 normal-case tracking-normal font-semibold">
+                  Auto Receiver Set ({currentGroup.batchCount})
+                </span>
+              )}
             </p>
-            {total > 1 && (
+            {totalGroups > 1 && (
               <p className="text-[11px] mt-0.5" style={{ color: "#888" }}>
-                {currentIndex + 1} of {total} pending
+                {currentIndex + 1} of {totalGroups} pending
               </p>
             )}
           </div>
-          {total > 1 && (
+          {totalGroups > 1 && (
             <div className="flex gap-1">
               <button
                 onClick={goPrev}
@@ -177,7 +226,7 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
               </button>
               <button
                 onClick={goNext}
-                disabled={currentIndex === items.length - 1}
+                disabled={currentIndex === groupedItems.length - 1}
                 className="px-2 py-1 rounded text-xs disabled:opacity-30"
                 style={{ background: "rgba(249,115,22,0.10)", color: "#F97316" }}
               >
@@ -191,75 +240,81 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
         <div className="px-6 py-5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>REF NO</span>
-            <span className="text-sm font-bold" style={{ color: "#F0F0F0" }}>{item.ref_no}</span>
+            <span className="text-sm font-bold font-mono" style={{ color: "#F0F0F0" }}>
+              {currentGroup.cust_req_no || currentGroup.ref_no}
+            </span>
           </div>
 
-          {item.customer_name && (
+          {isAutoReceiverBatch && (
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Customer</span>
-              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{item.customer_name}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Auto Receiver</span>
+              <span className="text-xs font-semibold text-emerald-400">
+                {currentGroup.batchCount} Matching Agents (All dispatched together)
+              </span>
             </div>
           )}
 
-          {(item.pol || item.pod) && (
+          {currentGroup.customer_name && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Customer</span>
+              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{currentGroup.customer_name}</span>
+            </div>
+          )}
+
+          {(currentGroup.pol || currentGroup.pod) && (
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Route</span>
               <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>
-                {item.pol || "—"} <span style={{ color: "#F97316" }}>➔</span> {item.pod || "—"}
+                {currentGroup.pol || "—"} <span style={{ color: "#F97316" }}>➔</span> {currentGroup.pod || "—"}
               </span>
             </div>
           )}
 
-          {item.commodity && (
+          {currentGroup.commodity && (
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Commodity</span>
-              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{item.commodity}</span>
+              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{currentGroup.commodity}</span>
             </div>
           )}
 
-          {item.mode && (
+          {currentGroup.mode && (
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Mode</span>
-              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{item.mode}</span>
+              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{currentGroup.mode}</span>
             </div>
           )}
 
-          {(item.container || item.dimension) && (
+          {(currentGroup.container || currentGroup.dimension) && (
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Load</span>
               <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>
-                {item.container || item.dimension || "—"}
+                {currentGroup.container || currentGroup.dimension || "—"}
               </span>
             </div>
           )}
 
-          {item.refer_by && (
+          {currentGroup.refer_by && (
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>
-                {item.submitter_role === "customer" ? "Customer" : "Submitted by"}
+                {currentGroup.submitter_role === "customer" ? "Customer" : "Submitted by"}
               </span>
-              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{item.refer_by}</span>
-            </div>
-          )}
-
-          {isCustomer && item.recipients_count && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#888" }}>Agents to notify</span>
-              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{item.recipients_count}</span>
+              <span className="text-sm font-medium" style={{ color: "#F0F0F0" }}>{currentGroup.refer_by}</span>
             </div>
           )}
         </div>
 
         {/* Info Banner */}
         <div
-          className="mx-6 mb-5 px-4 py-3 rounded-xl text-xs"
+          className="mx-6 mb-5 px-4 py-3 rounded-xl text-xs leading-relaxed"
           style={{
             background: "rgba(249,115,22,0.07)",
             border: "1px solid rgba(249,115,22,0.18)",
             color: "#F97316",
           }}
         >
-          Accept to process this RFQ and dispatch the email. Reject to cancel it immediately. This modal cannot be dismissed — action is required.
+          {isAutoReceiverBatch
+            ? `Accept to validate this entire Auto Receiver set and dispatch emails to all ${currentGroup.batchCount} agents together in one click.`
+            : `Accept to process this RFQ and dispatch the email. Reject to cancel it immediately.`}
         </div>
 
         {/* Action Buttons */}
@@ -282,6 +337,8 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
                 </svg>
                 Rejecting…
               </span>
+            ) : isAutoReceiverBatch ? (
+              `✕  Reject All (${currentGroup.batchCount})`
             ) : (
               "✕  Reject"
             )}
@@ -303,8 +360,10 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
-                Approving…
+                Approving & Sending…
               </span>
+            ) : isAutoReceiverBatch ? (
+              `✓  Accept & Send All (${currentGroup.batchCount})`
             ) : (
               "✓  Accept & Send"
             )}
@@ -314,3 +373,4 @@ export default function RFQApprovalModal({ items, onItemProcessed }: Props) {
     </div>
   );
 }
+

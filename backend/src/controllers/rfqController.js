@@ -598,7 +598,7 @@ const approveRfq = async (req, res, next) => {
       });
     }
 
-    // 2. Update status to 'Pending' across ALL tables
+    // 2. Update status to 'Pending' across ALL tables for all sub-RFQs in this batch
     const actualRefNo = shipment.ref_no || ref_no;
     const actualCustReqNo = shipment.cust_req_no || actualRefNo;
 
@@ -619,8 +619,8 @@ const approveRfq = async (req, res, next) => {
           const { getUserSuffix } = require('../config/dbHelper');
           const custSuffix = getUserSuffix(custUserRes.rows[0]);
           await db.query(
-            `UPDATE shipments_${custSuffix} SET status = 'Pending', updated_at = NOW() WHERE ref_no = $1 OR cust_req_no = $1`,
-            [actualCustReqNo]
+            `UPDATE shipments_${custSuffix} SET status = 'Pending', updated_at = NOW() WHERE ref_no = $1 OR cust_req_no = $1 OR ref_no = $2 OR cust_req_no = $2`,
+            [actualRefNo, actualCustReqNo]
           ).catch(() => {});
         }
       } catch (syncErr) {
@@ -628,19 +628,40 @@ const approveRfq = async (req, res, next) => {
       }
     }
 
-    // 4. Send the RFQ email using existing email logic
-    const fakeReq = {
-      ...req,
-      params: { ref_no: actualRefNo },
-      body: { cc: cc || '' }
-    };
-    await new Promise((resolve) => {
-      const fakeRes = {
-        status: (code) => ({ json: (d) => resolve() }),
-        json: (d) => resolve()
+    // 4. Find ALL sub-rows for this RFQ set (Auto Receiver or split set) and dispatch emails to ALL of them together
+    let allSubRows = await db.query(
+      `SELECT ref_no, email FROM shipments WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`,
+      [actualRefNo, actualCustReqNo]
+    ).catch(() => ({ rows: [] }));
+
+    if (allSubRows.rows.length === 0) {
+      for (const sfx of suffixes) {
+        const check = await db.query(`SELECT ref_no, email FROM shipments_${sfx} WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`, [actualRefNo, actualCustReqNo]).catch(() => ({ rows: [] }));
+        if (check.rows.length > 0) {
+          allSubRows = check;
+          break;
+        }
+      }
+    }
+
+    const subRefsToSend = allSubRows.rows && allSubRows.rows.length > 0
+      ? [...new Set(allSubRows.rows.map(r => r.ref_no))]
+      : [actualRefNo];
+
+    for (const subRef of subRefsToSend) {
+      const fakeReq = {
+        ...req,
+        params: { ref_no: subRef },
+        body: { cc: cc || '' }
       };
-      sendRfqEmail(fakeReq, fakeRes, (err) => resolve());
-    });
+      await new Promise((resolve) => {
+        const fakeRes = {
+          status: (code) => ({ json: (d) => resolve() }),
+          json: (d) => resolve()
+        };
+        sendRfqEmail(fakeReq, fakeRes, (err) => resolve());
+      });
+    }
 
     // 5. Notify submitter and broadcast dismissal to all operators & admins
     try {
@@ -648,22 +669,29 @@ const approveRfq = async (req, res, next) => {
         const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
         if (submitterRoom && submitterRoom !== 'user_') {
           global.io.to(submitterRoom).emit('rfq_approval_result', {
-            ref_no: actualRefNo,
+            ref_no: actualCustReqNo || actualRefNo,
             outcome: 'accepted',
-            message: `Your RFQ ${actualRefNo} was approved and sent by the operator.`
+            message: `Your RFQ ${actualCustReqNo || actualRefNo} (${subRefsToSend.length} agent${subRefsToSend.length > 1 ? 's' : ''}) was approved and sent.`
           });
         }
-        // Broadcast to all operators and admins so modal immediately dismisses everywhere
+        // Broadcast to all operators and admins so modal immediately dismisses all sub-RFQs in this set
         global.io.emit('rfq_approval_processed', {
           ref_no: actualRefNo,
           cust_req_no: actualCustReqNo,
+          all_ref_nos: subRefsToSend,
           outcome: 'accepted',
           processed_by: req.user.username
         });
       }
     } catch (e) {}
 
-    res.json({ success: true, ref_no: actualRefNo, status: 'Pending', message: 'RFQ approved and email dispatched successfully.' });
+    res.json({ 
+      success: true, 
+      ref_no: actualCustReqNo || actualRefNo, 
+      status: 'Pending', 
+      processed_count: subRefsToSend.length,
+      message: `RFQ batch approved and ${subRefsToSend.length} email(s) dispatched successfully.` 
+    });
   } catch (err) {
     next(err);
   }
@@ -741,28 +769,38 @@ const rejectRfq = async (req, res, next) => {
       }
     }
 
-    // 4. Notify submitter and broadcast dismissal to all operators & admins
+    // 4. Find all sub-rows in this batch for socket broadcast
+    let allSubRows = await db.query(
+      `SELECT ref_no FROM shipments WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`,
+      [actualRefNo, actualCustReqNo]
+    ).catch(() => ({ rows: [] }));
+    const subRefsToReject = allSubRows.rows && allSubRows.rows.length > 0
+      ? [...new Set(allSubRows.rows.map(r => r.ref_no))]
+      : [actualRefNo];
+
+    // 5. Notify submitter and broadcast dismissal to all operators & admins
     try {
       if (global.io) {
         const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
         if (submitterRoom && submitterRoom !== 'user_') {
           global.io.to(submitterRoom).emit('rfq_approval_result', {
-            ref_no: actualRefNo,
+            ref_no: actualCustReqNo || actualRefNo,
             outcome: 'rejected',
-            message: `Your RFQ ${actualRefNo} was rejected by the operator.`
+            message: `Your RFQ ${actualCustReqNo || actualRefNo} was rejected by the operator.`
           });
         }
-        // Broadcast to all operators and admins so modal immediately dismisses everywhere
+        // Broadcast to all operators and admins so modal immediately dismisses all sub-RFQs in this set
         global.io.emit('rfq_approval_processed', {
           ref_no: actualRefNo,
           cust_req_no: actualCustReqNo,
+          all_ref_nos: subRefsToReject,
           outcome: 'rejected',
           processed_by: req.user.username
         });
       }
     } catch (e) {}
 
-    res.json({ success: true, ref_no: actualRefNo, status: 'Cancelled', message: 'RFQ rejected successfully.' });
+    res.json({ success: true, ref_no: actualCustReqNo || actualRefNo, status: 'Cancelled', message: 'RFQ rejected successfully.' });
   } catch (err) {
     next(err);
   }

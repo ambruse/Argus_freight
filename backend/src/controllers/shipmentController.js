@@ -82,8 +82,13 @@ const syncShipmentToCustomer = async (shipment) => {
          cost = $10,
          profit = $11,
          last_follow_up = $12,
+         customer_name = $13,
+         customer_email = $14,
+         gross_weight = $15,
+         chargeable_weight = $16,
+         weight = COALESCE($15, weight),
          updated_at = NOW()
-       WHERE ref_no = $13`,
+       WHERE ref_no = $17 OR cust_req_no = $17`,
       [
         shipment.status,
         shipment.do_number,
@@ -97,7 +102,11 @@ const syncShipmentToCustomer = async (shipment) => {
         shipment.cost,
         shipment.profit,
         shipment.last_follow_up,
-        shipment.cust_req_no
+        shipment.customer_name,
+        shipment.customer_email,
+        shipment.gross_weight,
+        shipment.chargeable_weight,
+        shipment.cust_req_no || shipment.ref_no
       ]
     );
     console.log(`[Sync] Synced shipment ${shipment.ref_no} updates to customer ${custSuffix} ref_no ${shipment.cust_req_no}`);
@@ -381,39 +390,164 @@ const updateTracking = async (req, res, next) => {
       gross_weight, chargeable_weight
     } = req.body;
 
-    // Always resolve the table that actually owns this shipment row.
-    // This is crucial: operators and sales who do a PATCH must write to the
-    // correct table (could be 'shipments' for admin-owned rows, or
-    // 'shipments_u{id}' for operator-owned rows) rather than their own sandbox.
-    const ownerSuffix = await findUsernameForRefNo(ref_no);
-    const targetTable = (!ownerSuffix || ownerSuffix === 'admin')
-      ? 'shipments'
-      : `shipments_${ownerSuffix}`;
+    const { getAllSuffixes } = require('../config/dbHelper');
 
-    const result = await db.query(
-      `UPDATE ${targetTable}
-       SET do_number=$1, box_no=$2, so_number=$3, bl_number=$4,
-           track_status=$5, carrier=$6, etd=$7, eta=$8, cost=$9, profit=$10,
-           customer_name=$11, customer_email=$12,
-           gross_weight=COALESCE($13, gross_weight),
-           chargeable_weight=COALESCE($14, chargeable_weight)
-       WHERE ref_no=$15
-       RETURNING *`,
-      [
-        do_number, box_no, so_number, bl_number, track_status, carrier,
-        etd || null, eta || null, cost || null, profit || null,
-        customer_name || null, customer_email || null,
-        gross_weight || null, chargeable_weight || null,
-        ref_no
-      ]
-    );
+    // Parse cost and profit cleanly
+    const parsedCost = cost !== '' && cost != null ? parseFloat(String(cost)) : null;
+    const parsedProfit = profit !== '' && profit != null ? parseFloat(String(profit)) : null;
+    const cleanEtd = etd && String(etd).trim() ? String(etd).trim() : null;
+    const cleanEta = eta && String(eta).trim() ? String(eta).trim() : null;
 
-    if (result.rows.length === 0) {
+    // 1. Locate the shipment across central DB and sandboxes to get actualRefNo and actualCustReqNo
+    let shipRes = await db.query('SELECT * FROM shipments WHERE ref_no = $1 OR cust_req_no = $1', [ref_no]).catch(() => ({ rows: [] }));
+    const suffixes = await getAllSuffixes();
+    if (shipRes.rows.length === 0) {
+      for (const sfx of suffixes) {
+        const check = await db.query(`SELECT * FROM shipments_${sfx} WHERE ref_no = $1 OR cust_req_no = $1`, [ref_no]).catch(() => ({ rows: [] }));
+        if (check.rows.length > 0) {
+          shipRes = check;
+          break;
+        }
+      }
+    }
+
+    if (shipRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
 
-    await syncShipmentToCustomer(result.rows[0]);
-    res.json({ success: true, data: result.rows[0] });
+    const currentShipment = shipRes.rows[0];
+    const actualRefNo = currentShipment.ref_no || ref_no;
+    const actualCustReqNo = currentShipment.cust_req_no || actualRefNo;
+
+    // 2. Unconditionally UPDATE central 'shipments' table
+    let updatedRow = null;
+    const mainUpdate = await db.query(
+      `UPDATE shipments
+       SET do_number = $1,
+           box_no = $2,
+           so_number = $3,
+           bl_number = $4,
+           track_status = COALESCE($5, track_status),
+           carrier = $6,
+           etd = $7,
+           eta = $8,
+           cost = $9,
+           profit = $10,
+           customer_name = $11,
+           customer_email = $12,
+           gross_weight = $13,
+           chargeable_weight = $14,
+           weight = COALESCE($13, weight),
+           updated_at = NOW()
+       WHERE ref_no = $15 OR cust_req_no = $15 OR ref_no = $16 OR cust_req_no = $16
+       RETURNING *`,
+      [
+        do_number ?? null,
+        box_no ?? null,
+        so_number ?? null,
+        bl_number ?? null,
+        track_status || null,
+        carrier ?? null,
+        cleanEtd,
+        cleanEta,
+        parsedCost,
+        parsedProfit,
+        customer_name ?? null,
+        customer_email ?? null,
+        gross_weight ?? null,
+        chargeable_weight ?? null,
+        actualRefNo,
+        actualCustReqNo
+      ]
+    ).catch(() => ({ rows: [] }));
+
+    if (mainUpdate.rows && mainUpdate.rows.length > 0) {
+      updatedRow = mainUpdate.rows[0];
+    }
+
+    // 3. Unconditionally UPDATE ALL sandboxes (operators, sales, admin, customer sandboxes)
+    for (const sfx of suffixes) {
+      const sfxUpdate = await db.query(
+        `UPDATE shipments_${sfx}
+         SET do_number = $1,
+             box_no = $2,
+             so_number = $3,
+             bl_number = $4,
+             track_status = COALESCE($5, track_status),
+             carrier = $6,
+             etd = $7,
+             eta = $8,
+             cost = $9,
+             profit = $10,
+             customer_name = $11,
+             customer_email = $12,
+             gross_weight = $13,
+             chargeable_weight = $14,
+             weight = COALESCE($13, weight),
+             updated_at = NOW()
+         WHERE ref_no = $15 OR cust_req_no = $15 OR ref_no = $16 OR cust_req_no = $16
+         RETURNING *`,
+        [
+          do_number ?? null,
+          box_no ?? null,
+          so_number ?? null,
+          bl_number ?? null,
+          track_status || null,
+          carrier ?? null,
+          cleanEtd,
+          cleanEta,
+          parsedCost,
+          parsedProfit,
+          customer_name ?? null,
+          customer_email ?? null,
+          gross_weight ?? null,
+          chargeable_weight ?? null,
+          actualRefNo,
+          actualCustReqNo
+        ]
+      ).catch(() => ({ rows: [] }));
+
+      if (!updatedRow && sfxUpdate.rows && sfxUpdate.rows.length > 0) {
+        updatedRow = sfxUpdate.rows[0];
+      }
+    }
+
+    if (!updatedRow) {
+      updatedRow = {
+        ...currentShipment,
+        do_number,
+        box_no,
+        so_number,
+        bl_number,
+        track_status: track_status || currentShipment.track_status,
+        carrier,
+        etd: cleanEtd,
+        eta: cleanEta,
+        cost: parsedCost,
+        profit: parsedProfit,
+        customer_name,
+        customer_email,
+        gross_weight,
+        chargeable_weight,
+        weight: gross_weight || currentShipment.weight
+      };
+    }
+
+    // 4. Sync to customer sandbox
+    await syncShipmentToCustomer(updatedRow);
+
+    // 5. Broadcast real-time event to connected clients
+    if (global.io) {
+      try {
+        global.io.emit('shipment_tracking_updated', {
+          ref_no: actualRefNo,
+          cust_req_no: actualCustReqNo,
+          data: updatedRow
+        });
+      } catch (e) {}
+    }
+
+    res.json({ success: true, data: updatedRow });
   } catch (err) {
     next(err);
   }

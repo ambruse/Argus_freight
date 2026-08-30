@@ -115,7 +115,13 @@ export default function ConfirmedPage() {
   };
 
   const handleUpdated = (updated: Shipment) => {
-    setShipments((prev) => prev.map((s) => s.ref_no === updated.ref_no ? updated : s));
+    setShipments((prev) =>
+      prev.map((s) =>
+        s.ref_no === updated.ref_no || (updated.cust_req_no && s.cust_req_no === updated.cust_req_no)
+          ? { ...s, ...updated }
+          : s
+      )
+    );
     setSelected(updated);
   };
 
