@@ -888,6 +888,9 @@ body.light-theme .argus-log-desc {
   position: relative;
   z-index: 2;
   width: 100%;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
 
 
