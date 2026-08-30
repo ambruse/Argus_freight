@@ -835,3 +835,40 @@ body.light-theme .argus-log-desc {
     align-self: flex-start;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   3D GLOBE INTERACTIVE TRACKER STYLES
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+.animate-flow-dash {
+  animation: flow-dash 1.5s linear infinite;
+}
+
+@keyframes beacon {
+  0% {
+    r: 6px;
+    opacity: 1;
+  }
+  100% {
+    r: 20px;
+    opacity: 0;
+  }
+}
+
+.animate-beacon {
+  animation: beacon 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.argus-globe-wrapper {
+  margin: 2rem 0;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+

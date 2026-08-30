@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Check, Package, Plane, Ship, Truck, Calendar, 
-  Clock, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Copy, CheckCircle2 
+  Clock, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Copy, CheckCircle2, Globe
 } from 'lucide-react';
+import Globe3D from './Globe3D';
 import './ShipmentTracker.css';
 
 // 6 Sequential Tracking Stages
@@ -22,6 +23,20 @@ export default function ShipmentTracker({ initialRfq = '' }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [showLog, setShowLog] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  // Monitor Dark/Light Theme for 3D Globe
+  useEffect(() => {
+    const checkTheme = () => {
+      const isLight = document.body.classList.contains('light-theme') || document.documentElement.classList.contains('light');
+      setIsDark(!isLight);
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch shipment data from live SQL backend API
   const handleTrack = useCallback(async (searchRef) => {
@@ -161,7 +176,18 @@ export default function ShipmentTracker({ initialRfq = '' }) {
             </div>
           </div>
 
-          {/* 3. 6-STAGE SEQUENTIAL PROGRESS STEPPER */}
+          {/* 3. INTERACTIVE 3D GLOBAL ROUTE VISUALIZATION (POL -> POD) */}
+          <div className="argus-globe-wrapper">
+            <Globe3D 
+              origin={shipmentData.origin}
+              destination={shipmentData.destination}
+              transportMode={shipmentData.mode}
+              isDarkMode={isDark}
+              height={440}
+            />
+          </div>
+
+          {/* 4. 6-STAGE SEQUENTIAL PROGRESS STEPPER */}
           <div className="argus-stepper-container">
             <div className="argus-stepper-track-wrapper">
               
