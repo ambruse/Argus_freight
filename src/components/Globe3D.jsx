@@ -3,11 +3,12 @@ import {
   geoOrthographic,
   geoPath,
   geoGraticule,
-  geoInterpolate
+  geoInterpolate,
+  geoDistance
 } from 'd3-geo';
 import { feature } from 'topojson-client';
 import worldData from 'world-atlas/countries-110m.json';
-import { RotateCcw, Maximize2, Plane, Ship, Truck, Package, MapPin, Zap } from 'lucide-react';
+import { Plane, Ship, Truck, Package, MapPin, Zap } from 'lucide-react';
 import { resolveGlobeLocation } from '../utils/globeLocationResolver';
 
 export const Globe3D = ({
@@ -23,14 +24,53 @@ export const Globe3D = ({
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 900, height: typeof height === 'number' ? height : 480 });
-  const [scale, setScale] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
   const [showGraticule, setShowGraticule] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [globeRotation, setGlobeRotation] = useState([0, -20, 0]);
+
+  // Resolve origin and destination
+  const resolvedOrigin = useMemo(() => {
+    return resolveGlobeLocation(origin, "Port of Loading", [25.2854, 51.5310]);
+  }, [origin]);
+
+  const resolvedDest = useMemo(() => {
+    return resolveGlobeLocation(destination, "Port of Discharge", [1.3521, 103.8198]);
+  }, [destination]);
+
+  // Optimal Maximum Zoom & Centered Alignment computed from POL and POD
+  const { optimalScale, globeRotation } = useMemo(() => {
+    if (!resolvedOrigin || !resolvedDest) {
+      return { optimalScale: 1.25, globeRotation: [0, -20, 0] };
+    }
+
+    // Great circle midpoint
+    const interpolator = geoInterpolate(
+      [resolvedOrigin.lng, resolvedOrigin.lat],
+      [resolvedDest.lng, resolvedDest.lat]
+    );
+    const midPoint = interpolator(0.5);
+    const rotation = [-midPoint[0], -midPoint[1], 0];
+
+    // Angular spherical distance (in radians)
+    const radDist = geoDistance(
+      [resolvedOrigin.lng, resolvedOrigin.lat],
+      [resolvedDest.lng, resolvedDest.lat]
+    );
+
+    // In orthographic projection centered at midPoint, distance from center is sin(radDist / 2)
+    // Scale is deeply zoomed so both POL and POD expand to fill the entire container
+    const sinHalf = Math.sin(Math.max(radDist / 2, 0.05));
+    const computedZoom = Math.min(4.8, Math.max(1.4, 0.90 / sinHalf));
+
+    return {
+      optimalScale: computedZoom,
+      globeRotation: rotation
+    };
+  }, [resolvedOrigin, resolvedDest]);
+
+  const scale = optimalScale;
 
   // Determine if vehicle is at Origin (Confirmed/Scheduled), In Transit, or Destination (Clearance/Warehouse/Delivered)
   const stageType = useMemo(() => {
@@ -51,15 +91,6 @@ export const Globe3D = ({
     }
     return 'transit';
   }, [currentStageIndex, status]);
-
-  // Resolve origin and destination
-  const resolvedOrigin = useMemo(() => {
-    return resolveGlobeLocation(origin, "Port of Loading", [25.2854, 51.5310]);
-  }, [origin]);
-
-  const resolvedDest = useMemo(() => {
-    return resolveGlobeLocation(destination, "Port of Discharge", [1.3521, 103.8198]);
-  }, [destination]);
 
   // Normalized transport mode matching hero slider orbit modes
   const currentMode = useMemo(() => {
@@ -103,16 +134,6 @@ export const Globe3D = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [height]);
 
-  // Auto rotate to route on mount or when points change
-  useEffect(() => {
-    if (resolvedOrigin && resolvedDest) {
-      const midLng = (resolvedOrigin.lng + resolvedDest.lng) / 2;
-      const midLat = (resolvedOrigin.lat + resolvedDest.lat) / 2;
-      setGlobeRotation([-midLng, -midLat, 0]);
-      setScale(1.15);
-    }
-  }, [resolvedOrigin, resolvedDest]);
-
   useEffect(() => {
     let animId;
     let lastTime = performance.now();
@@ -143,7 +164,7 @@ export const Globe3D = ({
   // 3D Orthographic Projection permanently locked to center
   const projection = useMemo(() => {
     const { width, height: h } = dimensions;
-    const radius = Math.min(width, h) * 0.42;
+    const radius = Math.min(width, h) * 0.46;
     return geoOrthographic()
       .rotate(globeRotation)
       .clipAngle(90)
@@ -212,50 +233,6 @@ export const Globe3D = ({
     return { x, y, angleDeg };
   }, [interpolatedPoints, progress]);
 
-  // Center-locked Zoom with non-passive event listener to prevent window scrolling
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const handleNativeWheel = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const factor = e.deltaY < 0 ? 1.15 : 0.85;
-      setScale((prev) => Math.min(Math.max(prev * factor, 0.6), 6));
-    };
-
-    el.addEventListener('wheel', handleNativeWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleNativeWheel);
-  }, []);
-
-  const handleMouseDown = (e) => {
-    if (e.button !== 0) return;
-    setIsDragging(true);
-  };
-
-  // Pure 3D rotation without translation drift
-  const handleMouseMove = (e) => {
-    if (isDragging) {
-      const sensitivity = 0.45;
-      const dx = e.movementX * sensitivity;
-      const dy = -e.movementY * sensitivity;
-      setGlobeRotation(([r0, r1, r2]) => [
-        (r0 + dx) % 360,
-        Math.max(-85, Math.min(85, r1 + dy)),
-        r2
-      ]);
-    }
-  };
-
-  const rotateToRoute = useCallback(() => {
-    if (resolvedOrigin && resolvedDest) {
-      const midLng = (resolvedOrigin.lng + resolvedDest.lng) / 2;
-      const midLat = (resolvedOrigin.lat + resolvedDest.lat) / 2;
-      setGlobeRotation([-midLng, -midLat, 0]);
-      setScale(1.15);
-    }
-  }, [resolvedOrigin, resolvedDest]);
-
   const svgTransform = `translate(${dimensions.width / 2}, ${dimensions.height / 2}) scale(${scale}) translate(${-dimensions.width / 2}, ${-dimensions.height / 2})`;
 
   return (
@@ -269,15 +246,11 @@ export const Globe3D = ({
         }`}
         style={{ 
           height: dimensions.height, 
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: 'default',
           overscrollBehavior: 'contain',
           touchAction: 'none'
         }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={() => setIsDragging(false)}
         onMouseLeave={() => {
-          setIsDragging(false);
           setHoveredCountry(null);
         }}
       >
@@ -527,41 +500,6 @@ export const Globe3D = ({
             {hoveredCountry}
           </div>
         )}
-
-        {/* Controls Toolbar (Only Reset View & Rotate Globe to Route in Gold Theme) */}
-        <div className={`absolute top-4 right-4 flex items-center gap-1.5 z-30 backdrop-blur-md p-1.5 rounded-xl border shadow-xl ${
-          isDarkMode 
-            ? 'bg-[#0c1220]/85 border-[#f5b037]/25 text-[#f5b037]' 
-            : 'bg-white/90 border-[#b48214]/25 text-[#b48214]'
-        }`}>
-          <button
-            type="button"
-            onClick={() => {
-              setScale(1);
-              setGlobeRotation([0, -20, 0]);
-            }}
-            title="Reset View"
-            className={`p-2 rounded-lg transition-all ${
-              isDarkMode 
-                ? 'text-[#f5b037]/80 hover:text-[#f5b037] hover:bg-[#f5b037]/15' 
-                : 'text-[#b48214]/80 hover:text-[#b48214] hover:bg-[#b48214]/15'
-            }`}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={rotateToRoute}
-            title="Rotate Globe to Route"
-            className={`p-2 rounded-lg transition-all ${
-              isDarkMode 
-                ? 'text-[#f5b037] hover:text-[#f5e070] hover:bg-[#f5b037]/20 shadow-[0_0_12px_rgba(245,176,55,0.2)]' 
-                : 'text-[#b48214] hover:text-[#d4831a] hover:bg-[#b48214]/20'
-            }`}
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-        </div>
 
         {/* 3D Mode & Stage Live Indicator with Matching Orbit Icon */}
         <div className={`absolute top-4 left-4 flex items-center gap-2 z-30 backdrop-blur-md px-3.5 py-1.5 rounded-xl border shadow-xl text-xs font-semibold ${
