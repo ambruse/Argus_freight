@@ -890,7 +890,7 @@ body.light-theme .argus-log-desc {
   width: 100%;
   border-radius: 28px;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 

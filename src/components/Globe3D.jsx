@@ -262,10 +262,10 @@ export const Globe3D = ({
     <div className={className}>
       <div
         ref={containerRef}
-        className={`relative w-full rounded-3xl overflow-hidden border select-none shadow-2xl transition-all ${
+        className={`relative w-full rounded-3xl overflow-hidden border select-none transition-all ${
           isDarkMode 
-            ? 'border-[#f5b037]/25 bg-gradient-to-b from-[#0c1220] via-[#080c14] to-[#05080e] text-white shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_40px_rgba(245,176,55,0.06)]' 
-            : 'border-[#b48214]/25 bg-gradient-to-b from-[#ffffff] via-[#faf8f4] to-[#f4f1eb] text-slate-900 shadow-[0_16px_48px_rgba(15,23,42,0.08)]'
+            ? 'border-[#f5b037]/25 bg-gradient-to-b from-[#0c1220] via-[#080c14] to-[#05080e] text-white' 
+            : 'border-[#b48214]/25 bg-gradient-to-b from-[#ffffff] via-[#faf8f4] to-[#f4f1eb] text-slate-900'
         }`}
         style={{ 
           height: dimensions.height, 
