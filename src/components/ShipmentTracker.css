@@ -865,10 +865,29 @@ body.light-theme .argus-log-desc {
   animation: beacon 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
 }
 
+@keyframes vehicle-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(245, 176, 55, 0.9));
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(1.22);
+    filter: drop-shadow(0 0 2px rgba(245, 176, 55, 0.2));
+  }
+}
+
+.animate-vehicle-blink {
+  animation: vehicle-blink 1.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
 .argus-globe-wrapper {
   margin: 2rem 0;
   position: relative;
   z-index: 2;
   width: 100%;
 }
+
 

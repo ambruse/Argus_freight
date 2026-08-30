@@ -221,6 +221,126 @@ router.get('/:ref', async (req, res) => {
       } catch (e) {}
     }
 
+    // 4. Sample Confirmed Shipments Covering All Lifecycle Stages
+    if (!dbShipment) {
+      const samples = {
+        'ARG-01': {
+          ref_no: 'ARG-01',
+          cust_req_no: 'ARG-01',
+          pol: 'Guangzhou, China',
+          pod: 'Hamad Port, Doha, Qatar',
+          mode: 'Sea',
+          commodity: 'Consumer Electronics & Telecommunication Hardware',
+          term: 'FOB',
+          container: '40ft HQ Container',
+          dimension: '40ft Standard (68 CBM)',
+          weight: '14,800 KG',
+          gross_weight: '14,800 KG',
+          chargeable_weight: '14,800 KG',
+          status: 'Confirmed',
+          track_status: 'Clearance',
+          carrier: 'Maersk Ocean Line',
+          bl_number: 'MSK-ARG01-QA',
+          do_number: 'DO-2026-0819',
+          box_no: 'BX-8831',
+          so_number: 'SO-99214',
+          cost: 4850.00,
+          profit: 1450.00,
+          etd: '2026-08-12',
+          eta: '2026-09-02',
+          created_at: '2026-08-10T08:00:00.000Z',
+          updated_at: '2026-08-28T14:30:00.000Z'
+        },
+        'ARG-02': {
+          ref_no: 'ARG-02',
+          cust_req_no: 'ARG-02',
+          pol: 'Shanghai, China',
+          pod: 'Hamad International Airport, Doha, Qatar',
+          mode: 'Air',
+          commodity: 'High-Tech Server Racks & Components',
+          term: 'CIF',
+          container: 'Air Cargo Pallet (PMC)',
+          dimension: '120x80x65 IN (18 CBM)',
+          weight: '4,200 KG',
+          gross_weight: '4,200 KG',
+          chargeable_weight: '4,500 KG',
+          status: 'Confirmed',
+          track_status: 'In Transit',
+          carrier: 'Qatar Airways Cargo',
+          bl_number: 'QR-ARG02-883',
+          do_number: 'DO-2026-0824',
+          box_no: 'BX-4412',
+          so_number: 'SO-10822',
+          cost: 8200.00,
+          profit: 2100.00,
+          etd: '2026-08-25',
+          eta: '2026-08-31',
+          created_at: '2026-08-22T09:00:00.000Z',
+          updated_at: '2026-08-29T10:15:00.000Z'
+        },
+        'ARG-03': {
+          ref_no: 'ARG-03',
+          cust_req_no: 'ARG-03',
+          pol: 'Nhava Sheva (Mumbai), India',
+          pod: 'Jebel Ali Port, Dubai, UAE',
+          mode: 'Sea',
+          commodity: 'Industrial Engineering Spare Parts',
+          term: 'FOB',
+          container: '20ft Standard Container',
+          dimension: '20ft Standard (33 CBM)',
+          weight: '9,500 KG',
+          gross_weight: '9,500 KG',
+          chargeable_weight: '9,500 KG',
+          status: 'Confirmed',
+          track_status: 'Confirmed',
+          carrier: 'Hapag-Lloyd',
+          bl_number: 'HPL-ARG03-DXB',
+          do_number: 'DO-2026-0830',
+          box_no: 'BX-1290',
+          so_number: 'SO-33910',
+          cost: 2400.00,
+          profit: 750.00,
+          etd: '2026-09-02',
+          eta: '2026-09-10',
+          created_at: '2026-08-28T11:00:00.000Z',
+          updated_at: '2026-08-30T08:00:00.000Z'
+        },
+        'ARG-04': {
+          ref_no: 'ARG-04',
+          cust_req_no: 'ARG-04',
+          pol: 'Frankfurt, Germany',
+          pod: 'Hamad Port, Doha, Qatar',
+          mode: 'Air',
+          commodity: 'Precision Medical Equipment & Diagnostics',
+          term: 'DAP',
+          container: 'Temperature-Controlled Pallet',
+          dimension: '100x80x50 IN (12 CBM)',
+          weight: '2,800 KG',
+          gross_weight: '2,800 KG',
+          chargeable_weight: '3,000 KG',
+          status: 'Confirmed',
+          track_status: 'Scheduled',
+          carrier: 'Lufthansa Cargo',
+          bl_number: 'LH-ARG04-DOH',
+          do_number: 'DO-2026-0829',
+          box_no: 'BX-9941',
+          so_number: 'SO-44021',
+          cost: 6500.00,
+          profit: 1800.00,
+          etd: '2026-09-01',
+          eta: '2026-09-06',
+          created_at: '2026-08-26T14:00:00.000Z',
+          updated_at: '2026-08-29T16:00:00.000Z'
+        }
+      };
+
+      if (samples[refUpper]) {
+        dbShipment = samples[refUpper];
+      } else if (samples[refCleaned]) {
+        dbShipment = samples[refCleaned];
+      }
+    }
+
     if (!dbShipment) {
       return res.json({
         success: false,

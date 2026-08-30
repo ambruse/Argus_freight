@@ -7,13 +7,15 @@ import {
 } from 'd3-geo';
 import { feature } from 'topojson-client';
 import worldData from 'world-atlas/countries-110m.json';
-import { RotateCcw, Maximize2, Plane, Ship, Zap } from 'lucide-react';
+import { RotateCcw, Maximize2, Plane, Ship, Truck, Package, MapPin, Zap } from 'lucide-react';
 import { resolveGlobeLocation } from '../utils/globeLocationResolver';
 
 export const Globe3D = ({
   origin = { name: "United Kingdom", iso3: "GBR", capital: "London", lat: 51.5074, lng: -0.1278, flag: "🇬🇧" },
   destination = { name: "Singapore", iso3: "SGP", capital: "Singapore", lat: 1.3521, lng: 103.8198, flag: "🇸🇬" },
   transportMode = 'flight',
+  currentStageIndex = 2,
+  status = 'In Transit',
   isDarkMode = true,
   className = "w-full flex flex-col gap-5",
   height = 480
@@ -30,6 +32,26 @@ export const Globe3D = ({
   const [progress, setProgress] = useState(0);
   const [globeRotation, setGlobeRotation] = useState([0, -20, 0]);
 
+  // Determine if vehicle is at Origin (Confirmed/Scheduled), In Transit, or Destination (Clearance/Warehouse/Delivered)
+  const stageType = useMemo(() => {
+    if (typeof currentStageIndex === 'number' && currentStageIndex >= 0) {
+      if (currentStageIndex <= 1) return 'origin'; // Confirmed (0) or Scheduled (1)
+      if (currentStageIndex === 2) return 'transit'; // In Transit (2)
+      return 'destination'; // Clearance (3), Warehouse (4), Delivered (5)
+    }
+    const s = String(status || '').toLowerCase().trim();
+    if (s.includes('confirm') || s.includes('schedul') || s.includes('pend') || s.includes('book')) {
+      return 'origin';
+    }
+    if (s.includes('transit') || s.includes('route') || s.includes('sail') || s.includes('flight')) {
+      return 'transit';
+    }
+    if (s.includes('clear') || s.includes('custom') || s.includes('warehous') || s.includes('deliver') || s.includes('arriv')) {
+      return 'destination';
+    }
+    return 'transit';
+  }, [currentStageIndex, status]);
+
   // Resolve origin and destination
   const resolvedOrigin = useMemo(() => {
     return resolveGlobeLocation(origin, "Port of Loading", [25.2854, 51.5310]);
@@ -39,13 +61,33 @@ export const Globe3D = ({
     return resolveGlobeLocation(destination, "Port of Discharge", [1.3521, 103.8198]);
   }, [destination]);
 
-  // Normalized transport mode
+  // Normalized transport mode matching hero slider orbit modes
   const currentMode = useMemo(() => {
     const m = (transportMode || '').toLowerCase();
-    if (m.includes('sea') || m.includes('ocean') || m.includes('maritime')) return 'maritime';
-    if (m.includes('fiber') || m.includes('optic')) return 'fiber';
-    return 'flight';
+    if (m.includes('sea') || m.includes('ocean') || m.includes('ship') || m.includes('maritime')) return 'sea';
+    if (m.includes('road') || m.includes('truck') || m.includes('land')) return 'road';
+    if (m.includes('warehous') || m.includes('storage')) return 'warehouse';
+    if (m.includes('door') || m.includes('relocation') || m.includes('delivery')) return 'doortodoor';
+    return 'air';
   }, [transportMode]);
+
+  // Exact matching Lucide Icon from hero slider orbit icons
+  const renderOrbitIcon = (color = "#080c14", size = 15) => {
+    const offset = -size / 2;
+    if (currentMode === 'sea') {
+      return <Ship size={size} x={offset} y={offset} color={color} strokeWidth={2.4} />;
+    }
+    if (currentMode === 'road') {
+      return <Truck size={size} x={offset} y={offset} color={color} strokeWidth={2.4} />;
+    }
+    if (currentMode === 'warehouse') {
+      return <Package size={size} x={offset} y={offset} color={color} strokeWidth={2.4} />;
+    }
+    if (currentMode === 'doortodoor') {
+      return <MapPin size={size} x={offset} y={offset} color={color} strokeWidth={2.4} />;
+    }
+    return <Plane size={size} x={offset} y={offset} color={color} strokeWidth={2.4} />;
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -371,40 +413,40 @@ export const Globe3D = ({
               </g>
             )}
 
-            {/* Animated Transit Particle */}
-            {currentTransit && (
-              <g
-                transform={`translate(${currentTransit.x}, ${currentTransit.y}) scale(${1 / scale}) rotate(${currentTransit.angleDeg})`}
-                className="pointer-events-none"
-              >
-                <circle r="13" fill="#f5b037" fillOpacity="0.35" filter="url(#g3dGlow)" />
-                <circle r="5.5" fill="#f5c842" />
-                <circle r="2.5" fill="#ffffff" />
-                {currentMode === 'flight' ? (
-                  <g transform="translate(-7, -7) scale(0.6)">
-                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z" fill="#080c14" />
-                  </g>
-                ) : currentMode === 'maritime' ? (
-                  <g transform="translate(-7, -7) scale(0.6)">
-                    <path d="M2 21a8 8 0 0 0 13.8 0M19 21a8 8 0 0 0 3 0M19 8l-7-5-7 5M12 3v13M5 16l-3 5h20l-3-5" stroke="#080c14" strokeWidth="2.5" fill="none" />
-                  </g>
-                ) : (
-                  <g transform="translate(-5, -5) scale(0.45)">
-                    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" fill="#080c14" />
-                  </g>
-                )}
-              </g>
-            )}
-
-            {/* Origin Pin (Argus Gold Beacon) */}
+            {/* ── 1. Origin Pin (POL) with Pulsing Beacon & Orbit Icon on top ──── */}
             {resolvedOrigin && originCoord && (
               <g transform={`translate(${originCoord[0]}, ${originCoord[1]})`}>
-                <circle r={14 / scale} fill="none" stroke="#f5b037" strokeWidth={2 / scale} className="animate-beacon" />
-                <circle r={7 / scale} fill="#f5b037" fillOpacity="0.35" />
-                <circle r={4 / scale} fill="#f5b037" stroke="#ffffff" strokeWidth={1.5 / scale} />
+                {/* Pulsing Radar / Beacon Circle */}
+                <circle 
+                  r={stageType === 'origin' ? 22 / scale : 14 / scale} 
+                  fill="none" 
+                  stroke="#f5b037" 
+                  strokeWidth={(stageType === 'origin' ? 2.5 : 1.5) / scale} 
+                  className="animate-beacon" 
+                />
+                <circle 
+                  r={stageType === 'origin' ? 14 / scale : 7 / scale} 
+                  fill="#f5b037" 
+                  fillOpacity={stageType === 'origin' ? 0.4 : 0.25} 
+                />
+                <circle 
+                  r={stageType === 'origin' ? 11 / scale : 4.5 / scale} 
+                  fill="#f5b037" 
+                  stroke="#ffffff" 
+                  strokeWidth={1.5 / scale} 
+                />
+
+                {/* Slider Orbit Matching Icon sitting directly on top of POL circle when Confirmed or Scheduled */}
+                {stageType === 'origin' && (
+                  <g transform={`scale(${1 / scale})`}>
+                    {renderOrbitIcon("#080c14", 15)}
+                  </g>
+                )}
+
+                {/* Country Badge Label */}
                 {showLabels && (
-                  <g transform={`translate(0, ${-12 / scale}) scale(${1 / scale})`}>
-                    <rect x="-45" y="-20" width="90" height="18" rx="9" fill="rgba(245, 176, 55, 0.95)" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+                  <g transform={`translate(0, ${-(stageType === 'origin' ? 17 : 12) / scale}) scale(${1 / scale})`}>
+                    <rect x="-48" y="-20" width="96" height="18" rx="9" fill="rgba(245, 176, 55, 0.95)" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
                     <text x="0" y="-7" textAnchor="middle" fill="#080c14" fontSize="9" fontWeight="800" className="font-sans">
                       {resolvedOrigin.flag} {resolvedOrigin.iso3 || resolvedOrigin.name}
                     </text>
@@ -413,20 +455,57 @@ export const Globe3D = ({
               </g>
             )}
 
-            {/* Destination Pin (Emerald Beacon) */}
+            {/* ── 2. Destination Pin (POD) with Pulsing Beacon & Orbit Icon on top ─ */}
             {resolvedDest && destCoord && (
               <g transform={`translate(${destCoord[0]}, ${destCoord[1]})`}>
-                <circle r={14 / scale} fill="none" stroke="#10b981" strokeWidth={2 / scale} className="animate-beacon" />
-                <circle r={7 / scale} fill="#10b981" fillOpacity={0.35} />
-                <circle r={4 / scale} fill="#10b981" stroke="#ffffff" strokeWidth={1.5 / scale} />
+                {/* Pulsing Radar / Beacon Circle */}
+                <circle 
+                  r={stageType === 'destination' ? 22 / scale : 14 / scale} 
+                  fill="none" 
+                  stroke="#10b981" 
+                  strokeWidth={(stageType === 'destination' ? 2.5 : 1.5) / scale} 
+                  className="animate-beacon" 
+                />
+                <circle 
+                  r={stageType === 'destination' ? 14 / scale : 7 / scale} 
+                  fill="#10b981" 
+                  fillOpacity={stageType === 'destination' ? 0.4 : 0.25} 
+                />
+                <circle 
+                  r={stageType === 'destination' ? 11 / scale : 4.5 / scale} 
+                  fill="#10b981" 
+                  stroke="#ffffff" 
+                  strokeWidth={1.5 / scale} 
+                />
+
+                {/* Slider Orbit Matching Icon sitting directly on top of POD circle when Clearance, Warehouse or Delivered */}
+                {stageType === 'destination' && (
+                  <g transform={`scale(${1 / scale})`}>
+                    {renderOrbitIcon("#ffffff", 15)}
+                  </g>
+                )}
+
+                {/* Country Badge Label */}
                 {showLabels && (
-                  <g transform={`translate(0, ${-12 / scale}) scale(${1 / scale})`}>
-                    <rect x="-45" y="-20" width="90" height="18" rx="9" fill="rgba(16, 185, 129, 0.95)" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+                  <g transform={`translate(0, ${-(stageType === 'destination' ? 17 : 12) / scale}) scale(${1 / scale})`}>
+                    <rect x="-48" y="-20" width="96" height="18" rx="9" fill="rgba(16, 185, 129, 0.95)" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
                     <text x="0" y="-7" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="800" className="font-sans">
                       {resolvedDest.flag} {resolvedDest.iso3 || resolvedDest.name}
                     </text>
                   </g>
                 )}
+              </g>
+            )}
+
+            {/* ── 3. In-Transit Animated Vehicle along Route Arc (Slider Orbit Icon) ── */}
+            {stageType === 'transit' && currentTransit && (
+              <g
+                transform={`translate(${currentTransit.x}, ${currentTransit.y}) scale(${1 / scale}) rotate(${currentTransit.angleDeg})`}
+                className="pointer-events-none"
+              >
+                <circle r="15" fill="#f5b037" fillOpacity="0.4" filter="url(#g3dGlow)" />
+                <circle r="10" fill="#f5b037" stroke="#ffffff" strokeWidth="1.5" />
+                {renderOrbitIcon("#080c14", 14)}
               </g>
             )}
           </g>
@@ -484,27 +563,23 @@ export const Globe3D = ({
           </button>
         </div>
 
-        {/* 3D Mode Live Indicator in Gold Theme */}
+        {/* 3D Mode & Stage Live Indicator with Matching Orbit Icon */}
         <div className={`absolute top-4 left-4 flex items-center gap-2 z-30 backdrop-blur-md px-3.5 py-1.5 rounded-xl border shadow-xl text-xs font-semibold ${
           isDarkMode 
             ? 'bg-[#0c1220]/85 border-[#f5b037]/25 text-[#f5b037]' 
             : 'bg-white/90 border-[#b48214]/25 text-[#b48214]'
         }`}>
-          {currentMode === 'flight' && (
-            <span className="flex items-center gap-1.5 text-[#f5b037]">
-              <Plane className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" /> 3D Great-Circle Airway
-            </span>
-          )}
-          {currentMode === 'maritime' && (
-            <span className="flex items-center gap-1.5 text-[#f5b037]">
-              <Ship className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" /> 3D Maritime Corridor
-            </span>
-          )}
-          {currentMode === 'fiber' && (
-            <span className="flex items-center gap-1.5 text-[#f5b037]">
-              <Zap className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" /> 3D Optical Corridor
-            </span>
-          )}
+          {currentMode === 'air' && <Plane className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" />}
+          {currentMode === 'sea' && <Ship className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" />}
+          {currentMode === 'road' && <Truck className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" />}
+          {currentMode === 'warehouse' && <Package className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" />}
+          {currentMode === 'doortodoor' && <MapPin className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" />}
+
+          <span>
+            {stageType === 'origin' && `POL: ${resolvedOrigin?.name || 'Origin'} (${status || 'Confirmed'})`}
+            {stageType === 'transit' && `In Transit • 3D ${currentMode === 'air' ? 'Airway' : currentMode === 'sea' ? 'Maritime Corridor' : 'Logistics Corridor'}`}
+            {stageType === 'destination' && `POD: ${resolvedDest?.name || 'Destination'} (${status || 'Clearance'})`}
+          </span>
         </div>
       </div>
     </div>

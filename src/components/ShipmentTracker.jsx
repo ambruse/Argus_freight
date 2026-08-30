@@ -182,6 +182,8 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               origin={shipmentData.origin}
               destination={shipmentData.destination}
               transportMode={shipmentData.mode}
+              currentStageIndex={shipmentData.currentStageIndex}
+              status={shipmentData.track_status || shipmentData.status}
               isDarkMode={isDark}
               height={440}
             />
