@@ -7,7 +7,7 @@ import {
 } from 'd3-geo';
 import { feature } from 'topojson-client';
 import worldData from 'world-atlas/countries-110m.json';
-import { RotateCcw, Maximize2, Plane, Ship, Truck } from 'lucide-react';
+import { RotateCcw, Maximize2, Plane, Ship, Zap } from 'lucide-react';
 import { resolveGlobeLocation } from '../utils/globeLocationResolver';
 
 export const Globe3D = ({
@@ -41,13 +41,9 @@ export const Globe3D = ({
 
   // Normalized transport mode
   const currentMode = useMemo(() => {
-    const m = (transportMode || '').toLowerCase().trim();
-    if (m.includes('sea') || m.includes('ocean') || m.includes('boat') || m.includes('ship') || m.includes('maritime') || m.includes('vessel') || m.includes('marine') || m.includes('fcl') || m.includes('lcl')) {
-      return 'maritime';
-    }
-    if (m.includes('land') || m.includes('road') || m.includes('truck') || m.includes('ground') || m.includes('rail')) {
-      return 'land';
-    }
+    const m = (transportMode || '').toLowerCase();
+    if (m.includes('sea') || m.includes('ocean') || m.includes('maritime')) return 'maritime';
+    if (m.includes('fiber') || m.includes('optic')) return 'fiber';
     return 'flight';
   }, [transportMode]);
 
@@ -78,7 +74,7 @@ export const Globe3D = ({
   useEffect(() => {
     let animId;
     let lastTime = performance.now();
-    const duration = currentMode === 'flight' ? 3600 : currentMode === 'maritime' ? 6500 : 5000;
+    const duration = currentMode === 'flight' ? 4000 : currentMode === 'maritime' ? 8000 : 2000;
 
     const animate = (time) => {
       const delta = time - lastTime;
@@ -225,7 +221,9 @@ export const Globe3D = ({
       <div
         ref={containerRef}
         className={`relative w-full rounded-3xl overflow-hidden border select-none shadow-2xl transition-all ${
-          isDarkMode ? 'border-white/10 bg-slate-950 text-white' : 'border-slate-300 bg-sky-100/60 text-slate-900'
+          isDarkMode 
+            ? 'border-[#f5b037]/25 bg-gradient-to-b from-[#0c1220] via-[#080c14] to-[#05080e] text-white shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_40px_rgba(245,176,55,0.06)]' 
+            : 'border-[#b48214]/25 bg-gradient-to-b from-[#ffffff] via-[#faf8f4] to-[#f4f1eb] text-slate-900 shadow-[0_16px_48px_rgba(15,23,42,0.08)]'
         }`}
         style={{ 
           height: dimensions.height, 
@@ -243,9 +241,11 @@ export const Globe3D = ({
       >
         <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full">
           <defs>
+            {/* Signature Argus Gold ➔ Emerald Geodesic Route Gradient */}
             <linearGradient id="g3dRoute" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#06b6d4" />
-              <stop offset="50%" stopColor="#818cf8" />
+              <stop offset="0%" stopColor="#f5e070" />
+              <stop offset="35%" stopColor="#f5b037" />
+              <stop offset="70%" stopColor="#d4831a" />
               <stop offset="100%" stopColor="#10b981" />
             </linearGradient>
 
@@ -257,13 +257,18 @@ export const Globe3D = ({
               </feMerge>
             </filter>
 
-            <radialGradient id="g3dOceanDark" cx="50%" cy="50%" r="50%">
-              <stop offset="60%" stopColor="#0f172a" />
-              <stop offset="100%" stopColor="#020617" />
+            {/* Argus Deep Navy Ocean Radial */}
+            <radialGradient id="g3dOceanDark" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#101c33" />
+              <stop offset="55%" stopColor="#0a1224" />
+              <stop offset="100%" stopColor="#040810" />
             </radialGradient>
-            <radialGradient id="g3dOceanLight" cx="50%" cy="50%" r="50%">
-              <stop offset="60%" stopColor="#bae6fd" />
-              <stop offset="100%" stopColor="#7dd3fc" />
+
+            {/* Warm Champagne Light Ocean */}
+            <radialGradient id="g3dOceanLight" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#fbf9f4" />
+              <stop offset="65%" stopColor="#f0eae0" />
+              <stop offset="100%" stopColor="#e2d8c7" />
             </radialGradient>
           </defs>
 
@@ -273,8 +278,8 @@ export const Globe3D = ({
               <path
                 d={sphereOutline}
                 fill={isDarkMode ? 'url(#g3dOceanDark)' : 'url(#g3dOceanLight)'}
-                stroke={isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'}
-                strokeWidth={1 / scale}
+                stroke={isDarkMode ? 'rgba(245, 176, 55, 0.35)' : 'rgba(180, 130, 20, 0.30)'}
+                strokeWidth={1.5 / scale}
               />
             )}
 
@@ -282,9 +287,9 @@ export const Globe3D = ({
               <path
                 d={graticuleLines}
                 fill="none"
-                stroke={isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}
+                stroke={isDarkMode ? 'rgba(245, 176, 55, 0.08)' : 'rgba(180, 130, 20, 0.12)'}
                 strokeWidth={0.75 / scale}
-                strokeDasharray="2,2"
+                strokeDasharray="2,3"
               />
             )}
 
@@ -299,18 +304,19 @@ export const Globe3D = ({
                 const isOrigin = resolvedOrigin && name.toLowerCase().includes(resolvedOrigin.name.toLowerCase());
                 const isDest = resolvedDest && name.toLowerCase().includes(resolvedDest.name.toLowerCase());
 
-                let fill = isDarkMode ? '#1e293b' : '#cbd5e1';
-                let stroke = isDarkMode ? '#334155' : '#94a3b8';
+                // Argus Theme Palette for Landmasses
+                let fill = isDarkMode ? '#152136' : '#ded7c9';
+                let stroke = isDarkMode ? 'rgba(245, 176, 55, 0.14)' : 'rgba(180, 130, 20, 0.20)';
 
                 if (isOrigin) {
-                  fill = '#0891b2';
-                  stroke = '#22d3ee';
+                  fill = isDarkMode ? 'rgba(245, 176, 55, 0.38)' : 'rgba(180, 130, 20, 0.32)';
+                  stroke = isDarkMode ? '#f5b037' : '#b48214';
                 } else if (isDest) {
-                  fill = '#059669';
-                  stroke = '#34d399';
+                  fill = isDarkMode ? 'rgba(16, 185, 129, 0.38)' : 'rgba(16, 185, 129, 0.30)';
+                  stroke = isDarkMode ? '#34d399' : '#059669';
                 } else if (isHovered) {
-                  fill = isDarkMode ? '#334155' : '#94a3b8';
-                  stroke = isDarkMode ? '#94a3b8' : '#64748b';
+                  fill = isDarkMode ? '#223455' : '#c8bfae';
+                  stroke = isDarkMode ? '#f5b037' : '#b48214';
                 }
 
                 return (
@@ -334,7 +340,7 @@ export const Globe3D = ({
               })}
             </g>
 
-            {/* Geodesic Arc */}
+            {/* Geodesic Arc (Golden Luminescent Pathway) */}
             {routeSvgPath && (
               <g>
                 <path
@@ -342,7 +348,7 @@ export const Globe3D = ({
                   fill="none"
                   stroke="url(#g3dRoute)"
                   strokeWidth={5 / scale}
-                  strokeOpacity={0.4}
+                  strokeOpacity={0.45}
                   filter="url(#g3dGlow)"
                   strokeLinecap="round"
                 />
@@ -356,88 +362,50 @@ export const Globe3D = ({
                 <path
                   d={routeSvgPath}
                   fill="none"
-                  stroke={isDarkMode ? '#ffffff' : '#0f172a'}
+                  stroke="#ffffff"
                   strokeWidth={1.5 / scale}
                   strokeDasharray="6,12"
                   strokeLinecap="round"
-                  className="animate-flow-dash opacity-80"
+                  className="animate-flow-dash opacity-85"
                 />
               </g>
             )}
 
-            {/* Animated Transit Particle (Changes according to Air, Sea/Boat, Land) */}
+            {/* Animated Transit Particle */}
             {currentTransit && (
               <g
                 transform={`translate(${currentTransit.x}, ${currentTransit.y}) scale(${1 / scale}) rotate(${currentTransit.angleDeg})`}
                 className="pointer-events-none"
               >
-                {currentMode === 'flight' && (
-                  <g>
-                    {/* Air Shipment — Jet Plane Icon */}
-                    <circle r="14" fill="#0284c7" fillOpacity="0.25" filter="url(#g3dGlow)" />
-                    <circle r="7" fill="#0369a1" fillOpacity="0.85" />
-                    {/* Jet Body & Wings pointing +X */}
-                    <path
-                      d="M13 0 L-2 -9 L0 -2 L-9 -3 L-12 -1 L-8 0 L-12 1 L-9 3 L0 2 L-2 9 Z"
-                      fill="#ffffff"
-                      stroke="#38bdf8"
-                      strokeWidth="0.8"
-                      strokeLinejoin="round"
-                    />
+                <circle r="13" fill="#f5b037" fillOpacity="0.35" filter="url(#g3dGlow)" />
+                <circle r="5.5" fill="#f5c842" />
+                <circle r="2.5" fill="#ffffff" />
+                {currentMode === 'flight' ? (
+                  <g transform="translate(-7, -7) scale(0.6)">
+                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z" fill="#080c14" />
                   </g>
-                )}
-
-                {currentMode === 'maritime' && (
-                  <g>
-                    {/* Sea Shipment — Cargo Ship / Boat Icon */}
-                    <circle r="15" fill="#0d9488" fillOpacity="0.25" filter="url(#g3dGlow)" />
-                    <circle r="8" fill="#0f766e" fillOpacity="0.85" />
-                    {/* Vessel Hull pointing +X */}
-                    <path
-                      d="M13 0 C10 4.5, 3 5.5, -10 5.5 C-12.5 5.5, -13.5 3, -13.5 0 C-13.5 -3, -12.5 -5.5, -10 -5.5 C3 -5.5, 10 -4.5, 13 0 Z"
-                      fill="#ffffff"
-                      stroke="#2dd4bf"
-                      strokeWidth="0.8"
-                    />
-                    {/* Cabin / Bridge Superstructure */}
-                    <rect x="-6" y="-3" width="7" height="6" rx="1" fill="#042f2e" />
-                    <rect x="-3" y="-2" width="3" height="4" rx="0.5" fill="#5eead4" />
-                    {/* Radar / Mast */}
-                    <circle cx="2" cy="0" r="1.2" fill="#2dd4bf" />
+                ) : currentMode === 'maritime' ? (
+                  <g transform="translate(-7, -7) scale(0.6)">
+                    <path d="M2 21a8 8 0 0 0 13.8 0M19 21a8 8 0 0 0 3 0M19 8l-7-5-7 5M12 3v13M5 16l-3 5h20l-3-5" stroke="#080c14" strokeWidth="2.5" fill="none" />
                   </g>
-                )}
-
-                {currentMode === 'land' && (
-                  <g>
-                    {/* Land Shipment — Truck Icon */}
-                    <circle r="14" fill="#d97706" fillOpacity="0.25" filter="url(#g3dGlow)" />
-                    <circle r="8" fill="#b45309" fillOpacity="0.85" />
-                    {/* Truck Silhouette pointing +X */}
-                    <path
-                      d="M-10 -4 H2 V-2 H7 L10 1 V4 H-10 Z"
-                      fill="#ffffff"
-                      stroke="#fde047"
-                      strokeWidth="0.8"
-                      strokeLinejoin="round"
-                    />
-                    <path d="M3 -1 H6 L8 1 H3 Z" fill="#78350f" />
-                    <circle cx="-6" cy="4.5" r="1.8" fill="#0f172a" stroke="#ffffff" strokeWidth="0.6" />
-                    <circle cx="5" cy="4.5" r="1.8" fill="#0f172a" stroke="#ffffff" strokeWidth="0.6" />
+                ) : (
+                  <g transform="translate(-5, -5) scale(0.45)">
+                    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" fill="#080c14" />
                   </g>
                 )}
               </g>
             )}
 
-            {/* Origin Pin */}
+            {/* Origin Pin (Argus Gold Beacon) */}
             {resolvedOrigin && originCoord && (
               <g transform={`translate(${originCoord[0]}, ${originCoord[1]})`}>
-                <circle r={14 / scale} fill="none" stroke="#06b6d4" strokeWidth={2 / scale} className="animate-beacon" />
-                <circle r={7 / scale} fill="#06b6d4" fillOpacity={0.3} />
-                <circle r={4 / scale} fill="#06b6d4" stroke="#ffffff" strokeWidth={1.5 / scale} />
+                <circle r={14 / scale} fill="none" stroke="#f5b037" strokeWidth={2 / scale} className="animate-beacon" />
+                <circle r={7 / scale} fill="#f5b037" fillOpacity="0.35" />
+                <circle r={4 / scale} fill="#f5b037" stroke="#ffffff" strokeWidth={1.5 / scale} />
                 {showLabels && (
                   <g transform={`translate(0, ${-12 / scale}) scale(${1 / scale})`}>
-                    <rect x="-45" y="-20" width="90" height="18" rx="9" fill="rgba(6, 182, 212, 0.95)" />
-                    <text x="0" y="-7" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="700" className="font-sans">
+                    <rect x="-45" y="-20" width="90" height="18" rx="9" fill="rgba(245, 176, 55, 0.95)" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+                    <text x="0" y="-7" textAnchor="middle" fill="#080c14" fontSize="9" fontWeight="800" className="font-sans">
                       {resolvedOrigin.flag} {resolvedOrigin.iso3 || resolvedOrigin.name}
                     </text>
                   </g>
@@ -445,16 +413,16 @@ export const Globe3D = ({
               </g>
             )}
 
-            {/* Destination Pin */}
+            {/* Destination Pin (Emerald Beacon) */}
             {resolvedDest && destCoord && (
               <g transform={`translate(${destCoord[0]}, ${destCoord[1]})`}>
                 <circle r={14 / scale} fill="none" stroke="#10b981" strokeWidth={2 / scale} className="animate-beacon" />
-                <circle r={7 / scale} fill="#10b981" fillOpacity={0.3} />
+                <circle r={7 / scale} fill="#10b981" fillOpacity={0.35} />
                 <circle r={4 / scale} fill="#10b981" stroke="#ffffff" strokeWidth={1.5 / scale} />
                 {showLabels && (
                   <g transform={`translate(0, ${-12 / scale}) scale(${1 / scale})`}>
-                    <rect x="-45" y="-20" width="90" height="18" rx="9" fill="rgba(16, 185, 129, 0.95)" />
-                    <text x="0" y="-7" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="700" className="font-sans">
+                    <rect x="-45" y="-20" width="90" height="18" rx="9" fill="rgba(16, 185, 129, 0.95)" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+                    <text x="0" y="-7" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="800" className="font-sans">
                       {resolvedDest.flag} {resolvedDest.iso3 || resolvedDest.name}
                     </text>
                   </g>
@@ -464,11 +432,13 @@ export const Globe3D = ({
           </g>
         </svg>
 
-        {/* Hover Tooltip */}
+        {/* Hover Tooltip in Navy & Gold */}
         {hoveredCountry && (
           <div
-            className={`absolute z-40 pointer-events-none px-3 py-1.5 backdrop-blur-md border rounded-xl shadow-xl text-xs font-semibold ${
-              isDarkMode ? 'bg-slate-900/90 border-white/20 text-white' : 'bg-white/95 border-slate-300 text-slate-900'
+            className={`absolute z-40 pointer-events-none px-3.5 py-1.5 backdrop-blur-md border rounded-xl shadow-xl text-xs font-bold ${
+              isDarkMode 
+                ? 'bg-[#0c1220]/95 border-[#f5b037]/40 text-[#f5b037] shadow-[0_4px_20px_rgba(0,0,0,0.6)]' 
+                : 'bg-white/95 border-[#b48214]/40 text-[#b48214] shadow-[0_4px_20px_rgba(15,23,42,0.1)]'
             }`}
             style={{
               left: `${Math.min(hoverPos.x + 12, dimensions.width - 160)}px`,
@@ -479,9 +449,11 @@ export const Globe3D = ({
           </div>
         )}
 
-        {/* Controls Toolbar (Only Reset View & Rotate Globe to Route) */}
+        {/* Controls Toolbar (Only Reset View & Rotate Globe to Route in Gold Theme) */}
         <div className={`absolute top-4 right-4 flex items-center gap-1.5 z-30 backdrop-blur-md p-1.5 rounded-xl border shadow-xl ${
-          isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/90 border-slate-300'
+          isDarkMode 
+            ? 'bg-[#0c1220]/85 border-[#f5b037]/25 text-[#f5b037]' 
+            : 'bg-white/90 border-[#b48214]/25 text-[#b48214]'
         }`}>
           <button
             type="button"
@@ -490,8 +462,10 @@ export const Globe3D = ({
               setGlobeRotation([0, -20, 0]);
             }}
             title="Reset View"
-            className={`p-2 rounded-lg transition-colors ${
-              isDarkMode ? 'text-gray-300 hover:text-white hover:bg-white/10' : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+            className={`p-2 rounded-lg transition-all ${
+              isDarkMode 
+                ? 'text-[#f5b037]/80 hover:text-[#f5b037] hover:bg-[#f5b037]/15' 
+                : 'text-[#b48214]/80 hover:text-[#b48214] hover:bg-[#b48214]/15'
             }`}
           >
             <RotateCcw className="w-4 h-4" />
@@ -500,29 +474,35 @@ export const Globe3D = ({
             type="button"
             onClick={rotateToRoute}
             title="Rotate Globe to Route"
-            className="p-2 rounded-lg text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+            className={`p-2 rounded-lg transition-all ${
+              isDarkMode 
+                ? 'text-[#f5b037] hover:text-[#f5e070] hover:bg-[#f5b037]/20 shadow-[0_0_12px_rgba(245,176,55,0.2)]' 
+                : 'text-[#b48214] hover:text-[#d4831a] hover:bg-[#b48214]/20'
+            }`}
           >
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
 
-        {/* 3D Mode Live Indicator */}
-        <div className={`absolute top-4 left-4 flex items-center gap-2 z-30 backdrop-blur-md px-3 py-1.5 rounded-xl border shadow-xl text-xs ${
-          isDarkMode ? 'bg-slate-900/80 border-white/10 text-gray-300' : 'bg-white/90 border-slate-300 text-slate-700'
+        {/* 3D Mode Live Indicator in Gold Theme */}
+        <div className={`absolute top-4 left-4 flex items-center gap-2 z-30 backdrop-blur-md px-3.5 py-1.5 rounded-xl border shadow-xl text-xs font-semibold ${
+          isDarkMode 
+            ? 'bg-[#0c1220]/85 border-[#f5b037]/25 text-[#f5b037]' 
+            : 'bg-white/90 border-[#b48214]/25 text-[#b48214]'
         }`}>
           {currentMode === 'flight' && (
-            <span className="flex items-center gap-1.5 text-sky-400 font-medium">
-              <Plane className="w-3.5 h-3.5 animate-pulse" /> Air Freight (Airway)
+            <span className="flex items-center gap-1.5 text-[#f5b037]">
+              <Plane className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" /> 3D Great-Circle Airway
             </span>
           )}
           {currentMode === 'maritime' && (
-            <span className="flex items-center gap-1.5 text-teal-400 font-medium">
-              <Ship className="w-3.5 h-3.5 animate-pulse" /> Sea Freight (Ocean Corridor)
+            <span className="flex items-center gap-1.5 text-[#f5b037]">
+              <Ship className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" /> 3D Maritime Corridor
             </span>
           )}
-          {currentMode === 'land' && (
-            <span className="flex items-center gap-1.5 text-amber-400 font-medium">
-              <Truck className="w-3.5 h-3.5 animate-pulse" /> Land Freight (Ground Corridor)
+          {currentMode === 'fiber' && (
+            <span className="flex items-center gap-1.5 text-[#f5b037]">
+              <Zap className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" /> 3D Optical Corridor
             </span>
           )}
         </div>
