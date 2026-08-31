@@ -212,9 +212,7 @@ const generateRfq = async (req, res, next) => {
             if (opSocketRoom && opSocketRoom !== 'user_') {
               global.io.to(opSocketRoom).emit('rfq_pending_approval', payload);
             }
-            // Also notify all admins in role_admin room
-            global.io.to('role_admin').emit('rfq_pending_approval', payload);
-            console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom} & role_admin`);
+            console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom}`);
           }
         } catch (socketErr) {
           console.error('[RFQ Approval] Failed to emit socket event:', socketErr.message);

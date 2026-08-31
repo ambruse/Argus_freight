@@ -68,8 +68,8 @@ export default function NotificationListener() {
       });
     }
 
-    // Operator/Admin: RFQ pending approval
-    if (user.role === "operator" || user.role === "admin") {
+    // Only assigned operator: RFQ pending approval modal
+    if (user.role === "operator") {
       socket.on("rfq_pending_approval", (data: RFQApprovalItem) => {
         if (seenApprovalRefs.current.includes(data.ref_no)) return;
         seenApprovalRefs.current.push(data.ref_no);
@@ -77,7 +77,7 @@ export default function NotificationListener() {
         setApprovalQueue((prev) => [...prev, data]);
       });
 
-      // Dismiss from queue as soon as ANY operator or admin processes it
+      // Dismiss from queue as soon as ANY operator processes it
       socket.on("rfq_approval_processed", (data: { ref_no: string; cust_req_no?: string; all_ref_nos?: string[]; outcome?: string; processed_by?: string }) => {
         const targets = [data.ref_no, data.cust_req_no, ...(data.all_ref_nos || [])].filter(Boolean) as string[];
         setApprovalQueue((prev) => prev.filter(item => 
@@ -325,10 +325,13 @@ export default function NotificationListener() {
 
           const newAssignments = shipments.filter((s: any) => !savedSet.has(s.ref_no));
 
-          // Separate 'Awaiting Approval' items for the approval modal
-          const awaitingApproval = newAssignments.filter(
-            (s: any) => s.status === "Awaiting Approval"
-          );
+          // Separate 'Awaiting Approval' items for the approval modal (strictly for assigned operators, never admin)
+          const awaitingApproval = user.role === "operator"
+            ? newAssignments.filter(
+                (s: any) => s.status === "Awaiting Approval" &&
+                  (!s.operator || s.operator.toLowerCase() === user.username.toLowerCase())
+              )
+            : [];
           const regularAssignments = newAssignments.filter(
             (s: any) => s.status !== "Awaiting Approval"
           );

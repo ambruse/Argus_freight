@@ -261,9 +261,7 @@ const generateCustomerRfq = async (req, res, next) => {
         if (opSocketRoom) {
           global.io.to(opSocketRoom).emit('rfq_pending_approval', payload);
         }
-        // Also notify all admins in role_admin room
-        global.io.to('role_admin').emit('rfq_pending_approval', payload);
-        console.log(`[RFQ Approval] Customer RFQ socket emitted rfq_pending_approval to ${opSocketRoom} & role_admin`);
+        console.log(`[RFQ Approval] Customer RFQ socket emitted rfq_pending_approval to ${opSocketRoom}`);
       }
     } catch (socketErr) {
       console.error('[RFQ Approval] Customer RFQ socket emit failed:', socketErr.message);
