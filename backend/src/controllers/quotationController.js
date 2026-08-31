@@ -253,6 +253,43 @@ const generateQuotation = async (req, res, next) => {
     // Save temporary docx
     fs.writeFileSync(tempDocxPath, docxBuffer);
 
+    // Helper: Convert using Python script backend/scripts/generate_quotation.py
+    const convertWithPython = (tPath, dPath, pPath, rVars) => {
+      return new Promise((resolve, reject) => {
+        const scriptPath = path.resolve(__dirname, '../../scripts/generate_quotation.py');
+        const payload = JSON.stringify({
+          templatePath: path.resolve(tPath),
+          tempDocxPath: path.resolve(dPath),
+          pdfPath: path.resolve(pPath),
+          renderVars: rVars
+        });
+
+        const pyCmd = process.platform === 'win32' ? 'python' : 'python3';
+        const child = exec(`${pyCmd} "${scriptPath}"`, { timeout: 20000 }, (err, stdout, stderr) => {
+          if (err || (stderr && stderr.includes('Error:'))) {
+            return reject(new Error(stderr || err.message));
+          }
+          try {
+            const resStr = stdout.trim();
+            const lastLine = resStr.split('\n').pop();
+            const res = JSON.parse(lastLine);
+            if (res.success && fs.existsSync(pPath)) {
+              console.log(`✅ PDF generated via Python engine (${res.renderEngine} / ${res.converterEngine})`);
+              return resolve(res);
+            }
+          } catch (pErr) {
+            // parsing error or output PDF file missing
+          }
+          reject(new Error(stderr || "Python conversion produced no output PDF file."));
+        });
+
+        if (child.stdin) {
+          child.stdin.write(payload);
+          child.stdin.end();
+        }
+      });
+    };
+
     // Convert docx to pdf function using fast libreoffice-convert package
     const convertDocxToPdf = (dPath, pPath) => {
       return new Promise((resolve, reject) => {
@@ -301,7 +338,20 @@ const generateQuotation = async (req, res, next) => {
     let savedPath = '';
 
     try {
-      await convertDocxToPdf(tempDocxPath, pdfPath);
+      // 1. Primary Attempt: Python DOCX Renderer & PDF Converter Script
+      try {
+        console.log("▶ Attempting PDF generation via Python engine (generate_quotation.py)...");
+        await convertWithPython(templatePath, tempDocxPath, pdfPath, renderVars);
+      } catch (pyErr) {
+        console.log("ℹ️ Python conversion attempt failed/unavailable:", pyErr.message);
+        console.log("▶ Falling back to Node.js / WASM converter...");
+
+        // Ensure temp DOCX exists for fallback renderer
+        if (!fs.existsSync(tempDocxPath)) {
+          fs.writeFileSync(tempDocxPath, docxBuffer);
+        }
+        await convertDocxToPdf(tempDocxPath, pdfPath);
+      }
       
       // Append the static 2nd page PDF
       try {

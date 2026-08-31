@@ -5,7 +5,14 @@
 # --- System Environment ---
 NodeJS >= 18.0.0 (Tested on v24.16.0)
 PostgreSQL >= 14.0 (Recommended)
-Microsoft Word (Optional: required on host only for Windows local DOCX to PDF converter)
+Python >= 3.8 (Optional: for Python DOCX to PDF converter script on cPanel)
+
+# --- Python Dependencies (pip install) ---
+docxtpl
+python-docx
+mammoth
+weasyprint
+docx2pdf
 
 # --- Backend Dependencies (Node.js) ---
 bcryptjs==^2.4.3
