@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, PhoneCall, Mail, Anchor, Package, MapPin } from 'lucide-react';
 import ShipmentTracker from '../components/ShipmentTracker';
+import ScrollFrameBackground from '../components/ScrollFrameBackground';
 
 const LOGISTICS_MODES = [
   {
@@ -61,7 +62,8 @@ export default function Home({ onNavigate, onOpenQuote }) {
   const ActiveIcon = LOGISTICS_MODES[activeModeIdx].icon;
 
   return (
-    <div>
+    <div className="home-page-wrapper">
+      <ScrollFrameBackground />
       {/* Advanced JSON-LD Schema (Structured Data Component) */}
       <script
         type="application/ld+json"
@@ -332,34 +334,35 @@ export default function Home({ onNavigate, onOpenQuote }) {
       {/* Why Choose Us Teaser */}
       <section className="section-padding">
         <div className="container">
+          <div className="section-header" style={{ marginBottom: '3rem', textAlign: 'left' }}>
+            <span className="section-subtitle">Our Competitive Advantage</span>
+            <h2 className="section-title">Why Logistics Leaders Choose Argus WLL</h2>
+            <p style={{ maxWidth: '800px', marginTop: '0.75rem' }}>
+              All our logistics programs are custom-tailored to optimize time and budget constraint parameters. We combine robust freight capabilities with highly advanced warehousing nodes.
+            </p>
+          </div>
+
           <div className="why-grid">
-            <div className="about-content">
-              <span className="section-subtitle">Our Competitive Advantage</span>
-              <h2 className="section-title">Why Logistics Leaders Choose Argus WLL</h2>
-              <p>
-                All our logistics programs are custom-tailored to optimize time and budget constraint parameters. We combine robust freight capabilities with highly advanced warehousing nodes.
-              </p>
-              <div className="why-features" style={{ marginTop: '1.5rem' }}>
-                <div className="why-feature-item">
-                  <div className="why-feature-icon"><Globe size={24} /></div>
-                  <div>
-                    <h4 className="why-feature-title">Expansive Network Nodes</h4>
-                    <p className="why-feature-desc">Alliances in primary import hubs including India, China, Turkey, and Europe.</p>
-                  </div>
+            <div className="why-features">
+              <div className="why-feature-item">
+                <div className="why-feature-icon"><Globe size={24} /></div>
+                <div>
+                  <h4 className="why-feature-title">Expansive Network Nodes</h4>
+                  <p className="why-feature-desc">Alliances in primary import hubs including India, China, Turkey, and Europe.</p>
                 </div>
-                <div className="why-feature-item">
-                  <div className="why-feature-icon"><ShieldCheck size={24} /></div>
-                  <div>
-                    <h4 className="why-feature-title">End-to-End Compliance</h4>
-                    <p className="why-feature-desc">Strict compliance with environmental, Ministry of Standards, and dangerous goods guidelines.</p>
-                  </div>
+              </div>
+              <div className="why-feature-item">
+                <div className="why-feature-icon"><ShieldCheck size={24} /></div>
+                <div>
+                  <h4 className="why-feature-title">End-to-End Compliance</h4>
+                  <p className="why-feature-desc">Strict compliance with environmental, Ministry of Standards, and dangerous goods guidelines.</p>
                 </div>
-                <div className="why-feature-item">
-                  <div className="why-feature-icon"><Clock size={24} /></div>
-                  <div>
-                    <h4 className="why-feature-title">Time Sensitive Delivery</h4>
-                    <p className="why-feature-desc">Dynamic route calculation and advanced monitoring for expedited dispatch programs.</p>
-                  </div>
+              </div>
+              <div className="why-feature-item">
+                <div className="why-feature-icon"><Clock size={24} /></div>
+                <div>
+                  <h4 className="why-feature-title">Time Sensitive Delivery</h4>
+                  <p className="why-feature-desc">Dynamic route calculation and advanced monitoring for expedited dispatch programs.</p>
                 </div>
               </div>
             </div>
