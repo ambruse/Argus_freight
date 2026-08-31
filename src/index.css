@@ -1073,17 +1073,20 @@ body.light-theme .dropdown-menu {
   grid-template-columns: 1fr 1fr;
   gap: 4rem;
   align-items: center;
+  width: 100%;
 }
 @media (max-width: 900px) {
   .about-grid, .why-grid { grid-template-columns: 1fr; gap: 2.5rem; }
 }
 
-.about-content { display: flex; flex-direction: column; gap: 1.1rem; }
+.about-content { display: flex; flex-direction: column; gap: 1.1rem; width: 100%; min-width: 0; }
 
 .about-image-wrapper {
   position: relative;
   border-radius: var(--border-radius-lg);
   overflow: hidden;
+  width: 100%;
+  min-width: 0;
 }
 .about-img-main {
   width: 100%;
@@ -1136,7 +1139,15 @@ body.light-theme .dropdown-menu {
 }
 
 /* ── Why Us Features ───────────────────────────────────────── */
-.why-features { display: flex; flex-direction: column; gap: 1.25rem; }
+.why-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+}
 .why-feature-item {
   display: flex;
   align-items: flex-start;
@@ -1146,6 +1157,13 @@ body.light-theme .dropdown-menu {
   border: 1px solid var(--border-color);
   background: var(--glass-bg);
   transition: var(--transition-fast);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.why-feature-item > div:last-child {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .why-feature-item:hover {
   border-color: var(--border-gold);
