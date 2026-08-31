@@ -334,10 +334,10 @@ export default function Home({ onNavigate, onOpenQuote }) {
       {/* Why Choose Us Teaser */}
       <section className="section-padding">
         <div className="container">
-          <div className="section-header" style={{ marginBottom: '3rem', textAlign: 'left' }}>
+          <div className="section-header" style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
             <span className="section-subtitle">Our Competitive Advantage</span>
             <h2 className="section-title">Why Logistics Leaders Choose Argus WLL</h2>
-            <p style={{ maxWidth: '800px', marginTop: '0.75rem' }}>
+            <p style={{ maxWidth: '800px', marginTop: '0.5rem' }}>
               All our logistics programs are custom-tailored to optimize time and budget constraint parameters. We combine robust freight capabilities with highly advanced warehousing nodes.
             </p>
           </div>

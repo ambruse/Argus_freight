@@ -133,7 +133,7 @@ a:hover { color: var(--accent-bright); }
     padding: 0 1rem;
   }
 }
-.section-padding { padding: 7rem 0; }
+.section-padding { padding: 3.5rem 0; }
 .section-bg-alt { background: var(--bg-secondary); position: relative; }
 .section-bg-alt::before {
   content: '';
@@ -1071,12 +1071,12 @@ body.light-theme .dropdown-menu {
 .about-grid, .why-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  gap: 2.25rem;
   align-items: center;
   width: 100%;
 }
 @media (max-width: 900px) {
-  .about-grid, .why-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  .about-grid, .why-grid { grid-template-columns: 1fr; gap: 1.75rem; }
 }
 
 .about-content { display: flex; flex-direction: column; gap: 1.1rem; width: 100%; min-width: 0; }
@@ -1195,7 +1195,8 @@ body.light-theme .dropdown-menu {
 /* ── Marquee ───────────────────────────────────────────────── */
 .marquee-container {
   overflow: hidden;
-  padding: 1.5rem 0;
+  padding: 1.25rem 0;
+  margin-top: 1.5rem;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
@@ -1708,7 +1709,7 @@ body.light-theme .footer {
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .section-padding { padding: 4rem 0; }
+  .section-padding { padding: 2.5rem 0; }
   .hero-section { min-height: auto; padding: 5.5rem 0 2.5rem; overflow-x: hidden; }
   .hero-grid { gap: 2rem; }
   .hero-actions { justify-content: center; width: 100%; }
@@ -2415,9 +2416,9 @@ body.light-theme .loader-logo {
 
 /* International Warehouse Infrastructure Component styling */
 #global-infrastructure {
-  margin-top: 4rem;
-  margin-bottom: 6rem;
-  padding: 3rem 0;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 2rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.03);
 }
 
@@ -2425,7 +2426,7 @@ body.light-theme .loader-logo {
   font-size: 2.25rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   text-align: center;
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, #ffffff 0%, var(--text-secondary) 100%);
@@ -2436,7 +2437,7 @@ body.light-theme .loader-logo {
 #global-infrastructure p.infra-description {
   text-align: center;
   max-width: 720px;
-  margin: 0 auto 3rem;
+  margin: 0 auto 1.5rem;
   font-size: 1.05rem;
   color: var(--text-secondary);
   line-height: 1.65;
@@ -2446,14 +2447,14 @@ body.light-theme .loader-logo {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
+  gap: 1.25rem;
   padding: 0;
 }
 
 @media (max-width: 768px) {
   .warehouse-network-list {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1rem;
   }
 }
 
@@ -2461,8 +2462,8 @@ body.light-theme .loader-logo {
   background: rgba(12, 18, 32, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(12px);
-  padding: 2rem;
-  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
   position: relative;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   font-size: 0.95rem;
@@ -2480,7 +2481,7 @@ body.light-theme .loader-logo {
   display: block;
   color: var(--accent);
   font-size: 1.15rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 /* Footer Offices Column and Grid */
