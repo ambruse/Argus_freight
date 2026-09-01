@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   geoOrthographic,
   geoPath,
@@ -8,7 +8,7 @@ import {
 } from 'd3-geo';
 import { feature } from 'topojson-client';
 import worldData from 'world-atlas/countries-110m.json';
-import { Plane, Ship, Truck, Package, MapPin, Zap } from 'lucide-react';
+import { Plane, Ship, Truck, Package, MapPin } from 'lucide-react';
 import { resolveGlobeLocation } from '../utils/globeLocationResolver';
 
 export const Globe3D = ({
@@ -26,8 +26,8 @@ export const Globe3D = ({
   const [dimensions, setDimensions] = useState({ width: 900, height: typeof height === 'number' ? height : 480 });
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
-  const [showGraticule, setShowGraticule] = useState(true);
-  const [showLabels, setShowLabels] = useState(true);
+  const [showGraticule] = useState(true);
+  const [showLabels] = useState(true);
   const [progress, setProgress] = useState(0);
 
   // Resolve origin and destination

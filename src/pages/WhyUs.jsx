@@ -1,4 +1,3 @@
-import React from 'react';
 import { Compass, Cpu, DollarSign, ShieldAlert, Award, Star } from 'lucide-react';
 
 export default function WhyUs() {

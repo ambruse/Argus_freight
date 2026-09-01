@@ -78,8 +78,6 @@ const generateCustomerRfq = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Pick-up Address is required for EXW term.' });
     }
 
-    const cleanUsername = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-
     let assignedOperator = null;
 
     if (operator && operator.trim()) {
@@ -95,7 +93,6 @@ const generateCustomerRfq = async (req, res, next) => {
         });
       }
       assignedOperator = opMatch.rows[0].username;
-      assignedOperatorUser = opMatch.rows[0];
     } else {
       // 2. Round-Robin Operator Assignment
       const opRes = await db.query(

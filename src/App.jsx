@@ -10,7 +10,7 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import ChairmanMessage from './pages/ChairmanMessage';
 import Tracking from './pages/Tracking';
-import { Mail, Phone, MapPin, Anchor } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
@@ -108,7 +108,7 @@ export default function App() {
       case '/contact':
         return <Contact />;
       case '/tracking':
-        return <Tracking onNavigate={handleNavigate} onOpenQuote={handleOpenQuote} />;
+        return <Tracking />;
       case '/chairman-message':
         return <ChairmanMessage />;
       case '/login':

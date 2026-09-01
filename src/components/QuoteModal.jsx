@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Send } from 'lucide-react';
 
 export default function QuoteModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({

@@ -12,7 +12,7 @@ import RFQDetailModal from "@/components/modals/RFQDetailModal";
 import api from "@/lib/api";
 import { Shipment } from "@/types";
 import toast from "react-hot-toast";
-import { format, parseISO, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { parseDbDate, fmtFollowUpDate } from "@/lib/dateUtils";
 import { exportShipmentsToExcel } from "@/lib/exportExcel";
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import './ScrollFrameBackground.css';
 
 const TOTAL_FRAMES = 238;

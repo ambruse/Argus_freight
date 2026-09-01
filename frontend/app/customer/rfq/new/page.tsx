@@ -339,8 +339,6 @@ export default function CustomerNewRFQPage() {
     }
   };
 
-  const polCountries = ALL_COUNTRIES;
-
   // Container structured UI only for Sea / Road
   const isContainerMode = ["sea", "road"].includes(form.mode?.toLowerCase() ?? "");
 

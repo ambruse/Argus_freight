@@ -1,4 +1,3 @@
-import React from 'react';
 import { Ship, Anchor, Users, Globe2 } from 'lucide-react';
 
 export default function About({ onNavigate }) {
@@ -20,7 +19,7 @@ export default function About({ onNavigate }) {
         <div className="container">
           <div className="about-grid" style={{ gap: '4rem' }}>
             <div className="about-content">
-              <h2 className="service-detailed-title" style={{ marginBottom: '1.5rem' }}>
+              <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>
                 Leading Freight Management in the Region
               </h2>
               <p>

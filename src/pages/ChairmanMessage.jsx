@@ -1,5 +1,4 @@
-import React from 'react';
-import { User, Quote } from 'lucide-react';
+
 
 export default function ChairmanMessage() {
   return (

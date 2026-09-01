@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plane, Truck, Ship, Archive, ShieldCheck, Compass, Car, Package, Layers, Move, Globe } from 'lucide-react';
 
 const DETAILED_SERVICES = [
@@ -200,7 +200,7 @@ export default function Services() {
 
         {/* Premium Grid Layout */}
         <div className="services-showcase-grid">
-          {filteredServices.map((service, index) => {
+          {filteredServices.map((service) => {
             const ServiceIcon = service.icon;
             return (
               <div key={service.id} className="premium-service-card" id={service.id}>

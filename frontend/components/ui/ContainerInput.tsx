@@ -33,8 +33,6 @@ interface ContainerFields {
 interface Props {
   /** Called whenever the computed container string changes */
   onChange: (containerString: string) => void;
-  /** Pass an existing string to pre-fill on mount (optional) */
-  initialValue?: string;
 }
 
 const buildString = (f: ContainerFields): string => {
@@ -51,7 +49,7 @@ const buildString = (f: ContainerFields): string => {
   return parts.join(" + ");
 };
 
-export default function ContainerInput({ onChange, initialValue }: Props) {
+export default function ContainerInput({ onChange }: Props) {
   const [fields, setFields] = useState<ContainerFields>({
     ft40: "",
     ft20: "",

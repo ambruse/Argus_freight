@@ -4,7 +4,6 @@
 //  and PDF/DOCX compilation.
 // ─────────────────────────────────────────────────────────────
 const db = require('../config/db');
-const { query } = require('../config/dbHelper');
 const PizZip = require('pizzip');
 const Docxtemplater = require('docxtemplater');
 const { exec } = require('child_process');

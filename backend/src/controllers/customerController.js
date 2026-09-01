@@ -100,7 +100,7 @@ const deleteCustomerByAdmin = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Customer not found.' });
     }
 
-    const { customer_id, username } = userCheck.rows[0];
+    const { customer_id } = userCheck.rows[0];
 
     // Soft delete user: preserve sandbox tables for Admin view
     await db.query("UPDATE users SET is_deleted = TRUE, deleted_at = NOW(), username = CONCAT(username, '__deleted_', id) WHERE id = $1", [id]);

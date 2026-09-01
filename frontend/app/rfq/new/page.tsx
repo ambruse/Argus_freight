@@ -704,9 +704,6 @@ export default function NewRFQPage() {
     }
   };
 
-  // Get unique countries dynamically sorted alphabetically
-  const polCountries = ALL_COUNTRIES;
-
   // ── Field Configurations ────────────────────────────────────
   // Container is rendered as a dedicated block for Sea / Road
   const isContainerMode = ["sea", "road"].includes(form.mode?.toLowerCase() ?? "");

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Lock, Mail, Anchor, UserCheck, ShieldCheck, Compass, Check, ArrowRight, Layers, FileText } from 'lucide-react';
+import { useState } from 'react';
+import { Anchor, Compass, ArrowRight } from 'lucide-react';
 
 const MOCK_SHIPMENTS = [
   { id: 'ARG-2026-098', origin: 'Ningbo, China', destination: 'Doha, Qatar', status: 'In Transit', ETA: '2026-07-02', mode: 'Sea Freight (FCL)' },

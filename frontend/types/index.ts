@@ -22,14 +22,6 @@ export const ALL_STATUSES: ShipmentStatus[] = [
   "Cancelled",
 ];
 
-export const RFQ_STATUSES: ShipmentStatus[] = [
-  "Awaiting Approval",
-  "Pending",
-  "Confirmed",
-  "Completed",
-  "Cancelled",
-];
-
 export interface Shipment {
   id:               number;
   ref_no:           string;

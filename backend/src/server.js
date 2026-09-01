@@ -170,6 +170,7 @@ const createLike = async (newTable, baseTable) => {
 };
 
 (async () => {
+  const bcrypt = require('bcryptjs');
   try {
     // MySQL Normalized Tables Schema Execution
     try {
@@ -536,7 +537,6 @@ const createLike = async (newTable, baseTable) => {
     try {
       const adminCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'admin'");
       if (!adminCheck || adminCheck.length === 0) {
-        const bcrypt = require('bcryptjs');
         const hash = await bcrypt.hash('Admin@1234', 10);
         await db.query(
           "INSERT IGNORE INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')",
@@ -552,7 +552,6 @@ const createLike = async (newTable, baseTable) => {
     try {
       const userCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'jabir'");
       if (!userCheck || userCheck.length === 0) {
-        const bcrypt = require('bcryptjs');
         const hash = await bcrypt.hash('Jabir@1234', 10);
         await db.query(
           "INSERT IGNORE INTO users (username, password_hash, role) VALUES ('jabir', ?, 'operator')",
@@ -582,7 +581,6 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/health-email', async (_req, res) => {
   const net = require('net');
-  const dns = require('dns');
 
   const testSocket = (host, port) => {
     return new Promise((resolve) => {

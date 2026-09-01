@@ -3,14 +3,6 @@ const router = express.Router();
 const db = require('../config/db');
 
 // ── POST /api/3cx/webhook ────────────────────────────────────
-// Expected payload from 3CX CRM XML template:
-// {
-//   "CallType": "Inbound" | "Outbound" | "Missed",
-//   "Number": "07987654321",
-//   "Agent": "101", 
-//   "Duration": "120",
-//   "Status": "Answered"
-// }
 router.post('/webhook', async (req, res) => {
   try {
     const { CallType, Number: customerNumber, Agent, Duration, Status } = req.body;

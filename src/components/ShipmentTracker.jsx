@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Check, Package, Plane, Ship, Truck, Calendar, 
-  Clock, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Copy, CheckCircle2, Globe
+  Clock, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Copy, CheckCircle2
 } from 'lucide-react';
 import Globe3D from './Globe3D';
 import './ShipmentTracker.css';
