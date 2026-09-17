@@ -35,10 +35,6 @@ psql -U postgres -c "CREATE DATABASE freight_rfq;"
 psql -U postgres -d freight_rfq -f database/schema.sql
 ```
 
-**Default admin credentials:**
-- Username: `admin`
-- Password: `Admin@1234`
-
 ---
 
 ### 2. Backend
