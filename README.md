@@ -164,25 +164,6 @@ SITE/
 
 ---
 
-## Environment Variables
-
-```env
-# backend/.env
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=yourpassword
-DB_NAME=freight_rfq
-JWT_SECRET=change_this_to_a_long_random_string
-JWT_EXPIRES_IN=8h
-PORT=3001
-CLIENT_URL=http://localhost:3000
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE_MB=10
-```
-
----
-
 ## Security Notes
 
 - All SQL queries use parameterised statements (no string interpolation)
