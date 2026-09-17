@@ -403,7 +403,7 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     }
 
     const { getSignatureForUser } = require('../utils/signature');
-    const signature = await getSignatureForUser(operatorUserId);
+    const signature = await getSignatureForUser(operatorUserId || 1);
 
     // 4. Configure Nodemailer
     const transporter = nodemailer.createTransport({

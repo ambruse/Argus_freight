@@ -112,6 +112,10 @@ const generateRfq = async (req, res, next) => {
           ? String(refer_by).trim()
           : (req.user ? (req.user.name || req.user.username) : null);
 
+        // Operators and Admins do not require external operator approval for RFQs they create
+        const isOperatorOrAdmin = req.user && ['operator', 'admin'].includes(req.user.role);
+        const initialStatus = isOperatorOrAdmin ? 'Pending' : 'Awaiting Approval';
+
         const result = await query(req,
           `INSERT INTO shipments (
             ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -125,7 +129,7 @@ const generateRfq = async (req, res, next) => {
           [
             ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
-            dear_who, email, 'Awaiting Approval', note, finalCustomerId, customer_name || null, customer_email || null,
+            dear_who, email, initialStatus, note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
           ]
         );
@@ -150,7 +154,7 @@ const generateRfq = async (req, res, next) => {
             [
               ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
-              dear_who, email, 'Awaiting Approval', note, finalCustomerId, customer_name || null, customer_email || null,
+              dear_who, email, initialStatus, note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
             ]
           );
@@ -167,7 +171,7 @@ const generateRfq = async (req, res, next) => {
             [
               ref_no, finalReferBy, pol, pod, commodity, term, dimension,
               container, mode, weight || null, pickup_address, delivery_address,
-              dear_who, email, 'Awaiting Approval', note, finalCustomerId, customer_name || null, customer_email || null,
+              dear_who, email, initialStatus, note, finalCustomerId, customer_name || null, customer_email || null,
               targetOpName
             ]
           );
@@ -184,38 +188,40 @@ const generateRfq = async (req, res, next) => {
           [
             ref_no, finalReferBy, pol, pod, commodity, term, dimension,
             container, mode, weight || null, pickup_address, delivery_address,
-            dear_who, email, 'Awaiting Approval', note, finalCustomerId, customer_name || null, customer_email || null,
+            dear_who, email, initialStatus, note, finalCustomerId, customer_name || null, customer_email || null,
             targetOpName
           ]
         );
 
-        // ── Notify assigned operator via Socket.IO ─────────────────────
-        try {
-          const opSocketRoom = `user_${(targetOpName || '').toLowerCase()}`;
-          const payload = {
-            type: 'operator',
-            ref_no: ref_no,
-            cust_req_no: finalCustReqNo,
-            pol: pol,
-            pod: pod,
-            commodity: commodity,
-            mode: mode,
-            container: container || null,
-            dimension: dimension || null,
-            customer_name: customer_name || null,
-            refer_by: finalReferBy || req.user.username,
-            submitter_username: req.user.username,
-            submitter_role: req.user.role,
-          };
+        // ── Notify assigned operator via Socket.IO only if awaiting approval ─────────────────────
+        if (initialStatus === 'Awaiting Approval') {
+          try {
+            const opSocketRoom = `user_${(targetOpName || '').toLowerCase()}`;
+            const payload = {
+              type: 'operator',
+              ref_no: ref_no,
+              cust_req_no: finalCustReqNo,
+              pol: pol,
+              pod: pod,
+              commodity: commodity,
+              mode: mode,
+              container: container || null,
+              dimension: dimension || null,
+              customer_name: customer_name || null,
+              refer_by: finalReferBy || req.user.username,
+              submitter_username: req.user.username,
+              submitter_role: req.user.role,
+            };
 
-          if (global.io) {
-            if (opSocketRoom && opSocketRoom !== 'user_') {
-              global.io.to(opSocketRoom).emit('rfq_pending_approval', payload);
+            if (global.io) {
+              if (opSocketRoom && opSocketRoom !== 'user_') {
+                global.io.to(opSocketRoom).emit('rfq_pending_approval', payload);
+              }
+              console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom}`);
             }
-            console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom}`);
+          } catch (socketErr) {
+            console.error('[RFQ Approval] Failed to emit socket event:', socketErr.message);
           }
-        } catch (socketErr) {
-          console.error('[RFQ Approval] Failed to emit socket event:', socketErr.message);
         }
 
         // ── Auto-save contact to Address Book ──────────
@@ -343,39 +349,55 @@ const sendRfqEmail = async (req, res, next) => {
     );
     const attachedFiles = fileRes.rows;
 
-    // 3. Resolve Dynamic Email Credentials
+    // 3. Resolve Dynamic Email Credentials (4-step waterfall)
     let smtpUser = null;
     let smtpPass = null;
-    let targetUserId = req.user.id;
-    try {
-      if (req.user.role === 'sales') {
-        // Sales sends through the selected operator's email address or username
-        const userRes = await db.query(
-          "SELECT id, email_address, email_password FROM users WHERE LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
+    let targetUserId = req.user ? req.user.id : null;
+
+    // a. Try assigned operator DB credentials
+    if (shipment.operator) {
+      try {
+        const opUserRes = await db.query(
+          "SELECT id, email_address, email_password FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1)) AND (is_deleted IS NOT TRUE) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
           [shipment.operator]
         );
-        if (userRes.rows.length > 0) {
-          smtpUser = userRes.rows[0].email_address;
-          smtpPass = decrypt(userRes.rows[0].email_password);
-          targetUserId = userRes.rows[0].id;
+        if (opUserRes.rows.length > 0 && opUserRes.rows[0].email_address && opUserRes.rows[0].email_password) {
+          smtpUser = opUserRes.rows[0].email_address;
+          smtpPass = decrypt(opUserRes.rows[0].email_password);
+          targetUserId = opUserRes.rows[0].id;
         }
-      } else {
-        // Admin/Operator sends through their own credentials
-        const userRes = await db.query("SELECT id, email_address, email_password FROM users WHERE id = $1", [req.user.id]);
-        if (userRes.rows.length > 0) {
-          smtpUser = userRes.rows[0].email_address;
-          smtpPass = decrypt(userRes.rows[0].email_password);
-          targetUserId = userRes.rows[0].id;
-        }
-      }
-    } catch (dbErr) {
-      console.error('Error loading credentials from DB:', dbErr.message);
+      } catch (e) {}
     }
 
-    const { getSignatureForUser } = require('../utils/signature');
-    const signature = await getSignatureForUser(targetUserId);
+    // b. Try current logged-in user DB credentials
+    if ((!smtpUser || !smtpPass) && req.user && req.user.id) {
+      try {
+        const userRes = await db.query("SELECT id, email_address, email_password FROM users WHERE id = $1", [req.user.id]);
+        if (userRes.rows.length > 0 && userRes.rows[0].email_address && userRes.rows[0].email_password) {
+          smtpUser = userRes.rows[0].email_address;
+          smtpPass = decrypt(userRes.rows[0].email_password);
+          targetUserId = userRes.rows[0].id;
+        }
+      } catch (e) {}
+    }
 
-    // Fallback to global env variables if not set in DB
+    // c. Try Admin user DB credentials fallback
+    if (!smtpUser || !smtpPass) {
+      try {
+        const adminRes = await db.query(
+          "SELECT id, email_address, email_password FROM users WHERE role = 'admin' AND email_address IS NOT NULL AND email_address != '' AND email_password IS NOT NULL AND email_password != '' ORDER BY id ASC LIMIT 1"
+        );
+        if (adminRes.rows.length > 0 && adminRes.rows[0].email_address && adminRes.rows[0].email_password) {
+          smtpUser = adminRes.rows[0].email_address;
+          smtpPass = decrypt(adminRes.rows[0].email_password);
+          if (!targetUserId) targetUserId = adminRes.rows[0].id;
+        }
+      } catch (adminErr) {
+        console.error('Error fetching admin fallback credentials in sendRfqEmail:', adminErr.message);
+      }
+    }
+
+    // d. Fallback to global env variables
     if (!smtpUser) {
       smtpUser = process.env.SMTP_USER || null;
     }
@@ -391,12 +413,15 @@ const sendRfqEmail = async (req, res, next) => {
       smtpPass = smtpPass.trim().replace(/^["']|["']$/g, '');
     }
 
+    const { getSignatureForUser } = require('../utils/signature');
+    const signature = await getSignatureForUser(targetUserId || 1);
+
     if (!smtpUser || !smtpPass) {
       return res.status(400).json({ 
         success: false, 
-        message: req.user.role === 'sales'
+        message: (req.user && req.user.role === 'sales')
           ? 'Email credentials for the selected Operator are not configured. Please ask the Admin to configure the Operator email and app password in Settings.'
-          : 'Your email settings are not configured. Please configure your email address and app password in Settings.' 
+          : 'Email settings (SMTP user and password) are not configured in Settings or .env file.' 
       });
     }
 
@@ -626,25 +651,26 @@ const approveRfq = async (req, res, next) => {
       }
     }
 
-    // 4. Find ALL sub-rows for this RFQ set (Auto Receiver or split set) and dispatch emails to ALL of them together
-    let allSubRows = await db.query(
+    // 4. Find ALL sub-rows for this RFQ set (Auto Receiver or split set) across all table variants and dispatch emails to ALL of them together
+    let subRowsMap = new Map();
+
+    const mainRows = await db.query(
       `SELECT ref_no, email FROM shipments WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`,
       [actualRefNo, actualCustReqNo]
     ).catch(() => ({ rows: [] }));
+    (mainRows.rows || []).forEach(r => { if (r.ref_no) subRowsMap.set(r.ref_no, r.email); });
 
-    if (allSubRows.rows.length === 0) {
-      for (const sfx of suffixes) {
-        const check = await db.query(`SELECT ref_no, email FROM shipments_${sfx} WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`, [actualRefNo, actualCustReqNo]).catch(() => ({ rows: [] }));
-        if (check.rows.length > 0) {
-          allSubRows = check;
-          break;
-        }
-      }
+    for (const sfx of suffixes) {
+      const check = await db.query(`SELECT ref_no, email FROM shipments_${sfx} WHERE cust_req_no = $1 OR ref_no = $1 OR cust_req_no = $2 OR ref_no = $2`, [actualRefNo, actualCustReqNo]).catch(() => ({ rows: [] }));
+      (check.rows || []).forEach(r => { if (r.ref_no) subRowsMap.set(r.ref_no, r.email); });
     }
 
-    const subRefsToSend = allSubRows.rows && allSubRows.rows.length > 0
-      ? [...new Set(allSubRows.rows.map(r => r.ref_no))]
+    const subRefsToSend = subRowsMap.size > 0
+      ? Array.from(subRowsMap.keys())
       : [actualRefNo];
+
+    let sentCount = 0;
+    let sendErrors = [];
 
     for (const subRef of subRefsToSend) {
       const fakeReq = {
@@ -654,10 +680,32 @@ const approveRfq = async (req, res, next) => {
       };
       await new Promise((resolve) => {
         const fakeRes = {
-          status: (code) => ({ json: (d) => resolve() }),
-          json: (d) => resolve()
+          status: (code) => ({
+            json: (d) => {
+              if (code >= 400) {
+                sendErrors.push(`${subRef}: ${d.message || 'Failed to send'}`);
+              } else {
+                sentCount++;
+              }
+              resolve();
+            }
+          }),
+          json: (d) => {
+            sentCount++;
+            resolve();
+          }
         };
-        sendRfqEmail(fakeReq, fakeRes, (err) => resolve());
+        sendRfqEmail(fakeReq, fakeRes, (err) => {
+          if (err) sendErrors.push(`${subRef}: ${err.message || 'Send error'}`);
+          resolve();
+        });
+      });
+    }
+
+    if (sentCount === 0 && sendErrors.length > 0) {
+      return res.status(500).json({
+        success: false,
+        message: `RFQ approved, but failed to send email(s): ${sendErrors.join('; ')}`
       });
     }
 

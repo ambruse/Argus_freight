@@ -499,7 +499,7 @@ export default function NewRFQPage() {
 
       toast.success(isSales 
         ? `RFQ submitted! The operator will review and send to ${resolvedRecipients.length} agent(s) upon approval.`
-        : `RFQ submitted! Awaiting operator approval before sending.`
+        : `RFQ created and email dispatched to ${resolvedRecipients.length} recipient(s)!`
       );
       
       // Clear form
@@ -683,7 +683,10 @@ export default function NewRFQPage() {
         }
       }
 
-      toast.success(`RFQ submitted and awaiting operator approval. It will be emailed upon approval.`);
+      toast.success(isSales
+        ? `RFQ submitted! The operator will review and send to ${unique.length} agent(s) upon approval.`
+        : `Auto RFQs created and emailed successfully to ${unique.length} agent(s)!`
+      );
       
       // Close modal & clear auto-receiver preview state
       setPreviewOpen(false);
