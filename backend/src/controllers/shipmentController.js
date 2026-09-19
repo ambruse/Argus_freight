@@ -558,7 +558,7 @@ const updateTracking = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────
 const deleteShipment = async (req, res, next) => {
   try {
-    const checkRes = await query(req, 'SELECT status FROM shipments WHERE ref_no = $1', [req.params.ref_no]);
+    const checkRes = await query(req, 'SELECT status FROM shipments WHERE ref_no = $1 OR cust_req_no = $1', [req.params.ref_no]);
     if (checkRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
     }
@@ -579,12 +579,12 @@ const deleteShipment = async (req, res, next) => {
     const suffixes = await getOperatorSuffixes();
 
     // Delete from main table
-    await db.query('DELETE FROM shipments WHERE ref_no = $1', [req.params.ref_no]);
+    await db.query('DELETE FROM shipments WHERE ref_no = $1 OR cust_req_no = $1', [req.params.ref_no]);
 
     // Delete from all sandboxes
     for (const suffix of suffixes) {
       try {
-        await db.query(`DELETE FROM shipments_${suffix} WHERE ref_no = $1`, [req.params.ref_no]);
+        await db.query(`DELETE FROM shipments_${suffix} WHERE ref_no = $1 OR cust_req_no = $1`, [req.params.ref_no]);
       } catch (err) {
         console.error(`[Delete] Failed to delete from shipments_${suffix}:`, err.message);
       }
@@ -1717,7 +1717,7 @@ const snoozeFollowUp = async (req, res, next) => {
     const result = await query(req,
       `UPDATE shipments 
        SET last_follow_up = NOW() - INTERVAL '13 days' 
-       WHERE ref_no = $1 
+       WHERE ref_no = $1 OR cust_req_no = $1
        RETURNING ref_no, last_follow_up`,
       [ref_no]
     );

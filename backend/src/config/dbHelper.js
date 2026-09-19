@@ -98,10 +98,10 @@ const getOperatorSuffixes = async () => {
 const findUsernameForRefNo = async (ref_no) => {
   if (!ref_no) return null;
   const suffixes = await getAllSuffixes();
-  let queries = [`SELECT 'admin' AS username FROM shipments WHERE ref_no = $1`];
+  let queries = [`SELECT 'admin' AS username FROM shipments WHERE ref_no = $1 OR cust_req_no = $1`];
   const params = [ref_no];
   for (const suffix of suffixes) {
-    queries.push(`SELECT '${suffix}' AS username FROM shipments_${suffix} WHERE ref_no = $1`);
+    queries.push(`SELECT '${suffix}' AS username FROM shipments_${suffix} WHERE ref_no = $1 OR cust_req_no = $1`);
   }
   const unionSql = queries.join(' UNION ALL ');
   try {
