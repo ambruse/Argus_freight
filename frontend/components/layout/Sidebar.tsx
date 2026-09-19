@@ -23,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/rfq/new",               label: "New RFQ",          icon: "✦",  section: "FREIGHT" },
   { href: "/rfq",                   label: "Sent RFQs",        icon: "◈",  section: "FREIGHT" },
   { href: "/confirmed",             label: "Confirmed",        icon: "◉",  section: "FREIGHT" },
+  { href: "/quotation",             label: "Quotation",        icon: "📜", section: "FREIGHT" },
   { href: "/summary",               label: "Summary",          icon: "▦",  section: "FREIGHT" },
   { href: "/contacts",              label: "Address Book",     icon: "◎",  section: "FREIGHT" },
   { href: "/customers",             label: "Customer Book",    icon: "▤",  section: "FREIGHT" },
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/calling-agent/enquiries", label: "My Enquiries",   icon: "◐",  section: "CALLS" },
   // Admin
   { href: "/admin/call-enquiries",  label: "All Enquiries",    icon: "◑",  section: "ADMIN" },
+  { href: "/admin/quotations",      label: "Quotations Log",   icon: "📜", section: "ADMIN" },
   { href: "/admin/register",        label: "Register User",    icon: "⊕",  section: "ADMIN" },
   // Sales
   { href: "/sales/call-enquiries",  label: "Assigned Calls",   icon: "◐",  section: "SALES" },
@@ -137,10 +139,10 @@ export default function Sidebar() {
   /* ── Filter nav by role ─────────────────────────────────── */
   const visibleItems = NAV_ITEMS.filter(item => {
     if (user?.role === "customer")      return ["/dashboard", "/customer/rfq/new", "/customer/rfq", "/settings"].includes(item.href);
-    if (user?.role === "sales")         return ["/rfq/new", "/rfq", "/confirmed", "/summary", "/sales/call-enquiries", "/settings", "/customers", "/calculator"].includes(item.href);
+    if (user?.role === "sales")         return ["/rfq/new", "/rfq", "/confirmed", "/quotation", "/summary", "/sales/call-enquiries", "/settings", "/customers", "/calculator"].includes(item.href);
     if (user?.role === "calling_agent") return ["/dashboard", "/calling-agent/new", "/calling-agent/enquiries", "/settings"].includes(item.href);
-    if (user?.role === "admin")         return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/customer/") && item.href !== "/quotation" && item.href !== "/admin/quotations";
-    if (user?.role === "operator")      return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/admin") && !item.href.startsWith("/customer/") && item.href !== "/quotation";
+    if (user?.role === "admin")         return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/customer/");
+    if (user?.role === "operator")      return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/admin") && !item.href.startsWith("/customer/");
     return true;
   });
 
