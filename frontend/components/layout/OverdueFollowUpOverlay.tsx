@@ -57,13 +57,28 @@ export default function OverdueFollowUpOverlay() {
     if (overdueList.length === 0) return;
     setActioningAll(true);
     try {
-      const promises = overdueList.map(s => api.post(`/shipments/${s.ref_no}/snooze-follow-up`));
-      await Promise.all(promises);
-      toast.success("All follow-ups snoozed until tomorrow.");
-      setOverdueList([]);
+      const results = await Promise.allSettled(
+        overdueList.map(s => api.post(`/shipments/${s.ref_no}/snooze-follow-up`))
+      );
+      const snoozedRefNos: string[] = [];
+      results.forEach((res, idx) => {
+        if (res.status === "fulfilled") {
+          snoozedRefNos.push(overdueList[idx].ref_no);
+        }
+      });
+      if (snoozedRefNos.length > 0) {
+        setOverdueList(prev => prev.filter(s => !snoozedRefNos.includes(s.ref_no)));
+      }
+      if (snoozedRefNos.length === overdueList.length) {
+        toast.success("All follow-ups snoozed until tomorrow.");
+      } else if (snoozedRefNos.length > 0) {
+        toast.success(`Snoozed ${snoozedRefNos.length} follow-ups.`);
+      } else {
+        toast.error("Failed to snooze follow-ups. Please reload.");
+      }
     } catch (err) {
       console.error("Failed to snooze all:", err);
-      toast.error("Failed to snooze some follow-ups. Please reload.");
+      toast.error("Failed to snooze follow-ups. Please reload.");
       fetchOverdue();
     } finally {
       setActioningAll(false);
@@ -117,10 +132,25 @@ export default function OverdueFollowUpOverlay() {
       setActioningAll(true);
       setPasswordPromptOpen(false);
       try {
-        const promises = overdueList.map(s => api.delete(`/shipments/${s.ref_no}`));
-        await Promise.all(promises);
-        toast.success("All overdue RFQs deleted successfully.");
-        setOverdueList([]);
+        const results = await Promise.allSettled(
+          overdueList.map(s => api.delete(`/shipments/${s.ref_no}`))
+        );
+        const deletedRefNos: string[] = [];
+        results.forEach((res, idx) => {
+          if (res.status === "fulfilled") {
+            deletedRefNos.push(overdueList[idx].ref_no);
+          }
+        });
+        if (deletedRefNos.length > 0) {
+          setOverdueList(prev => prev.filter(s => !deletedRefNos.includes(s.ref_no)));
+        }
+        if (deletedRefNos.length === overdueList.length) {
+          toast.success("All overdue RFQs deleted successfully.");
+        } else if (deletedRefNos.length > 0) {
+          toast.success(`Deleted ${deletedRefNos.length} RFQs.`);
+        } else {
+          toast.error("Failed to delete RFQs. Please reload.");
+        }
       } catch (err: any) {
         console.error("Failed to delete all:", err);
         const errMsg = err.response?.data?.message || "Failed to delete some RFQs. Please reload.";

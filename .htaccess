@@ -1,30 +1,10 @@
-# ================================================================
-#  ARGUS Apache .htaccess — SINGLE APP setup
-#  Place this file in your public_html/ directory.
-#
-#  ALL traffic goes to the ONE Express Node.js app (port 3001).
-#  Express itself serves:
-#    - /api/*          → API routes
-#    - /socket.io/*    → WebSocket
-#    - /login, /dashboard, /rfq, etc. → Next.js static HTML
-#    - /               → Vite landing page
-# ================================================================
-
 Options -Indexes
 RewriteEngine On
 
-# ── Serve real files/folders directly (CSS, JS, images) ──────
+# ── Serve real static files directly (CSS, JS, images) ───────
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
-
-# ── Proxy WebSocket (Socket.IO) ───────────────────────────────
-RewriteCond %{HTTP:Upgrade} websocket [NC]
-RewriteCond %{HTTP:Connection} upgrade [NC]
-RewriteRule ^socket\.io/(.*) http://127.0.0.1:3001/socket.io/$1 [P,L]
-
-# ── Proxy EVERYTHING else to Express ─────────────────────────
-RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 
 # ── Security headers ─────────────────────────────────────────
 <IfModule mod_headers.c>
