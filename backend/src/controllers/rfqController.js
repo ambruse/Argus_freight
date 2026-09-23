@@ -6,6 +6,7 @@
 const db = require('../config/db');
 const { query, ensureUserTables } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
+const { createSmtpTransporter } = require('../utils/mailer');
 const { decrypt } = require('../utils/crypto');
 const fs = require('fs');
 const path = require('path');
@@ -426,19 +427,7 @@ const sendRfqEmail = async (req, res, next) => {
     }
 
     // 4. Configure Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465', 
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      family: 4
-    });
+    const transporter = createSmtpTransporter(smtpUser, smtpPass);
 
     // 4. Construct Subject
     // Format: RFQ FROM [POL] TO [POD]/[MODE]/[CONTAINER]/[RFQ NO]/CID : [CUSTOMER ID]

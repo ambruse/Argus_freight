@@ -10,6 +10,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { PDFDocument } = require('pdf-lib');
+const { createSmtpTransporter } = require('../utils/mailer');
 
 // Format currency helper
 const formatCurrency = (val) => {
@@ -582,20 +583,7 @@ const approveQuotation = async (req, res, next) => {
         });
       }
 
-      const nodemailer = require('nodemailer');
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_PORT === '465',
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-        tls: {
-          rejectUnauthorized: false
-        },
-        family: 4
-      });
+      const transporter = createSmtpTransporter(smtpUser, smtpPass);
 
       await transporter.sendMail({
         from: `ARGUS SHIPPING <${smtpUser}>`,

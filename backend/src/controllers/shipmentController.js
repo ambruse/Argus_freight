@@ -6,6 +6,7 @@
 const db = require('../config/db');
 const { query, findUsernameForRefNo } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
+const { createSmtpTransporter } = require('../utils/mailer');
 const { PDFDocument } = require('pdf-lib');
 const { decrypt } = require('../utils/crypto');
 
@@ -793,19 +794,7 @@ const sendReply = async (req, res, next) => {
     // 3. SMTP Credentials already resolved at top
 
     // 4. Configure Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465', 
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      family: 4
-    });
+    const transporter = createSmtpTransporter(smtpUser, smtpPass);
 
     // 5. Construct Subject
     let subject = `Re: RFQ FROM ${shipment.pol || ''} TO ${shipment.pod || ''}`;
@@ -956,19 +945,7 @@ const sendFollowUp = async (req, res, next) => {
     // 3. SMTP Credentials already resolved at top
 
     // 4. Configure Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465', 
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      family: 4
-    });
+    const transporter = createSmtpTransporter(smtpUser, smtpPass);
 
     // 5. Construct Subject
     let subject = `Re: RFQ FROM ${shipment.pol || ''} TO ${shipment.pod || ''}`;
@@ -1517,19 +1494,7 @@ const sendQuotation = async (req, res, next) => {
     );
 
     // Setup Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      family: 4
-    });
+    const transporter = createSmtpTransporter(smtpUser, smtpPass);
 
     const mailOptions = {
       from: `ARGUS SHIPPING <${smtpUser}>`,

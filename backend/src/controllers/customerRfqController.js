@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { query } = require('../config/dbHelper');
 const nodemailer = require('nodemailer');
+const { createSmtpTransporter } = require('../utils/mailer');
 const { decrypt } = require('../utils/crypto');
 const fs = require('fs');
 const path = require('path');
@@ -406,19 +407,7 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     const signature = await getSignatureForUser(operatorUserId || 1);
 
     // 4. Configure Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_PORT === '465',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass
-      },
-      tls: {
-        rejectUnauthorized: false
-      },
-      family: 4
-    });
+    const transporter = createSmtpTransporter(smtpUser, smtpPass);
 
     // 5. Send to each recipient safely
     let sentCount = 0;
