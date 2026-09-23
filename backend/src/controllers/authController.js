@@ -7,6 +7,7 @@ const jwt    = require('jsonwebtoken');
 const db     = require('../config/db');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { createSmtpTransporter } = require('../utils/mailer');
 const { encrypt, decrypt } = require('../utils/crypto');
 
 // Generate ephemeral 2048-bit RSA keypair for password transit encryption
@@ -971,16 +972,7 @@ const createPasswordResetTransporter = async () => {
       const customPass = decrypt(customPassEnc);
       if (customPass) {
         return {
-          transporter: nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT) || 587,
-            secure: false,
-            auth: {
-              user: customEmail,
-              pass: customPass
-            },
-            tls: { rejectUnauthorized: false }
-          }),
+          transporter: createSmtpTransporter(customEmail, customPass),
           user: customEmail
         };
       }
@@ -996,16 +988,7 @@ const createPasswordResetTransporter = async () => {
     );
     if (adminRes.rows.length > 0 && adminRes.rows[0].email_address && adminRes.rows[0].email_password) {
       return {
-        transporter: nodemailer.createTransport({
-          host: process.env.SMTP_HOST || 'smtp.gmail.com',
-          port: parseInt(process.env.SMTP_PORT) || 587,
-          secure: false,
-          auth: {
-            user: adminRes.rows[0].email_address,
-            pass: decrypt(adminRes.rows[0].email_password)
-          },
-          tls: { rejectUnauthorized: false }
-        }),
+        transporter: createSmtpTransporter(adminRes.rows[0].email_address, decrypt(adminRes.rows[0].email_password)),
         user: adminRes.rows[0].email_address
       };
     }
@@ -1015,17 +998,9 @@ const createPasswordResetTransporter = async () => {
 
   // 3. Fallback to environment variables
   const defaultUser = process.env.SMTP_USER || 'Argusdonotreply@gmail.com';
+  const defaultPass = (process.env.SMTP_PASS || '').trim().replace(/^["']|["']$/g, '');
   return {
-    transporter: nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: defaultUser,
-        pass: process.env.SMTP_PASS || ''
-      },
-      tls: { rejectUnauthorized: false }
-    }),
+    transporter: createSmtpTransporter(defaultUser, defaultPass),
     user: defaultUser
   };
 };
@@ -1086,16 +1061,7 @@ const updateAdminResetEmailSettings = async (req, res, next) => {
     }
 
     // Verify SMTP connection via Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: {
-        user: cleanEmail,
-        pass: passToTest
-      },
-      tls: { rejectUnauthorized: false }
-    });
+    const transporter = createSmtpTransporter(cleanEmail, passToTest);
 
     try {
       await transporter.verify();
