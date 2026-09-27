@@ -613,18 +613,49 @@ const approveCustomerRfq = async (req, res, next) => {
       }
     }
 
-    // 4. Send the emails using existing sendCustomerRfqEmail logic
+    // 4. Send the emails using existing sendCustomerRfqEmail logic.
+    //    IMPORTANT: sendCustomerRfqEmail guards against non-customer roles and derives
+    //    the customer sandbox table name from req.user.username.
+    //    The incoming req belongs to the operator who clicked Approve, so we must
+    //    impersonate the actual customer user here — otherwise the 403 guard fires
+    //    silently and no email is ever dispatched.
+    let customerUsername = submitterUsername; // derived earlier from firstShipment.refer_by
+    if (!customerUsername && customerId) {
+      try {
+        const custLookup = await db.query(
+          `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
+          [customerId]
+        );
+        if (custLookup.rows.length > 0) {
+          customerUsername = custLookup.rows[0].username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+        }
+      } catch (_) {}
+    }
+
     const fakeReq = {
       ...req,
       params: { ref_no: actualCustReqNo },
-      body: {}
+      body: {},
+      user: {
+        ...req.user,
+        role: 'customer',
+        username: customerUsername || submitterUsername || req.user.username,
+      }
     };
     await new Promise((resolve) => {
       const fakeRes = {
-        status: (code) => ({ json: (d) => resolve() }),
+        status: (code) => ({ json: (d) => {
+          if (code >= 400) {
+            console.error(`[approveCustomerRfq] sendCustomerRfqEmail returned ${code}:`, d);
+          }
+          resolve();
+        }}),
         json: (d) => resolve()
       };
-      sendCustomerRfqEmail(fakeReq, fakeRes, (err) => resolve());
+      sendCustomerRfqEmail(fakeReq, fakeRes, (err) => {
+        if (err) console.error('[approveCustomerRfq] sendCustomerRfqEmail error:', err.message);
+        resolve();
+      });
     });
 
     // 5. Notify customer and broadcast dismissal to all operators & admins
