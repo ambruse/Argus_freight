@@ -288,13 +288,43 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     }
 
     const { ref_no } = req.params;
-    const cleanUsername = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
 
-    // 1. Fetch Shipment from Customer Sandbox
-    const shipRes = await db.query(
-      `SELECT * FROM shipments_${cleanUsername} WHERE ref_no = $1`,
+    // IMPORTANT: Customer sandbox tables are created as shipments_u{id} (by getUserSuffix),
+    // NOT as shipments_{username}. We must look up the real user row to derive the correct suffix.
+    const { getUserSuffix, getAllSuffixes, ensureUserTables } = require('../config/dbHelper');
+    let custTableSuffix = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    try {
+      const custUserRow = await db.query(
+        `SELECT id, username FROM users WHERE LOWER(username) = LOWER($1) AND (is_deleted IS NOT TRUE) LIMIT 1`,
+        [req.user.username]
+      );
+      if (custUserRow.rows.length > 0) {
+        custTableSuffix = getUserSuffix(custUserRow.rows[0]);
+      }
+    } catch (_) {}
+
+    // 1. Fetch Shipment from Customer Sandbox (correct suffix, then username fallback, then main table)
+    let shipRes = await db.query(
+      `SELECT * FROM shipments_${custTableSuffix} WHERE ref_no = $1`,
       [ref_no]
-    );
+    ).catch(() => ({ rows: [] }));
+
+    if (shipRes.rows.length === 0) {
+      const plainSuffix = req.user.username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      if (plainSuffix !== custTableSuffix) {
+        shipRes = await db.query(
+          `SELECT * FROM shipments_${plainSuffix} WHERE ref_no = $1`,
+          [ref_no]
+        ).catch(() => ({ rows: [] }));
+      }
+    }
+
+    if (shipRes.rows.length === 0) {
+      shipRes = await db.query(
+        `SELECT * FROM shipments WHERE ref_no = $1`,
+        [ref_no]
+      ).catch(() => ({ rows: [] }));
+    }
 
     if (shipRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Shipment not found.' });
@@ -314,7 +344,7 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     let attachedFiles = [];
     try {
       const fileRes = await db.query(
-        `SELECT * FROM files_${cleanUsername} WHERE shipment_ref_no = $1 ORDER BY uploaded_at ASC`,
+        `SELECT * FROM files_${custTableSuffix} WHERE shipment_ref_no = $1 ORDER BY uploaded_at ASC`,
         [ref_no]
       );
       attachedFiles = fileRes.rows || [];
@@ -337,7 +367,6 @@ const sendCustomerRfqEmail = async (req, res, next) => {
     const cleanOperator = actualOpUsername.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
     const opTableName = (!cleanOperator || cleanOperator === 'admin') ? 'shipments' : `shipments_${cleanOperator}`;
 
-    const { ensureUserTables } = require('../config/dbHelper');
     await ensureUserTables(cleanOperator);
 
     let opShipmentsRes = await db.query(
@@ -350,6 +379,21 @@ const sendCustomerRfqEmail = async (req, res, next) => {
         `SELECT * FROM shipments WHERE cust_req_no = $1 OR ref_no = $1`,
         [ref_no]
       ).catch(() => ({ rows: [] }));
+    }
+
+    // Also search all sandbox tables as a final fallback
+    if (opShipmentsRes.rows.length === 0) {
+      const suffixes = await getAllSuffixes();
+      for (const sfx of suffixes) {
+        const check = await db.query(
+          `SELECT * FROM shipments_${sfx} WHERE cust_req_no = $1 OR ref_no = $1`,
+          [ref_no]
+        ).catch(() => ({ rows: [] }));
+        if (check.rows.length > 0) {
+          opShipmentsRes = check;
+          break;
+        }
+      }
     }
 
     if (opShipmentsRes.rows.length === 0) {
