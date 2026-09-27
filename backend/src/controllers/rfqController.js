@@ -698,7 +698,7 @@ const approveRfq = async (req, res, next) => {
       });
     }
 
-    // 5. Notify submitter and broadcast dismissal to all operators & admins
+    // 5. Notify submitter and dismiss modal ONLY on the approving operator's socket room
     try {
       if (global.io) {
         const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
@@ -709,8 +709,11 @@ const approveRfq = async (req, res, next) => {
             message: `Your RFQ ${actualCustReqNo || actualRefNo} (${subRefsToSend.length} agent${subRefsToSend.length > 1 ? 's' : ''}) was approved and sent.`
           });
         }
-        // Broadcast to all operators and admins so modal immediately dismisses all sub-RFQs in this set
-        global.io.emit('rfq_approval_processed', {
+        // Dismiss the approval modal ONLY on the operator who approved this RFQ.
+        // Do NOT use global.io.emit() — that would broadcast to ALL connected clients
+        // and dismiss approval modals for other operators with different pending RFQs.
+        const approverRoom = `user_${req.user.username.toLowerCase()}`;
+        global.io.to(approverRoom).emit('rfq_approval_processed', {
           ref_no: actualRefNo,
           cust_req_no: actualCustReqNo,
           all_ref_nos: subRefsToSend,
@@ -813,7 +816,7 @@ const rejectRfq = async (req, res, next) => {
       ? [...new Set(allSubRows.rows.map(r => r.ref_no))]
       : [actualRefNo];
 
-    // 5. Notify submitter and broadcast dismissal to all operators & admins
+    // 5. Notify submitter and dismiss modal ONLY on the rejecting operator's socket room
     try {
       if (global.io) {
         const submitterRoom = `user_${(shipment.refer_by || shipment.operator || '').toLowerCase()}`;
@@ -824,8 +827,11 @@ const rejectRfq = async (req, res, next) => {
             message: `Your RFQ ${actualCustReqNo || actualRefNo} was rejected by the operator.`
           });
         }
-        // Broadcast to all operators and admins so modal immediately dismisses all sub-RFQs in this set
-        global.io.emit('rfq_approval_processed', {
+        // Dismiss the approval modal ONLY on the operator who rejected this RFQ.
+        // Do NOT use global.io.emit() — that would broadcast to ALL connected clients
+        // and dismiss approval modals for other operators with different pending RFQs.
+        const rejecterRoom = `user_${req.user.username.toLowerCase()}`;
+        global.io.to(rejecterRoom).emit('rfq_approval_processed', {
           ref_no: actualRefNo,
           cust_req_no: actualCustReqNo,
           all_ref_nos: subRefsToReject,

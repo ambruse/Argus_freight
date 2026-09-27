@@ -568,7 +568,8 @@ const approveCustomerRfq = async (req, res, next) => {
     const shipments = opShipmentsRes.rows;
     const firstShipment = shipments[0];
     const customerId = firstShipment.customer_id;
-    const submitterUsername = (firstShipment.refer_by || '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    // NOTE: refer_by in customer-RFQ rows stores the *assigned operator* name, NOT the customer.
+    //       We resolve the actual customer username from customer_id in step 3 below.
     const actualCustReqNo = firstShipment.cust_req_no || ref_no;
 
     // Check if already approved or rejected
@@ -593,7 +594,8 @@ const approveCustomerRfq = async (req, res, next) => {
       ).catch(() => {});
     }
 
-    // 3. Update customer sandbox row
+    // 3. Update customer sandbox row and resolve the actual customer username
+    let customerUsername = '';
     if (customerId) {
       try {
         const custUserRes = await db.query(
@@ -602,6 +604,7 @@ const approveCustomerRfq = async (req, res, next) => {
         );
         if (custUserRes.rows.length > 0) {
           const { getUserSuffix } = require('../config/dbHelper');
+          customerUsername = custUserRes.rows[0].username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
           const custSuffix = getUserSuffix(custUserRes.rows[0]);
           await db.query(
             `UPDATE shipments_${custSuffix} SET status = 'Pending', updated_at = NOW() WHERE ref_no = $1 OR cust_req_no = $1 OR ref_no = $2 OR cust_req_no = $2`,
@@ -619,19 +622,6 @@ const approveCustomerRfq = async (req, res, next) => {
     //    The incoming req belongs to the operator who clicked Approve, so we must
     //    impersonate the actual customer user here — otherwise the 403 guard fires
     //    silently and no email is ever dispatched.
-    let customerUsername = submitterUsername; // derived earlier from firstShipment.refer_by
-    if (!customerUsername && customerId) {
-      try {
-        const custLookup = await db.query(
-          `SELECT username FROM users WHERE customer_id = $1 AND role = 'customer' AND (is_deleted IS NOT TRUE) LIMIT 1`,
-          [customerId]
-        );
-        if (custLookup.rows.length > 0) {
-          customerUsername = custLookup.rows[0].username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-        }
-      } catch (_) {}
-    }
-
     const fakeReq = {
       ...req,
       params: { ref_no: actualCustReqNo },
@@ -639,7 +629,7 @@ const approveCustomerRfq = async (req, res, next) => {
       user: {
         ...req.user,
         role: 'customer',
-        username: customerUsername || submitterUsername || req.user.username,
+        username: customerUsername || req.user.username,
       }
     };
     await new Promise((resolve) => {
@@ -658,18 +648,22 @@ const approveCustomerRfq = async (req, res, next) => {
       });
     });
 
-    // 5. Notify customer and broadcast dismissal to all operators & admins
+    // 5. Notify the customer and dismiss the modal ONLY on the assigned operator's socket room
     try {
       if (global.io) {
-        if (submitterUsername) {
-          global.io.to(`user_${submitterUsername}`).emit('rfq_approval_result', {
+        // Notify the customer who submitted the RFQ (using the real customer socket room)
+        if (customerUsername) {
+          global.io.to(`user_${customerUsername}`).emit('rfq_approval_result', {
             ref_no: actualCustReqNo,
             outcome: 'accepted',
             message: `Your quote request ${actualCustReqNo} was approved. Agents have been notified.`
           });
         }
-        // Broadcast to all operators and admins so modal immediately dismisses everywhere
-        global.io.emit('rfq_approval_processed', {
+        // Dismiss the approval modal ONLY on the operator who processed this RFQ.
+        // Do NOT use global.io.emit() — that would broadcast to ALL connected clients
+        // and dismiss approval modals for other operators who have different pending RFQs.
+        const assignedOpRoom = `user_${req.user.username.toLowerCase()}`;
+        global.io.to(assignedOpRoom).emit('rfq_approval_processed', {
           ref_no: actualCustReqNo,
           cust_req_no: actualCustReqNo,
           outcome: 'accepted',
@@ -720,7 +714,7 @@ const rejectCustomerRfq = async (req, res, next) => {
 
     const firstShipment = opShipmentsRes.rows[0];
     const customerId = firstShipment?.customer_id;
-    const submitterUsername = (firstShipment?.refer_by || '').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    // NOTE: refer_by stores the assigned *operator* name, NOT the customer username.
     const actualCustReqNo = firstShipment?.cust_req_no || ref_no;
 
     // Check if already approved or rejected
@@ -745,7 +739,8 @@ const rejectCustomerRfq = async (req, res, next) => {
       ).catch(() => {});
     }
 
-    // 3. Update customer sandbox
+    // 3. Update customer sandbox and resolve actual customer username
+    let customerUsername = '';
     if (customerId) {
       try {
         const custUserRes = await db.query(
@@ -754,6 +749,7 @@ const rejectCustomerRfq = async (req, res, next) => {
         );
         if (custUserRes.rows.length > 0) {
           const { getUserSuffix } = require('../config/dbHelper');
+          customerUsername = custUserRes.rows[0].username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
           const custSuffix = getUserSuffix(custUserRes.rows[0]);
           await db.query(
             `UPDATE shipments_${custSuffix} SET status = 'Cancelled', updated_at = NOW() WHERE ref_no = $1 OR cust_req_no = $1 OR ref_no = $2 OR cust_req_no = $2`,
@@ -765,18 +761,22 @@ const rejectCustomerRfq = async (req, res, next) => {
       }
     }
 
-    // 4. Notify customer and broadcast dismissal to all operators & admins
+    // 4. Notify the customer and dismiss the modal ONLY on the rejecting operator's socket room
     try {
       if (global.io) {
-        if (submitterUsername) {
-          global.io.to(`user_${submitterUsername}`).emit('rfq_approval_result', {
+        // Notify the actual customer (not the operator) using the real customer socket room
+        if (customerUsername) {
+          global.io.to(`user_${customerUsername}`).emit('rfq_approval_result', {
             ref_no: actualCustReqNo,
             outcome: 'rejected',
             message: `Your quote request ${actualCustReqNo} was not accepted by the operator.`
           });
         }
-        // Broadcast to all operators and admins so modal immediately dismisses everywhere
-        global.io.emit('rfq_approval_processed', {
+        // Dismiss the approval modal ONLY on the operator who rejected this RFQ.
+        // Do NOT use global.io.emit() — that would broadcast to ALL connected clients
+        // and dismiss approval modals for other operators who have different pending RFQs.
+        const assignedOpRoom = `user_${req.user.username.toLowerCase()}`;
+        global.io.to(assignedOpRoom).emit('rfq_approval_processed', {
           ref_no: actualCustReqNo,
           cust_req_no: actualCustReqNo,
           outcome: 'rejected',
