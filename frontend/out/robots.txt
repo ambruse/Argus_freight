@@ -11,4 +11,4 @@ Disallow: /settings
 Disallow: /summary
 Disallow: /calling-agent/
 
-Sitemap: https://argusshipping.co/sitemap.xml
+Sitemap: https://argus-freight.onrender.com/sitemap.xml

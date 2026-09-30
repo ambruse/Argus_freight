@@ -41,10 +41,23 @@ interface ApprovalGroup {
   rep: PendingRFQ;         // representative (first) item
 }
 
+function getBaseGroupKey(item: PendingRFQ): string {
+  if (item.cust_req_no && item.cust_req_no.trim()) {
+    const clean = item.cust_req_no.trim();
+    const parts = clean.split("-");
+    if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+    return clean;
+  }
+  const ref = (item.ref_no || "").trim();
+  const parts = ref.split("-");
+  if (parts.length > 2) return `${parts[0]}-${parts[1]}`;
+  return ref;
+}
+
 function buildGroups(items: PendingRFQ[]): ApprovalGroup[] {
   const map: Record<string, PendingRFQ[]> = {};
   for (const item of items) {
-    const key = (item.cust_req_no || item.ref_no || "").trim();
+    const key = getBaseGroupKey(item);
     if (!map[key]) map[key] = [];
     map[key].push(item);
   }
@@ -132,18 +145,11 @@ export default function OperatorApprovalsPage() {
     setProcessingKey((p) => ({ ...p, [group.groupKey]: "accept" }));
     try {
       const refToApprove = group.rep.cust_req_no || group.rep.ref_no;
-      const endpoint = group.rep.cust_req_no && group.rep.cust_req_no !== group.rep.ref_no
-        ? `/rfq/customer-approve/${refToApprove}`
-        : `/rfq/${refToApprove}/approve`;
-
       try {
-        await api.post(endpoint);
+        await api.post(`/rfq/${refToApprove}/approve`);
       } catch (firstErr: any) {
         if (firstErr?.response?.status === 404) {
-          const fallback = endpoint.includes("customer-approve")
-            ? `/rfq/${group.rep.ref_no}/approve`
-            : `/rfq/customer-approve/${refToApprove}`;
-          await api.post(fallback);
+          await api.post(`/rfq/customer-approve/${refToApprove}`);
         } else {
           throw firstErr;
         }
@@ -152,7 +158,7 @@ export default function OperatorApprovalsPage() {
       toast.success(
         group.batchCount > 1
           ? `Auto Receiver set (${group.batchCount} RFQs) approved — emails dispatched!`
-          : `RFQ ${group.rep.ref_no} approved — email dispatched!`,
+          : `RFQ ${group.groupKey} approved — email dispatched!`,
         { duration: 5000 }
       );
 
@@ -175,18 +181,11 @@ export default function OperatorApprovalsPage() {
     setProcessingKey((p) => ({ ...p, [group.groupKey]: "reject" }));
     try {
       const refToReject = group.rep.cust_req_no || group.rep.ref_no;
-      const endpoint = group.rep.cust_req_no && group.rep.cust_req_no !== group.rep.ref_no
-        ? `/rfq/customer-reject/${refToReject}`
-        : `/rfq/${refToReject}/reject`;
-
       try {
-        await api.post(endpoint);
+        await api.post(`/rfq/${refToReject}/reject`);
       } catch (firstErr: any) {
         if (firstErr?.response?.status === 404) {
-          const fallback = endpoint.includes("customer-reject")
-            ? `/rfq/${group.rep.ref_no}/reject`
-            : `/rfq/customer-reject/${refToReject}`;
-          await api.post(fallback);
+          await api.post(`/rfq/customer-reject/${refToReject}`);
         } else {
           throw firstErr;
         }
@@ -195,7 +194,7 @@ export default function OperatorApprovalsPage() {
       toast.success(
         group.batchCount > 1
           ? `Auto Receiver set (${group.batchCount} RFQs) rejected.`
-          : `RFQ ${group.rep.ref_no} rejected.`,
+          : `RFQ ${group.groupKey} rejected.`,
         { duration: 5000 }
       );
 

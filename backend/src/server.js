@@ -113,7 +113,7 @@ if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
       'login', 'register', 'dashboard', 'rfq', 'confirmed',
       'customers', 'customer', 'contacts', 'quotation',
       'calling-agent', 'sales', 'settings', 'summary',
-      'admin', 'calculator', 'reset-password'
+      'admin', 'operator', 'calculator', 'reset-password'
     ];
     appRoutes.forEach(route => {
       app.get(`/${route}`, (req, res) => {

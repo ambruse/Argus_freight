@@ -154,7 +154,18 @@ export default function Sidebar() {
           }
           return true;
         });
-        setApprovalPending(pending.length);
+        const uniqueGroups = new Set(
+          pending.map((s: any) => {
+            if (s.cust_req_no && s.cust_req_no.trim()) {
+              const parts = s.cust_req_no.trim().split("-");
+              return parts.length > 2 ? `${parts[0]}-${parts[1]}` : s.cust_req_no.trim();
+            }
+            const ref = (s.ref_no || "").trim();
+            const parts = ref.split("-");
+            return parts.length > 2 ? `${parts[0]}-${parts[1]}` : ref;
+          })
+        );
+        setApprovalPending(uniqueGroups.size);
       } catch {}
     };
     fetchApprovalCount();
