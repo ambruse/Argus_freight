@@ -122,6 +122,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/rfq/new", label: "New RFQ", icon: PlusCircle },
       { href: "/rfq", label: "Sent RFQs", icon: ClipboardList },
+      { href: "/operator/approvals", label: "Approvals", icon: FileText },
       { href: "/confirmed", label: "Confirmed", icon: CheckSquare },
     ];
     otherItems = [

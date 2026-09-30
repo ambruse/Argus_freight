@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   // Operator / Admin RFQ
   { href: "/rfq/new",               label: "New RFQ",          icon: "✦",  section: "FREIGHT" },
   { href: "/rfq",                   label: "Sent RFQs",        icon: "◈",  section: "FREIGHT" },
+  { href: "/operator/approvals",    label: "Approvals",        icon: "⚑",  section: "FREIGHT" },
   { href: "/confirmed",             label: "Confirmed",        icon: "◉",  section: "FREIGHT" },
   { href: "/quotation",             label: "Quotation",        icon: "📜", section: "FREIGHT" },
   { href: "/summary",               label: "Summary",          icon: "▦",  section: "FREIGHT" },
@@ -49,6 +50,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const [rfqUnread,       setRfqUnread]       = useState(0);
   const [confirmedUnread, setConfirmedUnread] = useState(0);
+  const [approvalPending, setApprovalPending] = useState(0);
   const [theme,           setTheme]           = useState<"dark" | "light">("dark");
   const [isCollapsed,     setIsCollapsed]     = useState(false);
 
@@ -135,6 +137,35 @@ export default function Sidebar() {
       window.removeEventListener("refresh-unread-replies", handleRefresh);
     };
   }, []);
+
+  /* ── Approval pending badge (operator / admin only) ─────── */
+  useEffect(() => {
+    if (user?.role !== "operator" && user?.role !== "admin") return;
+    const fetchApprovalCount = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
+      if (!token) return;
+      try {
+        const { data } = await api.get("/shipments?exclude_direct=true");
+        const all = data.data || [];
+        const pending = all.filter((s: any) => {
+          if (s.status !== "Awaiting Approval") return false;
+          if (user.role === "operator") {
+            return !s.operator || s.operator.toLowerCase() === user.username.toLowerCase();
+          }
+          return true;
+        });
+        setApprovalPending(pending.length);
+      } catch {}
+    };
+    fetchApprovalCount();
+    const handleRefresh = () => fetchApprovalCount();
+    window.addEventListener("rfq-list-update", handleRefresh);
+    const id = setInterval(fetchApprovalCount, 8000);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("rfq-list-update", handleRefresh);
+    };
+  }, [user]);
 
   /* ── Filter nav by role ─────────────────────────────────── */
   const visibleItems = NAV_ITEMS.filter(item => {
@@ -298,6 +329,13 @@ export default function Sidebar() {
                         {confirmedUnread}
                       </span>
                     )}
+                    {!isCollapsed && item.href === "/operator/approvals" && approvalPending > 0 && (
+                      <span className="flex items-center justify-center text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] h-5 animate-pulse"
+                        style={{ background: "rgba(249,115,22,0.18)", color: "#F97316", border: "1px solid rgba(249,115,22,0.35)" }}
+                      >
+                        {approvalPending}
+                      </span>
+                    )}
 
                     {/* Collapsed dot badge for unread */}
                     {isCollapsed && item.href === "/rfq" && rfqUnread > 0 && (
@@ -310,6 +348,12 @@ export default function Sidebar() {
                       <span className="absolute top-1 right-1 flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                      </span>
+                    )}
+                    {isCollapsed && item.href === "/operator/approvals" && approvalPending > 0 && (
+                      <span className="absolute top-1 right-1 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "#F97316" }}></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#F97316" }}></span>
                       </span>
                     )}
 

@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { io } from "socket.io-client";
 import PostCallModal from "@/components/modals/PostCallModal";
-import RFQApprovalModal, { type RFQApprovalItem } from "@/components/modals/RFQApprovalModal";
 
 interface UnreadReply {
   id: number;
@@ -24,6 +23,7 @@ interface UnreadReply {
 
 export default function NotificationListener() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
   const notifiedIds = useRef<number[]>([]);
   const isPolling = useRef(false);
@@ -33,7 +33,6 @@ export default function NotificationListener() {
   const [showCallModal, setShowCallModal] = useState(false);
   const [callData, setCallData] = useState({ id: 0, number: "", duration: 0 });
 
-  const [approvalQueue, setApprovalQueue] = useState<RFQApprovalItem[]>([]);
   const seenApprovalRefs = useRef<string[]>([]);
 
   useEffect(() => {
@@ -68,27 +67,57 @@ export default function NotificationListener() {
       });
     }
 
-    // Only assigned operator: RFQ pending approval modal
+    // Operator: new RFQ pending approval — show toast and navigate to approvals page
     if (user.role === "operator") {
-      socket.on("rfq_pending_approval", (data: RFQApprovalItem) => {
+      socket.on("rfq_pending_approval", (data: any) => {
         if (seenApprovalRefs.current.includes(data.ref_no)) return;
         seenApprovalRefs.current.push(data.ref_no);
         playNotificationSound();
-        setApprovalQueue((prev) => [...prev, data]);
+        window.dispatchEvent(new CustomEvent("rfq-list-update"));
+        toast.custom(
+          (t) => (
+            <div
+              className={`${t.visible ? "animate-enter" : "animate-leave"} max-w-md w-full bg-[#1E1E1E] border border-orange-500/30 shadow-card rounded-2xl pointer-events-auto flex p-4 justify-between gap-3`}
+              style={{ boxShadow: "0 8px 32px rgba(249,115,22,0.15)" }}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-400" />
+                  </span>
+                  New RFQ Awaiting Approval
+                </p>
+                <p className="text-sm font-semibold text-[#F0F0F0] truncate">REF: {data.ref_no}</p>
+                <p className="text-xs text-muted truncate mt-0.5">
+                  {data.pol || "—"} ➔ {data.pod || "—"}{data.customer_name ? ` · ${data.customer_name}` : ""}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 justify-center flex-shrink-0">
+                <button
+                  onClick={() => { toast.dismiss(t.id); router.push("/operator/approvals"); }}
+                  className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap"
+                  style={{ background: "#F97316", borderColor: "#F97316", color: "#000" }}
+                >
+                  Review
+                </button>
+                <button onClick={() => toast.dismiss(t.id)} className="btn-secondary text-[10px] px-2 py-1">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ),
+          { duration: 15000 }
+        );
       });
 
-      // Dismiss from queue as soon as ANY operator processes it
-      socket.on("rfq_approval_processed", (data: { ref_no: string; cust_req_no?: string; all_ref_nos?: string[]; outcome?: string; processed_by?: string }) => {
+      // When another operator processes it, just refresh the list
+      socket.on("rfq_approval_processed", (data: { ref_no: string; cust_req_no?: string; all_ref_nos?: string[] }) => {
         const targets = [data.ref_no, data.cust_req_no, ...(data.all_ref_nos || [])].filter(Boolean) as string[];
-        setApprovalQueue((prev) => prev.filter(item => 
-          !targets.includes(item.ref_no) && 
-          (!item.cust_req_no || !targets.includes(item.cust_req_no))
-        ));
         targets.forEach(t => {
-          if (!seenApprovalRefs.current.includes(t)) {
-            seenApprovalRefs.current.push(t);
-          }
+          if (!seenApprovalRefs.current.includes(t)) seenApprovalRefs.current.push(t);
         });
+        window.dispatchEvent(new CustomEvent("rfq-list-update"));
       });
     }
 
@@ -341,22 +370,8 @@ export default function NotificationListener() {
             awaitingApproval.forEach((s: any) => {
               if (!seenApprovalRefs.current.includes(s.ref_no)) {
                 seenApprovalRefs.current.push(s.ref_no);
-                setApprovalQueue((prev) => [
-                  ...prev,
-                  {
-                    ref_no: s.ref_no,
-                    cust_req_no: s.cust_req_no || undefined,
-                    type: s.cust_req_no && s.cust_req_no !== s.ref_no ? "customer" : "operator",
-                    pol: s.pol || undefined,
-                    pod: s.pod || undefined,
-                    commodity: s.commodity || undefined,
-                    mode: s.mode || undefined,
-                    container: s.container || null,
-                    dimension: s.dimension || null,
-                    customer_name: s.customer_name || null,
-                    refer_by: s.refer_by || null,
-                  },
-                ]);
+                // Trigger the Approvals page to refresh
+                window.dispatchEvent(new CustomEvent("rfq-list-update"));
               }
             });
           }
@@ -586,15 +601,6 @@ export default function NotificationListener() {
     };
   }, [pathname]);
 
-  const handleApprovalItemProcessed = (ref_no: string, cust_req_no?: string, all_ref_nos?: string[]) => {
-    const targets = [ref_no, cust_req_no, ...(all_ref_nos || [])].filter(Boolean) as string[];
-    setApprovalQueue((prev) => prev.filter((item) => 
-      !targets.includes(item.ref_no) && 
-      (!item.cust_req_no || !targets.includes(item.cust_req_no))
-    ));
-    window.dispatchEvent(new CustomEvent("rfq-list-update"));
-  };
-
   return (
     <>
       {showCallModal && (
@@ -604,12 +610,6 @@ export default function NotificationListener() {
           callDuration={callData.duration}
           onClose={() => setShowCallModal(false)}
           onSuccess={() => setShowCallModal(false)}
-        />
-      )}
-      {approvalQueue.length > 0 && (
-        <RFQApprovalModal
-          items={approvalQueue}
-          onItemProcessed={handleApprovalItemProcessed}
         />
       )}
     </>
