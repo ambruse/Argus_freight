@@ -115,9 +115,12 @@ export default function OperatorApprovalsPage() {
 
       // Only show "Awaiting Approval" items assigned to this operator (or all for admin)
       const pending = all.filter((s) => {
-        if (s.status !== "Awaiting Approval") return false;
+        if ((s.status || "").trim() !== "Awaiting Approval") return false;
         if (user?.role === "operator") {
-          return !s.operator || s.operator.toLowerCase() === user.username.toLowerCase();
+          const op = (s.operator || "").trim().toLowerCase();
+          const uname = (user.username || "").trim().toLowerCase();
+          const dname = ((user as any).name || "").trim().toLowerCase();
+          return !op || op === uname || (!!dname && op === dname);
         }
         return true; // admin sees all
       });

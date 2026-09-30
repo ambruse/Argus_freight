@@ -148,9 +148,12 @@ export default function Sidebar() {
         const { data } = await api.get("/shipments?exclude_direct=true");
         const all = data.data || [];
         const pending = all.filter((s: any) => {
-          if (s.status !== "Awaiting Approval") return false;
+          if ((s.status || "").trim() !== "Awaiting Approval") return false;
           if (user.role === "operator") {
-            return !s.operator || s.operator.toLowerCase() === user.username.toLowerCase();
+            const op = (s.operator || "").trim().toLowerCase();
+            const uname = (user.username || "").trim().toLowerCase();
+            const dname = ((user as any).name || "").trim().toLowerCase();
+            return !op || op === uname || (!!dname && op === dname);
           }
           return true;
         });

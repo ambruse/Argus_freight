@@ -66,12 +66,13 @@ const uploadFile = async (req, res, next) => {
       }
     }
 
-    const targetUser = (await findUsernameForRefNo(ref_no)) || 'admin';
-    if (opUsername && opUsername !== req.user.username.toLowerCase() && opUsername !== targetUser) {
+    const { getUserSuffix, ensureUserTables } = require('../config/dbHelper');
+    if (opUsername) opUsername = getUserSuffix(opUsername);
+
+    if (opUsername && opUsername !== getUserSuffix(req.user.username)) {
       const opFilesTable = opUsername === 'admin' ? 'files' : `files_${opUsername}`;
       const opShipmentsTable = opUsername === 'admin' ? 'shipments' : `shipments_${opUsername}`;
 
-      const { ensureUserTables } = require('../config/dbHelper');
       await ensureUserTables(opUsername);
 
       // Query operator shipments table to see if we have individual recipient shipments for this cust_req_no

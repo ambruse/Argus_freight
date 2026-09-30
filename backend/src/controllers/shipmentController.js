@@ -160,6 +160,37 @@ const getAllShipments = async (req, res, next) => {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
+    // Ensure any RFQs assigned to this operator in the main shipments table (e.g. from Sales)
+    // are synced into the operator's sandbox table
+    if (req.user && req.user.role === 'operator') {
+      try {
+        const { getUserSuffix, ensureUserTables } = require('../config/dbHelper');
+        const opSuffix = getUserSuffix(req.user.username);
+        if (opSuffix && opSuffix !== 'admin') {
+          await ensureUserTables(opSuffix);
+          await db.query(
+            `INSERT INTO shipments_${opSuffix} (
+              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+              container, mode, weight, pickup_address, delivery_address,
+              dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at
+            )
+            SELECT ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+                   container, mode, weight, pickup_address, delivery_address,
+                   dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at
+            FROM shipments
+            WHERE LOWER(TRIM(operator)) = LOWER(TRIM($1))
+               OR LOWER(TRIM(operator)) IN (
+                 SELECT LOWER(TRIM(name)) FROM users WHERE LOWER(username) = LOWER($1) AND name IS NOT NULL
+                 UNION
+                 SELECT LOWER(TRIM(email_address)) FROM users WHERE LOWER(username) = LOWER($1) AND email_address IS NOT NULL
+               )
+            ON CONFLICT (ref_no) DO NOTHING`,
+            [req.user.username]
+          ).catch(() => {});
+        }
+      } catch (_) {}
+    }
+
     const result = await query(req, 
       `SELECT s.ref_no, s.cust_req_no, s.refer_by, s.pol, s.pod, s.commodity, s.term, s.dimension,
               s.container, s.mode, s.weight, s.pickup_address, s.delivery_address,
@@ -637,7 +668,7 @@ const getReplies = async (req, res, next) => {
         [operatorName]
       );
       if (opEmailRes.rows.length > 0) {
-        cleanOperator = getUserSuffix(opEmailRes.rows[0]);
+        cleanOperator = getUserSuffix(opEmailRes.rows[0].username);
       } else if (operatorName) {
         cleanOperator = getUserSuffix(operatorName);
       }
@@ -1638,10 +1669,18 @@ const markAllRepliesAsRead = async (req, res, next) => {
       }
     } else if (role === 'operator') {
       // Mark operator replies as read
+      const { getUserSuffix } = require('../config/dbHelper');
+      const opSuffix = getUserSuffix(req.user.username);
       await db.query(
-        `UPDATE shipment_replies_${userSuffix} SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
+        `UPDATE shipment_replies_${opSuffix} SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
         [myEmail]
-      );
+      ).catch(() => {});
+      if (userSuffix && userSuffix !== opSuffix) {
+        await db.query(
+          `UPDATE shipment_replies_${userSuffix} SET is_read = true WHERE is_read = false AND LOWER(from_email) != LOWER($1)`,
+          [myEmail]
+        ).catch(() => {});
+      }
     }
 
     res.json({ success: true, message: 'All replies marked as read.' });

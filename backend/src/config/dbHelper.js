@@ -399,7 +399,7 @@ const query = async (req, sql, params) => {
 
   // Non-admin or targeted admin query
   const targetSuffix = (targetUser && targetUser !== 'admin') 
-    ? (targetUser.startsWith('user_') ? targetUser : targetUser.toLowerCase())
+    ? (targetUser.startsWith('user_') ? targetUser : getUserSuffix(targetUser))
     : getUserSuffixFromReq(req);
   await ensureUserTables(targetSuffix);
 

@@ -138,15 +138,34 @@ const generateRfq = async (req, res, next) => {
         shipmentData = result.rows[0];
 
         // ── Clone shipment to sales sandbox, operator sandbox & main shipments table ──────────
-        const cleanOp = targetOpUser ? getUserSuffix(targetOpUser) : getUserSuffix(operator || req.user.username);
+        const cleanOp = getUserSuffix(targetOpName);
+        const cleanOpId = targetOpUser?.id ? `u${targetOpUser.id}` : null;
         const cleanUser = getUserSuffixFromReq(req);
 
         await ensureUserTables(cleanOp);
+        if (cleanOpId) await ensureUserTables(cleanOpId);
         await ensureUserTables(cleanUser);
 
         if (cleanOp && cleanOp !== 'admin') {
           await db.query(
             `INSERT INTO shipments_${cleanOp} (
+              ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
+              container, mode, weight, pickup_address, delivery_address,
+              dear_who, email, status, note, customer_id, customer_name, customer_email, operator
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+             ON CONFLICT (ref_no) DO NOTHING`,
+            [
+              ref_no, finalCustReqNo, finalReferBy, pol, pod, commodity, term, dimension,
+              container, mode, weight || null, pickup_address, delivery_address,
+              dear_who, email, initialStatus, note, finalCustomerId, customer_name || null, customer_email || null,
+              targetOpName
+            ]
+          );
+        }
+
+        if (cleanOpId && cleanOpId !== cleanOp && cleanOpId !== 'admin') {
+          await db.query(
+            `INSERT INTO shipments_${cleanOpId} (
               ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator
