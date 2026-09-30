@@ -92,8 +92,8 @@ export default function NotificationListener() {
       });
     }
 
-    // Sales/Customer: RFQ approval result notification
-    if (user.role === "sales" || user.role === "customer") {
+    // Sales only: RFQ approval result notification (customers do not see approve/reject alerts)
+    if (user.role === "sales") {
       socket.on("rfq_approval_result", (data: { ref_no: string; outcome: string; message: string }) => {
         if (data.outcome === "accepted") {
           toast.custom(
