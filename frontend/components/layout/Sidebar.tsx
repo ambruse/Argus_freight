@@ -153,7 +153,9 @@ export default function Sidebar() {
             const op = (s.operator || "").trim().toLowerCase();
             const uname = (user.username || "").trim().toLowerCase();
             const dname = ((user as any).name || "").trim().toLowerCase();
-            return !op || op === uname || (!!dname && op === dname);
+            const uid = user.id ? `u${user.id}`.toLowerCase() : "";
+            const rawId = user.id ? String(user.id).toLowerCase() : "";
+            return !op || op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId);
           }
           return true;
         });

@@ -67,9 +67,19 @@ export default function NotificationListener() {
       });
     }
 
-    // Operator: new RFQ pending approval — show toast and navigate to approvals page
-    if (user.role === "operator") {
+    // Operator / Admin: new RFQ pending approval — show toast and navigate to approvals page
+    if (user.role === "operator" || user.role === "admin") {
       socket.on("rfq_pending_approval", (data: any) => {
+        if (user.role === "operator") {
+          const assignedOp = (data.assigned_operator || data.operator || "").trim().toLowerCase();
+          const uname = (user.username || "").trim().toLowerCase();
+          const dname = ((user as any).name || "").trim().toLowerCase();
+          const uid = user.id ? `u${user.id}`.toLowerCase() : "";
+          const rawId = user.id ? String(user.id).toLowerCase() : "";
+          if (assignedOp && assignedOp !== uname && assignedOp !== dname && assignedOp !== uid && assignedOp !== rawId) {
+            return; // Assigned to another operator
+          }
+        }
         if (seenApprovalRefs.current.includes(data.ref_no)) return;
         seenApprovalRefs.current.push(data.ref_no);
         playNotificationSound();
@@ -354,15 +364,23 @@ export default function NotificationListener() {
 
           const newAssignments = shipments.filter((s: any) => !savedSet.has(s.ref_no));
 
-          // Separate 'Awaiting Approval' items for the approval modal (strictly for assigned operators, never admin)
-          const awaitingApproval = user.role === "operator"
-            ? newAssignments.filter(
-                (s: any) => s.status === "Awaiting Approval" &&
-                  (!s.operator || s.operator.toLowerCase() === user.username.toLowerCase())
-              )
+          // Separate 'Awaiting Approval' items for the approval modal (for assigned operators, or admin)
+          const awaitingApproval = (user.role === "operator" || user.role === "admin")
+            ? newAssignments.filter((s: any) => {
+                if ((s.status || "").trim() !== "Awaiting Approval") return false;
+                if (user.role === "operator") {
+                  const op = (s.operator || "").trim().toLowerCase();
+                  const uname = (user.username || "").trim().toLowerCase();
+                  const dname = ((user as any).name || "").trim().toLowerCase();
+                  const uid = user.id ? `u${user.id}`.toLowerCase() : "";
+                  const rawId = user.id ? String(user.id).toLowerCase() : "";
+                  return !op || op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId);
+                }
+                return true;
+              })
             : [];
           const regularAssignments = newAssignments.filter(
-            (s: any) => s.status !== "Awaiting Approval"
+            (s: any) => (s.status || "").trim() !== "Awaiting Approval"
           );
 
           if (awaitingApproval.length > 0) {
@@ -372,6 +390,43 @@ export default function NotificationListener() {
                 seenApprovalRefs.current.push(s.ref_no);
                 // Trigger the Approvals page to refresh
                 window.dispatchEvent(new CustomEvent("rfq-list-update"));
+
+                // Show toast alert for pending approval
+                toast.custom(
+                  (t) => (
+                    <div
+                      className={`${t.visible ? "animate-enter" : "animate-leave"} max-w-md w-full bg-[#1E1E1E] border border-orange-500/30 shadow-card rounded-2xl pointer-events-auto flex p-4 justify-between gap-3`}
+                      style={{ boxShadow: "0 8px 32px rgba(249,115,22,0.15)" }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-400" />
+                          </span>
+                          New RFQ Awaiting Approval
+                        </p>
+                        <p className="text-sm font-semibold text-[#F0F0F0] truncate">REF: {s.ref_no}</p>
+                        <p className="text-xs text-muted truncate mt-0.5">
+                          {s.pol || "—"} ➔ {s.pod || "—"}{s.customer_name ? ` · ${s.customer_name}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 justify-center flex-shrink-0">
+                        <button
+                          onClick={() => { toast.dismiss(t.id); router.push("/operator/approvals"); }}
+                          className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap"
+                          style={{ background: "#F97316", borderColor: "#F97316", color: "#000" }}
+                        >
+                          Review
+                        </button>
+                        <button onClick={() => toast.dismiss(t.id)} className="btn-secondary text-[10px] px-2 py-1">
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  ),
+                  { duration: 15000 }
+                );
               }
             });
           }

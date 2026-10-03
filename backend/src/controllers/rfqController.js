@@ -81,10 +81,19 @@ const generateRfq = async (req, res, next) => {
     }
     // ── Resolve Operator Username (if sent by sales) ──────────
     let targetOpUser = null;
-    if (req.user.role === 'sales' && operator) {
+    const isSalesUser = (req.user?.role || '').toLowerCase() === 'sales';
+    if (operator) {
+      const cleanOpParam = String(operator).trim().replace(/^u(?=\d+$)/i, '');
       const opCheck = await db.query(
-        "SELECT id, username FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1)) AND (is_deleted IS NOT TRUE) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
-        [operator]
+        `SELECT id, username, name, email_address FROM users 
+         WHERE (
+           CAST(id AS CHAR) = $1 
+           OR LOWER(TRIM(username)) = LOWER(TRIM($2)) 
+           OR LOWER(TRIM(email_address)) = LOWER(TRIM($2)) 
+           OR LOWER(TRIM(name)) = LOWER(TRIM($2))
+         ) AND (is_deleted IS NOT TRUE) 
+         ORDER BY (LOWER(role) = 'operator') DESC, id ASC LIMIT 1`,
+        [cleanOpParam, String(operator).trim()]
       );
       if (opCheck.rows.length > 0) {
         targetOpUser = opCheck.rows[0];
@@ -108,13 +117,23 @@ const generateRfq = async (req, res, next) => {
 
       try {
         const { getUserSuffix, getUserSuffixFromReq, ensureUserTables } = require('../config/dbHelper');
-        const targetOpName = targetOpUser ? targetOpUser.username : (operator || req.user.username);
+        let targetOpName = null;
+        if (targetOpUser) {
+          targetOpName = targetOpUser.username;
+        } else if (operator && String(operator).trim()) {
+          targetOpName = String(operator).trim();
+        } else if (!isSalesUser) {
+          targetOpName = req.user.username;
+        } else {
+          targetOpName = null;
+        }
+
         const finalReferBy = (refer_by && String(refer_by).trim() !== '')
           ? String(refer_by).trim()
           : (req.user ? (req.user.name || req.user.username) : null);
 
         // Operators and Admins do not require external operator approval for RFQs they create
-        const isOperatorOrAdmin = req.user && ['operator', 'admin'].includes(req.user.role);
+        const isOperatorOrAdmin = req.user && ['operator', 'admin'].includes((req.user.role || '').toLowerCase());
         const initialStatus = isOperatorOrAdmin ? 'Pending' : 'Awaiting Approval';
 
         const result = await query(req,
@@ -138,15 +157,12 @@ const generateRfq = async (req, res, next) => {
         shipmentData = result.rows[0];
 
         // ── Clone shipment to sales sandbox, operator sandbox & main shipments table ──────────
-        const cleanOp = getUserSuffix(targetOpName);
+        const cleanOp = targetOpName ? getUserSuffix(targetOpName) : null;
         const cleanOpId = targetOpUser?.id ? `u${targetOpUser.id}` : null;
         const cleanUser = getUserSuffixFromReq(req);
 
-        await ensureUserTables(cleanOp);
-        if (cleanOpId) await ensureUserTables(cleanOpId);
-        await ensureUserTables(cleanUser);
-
         if (cleanOp && cleanOp !== 'admin') {
+          await ensureUserTables(cleanOp);
           await db.query(
             `INSERT INTO shipments_${cleanOp} (
               ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -164,6 +180,7 @@ const generateRfq = async (req, res, next) => {
         }
 
         if (cleanOpId && cleanOpId !== cleanOp && cleanOpId !== 'admin') {
+          await ensureUserTables(cleanOpId);
           await db.query(
             `INSERT INTO shipments_${cleanOpId} (
               ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -180,7 +197,8 @@ const generateRfq = async (req, res, next) => {
           );
         }
 
-        if (cleanUser && cleanUser !== cleanOp && cleanUser !== 'admin') {
+        if (cleanUser && cleanUser !== cleanOp && cleanUser !== cleanOpId && cleanUser !== 'admin') {
+          await ensureUserTables(cleanUser);
           await db.query(
             `INSERT INTO shipments_${cleanUser} (
               ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
@@ -216,7 +234,8 @@ const generateRfq = async (req, res, next) => {
         // ── Notify assigned operator via Socket.IO only if awaiting approval ─────────────────────
         if (initialStatus === 'Awaiting Approval') {
           try {
-            const opSocketRoom = `user_${(targetOpName || '').toLowerCase()}`;
+            const opSocketRoom = targetOpName ? `user_${targetOpName.toLowerCase()}` : null;
+            const opIdSocketRoom = cleanOpId ? `user_${cleanOpId.toLowerCase()}` : null;
             const payload = {
               type: 'operator',
               ref_no: ref_no,
@@ -231,13 +250,20 @@ const generateRfq = async (req, res, next) => {
               refer_by: finalReferBy || req.user.username,
               submitter_username: req.user.username,
               submitter_role: req.user.role,
+              assigned_operator: targetOpName || null,
+              operator: targetOpName || null,
             };
 
             if (global.io) {
               if (opSocketRoom && opSocketRoom !== 'user_') {
                 global.io.to(opSocketRoom).emit('rfq_pending_approval', payload);
               }
-              console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom}`);
+              if (opIdSocketRoom && opIdSocketRoom !== opSocketRoom) {
+                global.io.to(opIdSocketRoom).emit('rfq_pending_approval', payload);
+              }
+              global.io.to('role_operator').emit('rfq_pending_approval', payload);
+              global.io.to('role_admin').emit('rfq_pending_approval', payload);
+              console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom}, ${opIdSocketRoom}, role_operator, role_admin`);
             }
           } catch (socketErr) {
             console.error('[RFQ Approval] Failed to emit socket event:', socketErr.message);
@@ -377,9 +403,10 @@ const sendRfqEmail = async (req, res, next) => {
     // a. Try assigned operator DB credentials
     if (shipment.operator) {
       try {
+        const cleanOpParam = String(shipment.operator).trim().replace(/^u(?=\d+$)/i, '');
         const opUserRes = await db.query(
-          "SELECT id, email_address, email_password FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email_address) = LOWER($1) OR LOWER(name) = LOWER($1)) AND (is_deleted IS NOT TRUE) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1",
-          [shipment.operator]
+          "SELECT id, email_address, email_password FROM users WHERE (CAST(id AS CHAR) = $1 OR CONCAT('u', CAST(id AS CHAR)) = $2 OR LOWER(TRIM(username)) = LOWER(TRIM($2)) OR LOWER(TRIM(email_address)) = LOWER(TRIM($2)) OR LOWER(TRIM(name)) = LOWER(TRIM($2))) AND (is_deleted IS NOT TRUE) ORDER BY (LOWER(role) = 'operator') DESC, id ASC LIMIT 1",
+          [cleanOpParam, String(shipment.operator).trim()]
         );
         if (opUserRes.rows.length > 0 && opUserRes.rows[0].email_address && opUserRes.rows[0].email_password) {
           smtpUser = opUserRes.rows[0].email_address;
@@ -728,17 +755,17 @@ const approveRfq = async (req, res, next) => {
             message: `Your RFQ ${actualCustReqNo || actualRefNo} (${subRefsToSend.length} agent${subRefsToSend.length > 1 ? 's' : ''}) was approved and sent.`
           });
         }
-        // Dismiss the approval modal ONLY on the operator who approved this RFQ.
-        // Do NOT use global.io.emit() — that would broadcast to ALL connected clients
-        // and dismiss approval modals for other operators with different pending RFQs.
         const approverRoom = `user_${req.user.username.toLowerCase()}`;
-        global.io.to(approverRoom).emit('rfq_approval_processed', {
+        const processPayload = {
           ref_no: actualRefNo,
           cust_req_no: actualCustReqNo,
           all_ref_nos: subRefsToSend,
           outcome: 'accepted',
           processed_by: req.user.username
-        });
+        };
+        global.io.to(approverRoom).emit('rfq_approval_processed', processPayload);
+        global.io.to('role_operator').emit('rfq_approval_processed', processPayload);
+        global.io.to('role_admin').emit('rfq_approval_processed', processPayload);
       }
     } catch (e) {}
 
@@ -846,17 +873,17 @@ const rejectRfq = async (req, res, next) => {
             message: `Your RFQ ${actualCustReqNo || actualRefNo} was rejected by the operator.`
           });
         }
-        // Dismiss the approval modal ONLY on the operator who rejected this RFQ.
-        // Do NOT use global.io.emit() — that would broadcast to ALL connected clients
-        // and dismiss approval modals for other operators with different pending RFQs.
         const rejecterRoom = `user_${req.user.username.toLowerCase()}`;
-        global.io.to(rejecterRoom).emit('rfq_approval_processed', {
+        const processPayload = {
           ref_no: actualRefNo,
           cust_req_no: actualCustReqNo,
           all_ref_nos: subRefsToReject,
           outcome: 'rejected',
           processed_by: req.user.username
-        });
+        };
+        global.io.to(rejecterRoom).emit('rfq_approval_processed', processPayload);
+        global.io.to('role_operator').emit('rfq_approval_processed', processPayload);
+        global.io.to('role_admin').emit('rfq_approval_processed', processPayload);
       }
     } catch (e) {}
 

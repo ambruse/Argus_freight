@@ -162,14 +162,18 @@ const getAllShipments = async (req, res, next) => {
 
     // Ensure any RFQs assigned to this operator in the main shipments table (e.g. from Sales)
     // are synced into the operator's sandbox table
-    if (req.user && req.user.role === 'operator') {
+    if (req.user && (req.user.role || '').toLowerCase() === 'operator') {
       try {
         const { getUserSuffix, ensureUserTables } = require('../config/dbHelper');
         const opSuffix = getUserSuffix(req.user.username);
-        if (opSuffix && opSuffix !== 'admin') {
-          await ensureUserTables(opSuffix);
+        const opSuffixId = req.user.id ? `u${req.user.id}` : null;
+        const targetsToSync = [opSuffix, opSuffixId].filter(s => s && s !== 'admin');
+        const uniqueTargets = [...new Set(targetsToSync)];
+
+        for (const targetSfx of uniqueTargets) {
+          await ensureUserTables(targetSfx);
           await db.query(
-            `INSERT INTO shipments_${opSuffix} (
+            `INSERT INTO shipments_${targetSfx} (
               ref_no, cust_req_no, refer_by, pol, pod, commodity, term, dimension,
               container, mode, weight, pickup_address, delivery_address,
               dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at
@@ -178,14 +182,22 @@ const getAllShipments = async (req, res, next) => {
                    container, mode, weight, pickup_address, delivery_address,
                    dear_who, email, status, note, customer_id, customer_name, customer_email, operator, created_at
             FROM shipments
-            WHERE LOWER(TRIM(operator)) = LOWER(TRIM($1))
-               OR LOWER(TRIM(operator)) IN (
-                 SELECT LOWER(TRIM(name)) FROM users WHERE LOWER(username) = LOWER($1) AND name IS NOT NULL
-                 UNION
-                 SELECT LOWER(TRIM(email_address)) FROM users WHERE LOWER(username) = LOWER($1) AND email_address IS NOT NULL
-               )
+            WHERE (
+              LOWER(TRIM(COALESCE(operator, ''))) IN (
+                LOWER(TRIM($1)),
+                LOWER(TRIM($2)),
+                LOWER(TRIM($3)),
+                LOWER(TRIM($4))
+              )
+              OR LOWER(TRIM(COALESCE(operator, ''))) IN (
+                SELECT LOWER(TRIM(name)) FROM users WHERE id = $5 OR LOWER(username) = LOWER($1)
+                UNION
+                SELECT LOWER(TRIM(email_address)) FROM users WHERE id = $5 OR LOWER(username) = LOWER($1)
+              )
+              OR (TRIM(status) = 'Awaiting Approval' AND (operator IS NULL OR TRIM(operator) = '' OR LOWER(TRIM(operator)) = 'unassigned'))
+            )
             ON CONFLICT (ref_no) DO NOTHING`,
-            [req.user.username]
+            [req.user.username, req.user.name || '', req.user.id ? `u${req.user.id}` : '', req.user.id ? String(req.user.id) : '', req.user.id || 0]
           ).catch(() => {});
         }
       } catch (_) {}
@@ -198,7 +210,13 @@ const getAllShipments = async (req, res, next) => {
               s.created_at, s.last_follow_up, s.do_number, s.box_no, s.so_number, s.bl_number,
               s.track_status, s.carrier, s.etd, s.eta, s.cost, s.profit,
               COALESCE(
-                (SELECT username FROM users WHERE LOWER(email_address) = LOWER(s.operator) OR LOWER(username) = LOWER(s.operator) ORDER BY (role = 'operator') DESC, id ASC LIMIT 1),
+                (SELECT username FROM users 
+                 WHERE LOWER(TRIM(username)) = LOWER(TRIM(s.operator)) 
+                    OR LOWER(TRIM(email_address)) = LOWER(TRIM(s.operator)) 
+                    OR LOWER(TRIM(name)) = LOWER(TRIM(s.operator))
+                    OR CAST(id AS CHAR) = LOWER(TRIM(s.operator))
+                    OR CONCAT('u', CAST(id AS CHAR)) = LOWER(TRIM(s.operator))
+                 ORDER BY (LOWER(role) = 'operator') DESC, id ASC LIMIT 1),
                 s.operator
               ) AS operator,
               (SELECT COUNT(*) FROM shipment_replies r WHERE r.ref_no = s.ref_no) AS replies_count,
@@ -209,6 +227,57 @@ const getAllShipments = async (req, res, next) => {
     );
 
     let rows = result.rows;
+
+    // Directly fetch any Awaiting Approval shipments from main table assigned to this operator (or unassigned)
+    if (req.user && (req.user.role || '').toLowerCase() === 'operator') {
+      try {
+        const pendingMain = await db.query(
+          `SELECT s.ref_no, s.cust_req_no, s.refer_by, s.pol, s.pod, s.commodity, s.term, s.dimension,
+                  s.container, s.mode, s.weight, s.pickup_address, s.delivery_address,
+                  s.dear_who, s.email, s.status, s.note, s.customer_id, s.customer_name, s.customer_email,
+                  s.created_at, s.last_follow_up, s.do_number, s.box_no, s.so_number, s.bl_number,
+                  s.track_status, s.carrier, s.etd, s.eta, s.cost, s.profit,
+                  COALESCE(
+                    (SELECT username FROM users 
+                     WHERE LOWER(TRIM(username)) = LOWER(TRIM(s.operator)) 
+                        OR LOWER(TRIM(email_address)) = LOWER(TRIM(s.operator)) 
+                        OR LOWER(TRIM(name)) = LOWER(TRIM(s.operator))
+                        OR CAST(id AS CHAR) = LOWER(TRIM(s.operator))
+                        OR CONCAT('u', CAST(id AS CHAR)) = LOWER(TRIM(s.operator))
+                     ORDER BY (LOWER(role) = 'operator') DESC, id ASC LIMIT 1),
+                    s.operator
+                  ) AS operator,
+                  0 AS replies_count,
+                  0 AS unread_replies_count,
+                  0 AS unread_chat_count
+           FROM shipments s 
+           WHERE TRIM(s.status) = 'Awaiting Approval' 
+             AND (s.note IS NULL OR s.note != 'Direct Booking')
+             AND (
+               s.operator IS NULL 
+               OR TRIM(s.operator) = '' 
+               OR LOWER(TRIM(s.operator)) = 'unassigned'
+               OR LOWER(TRIM(s.operator)) = LOWER(TRIM($1))
+               OR LOWER(TRIM(s.operator)) = LOWER(TRIM($2))
+               OR LOWER(TRIM(s.operator)) = LOWER(TRIM($3))
+               OR LOWER(TRIM(s.operator)) = LOWER(TRIM($4))
+               OR LOWER(TRIM(s.operator)) IN (
+                 SELECT LOWER(TRIM(name)) FROM users WHERE id = $5 OR LOWER(username) = LOWER($1)
+                 UNION
+                 SELECT LOWER(TRIM(email_address)) FROM users WHERE id = $5 OR LOWER(username) = LOWER($1)
+               )
+             )
+           ORDER BY s.created_at DESC`,
+          [req.user.username, req.user.name || '', req.user.id ? `u${req.user.id}` : '', req.user.id ? String(req.user.id) : '', req.user.id || 0]
+        );
+        if (pendingMain.rows && pendingMain.rows.length > 0) {
+          rows = [...rows, ...pendingMain.rows];
+        }
+      } catch (err) {
+        console.error('[getAllShipments] Error fetching main pending RFQs:', err);
+      }
+    }
+
     // De-duplicate rows by ref_no (case-insensitive) prioritizing operator sandboxes over admin
     const uniqueMap = new Map();
     rows.forEach(row => {

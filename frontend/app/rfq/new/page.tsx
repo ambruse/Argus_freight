@@ -58,7 +58,7 @@ type FormState = {
   no_dimension?: boolean;
 };
 
-type CcRecipient = { id: number; name: string; email: string; multi_select: boolean; country?: string };
+type CcRecipient = { id: number; name: string; email: string; multi_select: boolean; country?: string; displayName?: string };
 type CompulsoryEmail = { id: number; email: string; dear_who: string; mode: string; country?: string; is_active: boolean };
 
 const INITIAL_FORM: FormState = {
@@ -173,7 +173,7 @@ export default function NewRFQPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [ccOptions, setCcOptions] = useState<CcRecipient[]>([]);
-  const [operators, setOperators] = useState<{ username: string; email_address: string | null; country?: string }[]>([]);
+  const [operators, setOperators] = useState<{ id?: number; username: string; name?: string; email_address: string | null; country?: string }[]>([]);
   const [selectedOperator, setSelectedOperator] = useState<CcRecipient | null>(null);
   const [compulsoryEmails, setCompulsoryEmails] = useState<CompulsoryEmail[]>([]);
 
@@ -316,9 +316,10 @@ export default function NewRFQPage() {
 
   const isSales = user?.role === "sales";
 
-  const normalOperators = operators.map((op, idx) => ({
-    id: idx,
+  const normalOperators: CcRecipient[] = operators.map((op, idx) => ({
+    id: op.id !== undefined ? op.id : idx,
     name: op.username,
+    displayName: op.name || op.username,
     email: op.email_address || "",
     country: op.country || "Qatar",
     multi_select: false
@@ -1239,7 +1240,7 @@ export default function NewRFQPage() {
                                   <div className="flex items-center justify-between w-full gap-2">
                                     <div className="flex items-center gap-2">
                                       <span className={["w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200", selected ? "border-blue bg-blue/20" : "border-white/20"].join(" ")}>{selected && <span className="w-1.5 h-1.5 rounded-full bg-blue block" />}</span>
-                                      <span className={selected ? "text-blue font-bold" : "text-primary font-semibold"}>{recipient.name}</span>
+                                      <span className={selected ? "text-blue font-bold" : "text-primary font-semibold"}>{recipient.displayName || recipient.name}</span>
                                     </div>
                                     {recipient.country && (
                                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gold font-medium flex items-center gap-1">
