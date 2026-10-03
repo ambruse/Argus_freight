@@ -194,7 +194,6 @@ const getAllShipments = async (req, res, next) => {
                 UNION
                 SELECT LOWER(TRIM(email_address)) FROM users WHERE id = $5 OR LOWER(username) = LOWER($1)
               )
-              OR (TRIM(status) = 'Awaiting Approval' AND (operator IS NULL OR TRIM(operator) = '' OR LOWER(TRIM(operator)) = 'unassigned'))
             )
             ON CONFLICT (ref_no) DO NOTHING`,
             [req.user.username, req.user.name || '', req.user.id ? `u${req.user.id}` : '', req.user.id ? String(req.user.id) : '', req.user.id || 0]
@@ -254,10 +253,7 @@ const getAllShipments = async (req, res, next) => {
            WHERE TRIM(s.status) = 'Awaiting Approval' 
              AND (s.note IS NULL OR s.note != 'Direct Booking')
              AND (
-               s.operator IS NULL 
-               OR TRIM(s.operator) = '' 
-               OR LOWER(TRIM(s.operator)) = 'unassigned'
-               OR LOWER(TRIM(s.operator)) = LOWER(TRIM($1))
+               LOWER(TRIM(s.operator)) = LOWER(TRIM($1))
                OR LOWER(TRIM(s.operator)) = LOWER(TRIM($2))
                OR LOWER(TRIM(s.operator)) = LOWER(TRIM($3))
                OR LOWER(TRIM(s.operator)) = LOWER(TRIM($4))

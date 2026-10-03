@@ -138,9 +138,12 @@ export default function Sidebar() {
     };
   }, []);
 
-  /* ── Approval pending badge (operator / admin only) ─────── */
+  /* ── Approval pending badge (operator only) ─────── */
   useEffect(() => {
-    if (user?.role !== "operator" && user?.role !== "admin") return;
+    if (user?.role !== "operator") {
+      setApprovalPending(0);
+      return;
+    }
     const fetchApprovalCount = async () => {
       const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
       if (!token) return;
@@ -155,9 +158,9 @@ export default function Sidebar() {
             const dname = ((user as any).name || "").trim().toLowerCase();
             const uid = user.id ? `u${user.id}`.toLowerCase() : "";
             const rawId = user.id ? String(user.id).toLowerCase() : "";
-            return !op || op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId);
+            return !!op && (op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId));
           }
-          return true;
+          return false;
         });
         const uniqueGroups = new Set(
           pending.map((s: any) => {
@@ -188,7 +191,7 @@ export default function Sidebar() {
     if (user?.role === "customer")      return ["/dashboard", "/customer/rfq/new", "/customer/rfq", "/settings"].includes(item.href);
     if (user?.role === "sales")         return ["/rfq/new", "/rfq", "/confirmed", "/quotation", "/summary", "/sales/call-enquiries", "/settings", "/customers", "/calculator"].includes(item.href);
     if (user?.role === "calling_agent") return ["/dashboard", "/calling-agent/new", "/calling-agent/enquiries", "/settings"].includes(item.href);
-    if (user?.role === "admin")         return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/customer/");
+    if (user?.role === "admin")         return item.href !== "/operator/approvals" && !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/customer/");
     if (user?.role === "operator")      return !item.href.startsWith("/calling-agent") && !item.href.startsWith("/sales/call-enquiries") && !item.href.startsWith("/admin") && !item.href.startsWith("/customer/");
     return true;
   });

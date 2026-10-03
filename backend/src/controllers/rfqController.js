@@ -232,9 +232,9 @@ const generateRfq = async (req, res, next) => {
         );
 
         // ── Notify assigned operator via Socket.IO only if awaiting approval ─────────────────────
-        if (initialStatus === 'Awaiting Approval') {
+        if (initialStatus === 'Awaiting Approval' && targetOpName) {
           try {
-            const opSocketRoom = targetOpName ? `user_${targetOpName.toLowerCase()}` : null;
+            const opSocketRoom = `user_${targetOpName.toLowerCase()}`;
             const opIdSocketRoom = cleanOpId ? `user_${cleanOpId.toLowerCase()}` : null;
             const payload = {
               type: 'operator',
@@ -250,8 +250,8 @@ const generateRfq = async (req, res, next) => {
               refer_by: finalReferBy || req.user.username,
               submitter_username: req.user.username,
               submitter_role: req.user.role,
-              assigned_operator: targetOpName || null,
-              operator: targetOpName || null,
+              assigned_operator: targetOpName,
+              operator: targetOpName,
             };
 
             if (global.io) {
@@ -261,9 +261,7 @@ const generateRfq = async (req, res, next) => {
               if (opIdSocketRoom && opIdSocketRoom !== opSocketRoom) {
                 global.io.to(opIdSocketRoom).emit('rfq_pending_approval', payload);
               }
-              global.io.to('role_operator').emit('rfq_pending_approval', payload);
-              global.io.to('role_admin').emit('rfq_pending_approval', payload);
-              console.log(`[RFQ Approval] Socket emitted rfq_pending_approval to ${opSocketRoom}, ${opIdSocketRoom}, role_operator, role_admin`);
+              console.log(`[RFQ Approval] Socket emitted rfq_pending_approval strictly to selected operator: ${opSocketRoom}`);
             }
           } catch (socketErr) {
             console.error('[RFQ Approval] Failed to emit socket event:', socketErr.message);
@@ -656,6 +654,20 @@ const approveRfq = async (req, res, next) => {
       });
     }
 
+    // Verify operator assignment: only the selected operator can approve
+    if (req.user.role === 'operator' && shipment.operator) {
+      const op = String(shipment.operator).trim().toLowerCase();
+      const myUsername = (req.user.username || '').trim().toLowerCase();
+      const myName = (req.user.name || '').trim().toLowerCase();
+      const myId = req.user.id ? String(req.user.id).trim().toLowerCase() : '';
+      const myUId = req.user.id ? `u${req.user.id}`.toLowerCase() : '';
+      const myEmail = (req.user.email_address || '').trim().toLowerCase();
+      const isAssigned = (op === myUsername || (myName && op === myName) || (myId && op === myId) || (myUId && op === myUId) || (myEmail && op === myEmail));
+      if (!isAssigned) {
+        return res.status(403).json({ success: false, message: 'Only the selected operator can approve this RFQ.' });
+      }
+    }
+
     // 2. Update status to 'Pending' across ALL tables for all sub-RFQs in this batch
     const actualRefNo = shipment.ref_no || ref_no;
     const actualCustReqNo = shipment.cust_req_no || actualRefNo;
@@ -764,8 +776,6 @@ const approveRfq = async (req, res, next) => {
           processed_by: req.user.username
         };
         global.io.to(approverRoom).emit('rfq_approval_processed', processPayload);
-        global.io.to('role_operator').emit('rfq_approval_processed', processPayload);
-        global.io.to('role_admin').emit('rfq_approval_processed', processPayload);
       }
     } catch (e) {}
 
@@ -821,6 +831,20 @@ const rejectRfq = async (req, res, next) => {
         success: false,
         message: `This RFQ has already been processed (current status: ${shipment.status}).`
       });
+    }
+
+    // Verify operator assignment: only the selected operator can reject
+    if (req.user.role === 'operator' && shipment.operator) {
+      const op = String(shipment.operator).trim().toLowerCase();
+      const myUsername = (req.user.username || '').trim().toLowerCase();
+      const myName = (req.user.name || '').trim().toLowerCase();
+      const myId = req.user.id ? String(req.user.id).trim().toLowerCase() : '';
+      const myUId = req.user.id ? `u${req.user.id}`.toLowerCase() : '';
+      const myEmail = (req.user.email_address || '').trim().toLowerCase();
+      const isAssigned = (op === myUsername || (myName && op === myName) || (myId && op === myId) || (myUId && op === myUId) || (myEmail && op === myEmail));
+      if (!isAssigned) {
+        return res.status(403).json({ success: false, message: 'Only the selected operator can reject this RFQ.' });
+      }
     }
 
     // 2. Update status to 'Cancelled' across ALL tables
@@ -882,8 +906,6 @@ const rejectRfq = async (req, res, next) => {
           processed_by: req.user.username
         };
         global.io.to(rejecterRoom).emit('rfq_approval_processed', processPayload);
-        global.io.to('role_operator').emit('rfq_approval_processed', processPayload);
-        global.io.to('role_admin').emit('rfq_approval_processed', processPayload);
       }
     } catch (e) {}
 

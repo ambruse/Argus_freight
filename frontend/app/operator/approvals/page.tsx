@@ -100,9 +100,9 @@ export default function OperatorApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [processingKey, setProcessingKey] = useState<Record<string, "accept" | "reject" | null>>({});
 
-  // Redirect non-operators away
+  // Redirect non-operators away (admin never handles operator approvals)
   useEffect(() => {
-    if (user && user.role !== "operator" && user.role !== "admin") {
+    if (user && user.role !== "operator") {
       router.replace("/dashboard");
     }
   }, [user, router]);
@@ -113,7 +113,7 @@ export default function OperatorApprovalsPage() {
       const { data } = await api.get("/shipments?exclude_direct=true");
       const all: PendingRFQ[] = data.data || [];
 
-      // Only show "Awaiting Approval" items assigned to this operator (or all for admin)
+      // Only show "Awaiting Approval" items strictly assigned to this operator
       const pending = all.filter((s) => {
         if ((s.status || "").trim() !== "Awaiting Approval") return false;
         if (user?.role === "operator") {
@@ -122,9 +122,9 @@ export default function OperatorApprovalsPage() {
           const dname = ((user as any).name || "").trim().toLowerCase();
           const uid = user.id ? `u${user.id}`.toLowerCase() : "";
           const rawId = user.id ? String(user.id).toLowerCase() : "";
-          return !op || op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId);
+          return !!op && (op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId));
         }
-        return true; // admin sees all
+        return false;
       });
 
       setGroups(buildGroups(pending));

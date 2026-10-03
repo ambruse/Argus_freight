@@ -67,18 +67,16 @@ export default function NotificationListener() {
       });
     }
 
-    // Operator / Admin: new RFQ pending approval — show toast and navigate to approvals page
-    if (user.role === "operator" || user.role === "admin") {
+    // Operator only: new RFQ pending approval — show toast strictly to the assigned operator
+    if (user.role === "operator") {
       socket.on("rfq_pending_approval", (data: any) => {
-        if (user.role === "operator") {
-          const assignedOp = (data.assigned_operator || data.operator || "").trim().toLowerCase();
-          const uname = (user.username || "").trim().toLowerCase();
-          const dname = ((user as any).name || "").trim().toLowerCase();
-          const uid = user.id ? `u${user.id}`.toLowerCase() : "";
-          const rawId = user.id ? String(user.id).toLowerCase() : "";
-          if (assignedOp && assignedOp !== uname && assignedOp !== dname && assignedOp !== uid && assignedOp !== rawId) {
-            return; // Assigned to another operator
-          }
+        const assignedOp = (data.assigned_operator || data.operator || "").trim().toLowerCase();
+        const uname = (user.username || "").trim().toLowerCase();
+        const dname = ((user as any).name || "").trim().toLowerCase();
+        const uid = user.id ? `u${user.id}`.toLowerCase() : "";
+        const rawId = user.id ? String(user.id).toLowerCase() : "";
+        if (!assignedOp || (assignedOp !== uname && assignedOp !== dname && assignedOp !== uid && assignedOp !== rawId)) {
+          return; // Assigned to another operator or not assigned
         }
         if (seenApprovalRefs.current.includes(data.ref_no)) return;
         seenApprovalRefs.current.push(data.ref_no);
@@ -364,19 +362,16 @@ export default function NotificationListener() {
 
           const newAssignments = shipments.filter((s: any) => !savedSet.has(s.ref_no));
 
-          // Separate 'Awaiting Approval' items for the approval modal (for assigned operators, or admin)
-          const awaitingApproval = (user.role === "operator" || user.role === "admin")
+          // Separate 'Awaiting Approval' items for the approval modal (strictly for the selected operator only, never admin)
+          const awaitingApproval = user.role === "operator"
             ? newAssignments.filter((s: any) => {
                 if ((s.status || "").trim() !== "Awaiting Approval") return false;
-                if (user.role === "operator") {
-                  const op = (s.operator || "").trim().toLowerCase();
-                  const uname = (user.username || "").trim().toLowerCase();
-                  const dname = ((user as any).name || "").trim().toLowerCase();
-                  const uid = user.id ? `u${user.id}`.toLowerCase() : "";
-                  const rawId = user.id ? String(user.id).toLowerCase() : "";
-                  return !op || op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId);
-                }
-                return true;
+                const op = (s.operator || "").trim().toLowerCase();
+                const uname = (user.username || "").trim().toLowerCase();
+                const dname = ((user as any).name || "").trim().toLowerCase();
+                const uid = user.id ? `u${user.id}`.toLowerCase() : "";
+                const rawId = user.id ? String(user.id).toLowerCase() : "";
+                return !!op && (op === uname || (!!dname && op === dname) || (!!uid && op === uid) || (!!rawId && op === rawId));
               })
             : [];
           const regularAssignments = newAssignments.filter(
