@@ -240,7 +240,7 @@ export default function Services() {
                   
                   {service.id === 'sea' && (
                     <section id="sea-freight-service" className="seo-optimized-block">
-                      <h1>International Sea Freight Forwarding Services</h1>
+                      <h2 className="service-detail-heading">International Sea Freight Forwarding Services</h2>
                       <p className="lead-text">
                         Argus Shipping delivers competitive Full Container Load (FCL) and Less than Container Load (LCL) ocean freight solutions globally. We specialize in high-volume cargo orchestration across critical international shipping lanes.
                       </p>
@@ -283,7 +283,7 @@ export default function Services() {
 
                   {service.id === 'air' && (
                   <section id="air-freight-service" className="seo-optimized-block">
-                    <h1>International Air Freight Forwarding Services</h1>
+                      <h2 className="service-detail-heading">International Air Freight Forwarding Services</h2>
                     <p className="lead-text">
                       Argus Shipping delivers high-speed charter solutions and consolidated air cargo services globally. We specialize in time-critical freight orchestration across primary international aviation corridors.
                     </p>
@@ -326,7 +326,7 @@ export default function Services() {
 
                 {service.id === 'road' && (
                   <section id="land-freight-service" className="seo-optimized-block">
-                    <h1>Cross-Border Land Freight & Road Transport Services</h1>
+                      <h2 className="service-detail-heading">Cross-Border Land Freight & Road Transport Services</h2>
                     <p className="lead-text">
                       Argus Shipping delivers reliable full-truckload (FTL) and less-than-truckload (LTL) overland transport solutions across the region. We specialize in seamless cross-border freight orchestration and regional distribution networks.
                     </p>
@@ -369,7 +369,7 @@ export default function Services() {
 
                   {service.id === 'door-to-door' && (
                     <section id="console-shipments-service" className="seo-optimized-block">
-                      <h1>Door-to-Door Console Import & Export (Sea & Air)</h1>
+                      <h2 className="service-detail-heading">Door-to-Door Console Import & Export (Sea & Air)</h2>
                       <p>
                         Eliminate the complexities of customs border friction and port logistics. Argus Shipping provides a client-friendly <strong>per-CARTON / per-CBM</strong> door-to-door consolidation model tailored specifically for small-to-medium enterprises handling smaller freight volumes.
                       </p>

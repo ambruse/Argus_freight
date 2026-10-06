@@ -3,9 +3,9 @@ import { Package, ShieldCheck, Clock, Globe } from 'lucide-react';
 
 export default function Tracking() {
   return (
-    <div style={{ paddingTop: '5rem', minHeight: '80vh' }}>
+    <div className="tracking-page">
       {/* Tracking Hero Header */}
-      <section className="hero-section" style={{ padding: '3rem 0 2rem 0', minHeight: 'auto' }}>
+      <section className="hero-section tracking-page-intro">
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
             <span className="hero-subtitle" style={{ justifyContent: 'center' }}>
@@ -22,7 +22,7 @@ export default function Tracking() {
       </section>
 
       {/* Main Tracker Container */}
-      <section style={{ padding: '1rem 0 4rem 0' }}>
+      <section style={{ padding: '0 0 var(--section-space)' }}>
         <div className="container" style={{ maxWidth: '1050px' }}>
           <ShipmentTracker />
 
@@ -31,7 +31,7 @@ export default function Tracking() {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: '1.5rem',
-            marginTop: '3rem'
+            marginTop: 'var(--content-gap)'
           }}>
             <div style={{
               background: 'var(--bg-surface-2)',

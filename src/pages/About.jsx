@@ -4,7 +4,7 @@ export default function About({ onNavigate }) {
   return (
     <div className="services-page-container">
       {/* Banner */}
-      <section className="section-padding" style={{ paddingBottom: '3rem', textAlign: 'center', background: 'radial-gradient(circle at top, rgba(245, 176, 55, 0.07) 0%, transparent 60%)' }}>
+      <section className="section-padding" style={{ paddingBottom: 'var(--page-intro-gap)', textAlign: 'center', background: 'radial-gradient(circle at top, rgba(245, 176, 55, 0.07) 0%, transparent 60%)' }}>
         <div className="container">
           <span className="section-subtitle font-gold">Corporate Overview</span>
           <h1 className="section-title" style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>About Argus Shipping</h1>
@@ -15,9 +15,9 @@ export default function About({ onNavigate }) {
       </section>
 
       {/* Main Corporate Story */}
-      <section className="section-padding" style={{ paddingTop: '3rem' }}>
+      <section className="section-padding" style={{ paddingTop: 0 }}>
         <div className="container">
-          <div className="about-grid" style={{ gap: '4rem' }}>
+          <div className="about-grid" style={{ gap: 'var(--content-gap)' }}>
             <div className="about-content">
               <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>
                 Leading Freight Management in the Region
@@ -63,7 +63,7 @@ export default function About({ onNavigate }) {
             <h2 className="section-title">Chairman's Message</h2>
           </div>
 
-          <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', background: 'var(--bg-card)', padding: '3.5rem', borderRadius: 'var(--border-radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
+          <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', background: 'var(--bg-card)', padding: 'var(--feature-inset)', borderRadius: 'var(--border-radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
             <p style={{ fontSize: '1.25rem', fontStyle: 'italic', color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: '1.8' }}>
               "Since its inception, ARGUS SHIPPING WLL has grown into a multi-functional logistics organization. We always concentrate on our team’s capabilities and keep them focused on the essentials."
             </p>

@@ -3,7 +3,7 @@
 export default function ChairmanMessage() {
   return (
     <div className="services-page-container">
-      <section className="section-padding" style={{ paddingBottom: '3rem', textAlign: 'center', background: 'radial-gradient(circle at top, rgba(245, 176, 55, 0.07) 0%, transparent 60%)' }}>
+      <section className="section-padding" style={{ paddingBottom: 'var(--page-intro-gap)', textAlign: 'center', background: 'radial-gradient(circle at top, rgba(245, 176, 55, 0.07) 0%, transparent 60%)' }}>
         <div className="container">
           <span className="section-subtitle font-gold">Corporate Leadership</span>
           <h1 className="section-title" style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>Chairman's Message</h1>
@@ -13,7 +13,7 @@ export default function ChairmanMessage() {
         </div>
       </section>
 
-      <section className="section-padding" style={{ paddingTop: '2rem', marginBottom: '6rem' }}>
+      <section className="section-padding" style={{ paddingTop: 0 }}>
         <div className="container">
           <div className="chairman-message-card" style={{ gridTemplateColumns: '0.8fr 1.2fr', margin: 0 }}>
             <div className="chairman-profile">

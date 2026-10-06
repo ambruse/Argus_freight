@@ -21,11 +21,56 @@ const indexHtmlContent = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-
 fs.writeFileSync(path.join(outDir, 'index.html'), indexHtmlContent, 'utf-8');
 console.log('✓ Overwrote frontend/out/index.html with landing page index.html');
 
-// 2. Create static copies of index.html for other landing routes
-const landingRoutes = ['about', 'services', 'why-us', 'team', 'contact', 'chairman-message'];
-landingRoutes.forEach(route => {
-  fs.writeFileSync(path.join(outDir, `${route}.html`), indexHtmlContent, 'utf-8');
-  console.log(`✓ Created frontend/out/${route}.html`);
+// 2. Create static copies with route-specific metadata for public landing routes.
+const landingRoutes = {
+  about: {
+    title: 'About Argus Shipping | Qatar Logistics Expertise',
+    description: 'Learn about Argus Shipping W.L.L., its logistics network, experience and freight forwarding services supporting businesses in Qatar.',
+  },
+  services: {
+    title: 'Freight & Logistics Services in Qatar | Argus Shipping',
+    description: 'Explore Argus Shipping air and sea freight, GCC road transport, warehousing, consolidation and specialized logistics services for businesses.',
+  },
+  'why-us': {
+    title: 'Why Choose Argus Shipping | Freight Forwarding Qatar',
+    description: 'Discover Argus Shipping’s logistics network, cargo capabilities and customer support for freight movements in Qatar and across the GCC.',
+  },
+  team: {
+    title: 'Our Team | Argus Shipping Qatar',
+    description: 'Meet the people supporting Argus Shipping freight forwarding and logistics operations in Qatar.',
+  },
+  contact: {
+    title: 'Contact Argus Shipping | Qatar Freight Quotes',
+    description: 'Contact Argus Shipping in Doha about air freight, sea freight, road transport, warehousing or a tailored cargo quote.',
+  },
+  tracking: {
+    title: 'Track a Shipment | Argus Shipping',
+    description: 'Use Argus Shipping shipment tracking to check cargo progress and contact the logistics team about your consignment.',
+  },
+  'chairman-message': {
+    title: 'Chairman’s Message | Argus Shipping',
+    description: 'Read the chairman’s perspective on Argus Shipping, its freight forwarding operations and service to clients.',
+  },
+};
+
+Object.entries(landingRoutes).forEach(([route, { title, description }]) => {
+  const canonicalUrl = `https://www.argusshipping.co/${route}`;
+  const escapeAttribute = (value) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const safeTitle = escapeAttribute(title);
+  const safeDescription = escapeAttribute(description);
+  const routeHtml = indexHtmlContent
+    .replace(/<title>[^<]*<\/title>/i, `<title>${safeTitle}</title>`)
+    .replace(/(<meta\s+name="description"\s+content=")[^"]*("\s*\/?>)/i, `$1${safeDescription}$2`)
+    .replace(/(<link\s+rel="canonical"\s+href=")[^"]*("\s*\/?>)/i, `$1${canonicalUrl}$2`)
+    .replace(/(<meta\s+property="og:title"\s+content=")[^"]*("\s*\/?>)/i, `$1${safeTitle}$2`)
+    .replace(/(<meta\s+property="og:description"\s+content=")[^"]*("\s*\/?>)/i, `$1${safeDescription}$2`)
+    .replace(/(<meta\s+property="og:url"\s+content=")[^"]*("\s*\/?>)/i, `$1${canonicalUrl}$2`)
+    .replace(/(<meta\s+name="twitter:title"\s+content=")[^"]*("\s*\/?>)/i, `$1${safeTitle}$2`)
+    .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*("\s*\/?>)/i, `$1${safeDescription}$2`)
+    .replace(/(<meta\s+name="twitter:url"\s+content=")[^"]*("\s*\/?>)/i, `$1${canonicalUrl}$2`);
+
+  fs.writeFileSync(path.join(outDir, `${route}.html`), routeHtml, 'utf-8');
+  console.log(`✓ Created frontend/out/${route}.html with unique metadata`);
 });
 
 // 3. Copy dist/assets contents into frontend/out/assets recursively

@@ -107,62 +107,19 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col overflow-hidden" style={{ background: "var(--surface)" }}>
-
-      {/* ── TOP NAVBAR ──────────────────────────────────────── */}
-      <nav className="relative z-50 flex items-center justify-between px-6 md:px-10 py-3 border-b"
-        style={{
-          background: "var(--sidebar-bg)",
-          borderColor: "var(--sidebar-border)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
-        {/* Logo */}
-        <a href="/" className="flex items-center gap-2 shrink-0">
-          <img src="/images/logo.png" alt="ARGUS" className="h-8 w-auto object-contain" />
-        </a>
-
-        {/* Nav links */}
-        <div className="hidden md:flex items-center gap-1">
-          {[
-            { label: "Home",     href: "/" },
-            { label: "Services", href: "/services.html" },
-            { label: "Tracking", href: "/tracking", dot: true },
-            { label: "Why Us",   href: "/why-us.html" },
-            { label: "Our Team", href: "/team.html" },
-            { label: "Contact",  href: "/contact.html" },
-          ].map(({ label, href, dot }) => (
-            <a
-              key={label}
-              href={href}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-150 hover:text-amber-400"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {dot && (
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--accent, #F5B037)" }} />
-              )}
-              {label}
-            </a>
-          ))}
-        </div>
-
-        {/* Sign In label (current page indicator) */}
-        <span className="text-[12px] font-semibold px-3 py-1 rounded-lg"
-          style={{
-            background: "rgba(245,176,55,0.10)",
-            border: "1px solid rgba(245,176,55,0.20)",
-            color: "var(--sidebar-avatar-text)",
-          }}
-        >
-          Sign In
-        </span>
-      </nav>
-
       {/* ── SPLIT PANELS ──────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
 
       {/* ── LEFT PANEL — Brand ─────────────────────────────── */}
       <div className="hidden lg:flex lg:w-[52%] relative flex-col overflow-hidden"
-        style={{ background: "var(--login-left-bg)" }}
+        style={{
+          backgroundColor: theme === "light" ? "#f8f5ee" : "#0a1020",
+          backgroundImage: theme === "light"
+            ? "linear-gradient(145deg, rgba(250,248,244,0.76) 0%, rgba(244,241,235,0.82) 48%, rgba(237,233,224,0.87) 100%), url('/images/login-logistics-background.png')"
+            : "linear-gradient(145deg, rgba(6,10,22,0.78) 0%, rgba(12,20,40,0.84) 48%, rgba(10,15,30,0.88) 100%), url('/images/login-logistics-background.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
         {/* Animated aurora blobs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -286,7 +243,14 @@ export default function LoginPage() {
 
       {/* ── RIGHT PANEL — Login Form ────────────────────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 relative overflow-hidden"
-        style={{ background: "var(--login-right-bg)" }}
+        style={{
+          backgroundColor: "var(--surface)",
+          backgroundImage: theme === "light"
+            ? "linear-gradient(145deg, rgba(250,248,244,0.84) 0%, rgba(244,241,235,0.91) 100%), url('/images/login-logistics-background.png')"
+            : "linear-gradient(145deg, rgba(8,12,20,0.88) 0%, rgba(12,18,32,0.93) 100%), url('/images/login-logistics-background.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
         {/* Subtle bg glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none opacity-10"
