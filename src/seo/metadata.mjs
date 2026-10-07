@@ -19,8 +19,8 @@ export function schemaFor(path) {
   if (page || path === '/trade-lanes/') {
     const crumbs = [{ name: 'Home', item: `${SITE}/` }];
     if (page) {
-      const groupName = page.group === 'trade-lanes' ? 'Trade Lanes' : page.group === 'locations' ? 'Locations' : page.group === 'industries' ? 'Industries' : 'Services';
-      const groupPath = page.group === 'trade-lanes' ? '/trade-lanes/' : page.group === 'locations' ? '/locations/' : page.group === 'industries' ? '/industries/' : '/services';
+      const groupName = page.group === 'trade-lanes' ? 'Trade Lanes' : page.group === 'locations' ? 'Locations' : page.group === 'industries' ? 'Industries' : page.group === 'resources' ? 'Resources' : 'Services';
+      const groupPath = page.group === 'trade-lanes' ? '/trade-lanes/' : page.group === 'locations' ? '/locations/' : page.group === 'industries' ? '/industries/' : page.group === 'resources' ? '/resources/' : '/services';
       crumbs.push({ name: groupName, item: `${SITE}${groupPath}` });
     }
     crumbs.push({ name: page?.label || 'Trade Lanes', item: `${SITE}${path}` });
@@ -28,6 +28,8 @@ export function schemaFor(path) {
     if (page) {
       if (page.group === 'locations') {
         graph.push({ '@type': 'LocalBusiness', '@id': `${SITE}${path}#localbusiness`, name: `Argus Shipping ${page.label}`, url: `${SITE}${path}`, description: page.intro, parentOrganization: { '@id': organization['@id'] } });
+      } else if (page.group === 'resources') {
+        graph.push({ '@type': 'Article', '@id': `${SITE}${path}#article`, headline: page.h1, description: page.intro, author: { '@id': organization['@id'] }, publisher: { '@id': organization['@id'] }, mainEntityOfPage: { '@id': `${SITE}${path}#webpage` } });
       } else {
         graph.push({ '@type': 'Service', '@id': `${SITE}${path}#service`, name: page.h1, url: `${SITE}${path}`, description: page.intro, provider: { '@id': organization['@id'] } });
       }
