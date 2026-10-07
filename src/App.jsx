@@ -14,13 +14,15 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
-    return window.location.pathname && window.location.pathname !== '/login' ? window.location.pathname : '/';
+    const requestedPath = window.location.pathname || '/';
+    if (requestedPath === '/services.html') return '/services';
+    return requestedPath !== '/login' ? requestedPath : '/';
   });
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
-    // Default to dark mode (navy)
-    return savedTheme !== 'light';
+    // Light is the public site's default; retain an explicit visitor preference.
+    return savedTheme === 'dark';
   });
 
   // Track hash fragment changes for in-page anchors
@@ -69,6 +71,87 @@ export default function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPath]);
+
+  // Keep search and social metadata aligned with the currently rendered SPA route.
+  useEffect(() => {
+    const pageMetadata = {
+      '/': {
+        title: 'Freight Forwarding & Logistics in Qatar | Argus Shipping',
+        description: 'Argus Shipping connects businesses to Qatar and global markets with air and sea freight, GCC road transport, warehousing and door-to-door cargo. Request a quote.',
+      },
+      '/services': {
+        title: 'Freight & Logistics Services in Qatar | Argus Shipping',
+        description: 'Explore Argus Shipping air and sea freight, GCC road transport, warehousing, consolidation and specialized logistics services for businesses.',
+      },
+      '/about': {
+        title: 'About Argus Shipping | Qatar Logistics Expertise',
+        description: 'Learn about Argus Shipping W.L.L., its logistics network, experience and freight forwarding services supporting businesses in Qatar.',
+      },
+      '/why-us': {
+        title: 'Why Choose Argus Shipping | Freight Forwarding Qatar',
+        description: 'Discover Argus Shipping’s logistics network, cargo capabilities and customer support for freight movements in Qatar and across the GCC.',
+      },
+      '/team': {
+        title: 'Our Team | Argus Shipping Qatar',
+        description: 'Meet the people supporting Argus Shipping freight forwarding and logistics operations in Qatar.',
+      },
+      '/contact': {
+        title: 'Contact Argus Shipping | Qatar Freight Quotes',
+        description: 'Contact Argus Shipping in Doha about air freight, sea freight, road transport, warehousing or a tailored cargo quote.',
+      },
+      '/tracking': {
+        title: 'Track a Shipment | Argus Shipping',
+        description: 'Use Argus Shipping shipment tracking to check cargo progress and contact the logistics team about your consignment.',
+      },
+      '/chairman-message': {
+        title: 'Chairman’s Message | Argus Shipping',
+        description: 'Read the chairman’s perspective on Argus Shipping, its freight forwarding operations and service to clients.',
+      },
+    };
+    const metadataPath = pageMetadata[currentPath] ? currentPath : '/';
+    const { title, description } = pageMetadata[metadataPath];
+    if (currentPath === '/services' && window.location.pathname === '/services.html') {
+      window.history.replaceState({}, '', '/services');
+    }
+    const canonicalUrl = `https://www.argusshipping.co${metadataPath === '/' ? '/' : metadataPath}`;
+    document.title = title;
+
+    const setMeta = (selector, attribute, value) => {
+      let tag = document.head.querySelector(selector);
+      if (!tag) {
+        tag = document.createElement('meta');
+        const [name, key] = selector.match(/\[(name|property)="([^"]+)"\]/).slice(1);
+        tag.setAttribute(name, key);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute(attribute, value);
+    };
+    const setCanonical = (href) => {
+      let tag = document.head.querySelector('link[rel="canonical"]');
+      if (!tag) {
+        tag = document.createElement('link');
+        tag.setAttribute('rel', 'canonical');
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('href', href);
+    };
+
+    setMeta('meta[name="description"]', 'content', description);
+    setMeta('meta[property="og:title"]', 'content', title);
+    setMeta('meta[property="og:description"]', 'content', description);
+    setMeta('meta[property="og:url"]', 'content', canonicalUrl);
+    setMeta('meta[name="twitter:title"]', 'content', title);
+    setMeta('meta[name="twitter:description"]', 'content', description);
+    setMeta('meta[name="twitter:url"]', 'content', canonicalUrl);
+    setCanonical(canonicalUrl);
+  }, [currentPath]);
+
+  // Keep browser back/forward navigation in sync with the lightweight page router.
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname || '/');
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleNavigate = (path) => {
     if (path === currentPath) return;
@@ -131,17 +214,16 @@ export default function App() {
         </div>
       </div>
 
-      {/* Navbar Header */}
-      <Navbar 
-        currentPath={currentPath} 
-        setCurrentPath={handleNavigate} 
-        onOpenQuote={handleOpenQuote} 
-        isDarkMode={isDarkMode} 
-        setIsDarkMode={setIsDarkMode} 
+      <Navbar
+        currentPath={currentPath}
+        setCurrentPath={handleNavigate}
+        onOpenQuote={handleOpenQuote}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
       />
 
       {/* Main Page Area */}
-      <main style={{ minHeight: '80vh' }}>
+      <main>
         {renderPage()}
       </main>
 

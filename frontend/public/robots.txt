@@ -1,14 +1,5 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /admin/
-Disallow: /dashboard
-Disallow: /rfq
-Disallow: /quotation
-Disallow: /customers
-Disallow: /contacts
-Disallow: /settings
-Disallow: /summary
-Disallow: /calling-agent/
 
-Sitemap: https://argus-freight.onrender.com/sitemap.xml
+Sitemap: https://www.argusshipping.co/sitemap.xml

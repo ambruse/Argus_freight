@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import LogisticsSlider from '../components/LogisticsSlider';
 import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, Anchor, Package, MapPin } from 'lucide-react';
 import ShipmentTracker from '../components/ShipmentTracker';
 import ScrollFrameBackground from '../components/ScrollFrameBackground';
@@ -47,102 +47,25 @@ const CLIENT_COMPANIES = [
 ];
 
 export default function Home({ onNavigate, onOpenQuote }) {
-  const [activeModeIdx, setActiveModeIdx] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  // Auto-rotate logistics modes in the hero graphic
-  useEffect(() => {
-    if (isPaused) return;
-    const timer = setInterval(() => {
-      setActiveModeIdx(prev => (prev + 1) % LOGISTICS_MODES.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [isPaused]);
-
-  const ActiveIcon = LOGISTICS_MODES[activeModeIdx].icon;
 
   return (
     <div className="home-page-wrapper">
       <ScrollFrameBackground />
-      {/* Advanced JSON-LD Schema (Structured Data Component) */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: `
-{
-  "@context": "https://schema.org",
-  "@type": "CargoShippingService",
-  "name": "Argus Shipping W.L.L",
-  "url": "https://argusshipping.co/",
-  "logo": "https://argusshipping.co/images/logo.png",
-  "description": "Premium international freight forwarding, ocean & air cargo, 3PL warehousing, and door-to-door console cargo consolidation services based in Doha, Qatar.",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "P.O. Box 31861",
-    "addressLocality": "Doha",
-    "addressCountry": "QA"
-  },
-  "telephone": "+97444116544",
-  "email": "info@argusshipping.co",
-  "hasOfferCatalog": {
-    "@type": "OfferCatalog",
-    "name": "Logistics Services",
-    "itemListElement": [
-      {
-        "@type": "Offer",
-        "itemOffered": {
-          "@type": "Service",
-          "name": "Sea Freight FCL & LCL Consolidation"
-        }
-      },
-      {
-        "@type": "Offer",
-        "itemOffered": {
-          "@type": "Service",
-          "name": "International Air Cargo Services"
-        }
-      },
-      {
-        "@type": "Offer",
-        "itemOffered": {
-          "@type": "Service",
-          "name": "Door to Door Console Shipments (Per-CBM/Per-Carton)"
-        }
-      },
-      {
-        "@type": "Offer",
-        "itemOffered": {
-          "@type": "Service",
-          "name": "3PL Warehousing & Distribution Management"
-        }
-      }
-    ]
-  },
-  "areaServed": [
-    { "@type": "Country", "name": "Qatar" },
-    { "@type": "Country", "name": "United Arab Emirates" },
-    { "@type": "Country", "name": "Bahrain" },
-    { "@type": "Country", "name": "India" }
-  ]
-}
-          `
-        }}
-      />
-
       {/* Hero Banner Section */}
       <section className="hero-section">
         <div className="hero-blob-2" />
         <div className="container">
           <div className="hero-grid">
-            <div style={{ animation: 'slideUp 0.8s ease', position: 'relative', zIndex: 5 }}>
+            <div className="hero-copy" style={{ animation: 'slideUp 0.8s ease', position: 'relative', zIndex: 5 }}>
               <span className="hero-subtitle">Logistics Management</span>
-              <div className="hero-logo-container">
+              <div className="hero-logo-container hero-logo-container-home">
                 <img 
                   src="/images/argus_shipping_logo_hero.png" 
                   alt="ARGUS SHIPPING" 
                   className="hero-logo-img"
                 />
               </div>
+              <h1 className="hero-primary-heading">Freight Forwarding &amp; Logistics Across Qatar</h1>
               <p className="hero-description">
                 ARGUS SHIPPING WLL delivers end-to-end freight and logistics solutions designed for today’s fast-paced global market. By combining worldwide reach, flexible scheduling, and deep border-clearance proficiency, we take the friction out of your supply chain.
               </p>
@@ -180,46 +103,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
               </div>
             </div>
 
-            {/* Circular Rotating Graphic */}
-            <div 
-              className="slider-graphics"
-              onMouseEnter={() => setIsPaused(true)}
-              onMouseLeave={() => setIsPaused(false)}
-            >
-              <div className="slider-circle-bg">
-                {LOGISTICS_MODES.map((mode, idx) => {
-                  const Angle = (idx * 360) / LOGISTICS_MODES.length;
-                  const ModeIcon = mode.icon;
-                  const isActive = idx === activeModeIdx;
-                  return (
-                    <div 
-                      key={mode.id} 
-                      className={`slider-orbit-icon ${isActive ? 'active' : ''}`}
-                      style={{
-                        transform: `rotate(${Angle}deg) translate(200px) rotate(-${Angle}deg)`,
-                      }}
-                      onMouseEnter={() => setActiveModeIdx(idx)}
-                      onClick={() => setActiveModeIdx(idx)}
-                    >
-                      <div className="slider-orbit-icon-gimbal">
-                        <ModeIcon size={24} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="slider-inner-graphic">
-                <div style={{ textAlign: 'center', padding: '1.5rem' }}>
-                  <ActiveIcon className="slider-icon-active" />
-                  <h4 style={{ color: 'var(--accent)', marginTop: '1rem', letterSpacing: '0.05em' }}>
-                    {LOGISTICS_MODES[activeModeIdx].title}
-                  </h4>
-                  <p style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                    {LOGISTICS_MODES[activeModeIdx].tagline}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <LogisticsSlider modes={LOGISTICS_MODES.slice(0, 4)} />
           </div>
         </div>
       </section>
@@ -270,7 +154,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
       </section>
 
       {/* About Us Teaser Section */}
-      <section className="section-padding section-bg-alt">
+      <section className="section-padding section-bg-alt home-about-section">
         <div className="container">
           <div className="about-grid">
             <div className="about-image-wrapper">
@@ -332,7 +216,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
       </section>
 
       {/* Why Choose Us Teaser */}
-      <section className="section-padding">
+      <section className="section-padding home-why-section">
         <div className="container">
           <div className="section-header" style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
             <span className="section-subtitle">Our Competitive Advantage</span>

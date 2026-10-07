@@ -1,284 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import { Sun, Moon, Menu, X, ChevronDown, Anchor, Phone, Mail } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Building2, ExternalLink, Home, LayoutDashboard, LogIn, Menu, MessageCircle, Moon, Navigation, PackageSearch, ShieldCheck, Sparkles, Sun, Users, X } from 'lucide-react';
+import './VerticalBlobNav.css';
+
+const primaryItems = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/about', label: 'About Us', icon: Building2, matches: ['/about', '/chairman-message'] },
+  { href: '/services', label: 'Services', icon: PackageSearch },
+  { href: '/tracking', label: 'Tracking', icon: Navigation },
+  { href: '/why-us', label: 'Why Us', icon: ShieldCheck },
+  { href: '/team', label: 'Our Team', icon: Users },
+  { href: '/contact', label: 'Contact', icon: MessageCircle },
+];
+
+const groupCompanies = [
+  ['Argus Middle East Doha', 'http://www.argusme.com/'],
+  ['Argus Computers Doha', 'http://www.arguscomputers.net/'],
+  ['Argus Shipping Bahrain', 'http://www.argusmeast.com/'],
+  ['Argus Shipping Dubai', 'http://www.argus-me.com/'],
+  ['Boxndoc.com', 'http://boxndoc.com/'],
+  ['Sourseco Global', 'http://www.sourseglobal.com/'],
+];
 
 export default function Navbar({ currentPath, setCurrentPath, onOpenQuote, isDarkMode, setIsDarkMode }) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const shellRef = useRef(null);
 
-  const [showNavbarLogo, setShowNavbarLogo] = useState(true);
-
-  // Monitor scrolling to add shadow/elevation and handle home page logo visibility
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-
-      if (currentPath === '/') {
-        const heroLogo = document.querySelector('.hero-logo-container');
-        if (heroLogo) {
-          const rect = heroLogo.getBoundingClientRect();
-          setShowNavbarLogo(rect.bottom <= 0);
-        } else {
-          setShowNavbarLogo(window.scrollY > 350);
-        }
-      } else {
-        setShowNavbarLogo(true);
-      }
-    };
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [currentPath]);
-
-  // Check login status once on mount
-  useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem("freight_token") : null;
-    setIsLoggedIn(!!token);
+    setIsLoggedIn(Boolean(localStorage.getItem('freight_token')));
   }, []);
 
-  const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
-  };
+  useEffect(() => setIsOpen(false), [currentPath]);
 
-  const handleNavigate = (path) => {
-    setCurrentPath(path);
-    setIsMobileMenuOpen(false);
+  useEffect(() => {
+    const closeOnEscape = (event) => { if (event.key === 'Escape') setIsOpen(false); };
+    const closeOutside = (event) => {
+      if (isOpen && shellRef.current && !shellRef.current.contains(event.target)) setIsOpen(false);
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOutside);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOutside);
+    };
+  }, [isOpen]);
+
+  const isActive = (item) => (item.matches || [item.href]).includes(currentPath);
+  const activeIndex = primaryItems.findIndex(isActive);
+
+  const handleNavigate = (event, href) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (window.location.pathname !== href) window.history.pushState({}, '', href);
+    setCurrentPath(href);
+    setIsOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handlePointerMove = (event) => {
+    if (event.pointerType === 'touch' || !shellRef.current) return;
+    const rect = shellRef.current.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 7;
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 5;
+    shellRef.current.style.setProperty('--blob-pull-x', `${x.toFixed(2)}px`);
+    shellRef.current.style.setProperty('--blob-pull-y', `${y.toFixed(2)}px`);
+  };
+
+  const resetPointer = () => {
+    shellRef.current?.style.setProperty('--blob-pull-x', '0px');
+    shellRef.current?.style.setProperty('--blob-pull-y', '0px');
+  };
+
   return (
-    <header className={`navbar-wrapper ${isScrolled ? 'scrolled' : ''}`}>
-      <div className="navbar-top-bar">
-        <div className="container top-bar-container">
-          <div className="top-bar-left">
-            <div className="phone-dropdown-wrapper">
-              <div className="top-bar-link phone-trigger">
-                <Phone size={14} />
-                <span>Phone</span>
-                <ChevronDown size={12} className="chevron-icon" />
-              </div>
-              <div className="phone-dropdown-menu">
-                <div className="phone-dropdown-item">
-                  <a href="tel:+97444116544" className="phone-item-info">
-                    <span className="country-name">Qatar</span>
-                    <span className="phone-number">+974 44116544</span>
+    <header className={`blob-nav-shell ${isOpen ? 'is-open' : ''}`} ref={shellRef} onPointerMove={handlePointerMove} onPointerLeave={resetPointer}
+      onClick={(event) => { if (!event.target.closest('a, button, summary')) setIsOpen((open) => !open); }}>
+      <button className="blob-nav-trigger" type="button" aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={isOpen} aria-controls="primary-blob-navigation" onClick={() => setIsOpen((open) => !open)}>
+        {isOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+      </button>
+
+      <nav id="primary-blob-navigation" className="blob-nav" aria-label="Primary navigation">
+        <div className="blob-nav-surface" aria-hidden="true"><span className="blob-nav-shine" /></div>
+
+        <a className="blob-nav-brand" href="/" onClick={(event) => handleNavigate(event, '/')} aria-label="Argus Shipping home">
+          <span className="blob-nav-brand-mark"><img src="/images/AR.png" alt="" width="32" height="29" /></span>
+          <img className="blob-nav-full-logo" src="/images/argus_shipping_logo_hero.png" alt="" width="154" height="69" />
+        </a>
+
+        <div className="blob-nav-primary-wrap">
+          {activeIndex >= 0 && <span className="blob-nav-active-indicator" style={{ '--active-index': activeIndex }} aria-hidden="true" />}
+          <ul className="blob-nav-list">
+            {primaryItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item);
+              return (
+                <li key={item.href}>
+                  <a className={`blob-nav-link ${active ? 'is-active' : ''}`} href={item.href} onClick={(event) => handleNavigate(event, item.href)} aria-current={active ? 'page' : undefined}>
+                    <Icon className="blob-nav-icon" size={19} strokeWidth={1.8} aria-hidden="true" />
+                    <span className="blob-nav-label">{item.label}</span>
                   </a>
-                  <a href="https://wa.me/97444116544" target="_blank" rel="noopener noreferrer" className="phone-whatsapp-icon" title="Chat on WhatsApp: +974 44116544">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  </a>
-                </div>
-                <div className="phone-dropdown-item">
-                  <a href="tel:+8613719125564" className="phone-item-info">
-                    <span className="country-name">China</span>
-                    <span className="phone-number">+86 13719125564</span>
-                  </a>
-                  <a href="https://wa.me/8613719125564" target="_blank" rel="noopener noreferrer" className="phone-whatsapp-icon" title="Chat on WhatsApp: +86 13719125564">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  </a>
-                </div>
-                <div className="phone-dropdown-item">
-                  <a href="tel:+966507370604" className="phone-item-info">
-                    <span className="country-name">Saudi</span>
-                    <span className="phone-number">+966 507370604</span>
-                  </a>
-                  <a href="https://wa.me/966507370604" target="_blank" rel="noopener noreferrer" className="phone-whatsapp-icon" title="Chat on WhatsApp: +966 507370604">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  </a>
-                </div>
-                <div className="phone-dropdown-item">
-                  <a href="tel:+971564337699" className="phone-item-info">
-                    <span className="country-name">UAE</span>
-                    <span className="phone-number">+971 564337699</span>
-                  </a>
-                  <a href="https://wa.me/971564337699" target="_blank" rel="noopener noreferrer" className="phone-whatsapp-icon" title="Chat on WhatsApp: +971 564337699">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  </a>
-                </div>
-                <div className="phone-dropdown-item">
-                  <a href="tel:+97313641234" className="phone-item-info">
-                    <span className="country-name">Bahrain</span>
-                    <span className="phone-number">+973 13641234</span>
-                  </a>
-                  <a href="https://wa.me/97313641234" target="_blank" rel="noopener noreferrer" className="phone-whatsapp-icon" title="Chat on WhatsApp: +973 13641234">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  </a>
-                </div>
-                <div className="phone-dropdown-item">
-                  <a href="tel:+919742379838" className="phone-item-info">
-                    <span className="country-name">India</span>
-                    <span className="phone-number">+91 9742379838</span>
-                  </a>
-                  <a href="https://wa.me/919742379838" target="_blank" rel="noopener noreferrer" className="phone-whatsapp-icon" title="Chat on WhatsApp: +91 9742379838">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  </a>
-                </div>
-              </div>
-            </div>
-            
-            <span className="top-bar-separator">|</span>
-            
-            <a href="mailto:info@argusshipping.co" className="top-bar-link">
-              <Mail size={14} />
-              <span>info@argusshipping.co</span>
-            </a>
-            
-            <span className="top-bar-separator">|</span>
-            
-            <div className="top-bar-socials">
-              <a href="https://www.instagram.com/argus_shipping/" target="_blank" rel="noopener noreferrer" className="top-bar-social-link" aria-label="Instagram">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                </li>
+              );
+            })}
+            <li>
+              <a className={`blob-nav-link ${currentPath === '/login' || currentPath === '/dashboard' ? 'is-active' : ''}`} href={isLoggedIn ? '/dashboard' : '/login'}>
+                {isLoggedIn ? <LayoutDashboard className="blob-nav-icon" size={19} aria-hidden="true" /> : <LogIn className="blob-nav-icon" size={19} aria-hidden="true" />}
+                <span className="blob-nav-label">{isLoggedIn ? 'Dashboard' : 'Login'}</span>
               </a>
-              <a href="https://www.linkedin.com/company/argus-shipping" target="_blank" rel="noopener noreferrer" className="top-bar-social-link" aria-label="LinkedIn">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
-              </a>
-              <a href="https://www.facebook.com/argusshipping" target="_blank" rel="noopener noreferrer" className="top-bar-social-link" aria-label="Facebook">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-              </a>
-              <a href="https://api.whatsapp.com/send/?phone=97455411234&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer" className="top-bar-social-link" aria-label="WhatsApp">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.456h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              </a>
-            </div>
-          </div>
-          
-          <div className="top-bar-right">
-            <span className="top-bar-text">Reliable Freight & Logistics Solutions</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="container">
-        <nav className="navbar">
-          {/* Logo Brand */}
-          <div 
-            className="logo-container" 
-            onClick={() => handleNavigate('/')}
-            style={{
-              opacity: showNavbarLogo ? 1 : 0,
-              visibility: showNavbarLogo ? 'visible' : 'hidden',
-              pointerEvents: showNavbarLogo ? 'auto' : 'none',
-              transition: 'opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s'
-            }}
-          >
-            <img 
-              src={isDarkMode ? "/images/logo.png" : "/images/logo.png"} 
-              alt="Argus Shipping WLL Logo" 
-              className="navbar-logo"
-            />
-          </div>
-
-          {/* Desktop Menu */}
-          <ul className={`nav-menu ${isMobileMenuOpen ? 'open' : ''}`}>
-            <li className="nav-item">
-              <span 
-                className={`nav-link ${currentPath === '/' ? 'active' : ''}`} 
-                onClick={() => handleNavigate('/')}
-              >
-                Home
-              </span>
-            </li>
-            
-            <li className="nav-item">
-              <span className={`nav-link ${currentPath === '/about' || currentPath === '/chairman-message' ? 'active' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                About Us <ChevronDown size={14} />
-              </span>
-              <div className="dropdown-menu">
-                <span className="dropdown-item" onClick={() => handleNavigate('/about')}>About Argus</span>
-                <span className="dropdown-item" onClick={() => handleNavigate('/chairman-message')}>Chairman's Message</span>
-              </div>
-            </li>
-
-            <li className="nav-item">
-              <span 
-                className={`nav-link ${currentPath === '/services' ? 'active' : ''}`} 
-                onClick={() => handleNavigate('/services')}
-              >
-                Services
-              </span>
-            </li>
-
-            <li className="nav-item">
-              <span 
-                className={`nav-link ${currentPath === '/tracking' ? 'active' : ''}`} 
-                onClick={() => handleNavigate('/tracking')}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: currentPath === '/tracking' ? 'var(--accent)' : undefined }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }}></span>
-                Tracking
-              </span>
-            </li>
-
-            <li className="nav-item">
-              <span 
-                className={`nav-link ${currentPath === '/why-us' ? 'active' : ''}`} 
-                onClick={() => handleNavigate('/why-us')}
-              >
-                Why Us
-              </span>
-            </li>
-
-            <li className="nav-item">
-              <span 
-                className={`nav-link ${currentPath === '/team' ? 'active' : ''}`} 
-                onClick={() => handleNavigate('/team')}
-              >
-                Our Team
-              </span>
-            </li>
-
-            <li className="nav-item">
-              <span className="nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                Group Companies <ChevronDown size={14} />
-              </span>
-              <div className="dropdown-menu">
-                <a href="http://www.argusme.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus Middle East Doha</a>
-                <a href="http://www.arguscomputers.net/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus Computers Doha</a>
-                <a href="http://www.argusmeast.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Argus shipping W.L.L Bahrain</a>
-                <a href="http://www.argus-me.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">ARGUS SHIPPING LLC Dubai</a>
-                <a href="#" onClick={(e) => e.preventDefault()} className="dropdown-item">Shop N Freight</a>
-                <a href="#" onClick={(e) => e.preventDefault()} className="dropdown-item">Porters Trading</a>
-                <a href="http://boxndoc.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Boxndoc.com</a>
-                <a href="http://www.sourseglobal.com/" target="_blank" rel="noopener noreferrer" className="dropdown-item">Sourseco Global</a>
-              </div>
-            </li>
-
-            <li className="nav-item">
-              <span 
-                className={`nav-link ${currentPath === '/contact' ? 'active' : ''}`} 
-                onClick={() => handleNavigate('/contact')}
-              >
-                Contact
-              </span>
-            </li>
-
-            <li className="nav-item">
-              <span 
-                className={`nav-link ${currentPath === '/login' || currentPath === '/dashboard' ? 'active' : ''}`} 
-                onClick={() => window.location.href = isLoggedIn ? '/dashboard' : '/login'}
-              >
-                {isLoggedIn ? 'Dashboard' : 'Login'}
-              </span>
             </li>
           </ul>
+        </div>
 
-          {/* Action elements (Theme Switcher, CTA & Hamburger) */}
-          <div className="nav-actions">
-            <button className="theme-toggle-btn" onClick={toggleTheme} aria-label="Toggle Theme">
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        <div className="blob-nav-utilities">
+          <details className="blob-nav-network">
+            <summary><Sparkles size={16} aria-hidden="true" /><span>Argus network</span></summary>
+            <div className="blob-nav-network-links">
+              {groupCompanies.map(([label, href]) => <a href={href} target="_blank" rel="noopener noreferrer" key={href}>{label}<ExternalLink size={12} aria-hidden="true" /></a>)}
+            </div>
+          </details>
+          <div className="blob-nav-actions">
+            <button className="blob-nav-theme" type="button" onClick={() => setIsDarkMode((dark) => !dark)} aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} theme`}>
+              {isDarkMode ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
             </button>
-            <button className="cta-button" onClick={onOpenQuote}>
-              Request Quote
-            </button>
-            <button className="mobile-nav-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              {isMobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-            </button>
+            <button className="blob-nav-quote" type="button" onClick={onOpenQuote}>Request quote</button>
           </div>
-        </nav>
-      </div>
+        </div>
+      </nav>
     </header>
   );
 }

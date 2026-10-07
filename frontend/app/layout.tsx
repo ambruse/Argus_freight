@@ -18,7 +18,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "ARGUS — Cargo & RFQ Management",
+  metadataBase: new URL("https://www.argusshipping.co"),
   description:
     "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
   keywords: [
@@ -51,16 +53,16 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    url: "https://argus-freight.onrender.com/",
+    url: "https://www.argusshipping.co/",
     title: "ARGUS — Cargo & RFQ Management",
     description: "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
-    images: [{ url: "https://argus-freight.onrender.com/logo.png" }],
+    images: [{ url: "https://www.argusshipping.co/images/logo.png" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ARGUS — Cargo & RFQ Management",
     description: "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
-    images: ["https://argus-freight.onrender.com/logo.png"],
+    images: ["https://www.argusshipping.co/images/logo.png"],
   }
 };
 
