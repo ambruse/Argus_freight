@@ -18,10 +18,20 @@ export function schemaFor(path) {
   const page = byPath[path];
   if (page || path === '/trade-lanes/') {
     const crumbs = [{ name: 'Home', item: `${SITE}/` }];
-    if (page) crumbs.push({ name: page.group === 'trade-lanes' ? 'Trade Lanes' : 'Services', item: `${SITE}${page.group === 'trade-lanes' ? '/trade-lanes/' : '/services'}` });
+    if (page) {
+      const groupName = page.group === 'trade-lanes' ? 'Trade Lanes' : page.group === 'locations' ? 'Locations' : 'Services';
+      const groupPath = page.group === 'trade-lanes' ? '/trade-lanes/' : page.group === 'locations' ? '/locations/' : '/services';
+      crumbs.push({ name: groupName, item: `${SITE}${groupPath}` });
+    }
     crumbs.push({ name: page?.label || 'Trade Lanes', item: `${SITE}${path}` });
     graph.push({ '@type': 'BreadcrumbList', '@id': `${SITE}${path}#breadcrumb`, itemListElement: crumbs.map((crumb, index) => ({ '@type': 'ListItem', position: index + 1, ...crumb })) });
-    if (page) graph.push({ '@type': 'Service', '@id': `${SITE}${path}#service`, name: page.h1, url: `${SITE}${path}`, description: page.intro, provider: { '@id': organization['@id'] } });
+    if (page) {
+      if (page.group === 'locations') {
+        graph.push({ '@type': 'LocalBusiness', '@id': `${SITE}${path}#localbusiness`, name: `Argus Shipping ${page.label}`, url: `${SITE}${path}`, description: page.intro, parentOrganization: { '@id': organization['@id'] } });
+      } else {
+        graph.push({ '@type': 'Service', '@id': `${SITE}${path}#service`, name: page.h1, url: `${SITE}${path}`, description: page.intro, provider: { '@id': organization['@id'] } });
+      }
+    }
   }
   return { '@context': 'https://schema.org', '@graph': graph };
 }
