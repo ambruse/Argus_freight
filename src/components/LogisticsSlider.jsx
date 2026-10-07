@@ -3,10 +3,11 @@ import { ArrowLeft, ArrowRight, Pause, Play } from 'lucide-react';
 import './LogisticsSlider.css';
 
 const visuals = [
-  { src: '/images/home-slider-air.png', alt: 'Argus cargo aircraft loading freight at sunset', position: '50% 50%' },
-  { src: '/images/home-slider-land.png', alt: 'Argus container truck moving along a highway at sunset', position: '50% 50%' },
-  { src: '/images/home-slider-sea.png', alt: 'Argus container ship leaving a port at sunset', position: '50% 50%' },
-  { src: '/images/home-slider-warehouse.png', alt: 'Argus delivery van loading freight at a warehouse', position: '50% 50%' },
+  { src: '/images/home-slider-air.png', alt: 'Argus air freight cargo plane', position: '50% 50%' },
+  { src: '/images/home-slider-truck.png', alt: 'Argus land freight truck', position: '50% 50%' },
+  { src: '/images/home-slider-ship.png', alt: 'Argus sea freight container ship', position: '50% 50%' },
+  { src: '/images/home-slider-forklift.png', alt: 'Argus warehousing forklift operations', position: '50% 50%' },
+  { src: '/images/home-slider-van.png', alt: 'Argus door-to-door delivery van', position: '50% 50%' },
 ];
 
 export default function LogisticsSlider({ modes }) {

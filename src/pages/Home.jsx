@@ -104,7 +104,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
               </div>
             </div>
 
-            <LogisticsSlider modes={LOGISTICS_MODES.slice(0, 4)} />
+            <LogisticsSlider modes={LOGISTICS_MODES} />
           </div>
         </div>
       </section>
