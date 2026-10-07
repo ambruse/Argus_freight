@@ -43,7 +43,7 @@ const LOGISTICS_MODES = [
 ];
 
 const CLIENT_COMPANIES = [
-  "Argus Middle East", "Argus Computers", "Argus shipping W.L.L Bahrain", 
+  "Argus Middle East", "Argus Computers", "Argus shipping Bahrain",
   "Argus Dubai", "Shop N Freight", "Porters Trading", "Boxndoc.com", "Sourseco Global"
 ];
 
@@ -68,7 +68,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
               </div>
               <h1 className="hero-primary-heading">Freight Forwarding &amp; Logistics Company in Qatar</h1>
               <p className="hero-description">
-                ARGUS SHIPPING WLL delivers end-to-end freight and logistics solutions designed for today’s fast-paced global market. By combining worldwide reach, flexible scheduling, and deep border-clearance proficiency, we take the friction out of your supply chain.
+                ARGUS SHIPPING delivers end-to-end freight and logistics solutions designed for today’s fast-paced global market. By combining worldwide reach, flexible scheduling, and deep border-clearance proficiency, we take the friction out of your supply chain.
               </p>
               <div className="hero-actions">
                 <button className="cta-button" onClick={onOpenQuote}>
@@ -181,7 +181,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
               <span className="section-subtitle">Corporate Profile</span>
               <h2 className="section-title">About Argus Shipping</h2>
               <p>
-                The existence of ARGUS SHIPPING WLL as a leading freight management and logistics service provider in the region, with a global presence of network partners, has set a new standard for this industry.
+                The existence of ARGUS SHIPPING as a leading freight management and logistics service provider in the region, with a global presence of network partners, has set a new standard for this industry.
               </p>
               <p>
                 With vast experience, we identify custom customer needs and deliver timely, effective solutions. We handle complex cargo, border clearances, free zone forwarding, and heavy lift setups.
@@ -222,7 +222,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
         <div className="container">
           <div className="section-header" style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
             <span className="section-subtitle">Our Competitive Advantage</span>
-            <h2 className="section-title">Why Logistics Leaders Choose Argus WLL</h2>
+            <h2 className="section-title">Why Logistics Leaders Choose Argus Shipping</h2>
             <p style={{ maxWidth: '800px', marginTop: '0.5rem' }}>
               All our logistics programs are custom-tailored to optimize time and budget constraint parameters. We combine robust freight capabilities with highly advanced warehousing nodes.
             </p>

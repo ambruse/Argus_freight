@@ -1,6 +1,11 @@
 Options -Indexes
 RewriteEngine On
 
+# ── SEO 301 Redirects for Legacy URLs ───────────────────────
+RewriteRule ^services/(.+)-qatar/?$ /services/$1/ [R=301,L]
+RewriteRule ^shipping/(.+)-to-qatar/?$ /trade-lanes/$1-to-qatar/ [R=301,L]
+RewriteRule ^shipping/?$ /trade-lanes/ [R=301,L]
+
 # Preserve the existing /services hub despite the new child-page directory.
 RewriteRule ^services/$ /services [R=301,L]
 RewriteRule ^services$ services.html [L]

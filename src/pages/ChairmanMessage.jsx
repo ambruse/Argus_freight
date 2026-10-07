@@ -8,7 +8,7 @@ export default function ChairmanMessage() {
           <span className="section-subtitle font-gold">Corporate Leadership</span>
           <h1 className="section-title" style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>Chairman's Message</h1>
           <p style={{ maxWidth: '680px', margin: '0 auto', fontSize: '1.1rem' }}>
-            Hassan Salem al Dosari outlines the foundational principles and vision of Argus Shipping WLL.
+            Hassan Salem al Dosari outlines the foundational principles and vision of Argus Shipping.
           </p>
         </div>
       </section>
@@ -27,7 +27,7 @@ export default function ChairmanMessage() {
             <div className="chairman-quote">
               <p style={{ marginBottom: '1rem', fontStyle: 'normal' }}>Dear Friends,</p>
               <p style={{ marginBottom: '1.25rem' }}>
-                Since its inception, ARGUS SHIPPING WLL has grown into a highly multi-functional logistics organization. No business path is easy—that is why we concentrate on our team’s core capabilities, keeping them focused on the operational essentials.
+                Since its inception, ARGUS SHIPPING has grown into a highly multi-functional logistics organization. No business path is easy—that is why we concentrate on our team’s core capabilities, keeping them focused on the operational essentials.
               </p>
               <p style={{ marginBottom: '1.25rem' }}>
                 For us, our core operational areas remain critical and important: cargo forwarding, warehousing, container transport, and border clearance. Excellence in these disciplines has been accomplished by the unwavering dedication of our staff and the support of our clients.

@@ -155,7 +155,7 @@ export default function App({ initialPath }) {
   // Page Routing Switcher
   const renderPage = () => {
     if (byPath[currentPath]) return <CommercialPage page={byPath[currentPath]} />;
-    if (currentPath === '/shipping/') return <ShippingRoutes />;
+    if (currentPath === '/trade-lanes/') return <ShippingRoutes />;
     switch (currentPath) {
       case '/':
         return <Home onNavigate={handleNavigate} onOpenQuote={handleOpenQuote} />;
@@ -218,7 +218,7 @@ export default function App({ initialPath }) {
               <div className="footer-logo" style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/')}>
                 <img 
                   src="/images/logo.png" 
-                  alt="Argus Shipping WLL Logo" 
+                  alt="Argus Shipping Logo"
                   style={{ height: '42px', width: 'auto', display: 'block' }} 
                 />
               </div>
@@ -249,7 +249,7 @@ export default function App({ initialPath }) {
                 <li className="footer-link-item">
                   <a href="/contact">Contact Us</a>
                 </li>
-                <li className="footer-link-item"><a href="/shipping/">Shipping Routes</a></li>
+                <li className="footer-link-item"><a href="/trade-lanes/">Trade Lanes</a></li>
               </ul>
             </div>
 
@@ -258,7 +258,7 @@ export default function App({ initialPath }) {
               <h3 className="footer-title">GCC & Global Offices</h3>
               <div className="footer-locations-grid">
                 <div className="footer-location-card">
-                  <h4 className="location-name">Argus Shipping W.L.L. (Doha HQ)</h4>
+                  <h4 className="location-name">Argus Shipping (Doha HQ)</h4>
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
@@ -304,7 +304,7 @@ export default function App({ initialPath }) {
                 </div>
 
                 <div className="footer-location-card">
-                  <h4 className="location-name">Argus shipping W.L.L Bahrain</h4>
+                  <h4 className="location-name">Argus shipping Bahrain</h4>
                   <div className="location-details-list">
                     <span className="location-detail-item">
                       <MapPin size={13} />
@@ -365,7 +365,7 @@ export default function App({ initialPath }) {
           {/* Bottom copyright segment */}
           <div className="footer-bottom">
             <div>
-              <p>Copyright © {new Date().getFullYear()} Argus Shipping WLL. All rights reserved.</p>
+              <p>Copyright © {new Date().getFullYear()} Argus Shipping. All rights reserved.</p>
             </div>
             <div className="footer-social-links">
               <a href="https://www.facebook.com/argusshipping" target="_blank" rel="noopener noreferrer" className="social-icon-btn" aria-label="Facebook">

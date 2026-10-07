@@ -1,13 +1,13 @@
 export const SITE = 'https://www.argusshipping.co';
 const service = (slug, label, h1, keyword, intro, sections, keywords, related, evidence) => ({
-  path: `/services/${slug}-qatar/`, group: 'services', label, h1, keyword, intro, sections,
-  title: `${label} in Qatar | Argus Shipping`,
+  path: `/services/${slug}/`, group: 'services', label, h1, keyword, intro, sections,
+  title: `${h1} | Argus Shipping`,
   description: `${intro.split('. ')[0]}. Discuss your cargo and request a tailored quote from Argus Shipping.`,
   keywords: keywords.split('; '), related, evidence, priority: ['project-cargo', 'vehicle-logistics'].includes(slug) ? 'P3' : 'P1',
 });
 const s = (heading, text) => ({ heading, text });
 export const servicePages = [
-  service('air-freight', 'Air Freight Services', 'Air Freight Services in Qatar', 'air freight Qatar',
+  service('air-freight', 'Air Freight Services', 'International Air Freight Services', 'international air freight',
     'Argus Shipping coordinates international air freight for businesses importing to and exporting from Qatar. Share your cargo dimensions, weight and required delivery date so the team can assess a suitable air cargo option.', [
       s('International air cargo: import and export', 'Air freight suits shipments where the required arrival date matters more than the lowest transport cost. Argus coordinates origin handling, air transport and destination delivery requirements. Specify whether your quote should cover airport-to-airport movement or include collection and final delivery.'),
       s('Urgent and time-sensitive shipments', 'For an urgent consignment, send the cargo-ready date, origin address and delivery deadline before booking. Flight capacity, cargo acceptance and handling cut-offs affect the available schedule. A requested deadline is assessed shipment by shipment; it is not a guaranteed transit time.'),
@@ -15,7 +15,7 @@ export const servicePages = [
       s('Airport handling, customs and delivery', 'Agree the collection point, export documentation responsibilities and Qatar delivery address when requesting a quote. Customs support and onward transport can be coordinated as part of the shipment scope. The team can explain which legs are included and which charges remain outside the freight quotation.'),
     ], 'air freight services Qatar; air cargo Qatar; air cargo services Qatar; air freight company Qatar; air freight forwarding Qatar; international air freight Qatar; air freight Doha; air cargo Doha; air freight forwarder Qatar; airport cargo Qatar; air import Qatar; air export Qatar; door-to-door air freight Qatar; urgent air freight Qatar; international air freight company Qatar; commercial air cargo Qatar; urgent cargo shipping Qatar',
     ['door-to-door-cargo', 'customs-clearance', 'sea-freight'], 'Services.jsx: air freight operations and airport-to-door support'),
-  service('sea-freight', 'Sea Freight Services', 'Sea Freight Services in Qatar', 'sea freight Qatar',
+  service('sea-freight', 'Sea Freight Services', 'International Sea Freight Services', 'international sea freight',
     'Argus Shipping arranges FCL and LCL sea freight for Qatar importers and exporters. The service connects international cargo movements with origin coordination, customs support and delivery planning.', [
       s('FCL container shipping', 'Full Container Load is an option when a shipment requires a container dedicated to one shipper. Share the cargo volume, weight, package sizes and loading arrangements so container suitability can be reviewed. Container selection depends on the goods and their loading requirements, not volume alone.'),
       s('LCL consolidation services', 'Less than Container Load allows smaller consignments to share container capacity. Cargo must be received and handled through consolidation facilities at origin and destination. Compare the complete collection-to-delivery quotation, including handling, when choosing between LCL and FCL.'),
@@ -23,7 +23,7 @@ export const servicePages = [
       s('From supplier collection to final delivery', 'Send supplier details, a packing list and commercial shipment information with your enquiry. Argus can coordinate collection and door-to-door requirements alongside ocean freight. Warehousing can be discussed when cargo arrives before the receiving site is ready.'),
     ], 'sea freight services Qatar; ocean freight Qatar; ocean freight services Qatar; sea cargo Qatar; sea freight company Qatar; sea freight forwarder Qatar; container shipping Qatar; FCL shipping Qatar; LCL shipping Qatar; FCL freight Qatar; LCL freight Qatar; Hamad Port freight; sea freight Doha; import container Qatar; export container Qatar; FCL container shipping Qatar; ocean freight company Qatar; sea cargo import Qatar',
     ['customs-clearance', 'warehousing', 'door-to-door-cargo'], 'Services.jsx: sea freight, FCL/LCL and Hamad Port trade-lane table'),
-  service('road-freight', 'Road Freight Services', 'Road Freight Services in Qatar & Across the GCC', 'road freight Qatar',
+  service('road-freight', 'Road Freight Services', 'Road Freight & Cross-Border Transportation', 'road freight services',
     'Argus Shipping coordinates road freight in Qatar and across the GCC. Businesses can discuss full-truckload and shared-load movements for factory, warehouse and consignee deliveries.', [
       s('Local collection and commercial delivery', 'Collection and delivery planning starts with the cargo size and the access available at each site. Provide loading equipment details, appointment windows and any unloading restrictions. These details help the team match the transport arrangement to the consignment.'),
       s('FTL and LTL freight', 'Full Truck Load provides a vehicle allocation for the shipment, while Less than Truck Load combines consignments within a shared movement. The choice depends on cargo volume, handling compatibility and delivery requirements. Ask for a scope that includes the intended loading and unloading responsibilities.'),
@@ -31,7 +31,7 @@ export const servicePages = [
       s('Plan the handover before dispatch', 'Share the collection location, consignee details, cargo description and supporting commercial documents. Identify equipment or fragile goods requiring particular securing arrangements. Customs support should be coordinated before the vehicle departs to reduce avoidable document queries.'),
     ], 'land freight Qatar; land transportation Qatar; road transportation Qatar; GCC road freight; cross-border freight Qatar; trucking company Qatar; cargo transport Qatar; GCC cargo transportation; FTL Qatar; LTL Qatar; Qatar UAE road freight; Qatar Saudi freight',
     ['customs-clearance', 'door-to-door-cargo', 'warehousing'], 'Services.jsx: GCC FTL/LTL and UAE/Saudi/Oman table'),
-  service('warehousing', 'Warehousing & Storage', 'Warehousing & Storage Services in Qatar', 'warehousing services Qatar',
+  service('warehousing', 'Warehousing & Storage', 'Warehousing & Distribution Services', 'warehousing services',
     'Argus Shipping provides warehousing and inventory support for commercial cargo. Discuss the storage period, stock profile and dispatch requirements to plan storage alongside freight and distribution.', [
       s('Commercial storage requirements', 'Storage planning depends on the goods, packaging, pallet or carton quantities and expected dwell time. Share how stock will arrive and whether it will be released as full pallets, cartons or individual orders. Handling needs should be agreed before goods are delivered to the warehouse.'),
       s('Inventory receipt and release', 'Accurate receiving information connects physical stock to the shipper’s records. Provide product references and quantities, identify any batch or serial tracking needs, and agree a release instruction process. This helps distinguish stock held for later delivery from goods ready for immediate dispatch.'),
@@ -39,7 +39,7 @@ export const servicePages = [
       s('Confirm storage conditions', 'Tell the team about temperature, security, segregation or other product-specific requirements at the enquiry stage. Facility suitability, capacity and any required controls must be confirmed for the actual cargo before booking.'),
     ], 'warehousing Qatar; warehouse Qatar; warehouse services Qatar; logistics warehouse Qatar; storage company Qatar; commercial storage Qatar; distribution warehouse Qatar',
     ['3pl-logistics', 'road-freight', 'sea-freight'], 'Services.jsx: warehousing and inventory; specialist temperature/certification claims not independently verified'),
-  service('customs-clearance', 'Customs Clearance Services', 'Customs Clearance Services in Qatar', 'customs clearance Qatar',
+  service('customs-clearance', 'Customs Clearance Services', 'Customs Clearance & Brokerage Support', 'customs clearance',
     'Argus Shipping coordinates customs clearance support for cargo moving to and from Qatar. Discuss documentation and shipment responsibilities before freight is dispatched.', [
       s('Import and export documentation support', 'Start with a clear goods description, shipper and consignee details, commercial invoice information and packing details. The team reviews the shipment scope and identifies documentation to prepare. The final requirements depend on the commodity, origin, destination and applicable procedures.'),
       s('Sea, air and road cargo coordination', 'Customs preparation should align with the freight booking and the arrival gateway. Argus coordinates port, airport and cross-border support. Linking those tasks helps the parties respond to document queries and coordinate release with onward transport.'),
@@ -47,7 +47,7 @@ export const servicePages = [
       s('Cargo needing additional checks', 'Identify special goods and supporting product information before shipment. The team can discuss the clearance coordination required for your cargo. Confirm the applicable requirements with the operations team before dispatch.'),
     ], 'customs clearance services Qatar; customs clearance company Qatar; customs clearance Doha; import customs clearance Qatar; export customs clearance Qatar; Hamad Port customs clearance; airport customs clearance Qatar',
     ['air-freight', 'sea-freight', 'road-freight'], 'Services.jsx: border support and door-to-door documentation; no licence evidence'),
-  service('3pl-logistics', '3PL Logistics Services', '3PL Logistics Services in Qatar', '3PL logistics Qatar',
+  service('3pl-logistics', '3PL Logistics Services', '3PL & Contract Logistics Services', '3PL logistics',
     'Argus Shipping offers third-party logistics connecting inventory storage, order fulfilment and regional distribution. Businesses can discuss an outsourced logistics scope suited to their stock and delivery requirements.', [
       s('From storage to order fulfilment', 'A 3PL arrangement combines several operating tasks rather than a single storage booking. Define which activities Argus will handle: receipt of stock, inventory records, release against orders and distribution. Clear handover points make responsibilities easier to manage.'),
       s('Inventory and distribution planning', 'Provide your SKU count, order profile, average shipment size and expected peaks. Agree how stock instructions, order information and delivery updates will be exchanged. The required process will differ between bulk replenishment to businesses and small individual orders.'),
@@ -55,7 +55,7 @@ export const servicePages = [
       s('Prepare a useful 3PL enquiry', 'Include monthly inbound volume, stockholding expectations, order lines and outbound destinations. Identify special handling and return requirements separately. This gives the team a basis for assessing the operating arrangement instead of quoting a generic warehouse space rate.'),
     ], '3PL Qatar; third party logistics Qatar; 3PL company Qatar; contract logistics Qatar; fulfillment services Qatar; logistics outsourcing Qatar; warehouse distribution Qatar; inventory management Qatar; fulfillment Qatar',
     ['warehousing', 'road-freight', 'door-to-door-cargo'], 'Services.jsx: explicit Third-Party Logistics service'),
-  service('door-to-door-cargo', 'Door-to-Door Cargo', 'Door-to-Door Cargo Services in Qatar', 'door-to-door cargo Qatar',
+  service('door-to-door-cargo', 'Door-to-Door Cargo', 'International Door-to-Door Freight Services', 'door-to-door freight',
     'Argus Shipping coordinates door-to-door cargo for businesses shipping to Qatar. Supplier collection, consolidation, freight and destination delivery can be arranged within an agreed shipment scope.', [
       s('A connected collection-to-delivery journey', 'The journey starts with supplier collection and origin handling, continues through the freight leg and clearance, and ends with delivery to the consignee. Agree each stage when requesting a quotation. Door-to-door describes the physical journey; payment of duties and other charges must still be specified.'),
       s('Consolidation for smaller consignments', 'The Argus service includes carton and cubic-metre consolidation arrangements for smaller volumes. Multiple supplier collections can be discussed to combine compatible goods. Provide the ready dates and package information for each supplier so the team can plan the handover.'),
@@ -63,7 +63,7 @@ export const servicePages = [
       s('Prepare for final delivery', 'Share the consignee contact, full address, access restrictions and unloading arrangements. Goods requiring storage before delivery should be identified early. Delivery scheduling depends on freight arrival, release and the receiving location’s availability.'),
     ], 'door to door cargo Qatar; door to door shipping Qatar; door to door freight Qatar; international door to door cargo Qatar; cargo pickup and delivery Qatar; freight delivery Qatar',
     ['air-freight', 'sea-freight', 'customs-clearance'], 'Services.jsx: door-to-door consolidation and supplier collection'),
-  service('project-cargo', 'Project Cargo & Heavy Lift', 'Project Cargo & Heavy-Lift Logistics in Qatar', 'project cargo Qatar',
+  service('project-cargo', 'Project Cargo & Heavy Lift', 'Project Cargo & Heavy-Lift Logistics', 'project cargo',
     'Argus Shipping supports heavy-lift transport and project cargo coordination. Discuss the cargo dimensions, handling requirements and delivery site before selecting a transport arrangement.', [
       s('Start with the cargo and site survey information', 'Project enquiries need more than a total shipment weight. Supply piece-by-piece dimensions, weights, drawings and photographs where available. Identify lifting points, centre-of-gravity information and the loading and delivery sites so the team can assess the movement.'),
       s('Oversized cargo and transport options', 'Cargo outside standard transport dimensions requires an individual handling assessment. Road and sea options depend on the piece size, securing requirements and available equipment. Any proposed special container, lifting or route arrangement must be confirmed against the shipment specifications.'),
@@ -71,7 +71,7 @@ export const servicePages = [
       s('Request an assessed project quotation', 'Send the origin, destination, cargo-ready date and desired delivery window with the technical cargo information. Argus can review the request with you and define the proposed scope. Equipment and handling arrangements are assessed against the cargo specifications.'),
     ], 'project logistics Qatar; heavy cargo Qatar; heavy lift logistics Qatar; oversized cargo Qatar; OOG cargo Qatar; industrial logistics Qatar; construction project cargo Qatar',
     ['sea-freight', 'road-freight', 'customs-clearance'], 'About.jsx: heavy-lift transport; detailed project credentials still required'),
-  service('vehicle-logistics', 'Vehicle Logistics & Car Shipping', 'Vehicle Logistics & Car Shipping Services in Qatar', 'vehicle logistics Qatar',
+  service('vehicle-logistics', 'Vehicle Logistics & Car Shipping', 'Vehicle Logistics & Car Shipping Services', 'vehicle logistics',
     'Argus Shipping offers vehicle import and export logistics for dealers and private owners. Discuss the vehicle details, origin and destination to assess a shipping and handling arrangement.', [
       s('Plan a vehicle movement', 'Provide the make, model, dimensions and operating condition of each vehicle. Explain whether the enquiry is for one vehicle or a dealer shipment and identify the collection and delivery locations. Those details affect handling, transport equipment and the proposed scope.'),
       s('Import and export coordination', 'Vehicle movements need shipment documentation and a clear allocation of importer and exporter responsibilities. Requirements depend on the vehicle and destination. Confirm eligibility and required paperwork with the team before arranging collection or committing to a shipment date.'),
@@ -82,8 +82,8 @@ export const servicePages = [
 ];
 
 const lane = (slug, label, h1, keyword, intro, sections, keywords, evidence) => ({
-  path: `/shipping/${slug}-to-qatar/`, group: 'shipping', label, h1, keyword, intro, sections,
-  title: `${label} Shipping | Argus Shipping`, description: `${intro.split('. ')[0]}. Discuss collection, freight and delivery with Argus Shipping.`,
+  path: `/trade-lanes/${slug}-to-qatar/`, group: 'trade-lanes', label, h1, keyword, intro, sections,
+  title: `${h1} | Argus Shipping`, description: `${intro.split('. ')[0]}. Discuss collection, freight and delivery with Argus Shipping.`,
   keywords: keywords.split('; '), related: ['uae', 'bahrain'].includes(slug) ? ['road-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'] : ['air-freight', 'sea-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'], evidence, priority: 'P2',
 });
 export const tradePages = [
@@ -129,5 +129,16 @@ export const serviceById = Object.fromEntries(servicePages.map(page => [page.pat
 export const serviceLinks = Object.fromEntries(Object.entries({ air: 'air-freight', sea: 'sea-freight', road: 'road-freight', warehouse: 'warehousing', warehousing: 'warehousing', doortodoor: 'door-to-door-cargo', 'door-to-door': 'door-to-door-cargo', '3pl': '3pl-logistics', vehicle: 'vehicle-logistics' }).map(([id, slug]) => [id, serviceById[slug].path]));
 export function normalizePath(path) {
   const clean = path.replace(/\.html$/, '').replace(/\/$/, '') || '/';
-  return byPath[`${clean}/`] || clean === '/shipping' ? `${clean}/` : clean;
+  
+  // Handle legacy redirects
+  if (clean.startsWith('/services/') && clean.endsWith('-qatar')) {
+    const newPath = clean.replace('-qatar', '') + '/';
+    return newPath;
+  }
+  if (clean.startsWith('/shipping/')) {
+    const newPath = clean.replace('/shipping/', '/trade-lanes/') + '/';
+    return newPath;
+  }
+  
+  return byPath[`${clean}/`] || clean === '/trade-lanes' ? `${clean}/` : clean;
 }

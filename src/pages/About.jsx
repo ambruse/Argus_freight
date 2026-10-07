@@ -23,7 +23,7 @@ export default function About({ onNavigate }) {
                 Leading Freight Management in the Region
               </h2>
               <p>
-               ARGUS SHIPPING WLL stands at the forefront of regional logistics, connecting a robust global network to redefine industry benchmarks. We match international market demands with intuitive, agile service, turning complex logistics challenges into seamless solutions that drive customer satisfaction. From ocean cargo and air logistics to border clearance, free zone distribution, relocations, and heavy-lift transport, our end-to-end capabilities cover every angle. Partner with our experts to optimize your supply chain routes and achieve the ideal balance of speed and cost-effectiveness.</p>
+               ARGUS SHIPPING stands at the forefront of regional logistics, connecting a robust global network to redefine industry benchmarks. We match international market demands with intuitive, agile service, turning complex logistics challenges into seamless solutions that drive customer satisfaction. From ocean cargo and air logistics to border clearance, free zone distribution, relocations, and heavy-lift transport, our end-to-end capabilities cover every angle. Partner with our experts to optimize your supply chain routes and achieve the ideal balance of speed and cost-effectiveness.</p>
             </div>
 
             <div className="about-features-grid">
@@ -65,7 +65,7 @@ export default function About({ onNavigate }) {
 
           <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', background: 'var(--bg-card)', padding: 'var(--feature-inset)', borderRadius: 'var(--border-radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
             <p style={{ fontSize: '1.25rem', fontStyle: 'italic', color: 'var(--text-primary)', marginBottom: '2rem', lineHeight: '1.8' }}>
-              "Since its inception, ARGUS SHIPPING WLL has grown into a multi-functional logistics organization. We always concentrate on our team’s capabilities and keep them focused on the essentials."
+              "Since its inception, ARGUS SHIPPING has grown into a multi-functional logistics organization. We always concentrate on our team’s capabilities and keep them focused on the essentials."
             </p>
             <h4 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>Hassan Salem al Dosari</h4>
             <p style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2.5rem' }}>
