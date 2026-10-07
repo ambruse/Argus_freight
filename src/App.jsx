@@ -12,6 +12,7 @@ import ChairmanMessage from './pages/ChairmanMessage';
 import Tracking from './pages/Tracking';
 import { GlobalNetworkMenu, GlobalNetworkPage, CountryLinks } from './components/GlobalNetwork';
 import CommercialPage, { ShippingRoutes } from './pages/CommercialPage';
+import WhatsAppFloatingButton from './components/WhatsAppFloatingButton';
 import { byPath, normalizePath } from './seo/commercial-pages.mjs';
 import { metadata as seoMetadata, schemaFor } from './seo/metadata.mjs';
 import { Mail, Phone, MapPin } from 'lucide-react';
@@ -211,6 +212,7 @@ export default function App({ initialPath }) {
 
       {/* Floating request quote triggers */}
       <QuoteModal isOpen={isQuoteOpen} onClose={() => setIsQuoteOpen(false)} />
+      <WhatsAppFloatingButton />
 
       {/* Global Footer */}
       <footer className="footer">

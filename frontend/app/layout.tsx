@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 import NotificationListener from "@/components/layout/NotificationListener";
 import ArgusNavbar from "@/components/layout/ArgusNavbar";
 import GlobalPageLoader from "@/components/layout/GlobalPageLoader";
+import WhatsAppFloatingButton from "@/components/layout/WhatsAppFloatingButton";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -93,11 +94,13 @@ export default function RootLayout({
       <body className="bg-surface text-primary antialiased">
         <ArgusNavbar />
         {children}
+        <WhatsAppFloatingButton />
         <NotificationListener />
         <GlobalPageLoader />
         {/* Global toast notifications */}
         <Toaster
           position="bottom-right"
+          containerStyle={{ bottom: "96px" }}
           toastOptions={{
             style: {
               background: "rgba(12,18,32,0.95)",
