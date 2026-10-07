@@ -1,6 +1,6 @@
 import './WhatsAppFloatingButton.css';
 
-const WHATSAPP_NUMBERS = ['97455792233', '97430512233'];
+const WHATSAPP_NUMBERS = ['97455792233', '97430512233', '97471261234'];
 
 export default function WhatsAppFloatingButton() {
   const handleClick = () => {
