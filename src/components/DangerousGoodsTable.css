@@ -1,0 +1,18 @@
+.dg-cargo { margin-top: 1.5rem; min-width: 0; }
+.dg-cargo h3 { font-size: 1.2rem; margin-bottom: .75rem; color: var(--text-primary); }
+.dg-cargo h4 { font-size: 1rem; margin: 1.25rem 0 .5rem; color: var(--text-primary); }
+.dg-cargo p { color: var(--text-secondary); font-size: .9rem; line-height: 1.7; margin-bottom: 1rem; }
+.dg-table-scroll { max-width: 100%; overflow-x: auto; margin: 1rem 0; border: 1px solid var(--border-gold); border-radius: 10px; }
+.dg-table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dg-cargo table { width: 100%; border-collapse: collapse; text-align: left; font-size: .85rem; line-height: 1.6; }
+.dg-cargo caption { text-align: left; padding: .85rem 1rem; color: var(--text-secondary); }
+.dg-cargo th, .dg-cargo td { padding: .85rem 1rem; vertical-align: top; border-top: 1px solid var(--border-gold); }
+.dg-cargo thead { background: var(--accent-muted); color: var(--text-primary); }
+.dg-cargo tbody th { width: 24%; color: var(--text-primary); font-weight: 600; }
+.dg-cargo td { color: var(--text-secondary); }
+.dg-acceptance-note { border-left: 2px solid var(--accent); padding-left: 1rem; }
+.dg-guidance a { color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 600px) {
+  .dg-cargo table { min-width: 620px; }
+  .dg-cargo th, .dg-cargo td { padding: .75rem; }
+}

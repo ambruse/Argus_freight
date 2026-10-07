@@ -54,7 +54,8 @@ export default function ArgusNavbar() {
   const activeIndex = items.findIndex((item) => item.href === pathname);
 
   return (
-    <header className={`argus-navbar-vars blob-nav-shell ${isOpen ? "is-open" : ""}`} ref={shellRef}>
+    <header className={`argus-navbar-vars blob-nav-shell ${isOpen ? "is-open" : ""}`} ref={shellRef}
+      onPointerLeave={(event) => { if (event.pointerType === "mouse") setIsOpen(false); }}>
       <button className="blob-nav-trigger" type="button" aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isOpen} aria-controls="account-blob-navigation" onClick={() => setIsOpen((open) => !open)}>
         {isOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
       </button>

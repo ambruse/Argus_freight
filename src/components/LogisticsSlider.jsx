@@ -8,6 +8,7 @@ const visuals = [
   { src: '/images/home-slider-ship.png', alt: 'Argus sea freight container ship', position: '50% 50%' },
   { src: '/images/home-slider-forklift.png', alt: 'Argus warehousing forklift operations', position: '50% 50%' },
   { src: '/images/home-slider-van.png', alt: 'Argus door-to-door delivery van', position: '50% 50%' },
+  { src: '/images/home-slider-dangerous-goods.png', alt: 'Illustration of Argus dangerous goods freight handling at a cargo terminal', position: '50% 50%' },
 ];
 
 export default function LogisticsSlider({ modes }) {
@@ -64,14 +65,16 @@ export default function LogisticsSlider({ modes }) {
         {modes.map((mode,index) => (
           <div key={mode.id} className={`freight-slide ${active===index?'is-current':''}`} role="group"
             aria-roledescription="slide" aria-label={`${index+1} of ${modes.length}: ${mode.title}`} aria-hidden={active!==index}>
-            {visited.includes(index) && <img src={visuals[index].src} alt={visuals[index].alt} width="736" height="1051"
-              style={{objectPosition:visuals[index].position}} decoding="async" fetchPriority={index===0?'high':'auto'} />}
+            <div className="freight-slide-scene">
+              {visited.includes(index) && <img src={visuals[index].src} alt={visuals[index].alt}
+                width={[555,553,556,553,555,556][index]} height={[468,468,468,469,469,469][index]}
+                style={{objectPosition:visuals[index].position}} decoding="async" fetchPriority={index===0?'high':'auto'} />}
+            </div>
             <div className="freight-slide-caption"><span className="freight-slide-index" aria-hidden="true">0{index+1}</span>
               <div><h3>{mode.title}</h3><p>{mode.tagline}</p></div>
             </div>
           </div>
         ))}
-        <div className="freight-slider-frame" aria-hidden="true" />
       </div>
       <div className="freight-slider-controls">
         <div className="freight-slider-selectors" aria-label="Choose service">

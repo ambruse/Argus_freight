@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.argusshipping.co/locations/</loc></url>
   <url><loc>https://www.argusshipping.co/</loc></url>
   <url><loc>https://www.argusshipping.co/services</loc></url>
   <url><loc>https://www.argusshipping.co/about</loc></url>
@@ -30,6 +31,7 @@
   <url><loc>https://www.argusshipping.co/locations/china/</loc></url>
   <url><loc>https://www.argusshipping.co/locations/turkey/</loc></url>
   <url><loc>https://www.argusshipping.co/locations/bahrain/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/dangerous-goods/</loc></url>
   <url><loc>https://www.argusshipping.co/services/air-freight/</loc></url>
   <url><loc>https://www.argusshipping.co/services/sea-freight/</loc></url>
   <url><loc>https://www.argusshipping.co/services/road-freight/</loc></url>

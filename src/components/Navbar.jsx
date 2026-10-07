@@ -67,13 +67,14 @@ export default function Navbar({ currentPath, setCurrentPath, onOpenQuote, isDar
   };
 
   const resetPointer = () => {
+    setIsOpen(false);
     shellRef.current?.style.setProperty('--blob-pull-x', '0px');
     shellRef.current?.style.setProperty('--blob-pull-y', '0px');
   };
 
   return (
-    <header className={`blob-nav-shell ${isOpen ? 'is-open' : ''}`} ref={shellRef} onPointerMove={handlePointerMove} onPointerLeave={resetPointer}
-      onClick={(event) => { if (!event.target.closest('a, button, summary')) setIsOpen((open) => !open); }}>
+    <header className={`blob-nav-shell ${isOpen ? 'is-open' : ''}`} ref={shellRef} onPointerMove={handlePointerMove}
+      onPointerLeave={(event) => { if (event.pointerType === 'mouse') resetPointer(); }}>
       <button className="blob-nav-trigger" type="button" aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={isOpen} aria-controls="primary-blob-navigation" onClick={() => setIsOpen((open) => !open)}>
         {isOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
       </button>

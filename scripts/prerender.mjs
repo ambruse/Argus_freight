@@ -23,6 +23,10 @@ try {
       .replace('</head>', `<script type="application/ld+json">${JSON.stringify(schemaFor(route)).replace(/</g, '\\u003c')}</script></head>`)
       .replace('<body>', '<body class="light-theme">')
       .replace('<div id="root"></div>', () => `<div id="root">${render(route)}</div>`);
+    // Check the final HTML, including visible copy, metadata and JSON-LD.
+    if (/\bArgus\s+Shipping\s+W[.\s]*L[.\s]*L\b/i.test(html)) {
+      throw new Error(`Outdated Argus Shipping branding on ${route}. Remove the retired W.L.L. suffix before publishing.`);
+    }
     const file = route === '/' ? 'index.html' : route.endsWith('/') ? `${route.slice(1)}index.html` : `${route.slice(1)}.html`;
     fs.mkdirSync(path.dirname(path.join(out, file)), { recursive: true });
     fs.writeFileSync(path.join(out, file), html);

@@ -10,6 +10,7 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import ChairmanMessage from './pages/ChairmanMessage';
 import Tracking from './pages/Tracking';
+import { GlobalNetworkMenu, GlobalNetworkPage, CountryLinks } from './components/GlobalNetwork';
 import CommercialPage, { ShippingRoutes } from './pages/CommercialPage';
 import { byPath, normalizePath } from './seo/commercial-pages.mjs';
 import { metadata as seoMetadata, schemaFor } from './seo/metadata.mjs';
@@ -154,6 +155,7 @@ export default function App({ initialPath }) {
 
   // Page Routing Switcher
   const renderPage = () => {
+    if (currentPath === '/locations/') return <GlobalNetworkPage />;
     if (byPath[currentPath]) return <CommercialPage page={byPath[currentPath]} />;
     if (currentPath === '/trade-lanes/') return <ShippingRoutes />;
     switch (currentPath) {
@@ -200,6 +202,7 @@ export default function App({ initialPath }) {
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
       />
+      <GlobalNetworkMenu currentPath={currentPath} />
 
       {/* Main Page Area */}
       <main>
@@ -252,6 +255,7 @@ export default function App({ initialPath }) {
                 <li className="footer-link-item"><a href="/trade-lanes/">Trade Lanes</a></li>
               </ul>
             </div>
+            <nav className="footer-network" aria-label="Footer Global Network"><h3 className="footer-title">Global Network</h3><CountryLinks currentPath={currentPath} compact /></nav>
 
             {/* GCC & Global Offices for Local SEO Footprint */}
             <div className="footer-offices-col">

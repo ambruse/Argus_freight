@@ -1,0 +1,34 @@
+.global-network-access { position: sticky; top: 14px; z-index: 1001; width: max-content; max-width: calc(100vw - 100px); margin: 14px 24px 10px; font-family: var(--font-main); }
+.global-network-access summary { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 16px; border: 1px solid var(--border-gold); border-radius: 12px; background: var(--bg-primary); color: var(--text-primary); box-shadow: var(--card-shadow); cursor: pointer; list-style: none; font-size: .9rem; font-weight: 600; }
+.global-network-access summary::-webkit-details-marker { display: none; }
+.network-chevron { margin-left: auto; }
+.global-network-access details[open] .network-chevron { transform: rotate(180deg); }
+.network-panel { position: absolute; top: calc(100% + 8px); left: 0; width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 88px); overflow-y: auto; padding: 20px; border: 1px solid var(--border-gold); border-radius: 16px; background: var(--bg-primary); box-shadow: var(--card-shadow); }
+.network-eyebrow { font-size: .75rem; text-transform: uppercase; letter-spacing: .13em; margin-bottom: 14px; color: var(--text-secondary); }
+.network-countries { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; list-style: none; padding: 0; margin: 20px 0; }
+.network-countries a { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 100%; min-height: 76px; padding: 18px; color: var(--text-primary); background: var(--bg-card); border: 1px solid var(--border-gold); border-radius: 10px; transition: background 180ms ease, border-color 180ms ease; }
+.network-countries strong { font-size: 1.1rem; font-weight: 600; }
+.network-countries small { display: block; color: var(--text-secondary); margin-top: 5px; font-size: .8rem; line-height: 1.5; }
+.network-countries a:hover, .network-countries a[aria-current] { background: var(--accent-muted); border-color: var(--accent); }
+.network-panel .network-countries { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 0; }
+.network-panel .network-countries a { padding: 12px; }
+.network-view-all { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; margin-top: 12px; color: var(--text-primary); text-decoration: underline; text-underline-offset: 5px; }
+.network-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.network-intro { max-width: 740px; margin-top: 14px; }
+.network-section { position: relative; }
+.network-context { border-top: 1px solid var(--border-gold); padding-top: 24px; }
+.network-compact { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.network-compact a { min-height: 48px; padding: 12px 16px; }
+.network-route-links { list-style: none; padding: 0; margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.network-route-links a { display: inline-flex; align-items: center; min-height: 44px; gap: 10px; text-decoration: underline; text-underline-offset: 4px; }
+.network-hub { padding-bottom: 48px; }
+.network-hub section { max-width: 800px; margin-top: 32px; }
+.network-hub h2, .network-hub p { margin-bottom: 14px; }
+.footer-network { margin-top: 0; }
+.footer-network .network-countries { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; margin: 0; }
+.footer-network .network-countries a { background: none; border: 0; padding: 8px 0; }
+.footer-network .network-countries strong { font-size: .9rem; }
+.global-network-access :is(a,summary):focus-visible, .network-countries a:focus-visible, .network-route-links a:focus-visible, .network-view-all:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media(max-width: 900px) { .global-network-access { margin-inline: 14px; } .network-current { display: none; } .network-countries { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width: 480px) { .network-panel .network-countries { grid-template-columns: 1fr; } .network-panel { padding: 14px; } .network-countries { gap: 10px; } .network-countries a { padding: 14px; } .network-heading > a { min-height: 44px; display: inline-flex; align-items: center; } }
+@media(prefers-reduced-motion: reduce) { .network-countries a { transition: none; } }

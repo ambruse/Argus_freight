@@ -1,8 +1,20 @@
 import { useState } from 'react';
+import DangerousGoodsTable from '../components/DangerousGoodsTable';
 import { serviceLinks } from '../seo/commercial-pages.mjs';
-import { Plane, Truck, Ship, Archive, ShieldCheck, Compass, Car, Package, Layers, Move, Globe } from 'lucide-react';
+import { Plane, Truck, Ship, Archive, ShieldCheck, Compass, Car, Package, Layers, Move, Globe, TriangleAlert } from 'lucide-react';
 
 const DETAILED_SERVICES = [
+  {
+    id: 'dangerous-goods', category: 'specialized', title: 'Dangerous Goods Freight', shortTitle: 'Dangerous Goods', icon: TriangleAlert,
+    imgSrc: '/images/home-slider-dangerous-goods.png',
+    description: 'Cargo-specific planning for dangerous goods shipments, connecting documentation, handling requirements and carrier acceptance with the proposed freight route.',
+    extended: [
+      'Shipment review based on the product, classification and transport requirements.',
+      'Coordination of documentation and packaging requirements before cargo handover.',
+      'Air, sea or road options assessed against cargo and route acceptance.',
+      'Origin collection and destination delivery scope agreed before booking.'
+    ]
+  },
   {
     id: 'sea',
     category: 'freight',
@@ -171,7 +183,7 @@ export default function Services() {
         <div className="hero-radial-glow" />
         <div className="container relative z-10">
           <span className="services-hero-tag font-gold">Global Network Solutions</span>
-          <h1 className="services-hero-title">Freight &amp; Logistics Services in Qatar</h1>
+          <h1 className="services-hero-title">International Freight &amp; Logistics Services</h1>
           <p className="services-hero-desc">
             We operate a fully integrated cargo, freight forwarding, and warehousing network engineered to keep global supply chains moving without friction.
           </p>
@@ -180,7 +192,7 @@ export default function Services() {
 
       {/* Modern Interactive Filter Tabs */}
       <div className="container relative z-10">
-        <p>Coordinate your shipment with <a href="/services/customs-clearance-qatar/">customs clearance support</a> and <a href="/services/project-cargo-qatar/">project cargo planning</a>, or explore <a href="/shipping/">shipping routes to Qatar</a>.</p>
+        <p>Coordinate your shipment with <a href="/services/customs-clearance/">customs clearance support</a> and <a href="/services/project-cargo/">project cargo planning</a>, or explore <a href="/trade-lanes/">international trade lanes</a>.</p>
         <div className="services-tabs-pill-row">
           <button className={getTabClass('all')} onClick={() => setActiveTab('all')}>
             <Globe size={16} />
@@ -239,6 +251,7 @@ export default function Services() {
                   </div>
                   
                   <p className="premium-service-desc">{service.description}</p>
+                  {service.id === 'dangerous-goods' && <DangerousGoodsTable />}
                   {serviceLinks[service.id] && <p><a href={serviceLinks[service.id]} className="read-more-link">Explore {service.shortTitle} services →</a></p>}
                   
                   {service.id === 'sea' && (

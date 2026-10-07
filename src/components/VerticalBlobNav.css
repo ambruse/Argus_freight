@@ -14,7 +14,7 @@
 }
 
 .blob-nav-shell:hover,
-.blob-nav-shell:focus-within,
+.blob-nav-shell:has(:focus-visible),
 .blob-nav-shell.is-open { --blob-width: 238px; }
 
 .blob-nav {
@@ -50,7 +50,7 @@ body.light-theme .blob-nav-surface {
 }
 
 .blob-nav-shell:hover .blob-nav-surface,
-.blob-nav-shell:focus-within .blob-nav-surface,
+.blob-nav-shell:has(:focus-visible) .blob-nav-surface,
 .blob-nav-shell.is-open .blob-nav-surface { border-radius: 10% 4.5% 5.5% 9% / 3.5% 4% 5% 4.5%; }
 
 .blob-nav-shine {
@@ -127,16 +127,16 @@ body.light-theme .blob-nav-brand-mark img { filter: none; }
 .blob-nav-label { opacity: 0; transform: translateX(12px); font: 500 .86rem var(--font-main); letter-spacing: .01em; transition: opacity 220ms ease, transform 420ms cubic-bezier(0.16,1,0.3,1); }
 
 .blob-nav-shell:hover .blob-nav-label,
-.blob-nav-shell:focus-within .blob-nav-label,
+.blob-nav-shell:has(:focus-visible) .blob-nav-label,
 .blob-nav-shell.is-open .blob-nav-label,
 .blob-nav-shell:hover .blob-nav-brand-copy,
-.blob-nav-shell:focus-within .blob-nav-brand-copy,
+.blob-nav-shell:has(:focus-visible) .blob-nav-brand-copy,
 .blob-nav-shell.is-open .blob-nav-brand-copy { opacity: 1; transform: translateX(0); }
 
 .blob-nav-utilities { overflow: hidden; flex: 0 0 auto; }
 .blob-nav-network { display: none; margin: 4px 2px 8px; }
 .blob-nav-shell:hover .blob-nav-network,
-.blob-nav-shell:focus-within .blob-nav-network,
+.blob-nav-shell:has(:focus-visible) .blob-nav-network,
 .blob-nav-shell.is-open .blob-nav-network { display: block; }
 .blob-nav-network summary { display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 8px; color: var(--text-muted); cursor: pointer; list-style: none; font: 500 .72rem var(--font-main); }
 .blob-nav-network summary::-webkit-details-marker { display: none; }
@@ -154,14 +154,14 @@ body.light-theme .blob-nav-network-links { background: rgba(250,248,244,.96); }
 .blob-nav-quote { min-width: 0; flex: 1; border-radius: 15px 10px 14px 11px; color: #080C14; background: linear-gradient(135deg,#F5B037,#D4831A 70%,#F5C842); font-size: .78rem; font-weight: 700; opacity: 0; pointer-events: none; transition: opacity 180ms ease 80ms, transform 220ms ease; }
 .blob-nav-quote:hover { transform: translateY(-1px); }
 .blob-nav-shell:hover .blob-nav-quote,
-.blob-nav-shell:focus-within .blob-nav-quote,
+.blob-nav-shell:has(:focus-visible) .blob-nav-quote,
 .blob-nav-shell.is-open .blob-nav-quote { opacity: 1; pointer-events: auto; }
 .blob-nav-trigger { display: none; }
 
 /* A single full brand replaces the compact monogram on expansion. */
 .blob-nav-full-logo { display: none; width: 154px; max-width: 100%; height: auto; max-height: 52px; margin-inline: auto; object-fit: contain; object-position: center; }
-.blob-nav-shell:is(:hover, :focus-within, .is-open) .blob-nav-brand-mark { display: none; }
-.blob-nav-shell:is(:hover, :focus-within, .is-open) .blob-nav-full-logo { display: block; }
+.blob-nav-shell:is(:hover, :has(:focus-visible), .is-open) .blob-nav-brand-mark { display: none; }
+.blob-nav-shell:is(:hover, :has(:focus-visible), .is-open) .blob-nav-full-logo { display: block; }
 body.dark-theme .blob-nav-full-logo { filter: brightness(0) invert(1); }
 
 /* Translucent body with a fine reflected rim; no SVG displacement filters. */
@@ -196,7 +196,7 @@ body.light-theme .blob-nav-surface {
 @media (max-width: 900px) {
   .blob-nav-shell,
   .blob-nav-shell:hover,
-  .blob-nav-shell:focus-within {
+  .blob-nav-shell:has(:focus-visible) {
     --blob-width: 58px;
     top: 14px; right: 14px;
     width: var(--blob-width); height: 58px;

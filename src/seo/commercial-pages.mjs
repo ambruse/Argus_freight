@@ -7,6 +7,25 @@ const service = (slug, label, h1, keyword, intro, sections, keywords, related, e
 });
 const s = (heading, text) => ({ heading, text });
 export const servicePages = [
+  {
+    ...service('dangerous-goods', 'Dangerous Goods Freight', 'International Dangerous Goods Shipping Services', 'dangerous goods shipping',
+      'Argus Shipping coordinates dangerous goods freight enquiries for commercial shippers. We review the cargo information, proposed route and handling requirements with you before a transport arrangement is confirmed.', [
+        s('Cargo-specific planning for commercial shipments', 'Dangerous goods require a shipment-specific assessment rather than a general freight booking. Manufacturers, distributors and procurement teams should identify the product, quantity, packaging and origin and destination before requesting a quote. Acceptance depends on the cargo, transport mode, carrier and applicable requirements; not every commodity can move on every route.'),
+        s('Information needed for a dangerous goods enquiry', 'Provide the product description, current Safety Data Sheet where applicable, and transport classification information supplied by the responsible shipper or manufacturer. Include the UN number, proper shipping name, hazard class and packing group where applicable, along with package quantities, dimensions and gross weights. A Safety Data Sheet alone does not establish transport acceptance or replace required shipping declarations.'),
+        s('Air freight acceptance and documentation', 'For dangerous goods air freight, the proposed airline and route must accept the specific consignment. The shipper is responsible for accurate classification and the required declaration. Discuss the applicable documentation, packaging and handling requirements with the team before collection; do not send cargo to a terminal on the assumption that a general cargo booking covers it.'),
+        s('Sea freight and onward road transport', 'Packaged dangerous goods carried by sea are subject to the applicable IMDG Code requirements and carrier acceptance. Any onward road movement also needs review against the route and local requirements. Agree the full transport scope so port handling, storage restrictions and delivery responsibilities are considered alongside the main freight leg.'),
+        s('Packaging, marking and handover responsibilities', 'The shipment must be prepared by appropriately qualified parties for the applicable transport requirements. Confirm who is responsible for packaging, marking, labelling and declarations, and which supporting information the carrier needs. The illustration on this page is decorative and must not be used as a labelling or packing reference.'),
+        s('Request a dangerous goods freight assessment', 'Send the origin, destination, product and classification information, packaging details and cargo-ready date. Identify any special storage or delivery constraints. Argus can discuss the proposed coordination scope and next steps; capacity, price and acceptance are confirmed only after the shipment review.'),
+      ], 'dangerous goods freight; dangerous goods logistics; hazardous cargo shipping; DG cargo services; dangerous goods air freight; dangerous goods sea freight; international dangerous goods transport',
+      ['air-freight', 'sea-freight', 'road-freight', 'customs-clearance'], 'User-confirmed service addition; existing Services.jsx dangerous-goods handling reference'),
+    title: 'Dangerous Goods Shipping & Freight | Argus Shipping',
+    description: 'Discuss dangerous goods shipping with Argus Shipping. Cargo-specific freight planning, documentation and carrier acceptance coordination. Request an assessment.',
+    image: '/images/home-slider-dangerous-goods.png',
+    references: [
+      { label: 'IATA dangerous goods guidance', href: 'https://www.iata.org/en/publications/dgr' },
+      { label: 'IMO guidance on packaged dangerous goods at sea', href: 'https://www.imo.org/en/ourwork/safety/pages/dangerousgoods-default.aspx' },
+    ],
+  },
   service('air-freight', 'Air Freight Services', 'International Air Freight Services', 'international air freight',
     'Argus Shipping coordinates international air freight for businesses importing to and exporting from Qatar. Share your cargo dimensions, weight and required delivery date so the team can assess a suitable air cargo option.', [
       s('International air cargo: import and export', 'Air freight suits shipments where the required arrival date matters more than the lowest transport cost. Argus coordinates origin handling, air transport and destination delivery requirements. Specify whether your quote should cover airport-to-airport movement or include collection and final delivery.'),
@@ -319,7 +338,7 @@ export const insightPages = [
 export const commercialPages = [...insightPages, ...caseStudies, ...resourcePages, ...industryPages, ...countryPages, ...servicePages, ...tradePages];
 export const byPath = Object.fromEntries(commercialPages.map(page => [page.path, page]));
 export const serviceById = Object.fromEntries(servicePages.map(page => [page.path.split('/')[2].replace(/-qatar$/, ''), page]));
-export const serviceLinks = Object.fromEntries(Object.entries({ air: 'air-freight', sea: 'sea-freight', road: 'road-freight', warehouse: 'warehousing', warehousing: 'warehousing', doortodoor: 'door-to-door-cargo', 'door-to-door': 'door-to-door-cargo', '3pl': '3pl-logistics', vehicle: 'vehicle-logistics' }).map(([id, slug]) => [id, serviceById[slug].path]));
+export const serviceLinks = Object.fromEntries(Object.entries({ 'dangerous-goods': 'dangerous-goods', air: 'air-freight', sea: 'sea-freight', road: 'road-freight', warehouse: 'warehousing', warehousing: 'warehousing', doortodoor: 'door-to-door-cargo', 'door-to-door': 'door-to-door-cargo', '3pl': '3pl-logistics', vehicle: 'vehicle-logistics' }).map(([id, slug]) => [id, serviceById[slug].path]));
 export function normalizePath(path) {
   const clean = path.replace(/\.html$/, '').replace(/\/$/, '') || '/';
   
@@ -333,5 +352,5 @@ export function normalizePath(path) {
     return newPath;
   }
   
-  return byPath[`${clean}/`] || clean === '/trade-lanes' ? `${clean}/` : clean;
+  return byPath[`${clean}/`] || clean === '/trade-lanes' || clean === '/locations' ? `${clean}/` : clean;
 }

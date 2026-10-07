@@ -1,6 +1,7 @@
 import LogisticsSlider from '../components/LogisticsSlider';
+import { GlobalNetworkSection } from '../components/GlobalNetwork';
 import { serviceLinks, tradePages } from '../seo/commercial-pages.mjs';
-import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, Anchor, Package, MapPin } from 'lucide-react';
+import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, Anchor, Package, MapPin, TriangleAlert } from 'lucide-react';
 import ShipmentTracker from '../components/ShipmentTracker';
 import ScrollFrameBackground from '../components/ScrollFrameBackground';
 
@@ -39,12 +40,19 @@ const LOGISTICS_MODES = [
     tagline: 'End-to-End Seamless Cargo Relocations',
     icon: MapPin,
     description: 'From your doorstep directly to the final destination, we manage the entire logistics chain. Includes professional packing, local customs clearance, global transport, and last-mile delivery.'
+  },
+  {
+    id: 'dangerous-goods',
+    title: 'DANGEROUS GOODS',
+    tagline: 'Specialist Cargo Coordination & Shipment Review',
+    icon: TriangleAlert,
+    description: 'Plan dangerous goods freight with cargo-specific documentation, handling and carrier acceptance coordination. Share your shipment details for a review of suitable transport options, origin requirements and destination delivery.'
   }
 ];
 
 const CLIENT_COMPANIES = [
   "Argus Middle East", "Argus Computers", "Argus shipping Bahrain",
-  "Argus Dubai", "Shop N Freight", "Porters Trading", "Boxndoc.com", "Sourseco Global"
+  "Argus Dubai", "Shop N Freight", "Porters Trading", "Boxndoc.com", "Sourseco Global", "Jadwal Trading"
 ];
 
 export default function Home({ onNavigate, onOpenQuote }) {
@@ -66,7 +74,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
                   className="hero-logo-img"
                 />
               </div>
-              <h1 className="hero-primary-heading">Freight Forwarding &amp; Logistics Company in Qatar</h1>
+              <h1 className="hero-primary-heading">International Freight Forwarding &amp; Logistics</h1>
               <p className="hero-description">
                 ARGUS SHIPPING delivers end-to-end freight and logistics solutions designed for today’s fast-paced global market. By combining worldwide reach, flexible scheduling, and deep border-clearance proficiency, we take the friction out of your supply chain.
               </p>
@@ -117,6 +125,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
       </section>
 
       {/* Services Showcase */}
+      <GlobalNetworkSection />
       <section className="section-padding">
         <div className="container">
           <div className="section-header">

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.argusshipping.co/locations/</loc></url>
   <url><loc>https://www.argusshipping.co/</loc></url>
   <url><loc>https://www.argusshipping.co/services</loc></url>
   <url><loc>https://www.argusshipping.co/about</loc></url>
@@ -8,19 +9,41 @@
   <url><loc>https://www.argusshipping.co/contact</loc></url>
   <url><loc>https://www.argusshipping.co/tracking</loc></url>
   <url><loc>https://www.argusshipping.co/chairman-message</loc></url>
-  <url><loc>https://www.argusshipping.co/shipping/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/air-freight-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/sea-freight-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/road-freight-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/warehousing-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/customs-clearance-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/3pl-logistics-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/door-to-door-cargo-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/project-cargo-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/services/vehicle-logistics-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/shipping/china-to-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/shipping/india-to-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/shipping/uae-to-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/shipping/turkey-to-qatar/</loc></url>
-  <url><loc>https://www.argusshipping.co/shipping/bahrain-to-qatar/</loc></url>
+  <url><loc>https://www.argusshipping.co/trade-lanes/</loc></url>
+  <url><loc>https://www.argusshipping.co/insights/gcc-freight-report/</loc></url>
+  <url><loc>https://www.argusshipping.co/case-studies/heavy-lift-qatar/</loc></url>
+  <url><loc>https://www.argusshipping.co/case-studies/pharma-cold-chain-uae/</loc></url>
+  <url><loc>https://www.argusshipping.co/case-studies/fmcg-distribution-india/</loc></url>
+  <url><loc>https://www.argusshipping.co/resources/cbm-calculator/</loc></url>
+  <url><loc>https://www.argusshipping.co/resources/chargeable-weight-calculator/</loc></url>
+  <url><loc>https://www.argusshipping.co/resources/incoterms-guide/</loc></url>
+  <url><loc>https://www.argusshipping.co/resources/container-size-guide/</loc></url>
+  <url><loc>https://www.argusshipping.co/industries/construction-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/industries/oil-gas-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/industries/automotive-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/industries/healthcare-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/industries/retail-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/industries/industrial-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/trade-lanes/china-to-uae/</loc></url>
+  <url><loc>https://www.argusshipping.co/locations/qatar/</loc></url>
+  <url><loc>https://www.argusshipping.co/locations/uae/</loc></url>
+  <url><loc>https://www.argusshipping.co/locations/india/</loc></url>
+  <url><loc>https://www.argusshipping.co/locations/china/</loc></url>
+  <url><loc>https://www.argusshipping.co/locations/turkey/</loc></url>
+  <url><loc>https://www.argusshipping.co/locations/bahrain/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/dangerous-goods/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/air-freight/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/sea-freight/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/road-freight/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/warehousing/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/customs-clearance/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/3pl-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/door-to-door-cargo/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/project-cargo/</loc></url>
+  <url><loc>https://www.argusshipping.co/services/vehicle-logistics/</loc></url>
+  <url><loc>https://www.argusshipping.co/trade-lanes/china-to-qatar/</loc></url>
+  <url><loc>https://www.argusshipping.co/trade-lanes/india-to-qatar/</loc></url>
+  <url><loc>https://www.argusshipping.co/trade-lanes/uae-to-qatar/</loc></url>
+  <url><loc>https://www.argusshipping.co/trade-lanes/turkey-to-qatar/</loc></url>
+  <url><loc>https://www.argusshipping.co/trade-lanes/bahrain-to-qatar/</loc></url>
 </urlset>
