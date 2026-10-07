@@ -19,8 +19,8 @@ export function schemaFor(path) {
   if (page || path === '/trade-lanes/') {
     const crumbs = [{ name: 'Home', item: `${SITE}/` }];
     if (page) {
-      const groupName = page.group === 'trade-lanes' ? 'Trade Lanes' : page.group === 'locations' ? 'Locations' : 'Services';
-      const groupPath = page.group === 'trade-lanes' ? '/trade-lanes/' : page.group === 'locations' ? '/locations/' : '/services';
+      const groupName = page.group === 'trade-lanes' ? 'Trade Lanes' : page.group === 'locations' ? 'Locations' : page.group === 'industries' ? 'Industries' : 'Services';
+      const groupPath = page.group === 'trade-lanes' ? '/trade-lanes/' : page.group === 'locations' ? '/locations/' : page.group === 'industries' ? '/industries/' : '/services';
       crumbs.push({ name: groupName, item: `${SITE}${groupPath}` });
     }
     crumbs.push({ name: page?.label || 'Trade Lanes', item: `${SITE}${path}` });

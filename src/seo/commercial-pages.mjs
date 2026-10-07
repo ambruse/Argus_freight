@@ -82,40 +82,40 @@ export const servicePages = [
 ];
 
 const lane = (slug, label, h1, keyword, intro, sections, keywords, evidence) => ({
-  path: `/trade-lanes/${slug}-to-qatar/`, group: 'trade-lanes', label, h1, keyword, intro, sections,
+  path: `/trade-lanes/${slug}/`, group: 'trade-lanes', label, h1, keyword, intro, sections,
   title: `${h1} | Argus Shipping`, description: `${intro.split('. ')[0]}. Discuss collection, freight and delivery with Argus Shipping.`,
   keywords: keywords.split('; '), related: ['uae', 'bahrain'].includes(slug) ? ['road-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'] : ['air-freight', 'sea-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'], evidence, priority: 'P2',
 });
 export const tradePages = [
-  lane('china', 'China to Qatar', 'Shipping from China to Qatar', 'shipping from China to Qatar',
+  lane('china-to-qatar', 'China to Qatar', 'Shipping from China to Qatar', 'shipping from China to Qatar',
     'Argus Shipping coordinates China-to-Qatar freight through its Guangzhou and Yiwu network. Businesses sourcing from several suppliers can discuss collection, consolidation and delivery requirements alongside air or sea freight.', [
       s('Guangzhou and Yiwu supplier coordination', 'Send each supplier’s address, contact details and cargo-ready date. The Guangzhou and Yiwu locations provide a starting point for discussing origin coordination. Confirm the receiving location and appointment before asking a supplier to deliver cargo.'),
       s('Air freight versus sea freight', 'Air freight can be assessed for urgent or time-sensitive consignments. Sea freight provides FCL and LCL options for containerised cargo. The best fit depends on the delivery requirement, chargeable size and complete handling scope; a timetable is confirmed for the actual booking.'),
       s('FCL, LCL and multi-supplier consolidation', 'For a full container, review the complete loading plan. For smaller consignments, provide package dimensions and supplier-ready dates to discuss consolidation. Multiple suppliers should use consistent product and package references so cargo can be reconciled before onward shipment.'),
       s('Qatar clearance and final delivery', 'Agree the importer details, document preparation and delivery address before dispatch. Discuss warehousing if goods are arriving ahead of the receiving schedule. Ask the quote to separate origin collection, freight, destination handling and any excluded charges.'),
     ], 'China to Qatar shipping; freight from China to Qatar; China to Qatar freight; China to Qatar cargo; cargo from China to Qatar; sea freight China to Qatar; air freight China to Qatar; China to Doha shipping; China to Qatar door-to-door cargo; Guangzhou to Qatar cargo; Guangzhou to Qatar freight; Yiwu to Qatar shipping; China to Qatar LCL shipping; China to Qatar FCL shipping; China to Hamad Port shipping', 'App.jsx: Guangzhou and Yiwu addresses; Services.jsx consolidation network'),
-  lane('india', 'India to Qatar', 'Shipping from India to Qatar', 'shipping from India to Qatar',
+  lane('india-to-qatar', 'India to Qatar', 'Shipping from India to Qatar', 'shipping from India to Qatar',
     'Argus Shipping supports India-to-Qatar cargo through its India network and consolidation service. Businesses can discuss supplier collection, air or sea freight and delivery to the Qatar consignee.', [
       s('Coordinate collection across sourcing locations', 'The India network includes Mumbai and Bangalore consolidation, with contacts in Tuticorin and Nilambur. Provide the actual supplier location so collection and receiving arrangements can be confirmed; a listed office is not automatically a cargo receiving terminal.'),
       s('Air cargo and sea cargo options', 'For air cargo, provide the required arrival date and package weights and dimensions. For sea cargo, discuss whether the volume suits LCL consolidation or an FCL movement. The selected gateway and routing depend on origin location and the available booking.'),
       s('Supplier documentation and packing', 'Ask suppliers for consistent descriptions and package-level quantities before handover. When combining orders, identify which invoice relates to each package. Flag fragile goods, equipment or other handling needs before collection so the proposed packing and transport arrangement can be reviewed.'),
       s('Door-to-door delivery in Qatar', 'Request a scope covering the stages you need, from supplier pickup through destination delivery. Confirm the importer, consignee address and unloading arrangements. Actual scheduling depends on collection readiness, the freight booking and release formalities.'),
     ], 'India to Qatar cargo; India to Qatar freight; freight from India to Qatar; air cargo India to Qatar; sea cargo India to Qatar; India to Qatar door-to-door cargo', 'App.jsx: India contacts; Services.jsx: Mumbai and Bangalore consolidation'),
-  lane('uae', 'UAE to Qatar', 'Freight Shipping from UAE to Qatar', 'UAE to Qatar freight',
+  lane('uae-to-qatar', 'UAE to Qatar', 'Freight Shipping from UAE to Qatar', 'UAE to Qatar freight',
     'Argus Shipping coordinates UAE-to-Qatar freight through its Dubai network and GCC road service. Businesses can discuss supplier collections, FTL or LTL transport and Qatar delivery.', [
       s('Dubai collection and consolidation', 'Argus lists a Dubai location in Al Qusais Industrial Area 4. Share the collection address and whether goods are at a supplier, warehouse or another facility. The team will confirm the appropriate handover point and any collection formalities before dispatch.'),
       s('Road freight: full and shared loads', 'FTL and LTL options suit different cargo volumes and delivery requirements. Share piece sizes and weights, identify incompatible or fragile cargo, and confirm loading equipment. The quote should state whether collection, cross-border coordination and delivery are included.'),
       s('Cross-border shipment preparation', 'UAE-to-Qatar road freight involves transit and border coordination along the proposed route. Clarify the shipment’s commercial status and documentation responsibilities before loading. Do not assume a warehouse-to-warehouse rate includes every customs, inspection or handling charge.'),
       s('Delivery to Doha and other Qatar destinations', 'Give the full destination address, receiving contact and appointment restrictions. If the delivery site cannot accept the full load at once, discuss a storage or staged distribution requirement with the team. The operating schedule is assessed for each movement.'),
     ], 'Dubai to Qatar cargo; Dubai to Qatar freight; UAE to Qatar shipping; UAE to Qatar road freight; Dubai Doha cargo; door-to-door Dubai Qatar', 'App.jsx: Dubai address; Services.jsx: explicit UAE-to-Qatar FTL/LTL route'),
-  lane('turkey', 'Turkey to Qatar', 'Shipping from Turkey to Qatar', 'Turkey to Qatar shipping',
+  lane('turkey-to-qatar', 'Turkey to Qatar', 'Shipping from Turkey to Qatar', 'Turkey to Qatar shipping',
     'Argus Shipping’s Istanbul consolidation network supports Turkey-to-Qatar cargo enquiries. Discuss supplier pickup, shipment consolidation and air or sea freight suited to the order.', [
       s('Istanbul supplier and cargo coordination', 'Provide the supplier’s actual collection address and the cargo-ready date. Istanbul is part of the consolidation network. Receiving instructions and any collection outside the agreed area must be confirmed before a supplier dispatches goods.'),
       s('Air and sea freight from Turkey', 'Air freight can be assessed where delivery timing is the main constraint. Sea freight can be discussed for larger orders and consolidated cargo. Origin handling, routing and the final delivery requirement determine the shipment scope; no fixed transit time is promised.'),
       s('Combining commercial orders', 'When sourcing from multiple suppliers, list each order and its packing details separately. Confirm that all goods will be ready in time for the planned consolidation. Inconsistent descriptions or late supplier handovers can change the proposed movement.'),
       s('Prepare the Qatar receiving arrangement', 'Agree the importer details, required documents and consignee address before booking. Include special handling and unloading requirements in the enquiry. Request a quote that identifies the origin, freight and destination stages and any exclusions.'),
     ], 'Turkey to Qatar cargo; freight Turkey to Qatar; Istanbul to Qatar cargo; Turkey Qatar logistics; air freight Turkey Qatar; sea freight Turkey Qatar', 'Services.jsx: Istanbul consolidation and Turkey maritime table'),
-  lane('bahrain', 'Bahrain to Qatar', 'Freight Shipping from Bahrain to Qatar', 'Bahrain to Qatar freight',
+  lane('bahrain-to-qatar', 'Bahrain to Qatar', 'Freight Shipping from Bahrain to Qatar', 'Bahrain to Qatar freight',
     'Argus Shipping’s Bahrain office and GCC network support Bahrain-to-Qatar cargo coordination. Discuss collection, cross-border road freight and the delivery requirements for your consignment.', [
       s('Bahrain collection planning', 'Argus lists a Bahrain office in Busaiteen. Provide the cargo collection address separately: an office location is not necessarily a cargo receiving facility. Confirm the booking and receiving instructions with the team before sending goods.'),
       s('Regional road freight coordination', 'Road cargo between Bahrain and Qatar requires a route and transit plan across the regional network. The operating arrangement depends on the cargo and current booking conditions. Ask whether the proposed service is a full-load or consolidated movement and how handovers will be managed.'),
@@ -174,7 +174,66 @@ export const countryPages = [
     ], 'freight forwarding Bahrain; logistics services Bahrain; international freight Bahrain; shipping company Bahrain', 'App.jsx: Bahrain office')
 ];
 
-export const commercialPages = [...countryPages, ...servicePages, ...tradePages];
+
+const industry = (slug, label, h1, keyword, intro, sections, keywords) => ({
+  path: `/industries/${slug}-logistics/`, group: 'industries', label, h1, keyword, intro, sections,
+  title: `${h1} | Argus Shipping`, description: `${intro.split('. ')[0]}. Discuss your industry-specific supply chain with Argus Shipping.`,
+  keywords: keywords.split('; '), related: ['project-cargo', 'warehousing', 'door-to-door-cargo', 'customs-clearance'], priority: 'P4',
+});
+export const industryPages = [
+  industry('construction', 'Construction Logistics', 'Construction Logistics Solutions', 'construction logistics',
+    'Argus Shipping provides specialized logistics for the construction and infrastructure sector. We coordinate heavy-lift equipment, raw materials, and out-of-gauge project cargo.', [
+      s('Project cargo and heavy-lift transport', 'Moving construction machinery and oversized building materials requires precise engineering and specialized equipment. We handle OOG (Out of Gauge) shipments via flat racks, open-top containers, and dedicated heavy-lift vessels.'),
+      s('Site delivery scheduling', 'Construction sites operate on strict timelines. We manage multi-modal deliveries, synchronizing ocean freight arrivals with road transport to ensure materials arrive exactly when required by the project managers.'),
+      s('Customs and regulatory compliance', 'Importing industrial machinery involves complex tariff classifications. Our clearance team ensures documentation is processed rapidly to prevent costly site delays.'),
+      s('Temporary warehousing', 'When cargo arrives before the site is ready, we offer secure staging and warehousing solutions, deploying inventory incrementally to match the construction phase.')
+    ], 'construction logistics; construction supply chain; building materials transport; heavy equipment shipping; infrastructure logistics'),
+  industry('oil-gas', 'Oil & Gas Logistics', 'Oil & Gas Logistics Solutions', 'oil and gas logistics',
+    'Argus Shipping delivers mission-critical logistics for the energy sector. We support exploration, drilling, and production sites with rapid and secure supply chain solutions.', [
+      s('Time-critical equipment transport', 'Downtime in the energy sector is expensive. We coordinate urgent air freight and dedicated charter services to deliver replacement parts and drilling equipment rapidly to operational sites.'),
+      s('Hazardous materials (DG) handling', 'Moving chemicals and specialized equipment requires strict compliance with Dangerous Goods regulations. Our team is trained to manage the documentation and handling of sensitive energy cargo.'),
+      s('Remote site delivery', 'Oil and gas operations are often located in challenging environments. We plan end-to-end multi-modal routes, including specialized off-road freight transport, to reach remote facilities.'),
+      s('Offshore and marine logistics', 'We coordinate supply vessels and offshore support, managing the flow of materials from the port directly to platforms and marine operations.')
+    ], 'oil and gas logistics; energy supply chain; rig moving logistics; dangerous goods transport; offshore logistics'),
+  industry('automotive', 'Automotive Logistics', 'Automotive Logistics Solutions', 'automotive logistics',
+    'Argus Shipping coordinates supply chains for the automotive industry. We manage finished vehicle logistics alongside aftermarket parts distribution.', [
+      s('Finished vehicle logistics (FVL)', 'We arrange secure transport for private and commercial vehicles using specialized Ro-Ro (Roll-on/Roll-off) vessels, car carriers, and containerized transport for high-value automobiles.'),
+      s('Spare parts and aftermarket distribution', 'Automotive dealers require reliable parts availability. We manage the import and warehousing of aftermarket components, ensuring rapid distribution to service centers.'),
+      s('Production supply chains', 'For automotive manufacturing and assembly, we coordinate just-in-time (JIT) deliveries of raw materials and components to keep production lines moving without interruption.'),
+      s('Customs for vehicles and components', 'Importing vehicles involves strict local regulations. We handle homologation documentation and customs clearance for both finished cars and replacement parts.')
+    ], 'automotive logistics; car shipping; finished vehicle logistics; auto parts supply chain; Ro-Ro shipping'),
+  industry('healthcare', 'Healthcare & Medical Logistics', 'Healthcare & Medical Logistics Solutions', 'healthcare logistics',
+    'Argus Shipping handles temperature-controlled and time-sensitive logistics for the healthcare and pharmaceutical sectors, ensuring absolute product integrity.', [
+      s('Temperature-controlled supply chains', 'Pharmaceuticals and biologics require strict temperature adherence. We coordinate active and passive cold-chain solutions, utilizing refrigerated (reefer) containers and specialized air freight packaging.'),
+      s('Medical equipment transport', 'MRI machines, scanners, and sensitive laboratory equipment require specialized, shock-proof handling. We manage the secure door-to-door transport of high-value medical assets.'),
+      s('Regulatory compliance and clearance', 'Medical imports face stringent regulatory scrutiny. Our team coordinates with ministries of health and local customs to expedite the clearance of life-saving supplies.'),
+      s('Urgent medical air freight', 'When time is of the essence, we arrange priority air cargo for urgent medical supplies, ensuring rapid delivery from manufacturers to hospitals and distributors.')
+    ], 'healthcare logistics; pharmaceutical logistics; medical equipment transport; cold chain logistics; temperature controlled shipping'),
+  industry('retail', 'Retail & Distribution Logistics', 'Retail & Distribution Logistics Solutions', 'retail logistics',
+    'Argus Shipping optimizes supply chains for the retail and FMCG sectors. We manage the flow of consumer goods from global manufacturing hubs to local distribution centers.', [
+      s('FMCG and consumer goods distribution', 'Fast-moving consumer goods require high-volume, cost-effective transport. We coordinate full container loads (FCL) from major sourcing markets directly to regional retail warehouses.'),
+      s('Omnichannel fulfillment and 3PL', 'Beyond freight, we support retailers with outsourced 3PL services. We manage inventory, pick-and-pack operations, and distribution to brick-and-mortar stores or direct to consumers.'),
+      s('Seasonal peak management', 'Retail volumes fluctuate heavily during holidays and sales events. We offer scalable warehousing and flexible shipping schedules to manage inventory spikes effectively.'),
+      s('Garments and electronics', 'We provide specialized handling for high-value electronics and Garments on Hangers (GOH) shipments, ensuring retail products arrive shelf-ready and secure.')
+    ], 'retail logistics; FMCG supply chain; omnichannel fulfillment; retail distribution; consumer goods transport'),
+  industry('industrial', 'Industrial & Project Logistics', 'Industrial & Project Logistics Solutions', 'industrial logistics',
+    'Argus Shipping designs bespoke logistics for industrial manufacturing and complex engineering projects, managing oversized cargo and massive supply networks.', [
+      s('Manufacturing supply chains', 'We keep factories running by coordinating the import of raw materials and the export of finished industrial products, balancing cost and speed across sea and air freight.'),
+      s('Plant relocation and engineering logistics', 'Moving entire production lines or factories requires meticulous planning. We manage the sequential transport of heavy machinery, ensuring parts arrive in the correct order for reassembly.'),
+      s('Oversized and heavy-lift handling', 'Industrial projects often involve components too large for standard containers. We charter breakbulk vessels and coordinate specialized road transport for colossal cargo.'),
+      s('End-to-end project management', 'Our project team serves as a single point of contact, orchestrating multiple suppliers, carriers, and customs authorities to execute massive industrial movements flawlessly.')
+    ], 'industrial logistics; project logistics; plant relocation transport; manufacturing supply chain; heavy lift engineering')
+, 
+  lane('china-to-uae', 'China to UAE', 'Shipping from China to UAE', 'shipping from China to UAE',
+    'Argus Shipping coordinates China-to-UAE freight through its Guangzhou, Yiwu, and Dubai network. Businesses sourcing from multiple Chinese suppliers can discuss collection, consolidation, and delivery directly to the UAE.', [
+      s('Guangzhou and Yiwu supplier coordination', 'We manage direct cargo collection from suppliers across China. Our hubs in Guangzhou and Yiwu provide the perfect consolidation points before dispatch to Jebel Ali Port or Dubai International Airport.'),
+      s('Air freight and ocean freight to the UAE', 'Compare FCL, LCL, and air cargo options. Air freight provides rapid delivery for urgent electronics or fashion, while our sea freight consolidation offers cost-effective transport for heavy manufacturing goods.'),
+      s('Consolidation and Dubai warehousing', 'If you source from several suppliers, we consolidate your cargo in China and de-consolidate it at our Dubai hub, holding inventory until your local distribution network is ready.'),
+      s('UAE customs clearance and delivery', 'We handle the export documentation in China and the import customs clearance in the UAE. Request a door-to-door quotation to cover origin collection, freight, and final delivery to any emirate.')
+    ], 'China to UAE shipping; freight from China to UAE; China to UAE freight; China to Dubai cargo; sea freight China to UAE; air freight China to Dubai; Guangzhou to Dubai cargo', 'App.jsx: Guangzhou and Dubai addresses'),
+
+];
+export const commercialPages = [...industryPages, ...countryPages, ...servicePages, ...tradePages];
 export const byPath = Object.fromEntries(commercialPages.map(page => [page.path, page]));
 export const serviceById = Object.fromEntries(servicePages.map(page => [page.path.split('/')[2].replace(/-qatar$/, ''), page]));
 export const serviceLinks = Object.fromEntries(Object.entries({ air: 'air-freight', sea: 'sea-freight', road: 'road-freight', warehouse: 'warehousing', warehousing: 'warehousing', doortodoor: 'door-to-door-cargo', 'door-to-door': 'door-to-door-cargo', '3pl': '3pl-logistics', vehicle: 'vehicle-logistics' }).map(([id, slug]) => [id, serviceById[slug].path]));
