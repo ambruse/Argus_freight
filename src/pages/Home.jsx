@@ -1,4 +1,5 @@
 import LogisticsSlider from '../components/LogisticsSlider';
+import { serviceLinks, tradePages } from '../seo/commercial-pages.mjs';
 import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, Anchor, Package, MapPin } from 'lucide-react';
 import ShipmentTracker from '../components/ShipmentTracker';
 import ScrollFrameBackground from '../components/ScrollFrameBackground';
@@ -65,7 +66,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
                   className="hero-logo-img"
                 />
               </div>
-              <h1 className="hero-primary-heading">Freight Forwarding &amp; Logistics Across Qatar</h1>
+              <h1 className="hero-primary-heading">Freight Forwarding &amp; Logistics Company in Qatar</h1>
               <p className="hero-description">
                 ARGUS SHIPPING WLL delivers end-to-end freight and logistics solutions designed for today’s fast-paced global market. By combining worldwide reach, flexible scheduling, and deep border-clearance proficiency, we take the friction out of your supply chain.
               </p>
@@ -120,7 +121,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
         <div className="container">
           <div className="section-header">
             <span className="section-subtitle">What We Do</span>
-            <h2 className="section-title">Core Shipping Services</h2>
+            <h2 className="section-title">International Freight Forwarding Services</h2>
           </div>
 
           <div className="services-grid">
@@ -133,19 +134,20 @@ export default function Home({ onNavigate, onOpenQuote }) {
                   </div>
                   <h3 className="service-card-title">{mode.title}</h3>
                   <p className="service-card-desc">{mode.description}</p>
-                  <span 
+                  <a href={serviceLinks[mode.id]}
                     className="read-more-link" 
                     onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                       e.preventDefault();
                       if (onNavigate) {
-                        onNavigate('/services');
+                        onNavigate(serviceLinks[mode.id]);
                       } else {
-                        window.location.pathname = '/services';
+                        window.location.pathname = serviceLinks[mode.id];
                       }
                     }}
                   >
                     Explore Details <ArrowRight size={16} />
-                  </span>
+                  </a>
                 </div>
               );
             })}
@@ -261,7 +263,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
       {/* International Warehouse Infrastructure Component */}
       <section id="global-infrastructure" className="seo-optimized-block">
         <div className="container">
-          <h2>Our Global Consolidation Hubs & Logistics Infrastructure</h2>
+          <h2>International Shipping from Key Global Markets</h2>
           <p className="infra-description">To power our signature door-to-door multi-modal distribution models, we operate standardized international warehouses across strategic production cities:</p>
           
           <ul className="warehouse-network-list">
@@ -270,6 +272,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
             <li><strong>Istanbul Hub (Turkey):</strong> Eurasian multi-modal transshipment and cross-docking facilities.</li>
             <li><strong>Dubai & Bahrain Hubs (GCC):</strong> Central regional deep-water port access and ambient/temperature-controlled distribution centers.</li>
           </ul>
+          <p>Plan a shipment from {tradePages.map((page, index) => <span key={page.path}>{index > 0 ? ' · ' : ''}<a href={page.path}>{page.label}</a></span>)}.</p>
         </div>
       </section>
 

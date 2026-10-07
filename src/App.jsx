@@ -10,17 +10,20 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import ChairmanMessage from './pages/ChairmanMessage';
 import Tracking from './pages/Tracking';
+import CommercialPage, { ShippingRoutes } from './pages/CommercialPage';
+import { byPath, normalizePath } from './seo/commercial-pages.mjs';
+import { metadata as seoMetadata, schemaFor } from './seo/metadata.mjs';
 import { Mail, Phone, MapPin } from 'lucide-react';
 
-export default function App() {
+export default function App({ initialPath }) {
   const [currentPath, setCurrentPath] = useState(() => {
-    const requestedPath = window.location.pathname || '/';
+    const requestedPath = normalizePath(initialPath || (typeof window !== 'undefined' ? window.location.pathname : '/'));
     if (requestedPath === '/services.html') return '/services';
     return requestedPath !== '/login' ? requestedPath : '/';
   });
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
     // Light is the public site's default; retain an explicit visitor preference.
     return savedTheme === 'dark';
   });
@@ -36,7 +39,7 @@ export default function App() {
           setTimeout(() => {
             document.getElementById('chairman')?.scrollIntoView({ behavior: 'smooth' });
           }, 300);
-        } else if (Hash.startsWith('#')) {
+        } else if (normalizePath(window.location.pathname) === '/services') {
           setCurrentPath('/services');
           setTimeout(() => {
             document.getElementById(Hash.substring(1))?.scrollIntoView({ behavior: 'smooth' });
@@ -74,40 +77,7 @@ export default function App() {
 
   // Keep search and social metadata aligned with the currently rendered SPA route.
   useEffect(() => {
-    const pageMetadata = {
-      '/': {
-        title: 'Freight Forwarding & Logistics in Qatar | Argus Shipping',
-        description: 'Argus Shipping connects businesses to Qatar and global markets with air and sea freight, GCC road transport, warehousing and door-to-door cargo. Request a quote.',
-      },
-      '/services': {
-        title: 'Freight & Logistics Services in Qatar | Argus Shipping',
-        description: 'Explore Argus Shipping air and sea freight, GCC road transport, warehousing, consolidation and specialized logistics services for businesses.',
-      },
-      '/about': {
-        title: 'About Argus Shipping | Qatar Logistics Expertise',
-        description: 'Learn about Argus Shipping W.L.L., its logistics network, experience and freight forwarding services supporting businesses in Qatar.',
-      },
-      '/why-us': {
-        title: 'Why Choose Argus Shipping | Freight Forwarding Qatar',
-        description: 'Discover Argus Shipping’s logistics network, cargo capabilities and customer support for freight movements in Qatar and across the GCC.',
-      },
-      '/team': {
-        title: 'Our Team | Argus Shipping Qatar',
-        description: 'Meet the people supporting Argus Shipping freight forwarding and logistics operations in Qatar.',
-      },
-      '/contact': {
-        title: 'Contact Argus Shipping | Qatar Freight Quotes',
-        description: 'Contact Argus Shipping in Doha about air freight, sea freight, road transport, warehousing or a tailored cargo quote.',
-      },
-      '/tracking': {
-        title: 'Track a Shipment | Argus Shipping',
-        description: 'Use Argus Shipping shipment tracking to check cargo progress and contact the logistics team about your consignment.',
-      },
-      '/chairman-message': {
-        title: 'Chairman’s Message | Argus Shipping',
-        description: 'Read the chairman’s perspective on Argus Shipping, its freight forwarding operations and service to clients.',
-      },
-    };
+    const pageMetadata = seoMetadata;
     const metadataPath = pageMetadata[currentPath] ? currentPath : '/';
     const { title, description } = pageMetadata[metadataPath];
     if (currentPath === '/services' && window.location.pathname === '/services.html') {
@@ -144,16 +114,23 @@ export default function App() {
     setMeta('meta[name="twitter:description"]', 'content', description);
     setMeta('meta[name="twitter:url"]', 'content', canonicalUrl);
     setCanonical(canonicalUrl);
+    document.head.querySelectorAll('script[type="application/ld+json"]').forEach(tag => tag.remove());
+    const structuredData = document.createElement('script');
+    structuredData.type = 'application/ld+json';
+    structuredData.textContent = JSON.stringify(schemaFor(metadataPath));
+    document.head.appendChild(structuredData);
   }, [currentPath]);
 
   // Keep browser back/forward navigation in sync with the lightweight page router.
   useEffect(() => {
-    const handlePopState = () => setCurrentPath(window.location.pathname || '/');
+    const handlePopState = () => setCurrentPath(normalizePath(window.location.pathname || '/'));
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const handleNavigate = (path) => {
+    path = normalizePath(path);
+    if (window.location.pathname !== path) window.history.pushState({}, '', path);
     if (path === currentPath) return;
     setIsLoading(true);
     // Wait at least 350ms (minimum 250ms) to show loader
@@ -177,6 +154,8 @@ export default function App() {
 
   // Page Routing Switcher
   const renderPage = () => {
+    if (byPath[currentPath]) return <CommercialPage page={byPath[currentPath]} />;
+    if (currentPath === '/shipping/') return <ShippingRoutes />;
     switch (currentPath) {
       case '/':
         return <Home onNavigate={handleNavigate} onOpenQuote={handleOpenQuote} />;
@@ -253,23 +232,24 @@ export default function App() {
               <h3 className="footer-title">Useful Links</h3>
               <ul className="footer-links-list">
                 <li className="footer-link-item">
-                  <span style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/')}>Home</span>
+                  <a href="/">Home</a>
                 </li>
                 <li className="footer-link-item">
-                  <span style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/about')}>About Corporate</span>
+                  <a href="/about">About Corporate</a>
                 </li>
                 <li className="footer-link-item">
-                  <span style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/services')}>Logistics Services</span>
+                  <a href="/services">Logistics Services</a>
                 </li>
                 <li className="footer-link-item">
-                  <span style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/why-us')}>Why Argus</span>
+                  <a href="/why-us">Why Argus</a>
                 </li>
                 <li className="footer-link-item">
-                  <span style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/team')}>Our Team</span>
+                  <a href="/team">Our Team</a>
                 </li>
                 <li className="footer-link-item">
-                  <span style={{ cursor: 'pointer' }} onClick={() => handleNavigate('/contact')}>Contact Us</span>
+                  <a href="/contact">Contact Us</a>
                 </li>
+                <li className="footer-link-item"><a href="/shipping/">Shipping Routes</a></li>
               </ul>
             </div>
 

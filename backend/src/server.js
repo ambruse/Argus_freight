@@ -106,7 +106,12 @@ const hasLanding = fs.existsSync(LANDING_DIST);
 // Serve static assets and routes if they exist on the server (or in production)
 if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
   if (hasFrontend) {
-    app.use(express.static(FRONTEND_OUT));
+    app.get('/services', (req, res, next) => {
+      if (req.path.endsWith('/')) return res.redirect(301, '/services');
+      const hub = path.join(FRONTEND_OUT, 'services.html');
+      return fs.existsSync(hub) ? res.sendFile(hub) : next();
+    });
+    app.use(express.static(FRONTEND_OUT, { extensions: ['html'] }));
     
     // Dashboard Application Core Client routes
     const appRoutes = [
@@ -136,7 +141,12 @@ if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
   }
 
   if (hasLanding) {
-    app.use(express.static(LANDING_DIST));
+    app.get('/services', (req, res, next) => {
+      if (req.path.endsWith('/')) return res.redirect(301, '/services');
+      const hub = path.join(LANDING_DIST, 'services.html');
+      return fs.existsSync(hub) ? res.sendFile(hub) : next();
+    });
+    app.use(express.static(LANDING_DIST, { extensions: ['html'] }));
     
     // Marketing Landing page routes
     const landingRoutes = ['/', '/about', '/services', '/why-us', '/team', '/contact', '/chairman-message'];

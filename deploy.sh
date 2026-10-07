@@ -4,7 +4,7 @@
 #  Called by .cpanel.yml on every git push.
 # =============================================================
 
-set -e
+set -eo pipefail
 
 DEPLOY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

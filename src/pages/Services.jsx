@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { serviceLinks } from '../seo/commercial-pages.mjs';
 import { Plane, Truck, Ship, Archive, ShieldCheck, Compass, Car, Package, Layers, Move, Globe } from 'lucide-react';
 
 const DETAILED_SERVICES = [
@@ -170,7 +171,7 @@ export default function Services() {
         <div className="hero-radial-glow" />
         <div className="container relative z-10">
           <span className="services-hero-tag font-gold">Global Network Solutions</span>
-          <h1 className="services-hero-title">Our Operational Services</h1>
+          <h1 className="services-hero-title">Freight &amp; Logistics Services in Qatar</h1>
           <p className="services-hero-desc">
             We operate a fully integrated cargo, freight forwarding, and warehousing network engineered to keep global supply chains moving without friction.
           </p>
@@ -179,6 +180,7 @@ export default function Services() {
 
       {/* Modern Interactive Filter Tabs */}
       <div className="container relative z-10">
+        <p>Coordinate your shipment with <a href="/services/customs-clearance-qatar/">customs clearance support</a> and <a href="/services/project-cargo-qatar/">project cargo planning</a>, or explore <a href="/shipping/">shipping routes to Qatar</a>.</p>
         <div className="services-tabs-pill-row">
           <button className={getTabClass('all')} onClick={() => setActiveTab('all')}>
             <Globe size={16} />
@@ -237,6 +239,7 @@ export default function Services() {
                   </div>
                   
                   <p className="premium-service-desc">{service.description}</p>
+                  {serviceLinks[service.id] && <p><a href={serviceLinks[service.id]} className="read-more-link">Explore {service.shortTitle} services →</a></p>}
                   
                   {service.id === 'sea' && (
                     <section id="sea-freight-service" className="seo-optimized-block">

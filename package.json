@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
     "dev:landing": "vite",
-    "build:landing": "vite build",
+    "build:landing": "vite build && node scripts/prerender.mjs",
+    "check:seo": "node scripts/check-seo.mjs frontend/out",
+    "docs:seo": "node scripts/seo-docs.mjs",
     "copy:landing": "node scripts/copy-landing.cjs",
     "build:frontend": "npm run build --prefix frontend",
     "merge:landing": "node scripts/merge-build.cjs",

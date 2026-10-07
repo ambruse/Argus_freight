@@ -5,6 +5,12 @@ const srcDir = path.join(__dirname, '../dist');
 const destLandingDir = path.join(__dirname, '../frontend/public/landing');
 const destAssetsDir = path.join(__dirname, '../frontend/public/assets');
 
+// Keep the Next public export's crawl files in sync with the marketing registry.
+for (const file of ['sitemap.xml', 'robots.txt']) {
+  const source = path.join(srcDir, file);
+  if (fs.existsSync(source)) fs.copyFileSync(source, path.join(__dirname, '../frontend/public', file));
+}
+
 // Clean and create target directories
 if (fs.existsSync(destLandingDir)) {
   fs.rmSync(destLandingDir, { recursive: true, force: true });

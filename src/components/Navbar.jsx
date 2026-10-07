@@ -45,7 +45,7 @@ export default function Navbar({ currentPath, setCurrentPath, onOpenQuote, isDar
     };
   }, [isOpen]);
 
-  const isActive = (item) => (item.matches || [item.href]).includes(currentPath);
+  const isActive = (item) => (item.matches || [item.href]).includes(currentPath) || (item.href === '/services' && (currentPath.startsWith('/services/') || currentPath.startsWith('/shipping/')));
   const activeIndex = primaryItems.findIndex(isActive);
 
   const handleNavigate = (event, href) => {
@@ -94,7 +94,7 @@ export default function Navbar({ currentPath, setCurrentPath, onOpenQuote, isDar
               const active = isActive(item);
               return (
                 <li key={item.href}>
-                  <a className={`blob-nav-link ${active ? 'is-active' : ''}`} href={item.href} onClick={(event) => handleNavigate(event, item.href)} aria-current={active ? 'page' : undefined}>
+                  <a className={`blob-nav-link ${active ? 'is-active' : ''}`} href={item.href} onClick={(event) => handleNavigate(event, item.href)} aria-current={active ? (currentPath === item.href ? 'page' : 'location') : undefined}>
                     <Icon className="blob-nav-icon" size={19} strokeWidth={1.8} aria-hidden="true" />
                     <span className="blob-nav-label">{item.label}</span>
                   </a>
