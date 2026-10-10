@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /operator/
+Disallow: /admin/
 
 Sitemap: https://www.argusshipping.co/sitemap.xml
