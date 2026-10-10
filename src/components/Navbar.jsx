@@ -7,6 +7,7 @@ const primaryItems = [
   { href: '/about', label: 'About Us', icon: Building2, matches: ['/about', '/chairman-message'] },
   { href: '/services', label: 'Services', icon: PackageSearch },
   { href: '/tracking', label: 'Tracking', icon: Navigation },
+  { href: '/freight-rates', label: 'Freight Rates', icon: PackageSearch },
   { href: '/why-us', label: 'Why Us', icon: ShieldCheck },
   { href: '/team', label: 'Our Team', icon: Users },
   { href: '/contact', label: 'Contact', icon: MessageCircle },

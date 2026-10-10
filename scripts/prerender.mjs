@@ -32,7 +32,7 @@ try {
     fs.writeFileSync(path.join(out, file), html);
   }
   fs.writeFileSync(path.join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${Object.keys(metadata).map(route => `  <url><loc>${SITE}${route}</loc></url>`).join('\n')}\n</urlset>\n`);
-  fs.writeFileSync(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${SITE}/sitemap.xml\n`);
+  fs.writeFileSync(path.join(out, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /operator/\nDisallow: /admin/\n\nSitemap: ${SITE}/sitemap.xml\n`);
   fs.copyFileSync(path.join(root, '.htaccess'), path.join(out, '.htaccess'));
   console.log(`Prerendered ${Object.keys(metadata).length} public pages with content, metadata, schema and sitemap.`);
 } finally { await vite.close(); }

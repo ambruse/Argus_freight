@@ -12,3 +12,16 @@ frontend/public/favicon.svg
 frontend/public/icons.svg
 frontend/public/logo.png
 frontend/public/logo.png
+
+# Server secrets and local verification artifacts (never deploy from Git)
+.env.*
+!.env.example
+!frontend/.env.production
+.preview-build/
+.login-check/
+.slider-check/
+.seo-audit-build/
+.seo-audit-sandbox/
+frontend/out/
+*.tsbuildinfo
+docs/qa/

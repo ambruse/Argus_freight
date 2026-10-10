@@ -1,5 +1,6 @@
 import { SITE, commercialPages, byPath } from './commercial-pages.mjs';
 export const metadata = {
+  '/freight-rates': { title: 'This Week’s Freight Rates | Argus Shipping', description: 'Search current freight rates by origin, destination, equipment and shipment date. Review applicable charges and request a quote from Argus Shipping.' },
   '/locations/': { title: 'Our Global Logistics Network | Argus Shipping', description: 'Explore Argus Shipping’s network in Qatar, UAE, China, India, Turkey and Bahrain. Find market contacts, freight services and connected trade lanes.' },
   '/': { title: 'International Freight Forwarding & Logistics | Argus Shipping', description: 'Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.' },
   '/services': { title: 'International Freight & Logistics Services | Argus Shipping', description: 'Explore Argus Shipping air and sea freight, GCC road transport, warehousing, consolidation and specialized logistics services for businesses.' },

@@ -69,7 +69,8 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
 
   useEffect(() => {
     if (!authStorage.isAuthenticated()) {
-      router.replace("/login");
+      const freightRequest = pathname === "/customer/rfq/new" && new URLSearchParams(window.location.search).has("freight_reference");
+      router.replace(freightRequest ? `/login?next=${encodeURIComponent(pathname + window.location.search)}` : "/login");
     } else {
       const currentUser = authStorage.getUser();
       if (currentUser?.role === "sales") {
@@ -153,6 +154,9 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   }
 
   // Prepend Home and append Logout only for non-other-tab roles (customer, calling_agent)
+  if (user?.role === "operator" || user?.role === "admin") {
+    otherItems.unshift({ href: user.role === "admin" ? "/admin/freight-rates" : "/operator/freight-rates", label: "Freight Rates", icon: BarChart2 });
+  }
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     ...roleItems,

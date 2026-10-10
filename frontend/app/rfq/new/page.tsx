@@ -232,6 +232,7 @@ export default function NewRFQPage() {
     const { name, value } = e.target;
     setForm(prev => {
       const nextForm = { ...prev, [name]: value };
+      if (name === "mode" && value !== prev.mode) { nextForm.pol = ""; nextForm.pod = ""; }
       if (name === "mode" && value.toLowerCase() === "air") {
         // Clear container when switching to Air
         nextForm.container = "";
@@ -807,6 +808,7 @@ export default function NewRFQPage() {
                     />
                   ) : f.name === "pol_country" ? (
                     <CountryAutoSuggest
+                      label="POL Country"
                       value={form.pol_country}
                       onChange={(val) => setForm(prev => ({ ...prev, pol_country: val, pol: "" }))}
                       placeholder="Search POL Country..."

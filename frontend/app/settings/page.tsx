@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { encryptPassword } from "@/lib/crypto";
 import { COUNTRIES } from "@/lib/countries";
+import WhatsAppSettings from "@/components/freight/WhatsAppSettings";
 
 type CcRecipient = { id: number; name: string; email: string; multi_select: boolean };
 type AdminUser = { id: number; username: string; role: string; email_address: string | null; has_password: boolean };
@@ -574,6 +575,7 @@ export default function SettingsPage() {
       subtitle="Manage your account preferences and security."
     >
       <div className="max-w-xl mx-auto space-y-6 animate-fade-in mt-10">
+        {(user?.role === "operator" || user?.role === "admin") && <WhatsAppSettings />}
         
         {/* Profile Card */}
         <div className="glass p-6 rounded-2xl border border-white/5">

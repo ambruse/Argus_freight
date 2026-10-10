@@ -3,7 +3,8 @@ const db = require('../src/config/db');
 
 async function resetAdmin() {
   try {
-    const password = 'Admin@1234';
+    const password = process.env.ADMIN_RESET_PASSWORD;
+    if (!password || password.length < 16) throw new Error('Set ADMIN_RESET_PASSWORD to a unique password of at least 16 characters.');
     const hash = await bcrypt.hash(password, 10);
     
     // Check if admin exists
@@ -25,9 +26,10 @@ async function resetAdmin() {
       console.log('Admin password reset successfully!');
     }
   } catch (err) {
-    console.error('Error resetting admin:', err);
+    console.error('Error resetting admin:', err.message);
+    process.exitCode = 1;
   } finally {
-    process.exit(0);
+    await db.pool.end();
   }
 }
 

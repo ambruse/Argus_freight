@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "reset-admin": "node scripts/reset-admin.js"
+    "reset-admin": "node scripts/reset-admin.js",
+    "migrate:freight": "node scripts/migrate-freight.js",
+    "test:freight": "node --test test/freight*.test.js"
   },
   "dependencies": {
     "@matbee/libreoffice-converter": "^2.6.0",

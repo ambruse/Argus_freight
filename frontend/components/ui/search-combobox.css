@@ -1,0 +1,14 @@
+.search-combobox{position:relative;min-width:0;width:100%;font-weight:400}
+.search-combobox-open{z-index:60}
+.search-combobox input{padding-right:30px!important;min-height:44px;text-overflow:ellipsis}
+.search-combobox-chevron{position:absolute;right:12px;top:10px;color:var(--text-muted,#8d7957);pointer-events:none}
+.search-combobox-popover{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--surface-2,#f8f5ee);border:1px solid #ad7d1359;border-radius:10px;box-shadow:0 12px 32px #24180024;overflow:hidden;color:var(--text-primary,#2b241a)}
+.search-combobox-list{max-height:260px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#ad7d1380 transparent}
+.search-combobox-option{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 12px;cursor:pointer;border-bottom:1px solid #ad7d1318}
+.search-combobox-option.is-active,.search-combobox-option:hover{background:#ad7d1319}
+.search-combobox-option[aria-selected=true]{background:#ad7d1310}
+.search-combobox-option strong{display:block;font-size:12px;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
+.search-combobox-option small{display:block;font-size:11px;font-weight:400;opacity:.7;margin-top:2px}
+.search-combobox-kind{font-size:10px;white-space:nowrap;border:1px solid #ad7d1330;border-radius:5px;padding:2px 5px;color:var(--text-primary,#5f4718)}
+.search-combobox-status{font-size:10px;line-height:1.5;padding:8px 12px;background:#ad7d1308;border-top:1px solid #ad7d1322}
+.search-combobox input:focus-visible{outline:2px solid #ad7d13;outline-offset:2px}

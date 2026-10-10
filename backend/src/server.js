@@ -180,7 +180,6 @@ const createLike = async (newTable, baseTable) => {
 };
 
 (async () => {
-  const bcrypt = require('bcryptjs');
   try {
     // MySQL Normalized Tables Schema Execution
     try {
@@ -543,41 +542,7 @@ const createLike = async (newTable, baseTable) => {
       console.error('[Migration] Encrypt passwords error:', encErr.message);
     }
 
-    // ── Auto-seed admin user ───────────────────────────────────
-    try {
-      const adminCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'admin'");
-      if (!adminCheck || adminCheck.length === 0) {
-        const hash = await bcrypt.hash('Admin@1234', 10);
-        await db.query(
-          "INSERT IGNORE INTO users (username, password_hash, role) VALUES ('admin', ?, 'admin')",
-          [hash]
-        );
-        console.log("[Seeding] Created default admin user (password: Admin@1234)");
-      }
-    } catch (err) {
-      console.error('[Seeding] Error creating admin:', err.message);
-    }
-
-    // ── Auto-seed jabir operator user ─────────────────────────
-    try {
-      const userCheck = await db.query("SELECT id FROM users WHERE LOWER(username) = 'jabir'");
-      if (!userCheck || userCheck.length === 0) {
-        const hash = await bcrypt.hash('Jabir@1234', 10);
-        await db.query(
-          "INSERT IGNORE INTO users (username, password_hash, role) VALUES ('jabir', ?, 'operator')",
-          [hash]
-        );
-        console.log("[Seeding] Created default jabir user (password: Jabir@1234)");
-
-        await createLike('shipments_jabir', 'shipments');
-        await createLike('files_jabir', 'files');
-        await createLike('shipment_replies_jabir', 'shipment_replies');
-        console.log('[Seeding] Jabir sandbox tables seeded.');
-      }
-    } catch (err) {
-      console.error('[Seeding] Error creating jabir:', err.message);
-    }
-
+    // Staff accounts are provisioned explicitly. Never recreate demo/default-password users.
     console.log('[DB] MySQL schema initialisation complete.');
   } catch (initErr) {
     console.error('[DB] Fatal DB init error:', initErr);
@@ -667,6 +632,7 @@ app.use('/api/call-enquiries', callEnquiryRoutes);
 app.use('/api/quotation', quotationRoutes);
 app.use('/api/3cx', cxRoutes);
 app.use('/api/track', trackingRoutes);
+app.use('/api/freight-rates', require('./routes/freightRates').createRouter(db.pool));
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {

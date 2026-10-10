@@ -29,6 +29,7 @@ const nextConfig = {
         },
         { source: "/",                 destination: "/landing/index.html" },
         { source: "/about",            destination: "/landing/index.html" },
+        { source: "/freight-rates",    destination: "/landing/index.html" },
         { source: "/services",         destination: "/landing/index.html" },
         { source: "/why-us",           destination: "/landing/index.html" },
         { source: "/team",             destination: "/landing/index.html" },

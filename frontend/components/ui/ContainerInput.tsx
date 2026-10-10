@@ -33,6 +33,8 @@ interface ContainerFields {
 interface Props {
   /** Called whenever the computed container string changes */
   onChange: (containerString: string) => void;
+  /** Optional weekly-rate prefill; existing callers retain their empty defaults. */
+  initialEquipment?: string;
 }
 
 const buildString = (f: ContainerFields): string => {
@@ -49,13 +51,13 @@ const buildString = (f: ContainerFields): string => {
   return parts.join(" + ");
 };
 
-export default function ContainerInput({ onChange }: Props) {
+export default function ContainerInput({ onChange, initialEquipment = "" }: Props) {
   const [fields, setFields] = useState<ContainerFields>({
-    ft40: "",
-    ft20: "",
-    customSize: "",
-    customCount: "",
-    type: "",
+    ft40: ["40GP", "40HQ"].includes(initialEquipment) ? "1" : "",
+    ft20: initialEquipment === "20GP" ? "1" : "",
+    customSize: initialEquipment && !["20GP", "40GP", "40HQ"].includes(initialEquipment) ? initialEquipment : "",
+    customCount: initialEquipment && !["20GP", "40GP", "40HQ"].includes(initialEquipment) ? "1" : "",
+    type: initialEquipment === "40HQ" ? "High Cube (HC)" : ["20GP", "40GP"].includes(initialEquipment) ? "Standard Dry Van (DV)" : "",
   });
 
   // Notify parent whenever any field changes

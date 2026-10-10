@@ -1,4 +1,5 @@
 import LogisticsSlider from '../components/LogisticsSlider';
+import FreightRates from '../components/FreightRates';
 import { GlobalNetworkSection } from '../components/GlobalNetwork';
 import { serviceLinks, tradePages } from '../seo/commercial-pages.mjs';
 import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, Anchor, Package, MapPin, TriangleAlert } from 'lucide-react';
@@ -126,6 +127,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
 
       {/* Services Showcase */}
       <GlobalNetworkSection />
+      <FreightRates />
       <section className="section-padding">
         <div className="container">
           <div className="section-header">

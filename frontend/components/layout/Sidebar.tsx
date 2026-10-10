@@ -17,6 +17,8 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { href: "/operator/freight-rates", label: "My Freight Rates", icon: "◈", section: "FREIGHT" },
+  { href: "/admin/freight-rates", label: "Rate Comparison", icon: "◈", section: "ADMIN" },
   // General
   { href: "/dashboard",             label: "Dashboard",        icon: "⬡",  section: "OVERVIEW" },
   // Operator / Admin RFQ

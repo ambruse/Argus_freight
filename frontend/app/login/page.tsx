@@ -8,6 +8,12 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { authStorage } from "@/lib/auth";
+import { freightReturnPath as resolveFreightReturn } from "@/lib/freightReturn";
+
+// Preserve only the known freight quote destination, never an external redirect.
+function freightReturnPath() {
+  return resolveFreightReturn(window.location.search, window.location.origin);
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,7 +60,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (authStorage.isAuthenticated()) {
       const user = authStorage.getUser();
-      router.replace(user?.role === "sales" ? "/rfq/new" : "/dashboard");
+      router.replace(freightReturnPath() || (user?.role === "sales" ? "/rfq/new" : "/dashboard"));
     }
   }, [router]);
 
@@ -69,7 +75,7 @@ export default function LoginPage() {
     try {
       const data = await login(username.trim(), password);
       toast.success("Welcome back!");
-      router.replace(data.user?.role === "sales" ? "/rfq/new" : "/dashboard");
+      router.replace(freightReturnPath() || (data.user?.role === "sales" ? "/rfq/new" : "/dashboard"));
     } catch (err: any) {
       setError(err.response?.data?.message || "Username or password is incorrect.");
     } finally {
@@ -371,7 +377,7 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/register?role=customer")}
+                onClick={() => { const next = freightReturnPath(); router.push("/register?role=customer" + (next ? `&next=${encodeURIComponent(next)}` : "")); }}
                 className="text-[12px] font-semibold transition-colors hover:underline"
                 style={{ color: "var(--text-muted)" }}
               >
