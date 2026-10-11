@@ -3,12 +3,15 @@ const multer = require('multer');
 const { authenticateToken } = require('../middleware/auth');
 const { createService } = require('../freight/service');
 
-function createRouter(pool) {
+function createRouter(pool, { ready = async () => {} } = {}) {
   const router = express.Router();
   const service = createService(pool);
   const wrap = fn => (req,res,next) => Promise.resolve(fn(req,res,next)).catch(next);
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 1 } });
   router.use((req,res,next) => { res.set('Cache-Control','no-store'); res.set('X-Robots-Tag','noindex, nofollow'); next(); });
+  // This must run before the database-backed request limiter, whose table may
+  // not exist yet on the first deployment.
+  router.use(wrap(async (req,res,next) => { await ready(); next(); }));
   router.use((req,res,next) => {
     if (req.is('application/json') && Buffer.byteLength(JSON.stringify(req.body || {}),'utf8') > 32768) return res.status(413).json({ message: 'Rate data exceeds 32 KB.' });
     next();
@@ -65,6 +68,7 @@ function createRouter(pool) {
     const status = err.status || (err instanceof multer.MulterError ? 400 : 500);
     if (status === 500) console.error('[Freight]', err.code || err.name);
     if (status === 429) res.set('Retry-After','60');
+    if (status === 503 && err.retryAfter) res.set('Retry-After',String(err.retryAfter));
     res.status(status).json({ message: status === 500 ? 'Freight rates are temporarily unavailable. Please try again.' : err.message });
   });
   return router;

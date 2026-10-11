@@ -179,7 +179,7 @@ const createLike = async (newTable, baseTable) => {
   }
 };
 
-(async () => {
+const coreDatabaseReady = (async () => {
   try {
     // MySQL Normalized Tables Schema Execution
     try {
@@ -544,14 +544,28 @@ const createLike = async (newTable, baseTable) => {
 
     // Staff accounts are provisioned explicitly. Never recreate demo/default-password users.
     console.log('[DB] MySQL schema initialisation complete.');
+    return true;
   } catch (initErr) {
     console.error('[DB] Fatal DB init error:', initErr);
+    return false;
   }
 })();
 
+// Git-only deployments do not necessarily execute the hosting build hook.
+// Initialize the additive freight schema after the existing users schema, and
+// gate freight requests until it is ready. Other application routes stay intact.
+const freightInitialization = require('./freight/initialize').createInitializer(db.pool, {
+  before: async () => {
+    await coreDatabaseReady;
+    // Recheck on retry: an existing installation may recover without restarting.
+    await db.pool.query('SELECT id,role,is_deleted,is_stalled FROM users LIMIT 0');
+  },
+});
+freightInitialization.ensure().catch(() => {}); // failure is logged by the initializer
+
 // ── Health Check ─────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), freight: freightInitialization.status() });
 });
 
 app.get('/api/health-email', async (_req, res) => {
@@ -632,7 +646,7 @@ app.use('/api/call-enquiries', callEnquiryRoutes);
 app.use('/api/quotation', quotationRoutes);
 app.use('/api/3cx', cxRoutes);
 app.use('/api/track', trackingRoutes);
-app.use('/api/freight-rates', require('./routes/freightRates').createRouter(db.pool));
+app.use('/api/freight-rates', require('./routes/freightRates').createRouter(db.pool, { ready: freightInitialization.ensure }));
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {

@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { migrate } = require('../scripts/migrate-freight');
 const { createService } = require('../src/freight/service');
 const { createRouter } = require('../src/routes/freightRates');
+const { createInitializer } = require('../src/freight/initialize');
 const D = require('../src/freight/domain');
 
 test('database persistence, API security, automatic publication and concurrent workflows', { skip: !process.env.FREIGHT_TEST_DB_URL }, async t => {
@@ -21,7 +22,24 @@ test('database persistence, API security, automatic publication and concurrent w
   try {
     await pool.query(`CREATE TABLE users (id INT PRIMARY KEY,username VARCHAR(100),role VARCHAR(50),is_deleted BOOLEAN DEFAULT 0,is_stalled BOOLEAN DEFAULT 0) ENGINE=InnoDB`);
     await pool.query("INSERT INTO users (id,username,role) VALUES (1,'operator1','operator'),(2,'operator2','operator'),(3,'operator3','operator'),(4,'admin','admin'),(5,'customer','customer')");
-    await migrate(pool); await migrate(pool);
+    await t.test('first requests initialize missing freight tables and dropdown catalogs automatically', async () => {
+      const [[before]] = await pool.query("SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='freight_rates'");
+      assert.equal(Number(before.n),0);
+      let calls = 0;
+      const initialization = createInitializer(pool,{logger:{info(){},error(){}},migrateSchema:async p => { calls++; await migrate(p); }});
+      const bootstrapApp = express(); bootstrapApp.use('/api/freight-rates',createRouter(pool,{ready:initialization.ensure}));
+      const bootstrapServer = await new Promise(resolve=>{const s=bootstrapApp.listen(0,'127.0.0.1',()=>resolve(s));});
+      try {
+        const base = `http://127.0.0.1:${bootstrapServer.address().port}/api/freight-rates`;
+        const [catalogResponse,publicResponse] = await Promise.all([fetch(base+'/catalog'),fetch(base+'/public')]);
+        assert.equal(catalogResponse.status,200); assert.equal(publicResponse.status,200);
+        const catalog = await catalogResponse.json();
+        assert.equal(catalog.locations.length,1938); assert.ok(catalog.containers.some(c=>c.code==='40HQ'));
+        assert.ok(catalog.currencies.includes('USD')); assert.equal((await publicResponse.json()).rates.length,0);
+        assert.equal(calls,1); assert.equal(initialization.status(),'ready');
+      } finally { await new Promise(resolve=>bootstrapServer.close(resolve)); }
+    });
+    await migrate(pool);
     const service = createService(pool), admin = {id:4,role:'admin'}, op1={id:1,role:'operator'},op2={id:2,role:'operator'},op3={id:3,role:'operator'};
     const date = D.qatarToday(), bounds = D.week(date);
     const body = overrides => ({ origin_id:'CNSHA',destination_id:'QAHMD',container_type:'40HQ',service:'FCL',basis:'PORT_TO_PORT',currency:'USD',valid_from:bounds.start,valid_until:bounds.end,price:'1100',surcharge:'0',charges_confirmed:true,inclusions:['Ocean freight'],exclusions:[],...overrides });

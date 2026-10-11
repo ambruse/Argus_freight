@@ -178,3 +178,17 @@ Supersedes only the earlier decision to untrack `frontend/out/`. The host serves
 - `docs/WEEKLY_FREIGHT_RATE_CHANGELOG.md`: this repair record.
 
 The previously requested reversal in `backend/.env.example` is preserved. No actual environment file or database connection value was edited in this repair. No production deployment was performed.
+
+
+## Freight catalogue/API readiness repair — 11 October 2026
+
+- `backend/src/freight/initialize.js`: new shared, retryable additive schema initialization with bounded backoff and safe 503 errors.
+- `backend/src/server.js`: sequence freight setup after core schema initialization, expose safe readiness status, and pass the readiness gate to the feature router.
+- `backend/src/routes/freightRates.js`: gate requests before database throttling; return Retry-After when setup is unavailable.
+- `frontend/components/freight/FreightDashboard.tsx`: explicit catalogue loading/retry UI, disabled Add/Edit while unavailable, no misleading missing-WhatsApp notice on a fetch error.
+- `backend/test/freight-initialize.test.js`: new concurrency, schema ordering, retry recovery and HTTP readiness/limiter regression checks.
+- `backend/test/freight-integration.test.js`: first requests against a database with no freight tables initialize and return real persistent reference catalogs and an empty rates list.
+- `frontend/out/`: regenerated portal export and merged marketing assets for the Git-based deployment workflow.
+- `docs/WEEKLY_FREIGHT_RATE_SYSTEM.md`, `docs/WEEKLY_FREIGHT_RATE_CHANGELOG.md`: diagnosis, deployment/recovery and verification.
+
+46 automated checks passed using isolated MariaDB databases. Live read-only checks confirm feature endpoints return 500 and required client assets return 200; production schema/migration errors were not available for direct inspection. No changes to production DB credentials or existing RFQ forms. Deploy/restart is required before the live result can be confirmed.

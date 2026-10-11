@@ -24,6 +24,8 @@ export default function FreightDashboard({ admin = false }: { admin?: boolean })
   const { user, loading: authLoading } = useAuth();
   const allowed = user?.role === "admin" || (!admin && user?.role === "operator");
   const [catalog, setCatalog] = useState<Catalog>({ locations: [], containers: [], currencies: [], services: [], bases: [] });
+  const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [catalogError, setCatalogError] = useState('');
   const [rates, setRates] = useState<Rate[]>([]);
   const [filters, setFilters] = useState({ origin: "", destination: "", container: "", operator: "", status: "", date: "", from: "", until: "", sort: "newest" });
   const [offset, setOffset] = useState(0);
@@ -49,8 +51,14 @@ export default function FreightDashboard({ admin = false }: { admin?: boolean })
     const target = decision ? "fr-decision" : history ? "fr-history" : formOpen ? "fr-form" : null;
     if (target) document.getElementById(target)?.focus();
   }, [decision, history, formOpen]);
-  const loadCatalog = useCallback(() => api.get("/freight-rates/catalog").then(r => setCatalog(r.data)), []);
-  useEffect(() => { if (allowed) { loadCatalog().catch(e => setError(errorMessage(e))); api.get("/freight-rates/contact-settings").then(r => setHasWhatsApp(!!r.data.national_number)).catch(() => setHasWhatsApp(false)); } }, [allowed, loadCatalog]);
+  const loadCatalog = useCallback(async () => {
+    setCatalogState('loading'); setCatalogError('');
+    try {
+      const { data } = await api.get("/freight-rates/catalog");
+      setCatalog(data); setCatalogState('ready');
+    } catch (e) { setCatalogState('error'); setCatalogError(errorMessage(e)); throw e; }
+  }, []);
+  useEffect(() => { if (allowed) { loadCatalog().catch(() => {}); api.get("/freight-rates/contact-settings").then(r => setHasWhatsApp(!!r.data.national_number)).catch(() => setHasWhatsApp(null)); } }, [allowed, loadCatalog]);
   useEffect(() => {
     if (!allowed) return;
     const controller = new AbortController(); setBusy(true);
@@ -122,10 +130,12 @@ export default function FreightDashboard({ admin = false }: { admin?: boolean })
   function choose(rate: Rate, action: string) { setDecision({ rate, action }); setReason(""); setMarkup(String(rate.markup_bps/100)); setNotice(""); }
   const input = (label: string, key: keyof ReturnType<typeof blank>, type = "text", required = false) => <label>{label}<input type={type} required={required} maxLength={500} step={type === "number" ? ".01" : undefined} min={type === "number" ? "0" : undefined} value={String(form[key])} onChange={e => update(key,e.target.value)} /></label>;
   const select = (label: string, key: keyof ReturnType<typeof blank>, choices: { value: string; label: string }[]) => <label>{label}<select required value={String(form[key])} onChange={e => update(key,e.target.value)}><option value="">Select…</option>{choices.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}</select></label>;
-  return <AppLayout title={admin ? "Freight Rate Comparison" : "My Freight Rates"} subtitle="Weekly prices · Asia/Qatar" action={allowed ? <button className="fr-button" onClick={() => { setEditing(null); setForm(blank()); setFile(null); setFormOpen(true); }}>+ Add New Rate</button> : undefined}>
+  return <AppLayout title={admin ? "Freight Rate Comparison" : "My Freight Rates"} subtitle="Weekly prices · Asia/Qatar" action={allowed ? <button className="fr-button" disabled={catalogState !== 'ready'} onClick={() => { setEditing(null); setForm(blank()); setFile(null); setFormOpen(true); }}>+ Add New Rate</button> : undefined}>
     <div className="fr-dashboard">
       {authLoading ? <p>Checking access…</p> : !allowed ? <p role="alert">{admin ? "Administrator" : "Operator"} access is required. <a href="/login">Log in</a></p> : <>
         {error && <div className="fr-alert" role="alert">{error}<button onClick={() => setError("")}>Dismiss</button></div>}
+        {catalogState === 'loading' && <p role="status" className="fr-notice">Loading ports, equipment and currencies…</p>}
+        {catalogState === 'error' && <div className="fr-alert" role="alert">Freight input options could not be loaded. {catalogError}<button onClick={() => { loadCatalog().then(() => { setError(''); setReload(n => n+1); }).catch(() => {}); }}>Retry loading options</button></div>}
         {notice && <p role="status" className="fr-notice">{notice}</p>}
         {hasWhatsApp === false && <p className="fr-notice">Add your business WhatsApp number in <a href="/settings" className="underline">Settings</a> so customers can request quotes for your rates.</p>}
         {formOpen && <section id="fr-form" tabIndex={-1} className="fr-card" aria-label="Add or revise freight rate"><h2>{editing ? `Revise rate · version ${editing.version}` : "Add New Rate"}</h2>
@@ -175,7 +185,7 @@ export default function FreightDashboard({ admin = false }: { admin?: boolean })
               <td>{rate.container_type}</td><td>{amount(rate.total_minor,rate.currency)}{rate.status === "active" && <small>Customer: {amount(rate.customer_minor,rate.currency)}<br />Markup: {rate.markup_bps/100}%</small>}</td>
               <td>{rate.valid_from}<small>through {rate.valid_until}</small></td><td>{rate.status}<small>revision {rate.version}</small></td>
               {admin && <td>{Number(rate.position) === 1 ? <strong className="fr-best-label">BEST RATE</strong> : rate.position ? `+${amount(Number(rate.total_minor)-Number(rate.best_minor),rate.currency)}` : "Not eligible on date"}</td>}
-              <td><div className="fr-row-actions">{rate.status !== "archived" && <><button onClick={() => edit(rate)}>Edit</button><button onClick={() => choose(rate,"withdraw")} disabled={rate.status === "withdrawn"}>Withdraw</button></>}<button onClick={() => showHistory(rate)}>History</button>
+              <td><div className="fr-row-actions">{rate.status !== "archived" && <><button disabled={catalogState !== 'ready'} onClick={() => edit(rate)}>Edit</button><button onClick={() => choose(rate,"withdraw")} disabled={rate.status === "withdrawn"}>Withdraw</button></>}<button onClick={() => showHistory(rate)}>History</button>
                 {admin && rate.status !== "archived" && <><button onClick={() => choose(rate,"markup")}>Set markup</button><button onClick={() => choose(rate,"archive")}>Archive</button></>}
               </div></td>
             </tr>)}
