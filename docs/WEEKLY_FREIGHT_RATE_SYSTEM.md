@@ -225,7 +225,7 @@ Use the existing admin user-management workflow for real staff. On an installati
 
 Server `backend/.env.cpanel` is removed from Git tracking and ignored, while the existing local file is preserved. The deployment script preserves an existing `backend/.env`; it may copy a server-provisioned `.env.cpanel` only when `.env` is absent. The previously committed DB/JWT/mail credentials must be rotated before publishing or reusing the repository; this cleanup does not rewrite Git history. Never commit replacement secrets.
 
-Generated `.preview-build/`, `.login-check/`, `.slider-check/`, `.seo-audit-build/`, `.seo-audit-sandbox/`, `frontend/out/` and TypeScript build cache are untracked and ignored. Source assets in `public/` are retained; deployment builds and merges fresh outputs. The existing tracked `dist/` baseline is retained for the repository's regression checker. Ignore rules also keep temporary QA screenshots out of Git. Review the cleanup deletions alongside the new source files before committing; no commit or push was performed automatically.
+Generated `.preview-build/`, `.login-check/`, `.slider-check/`, `.seo-audit-build/`, `.seo-audit-sandbox/` and TypeScript build cache are untracked and ignored. The current hosting workflow requires `frontend/out/` in Git; the complete generated export is restored and must be rebuilt before release. Source assets in `public/` are retained; deployment builds and merges fresh outputs. The existing tracked `dist/` baseline is retained for the repository's regression checker. Ignore rules also keep temporary QA screenshots out of Git. Review the cleanup deletions alongside the new source files before committing; no commit or push was performed automatically.
 
 ## Future improvements
 
@@ -235,3 +235,23 @@ Generated `.preview-build/`, `.login-check/`, `.slider-check/`, `.seo-audit-buil
 - Attachment malware scanning and encrypted object storage with short-lived authorized downloads at larger volumes.
 - CI browser automation against an ephemeral production-version MySQL instance, integration smoke checks with safe sandbox mail/tracking providers, and operational metrics/alerts.
 - Shared client request caching and incremental/keyset pagination if published catalogs become very large; maintain publication/date correctness and private-data boundaries.
+
+
+## Missing frontend/out/index.html deployment repair — 11 October 2026
+
+The earlier cleanup removed the static export from Git on the assumption the hosting deployment would rebuild it. The reported production ENOENT demonstrates that the server did not have the merged export when Express tried to serve it. This is a missing build artifact, not a database-credential failure. The current host's Git-delivered export is restored; preview directories and secrets remain excluded.
+
+The complete release output must contain both Next portal pages and the Vite marketing homepage. A Next-only build is insufficient: run the root build, including `scripts/merge-build.cjs`. The merge now invokes `scripts/check-deployment.cjs`, which rejects missing core pages and missing referenced JavaScript/CSS. `frontend/out/` is no longer ignored and should be included in the release commit. Built HTML contains application shells, not sample users or rates; prices load from the API.
+
+Immediate server recovery, if dependencies/build tooling are available on the host:
+
+```sh
+cd /var/www/vhosts/argusshipping.co/httpdocs
+npm ci --include=dev
+npm run build
+node scripts/check-deployment.cjs
+```
+
+Restart the Node application using the hosting panel after the build succeeds. Alternatively deploy the restored complete `frontend/out/` from the release commit and restart the application. Do not change DB_HOST, DB_PORT, DB_USER or DB_PASSWORD to address this file error. The separate additive freight database migration is still required for feature APIs if it has not already run; it does not generate website files.
+
+Local verification: Vite generated 47 public pages; Next compiled and exported 28 portal routes. Export verification checks required HTML and local script/style assets. An empty export is explicitly rejected. No live-server access or deployment was performed in this repair.

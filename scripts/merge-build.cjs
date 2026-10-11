@@ -10,4 +10,5 @@ if (!fs.existsSync(path.join(dist, 'trade-lanes/index.html')) || !fs.existsSync(
 fs.cpSync(dist, out, { recursive: true });
 const quotation = path.join(out, 'quotation.html');
 if (fs.existsSync(quotation)) fs.copyFileSync(quotation, path.join(out, 'Quotation.html'));
+require('./check-deployment.cjs').checkDeployment(out);
 console.log('Merged all prerendered pages, images, videos, assets, robots and sitemap into frontend/out.');

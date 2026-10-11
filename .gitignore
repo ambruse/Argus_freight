@@ -22,6 +22,7 @@ frontend/public/logo.png
 .slider-check/
 .seo-audit-build/
 .seo-audit-sandbox/
-frontend/out/
+# The current host deploys the static export directly from Git.
+# Keep frontend/out tracked; regenerate it with the complete build before release.
 *.tsbuildinfo
 docs/qa/

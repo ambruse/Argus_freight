@@ -164,3 +164,17 @@ This entry supersedes the earlier local demo/fixture state. No demo credentials 
 Database cleanup was executed only against the task-created loopback preview server: three demo freight records and their revision/audit/attachment/contact data, the two demo accounts and two persistent browser-test databases were removed. Before cleanup, all non-freight business tables were confirmed empty and all users matched the two known demo identities. The catalog and application schema remain. Production was not contacted or modified. The cleanup operation is not shipped as a reusable destructive deployment script.
 
 Verification: 42 automated checks passed without skips using real MariaDB; landing build and metadata/H1/canonical regression checks passed. Portal code is unchanged since its passing 28-route production build. Browser verification confirmed one Shanghai–Hamad row with two distinct terms options and synchronized enquiry references; the final public page is empty after sample removal. No Git commit, push or production deployment was performed. Previously committed secrets remain in Git history and require rotation before release.
+
+
+## Deployment repair — 11 October 2026
+
+Supersedes only the earlier decision to untrack `frontend/out/`. The host serves that generated directory directly and the deployed build was missing `index.html`.
+
+- `.gitignore`: remove the `frontend/out/` ignore rule, retaining secret and preview exclusions.
+- `frontend/out/`: recreate the complete portal and marketing export from current source, including index.html, freight page, login, staff dashboards and all referenced assets. No sample database data or accounts are included.
+- `scripts/check-deployment.cjs`: new validation of core HTML and referenced local script/style files; rejects an incomplete release.
+- `scripts/merge-build.cjs`: validate the combined export before reporting success.
+- `docs/WEEKLY_FREIGHT_RATE_SYSTEM.md`: corrected artifact policy, failure cause and immediate host recovery commands.
+- `docs/WEEKLY_FREIGHT_RATE_CHANGELOG.md`: this repair record.
+
+The previously requested reversal in `backend/.env.example` is preserved. No actual environment file or database connection value was edited in this repair. No production deployment was performed.
