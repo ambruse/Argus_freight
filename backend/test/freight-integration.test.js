@@ -42,7 +42,7 @@ test('database persistence, API security, automatic publication and concurrent w
     await migrate(pool);
     const service = createService(pool), admin = {id:4,role:'admin'}, op1={id:1,role:'operator'},op2={id:2,role:'operator'},op3={id:3,role:'operator'};
     const date = D.qatarToday(), bounds = D.week(date);
-    const body = overrides => ({ origin_id:'CNSHA',destination_id:'QAHMD',container_type:'40HQ',service:'FCL',basis:'PORT_TO_PORT',currency:'USD',valid_from:bounds.start,valid_until:bounds.end,price:'1100',surcharge:'0',charges_confirmed:true,inclusions:['Ocean freight'],exclusions:[],...overrides });
+    const body = overrides => ({ origin_id:'CNSHA',destination_id:'QAHMD',container_type:'40HQ',service:'FCL',basis:'PORT_TO_PORT',currency:'USD',valid_from:bounds.start,valid_until:bounds.end,price:'1100',carrier:'Test carrier',surcharge:'0',charges_confirmed:true,inclusions:['Ocean freight'],exclusions:[],...overrides });
     await t.test('workbook locations persist, countries are normalized, and airports cannot receive container rates', async () => {
       const catalog = await service.catalogs();
       assert.equal(catalog.locations.length,1938);
@@ -67,12 +67,21 @@ test('database persistence, API security, automatic publication and concurrent w
       assert.equal((await service.publicRates({date,origin:'China',destination:'Qatar'})).rates.length,1);
       await assert.rejects(()=>service.decide(op2,b.id,{action:'markup',version:1,markup_bps:500}),e=>e.status===403);
     });
+    await t.test('public ties retain the earlier submission and ignore removed surcharge inputs', async () => {
+      const tied = await service.save(op3,body({price:'1100'}));
+      const surcharge = await service.save(op3,body({price:'1500',surcharge:'1000',surcharge_details:'Mandatory handling',inclusions:['Ocean freight','Handling']}));
+      const result = await service.publicRates({date});
+      assert.equal(result.rates.length,1); assert.equal(result.rates[0].reference,`${b.id}:1`);
+      await service.decide(op3,tied.id,{action:'withdraw',version:1});
+      await service.decide(op3,surcharge.id,{action:'withdraw',version:1});
+    });
     await t.test('2 different equipment and 3 expired/future cheap prices', async () => {
       const small = await service.save(op1,body({container_type:'20GP',price:'800'}));
       await service.save(op1,body({price:'900',valid_from:'2020-01-01',valid_until:'2020-01-07'}));
       await service.save(op1,body({price:'600',valid_from:'2099-01-01',valid_until:'2099-01-07'}));
       assert.equal((await service.list(admin,{date,container:'40HQ'})).rates.find(r=>Number(r.position)===1).id,b.id);
       assert.equal((await service.publicRates({date})).rates.length,2);
+      assert.deepEqual((await service.publicRates({date})).rates.map(r=>[r.container_type,r.price]),[['20GP','800.00'],['40HQ','1100.00']]);
     });
     let c;
     await t.test('4 later lower submission immediately replaces the public winner', async () => {
@@ -92,19 +101,46 @@ test('database persistence, API security, automatic publication and concurrent w
       assert.equal((await service.publicRates({date,origin:'Singapore'})).rates.length,0);
       assert.equal((await service.publicRates({date,origin:'%'})).rates.length,0);
     });
-    await t.test('8 incompatible inclusions, unknown charges and currencies stay separate', async () => {
-      await service.save(op1,body({price:'700',charges_confirmed:false,surcharge:''}));
-      const other = await service.save(op2,body({price:'900',exclusions:['destination handling']}));
-      const eur = await service.save(op2,body({price:'500',currency:'EUR'}));
-      assert.equal((await service.publicRates({date,container:'40HQ'})).rates.length,3);
-      const { groupPublicRoutes } = await import('../../src/components/freightRoutes.mjs');
-      const display = groupPublicRoutes((await service.publicRates({date,container:'40HQ'})).rates);
-      assert.equal(display.length,1);
-      assert.equal(display[0].options.length,3);
-      assert.equal(display[0].options[0].origin_id,'CNSHA');
-      assert.equal(display[0].options[0].destination_id,'QAHMD');
-      const unknown = (await service.list(admin,{})).rates.find(r=>r.total_minor===null);
-      assert.ok(!(await service.publicRates({date})).rates.some(r=>r.reference.startsWith(unknown.id)));
+    await t.test('SQL and JavaScript USD rounding agree at monetary boundaries', async () => {
+      const FX = require('../src/freight/currency');
+      for (const currency of ['USD','QAR','EUR']) {
+        for (const minor of [1,2,29,10000,365000,9999999999]) {
+          const [[row]] = await pool.query(`SELECT ${FX.usdSQL('v.total_minor')} AS usd FROM (SELECT ? AS currency, ? AS total_minor) v`,[currency,minor]);
+          assert.equal(row.usd == null ? null : Number(row.usd),FX.toUSDMinor(minor,currency));
+        }
+      }
+    });
+    await t.test('8 USD/QAR comparison, fixed exclusions, carrier enforcement and immutable conversion details', async () => {
+      const qar = await service.save(op2,body({price:'3285',currency:'QAR',exclusions:['Custom exclusion'],surcharge:'999'}));
+      const display = await service.publicRates({date,container:'40HQ'});
+      assert.equal(display.currency,'USD'); assert.equal(display.rates.length,1);
+      assert.equal(display.rates[0].reference,`${qar.id}:1`); assert.equal(display.rates[0].price,'900.00');
+      assert.deepEqual(display.rates[0].exclusions,['AT Actuals']);
+      assert.equal(display.rates[0].origin_id,'CNSHA'); assert.equal(display.rates[0].destination_id,'QAHMD');
+      assert.equal((await service.publicRates({date,container:'40HQ',currency:'QAR'})).rates[0].currency,'USD');
+      await assert.rejects(()=>service.save(op2,body({currency:'EUR'})),e=>e.status===400);
+      await assert.rejects(()=>service.save(op2,body({carrier:'  '})),e=>e.status===400);
+      const stored = (await service.history(op2,qar.id)).revisions[0];
+      assert.equal(stored.currency,'QAR'); assert.equal(Number(stored.base_minor),328500);
+      assert.equal(stored.details.currency_conversion.usd_minor,90000);
+      assert.equal(stored.details.currency_conversion.divisor,'3.65');
+      const internal = (await service.list(admin,{date,container:'40HQ'})).rates;
+      assert.equal(internal.filter(r=>Number(r.position)===1).length,1);
+      assert.equal(internal.find(r=>Number(r.position)===1).id,qar.id);
+      assert.equal(Number(internal.find(r=>r.id===qar.id).best_minor),90000);
+      await service.decide(op2,qar.id,{action:'withdraw',version:1});
+    });
+    await t.test('legacy EUR and unconfirmed quotations are retained but cannot publish', async () => {
+      const eur = await service.save(op1,body({price:'1'}));
+      const unknown = await service.save(op1,body({price:'2'}));
+      // Simulate historical revisions in this disposable database only.
+      await pool.query("UPDATE freight_rate_revisions SET currency='EUR' WHERE rate_id=?",[eur.id]);
+      await pool.query('UPDATE freight_rate_revisions SET charges_confirmed=0,total_minor=NULL,surcharge_minor=NULL WHERE rate_id=?',[unknown.id]);
+      const output = (await service.publicRates({date})).rates;
+      assert.ok(output.every(r=>!r.reference.startsWith(eur.id) && !r.reference.startsWith(unknown.id)));
+      assert.equal((await service.history(op1,eur.id)).revisions[0].currency,'EUR');
+      await service.decide(op1,eur.id,{action:'withdraw',version:1});
+      await service.decide(op1,unknown.id,{action:'withdraw',version:1});
     });
     await t.test('9 different dates in one week select applicable active rates', async () => {
       const first = await service.save(op1,body({container_type:'40GP',valid_until:bounds.start,price:'500'}));
@@ -112,6 +148,8 @@ test('database persistence, API security, automatic publication and concurrent w
       assert.equal((await service.publicRates({date:bounds.start,container:'40GP'})).rates[0].price,'500.00');
       assert.equal((await service.publicRates({date:bounds.end,container:'40GP'})).rates[0].price,'600.00');
       await assert.rejects(()=>service.publicRates({date:'2020-01-01'}),e=>e.status===400);
+      await service.decide(op1,first.id,{action:'withdraw',version:1});
+      await service.decide(op1,last.id,{action:'withdraw',version:1});
     });
     await t.test('withdrawal automatically falls back to the next active offer', async () => {
       await service.decide(op3,c.id,{action:'withdraw',version:1});
@@ -147,12 +185,19 @@ test('database persistence, API security, automatic publication and concurrent w
       await service.decide(op2,newer.id,{action:'withdraw',version:1});
       assert.equal((await service.publicRates({date,container:'20GP'})).rates[0].reference,`${target.id}:1`);
     });
-    await t.test('7 more than five published routes are persisted and returned', async () => {
-      for (let i=0;i<20;i++) {
+    await t.test('7 pagination happens after cheapest selection, without duplicate lanes or lost routes', async () => {
+      for (let i=0;i<105;i++) {
         await service.configure(admin,'locations',{id:`TEST${i}`,name:`Test port ${i}`,country:'QA',aliases:[],active:true});
         const r = await service.save(op1,body({destination_id:`TEST${i}`}));
+        if (i === 0) await service.save(op2,body({destination_id:`TEST${i}`,price:'1000',inclusions:['Ocean freight','Handling']}));
       }
-      assert.equal((await service.publicRates({date,destination:'Test port'})).rates.length,20);
+      const first = await service.publicRates({date,destination:'Test port'});
+      assert.equal(first.rates.length,100); assert.equal(first.nextOffset,100);
+      const second = await service.publicRates({date,destination:'Test port',offset:first.nextOffset});
+      assert.equal(second.rates.length,5); assert.equal(second.nextOffset,null);
+      const rows = [...first.rates,...second.rates];
+      assert.equal(new Set(rows.map(r=>`${r.origin_id}/${r.destination_id}/${r.container_type}`)).size,105);
+      assert.equal(rows.find(r=>r.destination_id==='TEST0').price,'1000.00');
     });
     await t.test('public allowlist has no confidential fields and explicit markup is exact', async () => {
       const r = await service.save(op1,body({container_type:'20GP',price:'599.99'})); await service.decide(admin,r.id,{action:'markup',version:1,markup_bps:125});
@@ -190,7 +235,7 @@ test('database persistence, API security, automatic publication and concurrent w
       assert.equal((await fetch(`${base}/quote/${enquiryRate.id}?${params}&unused=1`,{redirect:'manual'})).status,303);
       await assert.rejects(()=>service.quote(enquiryRate.id,{date,version:1,price:'1.00'}),e=>e.status===409);
       await assert.rejects(()=>service.quote(enquiryRate.id,{date,version:'NaN',price:'1234.56'}),e=>e.status===400);
-      const lower = await service.save(op2,body({container_type:'40GP',price:'1000',inclusions:['WhatsApp test']}));
+      const lower = await service.save(op2,body({container_type:'40GP',price:'1000',inclusions:['WhatsApp test','Handling']}));
       await assert.rejects(()=>service.quote(enquiryRate.id,{date,version:1,price:'1234.56'}),e=>e.status===409);
       await assert.rejects(()=>service.quote(lower.id,{date,version:1,price:'1000.00'}),e=>e.status===409);
       await service.saveContact(op2,{country:'United States',calling_code:'+1',national_number:'2025550102'});
@@ -201,6 +246,18 @@ test('database persistence, API security, automatic publication and concurrent w
       await service.decide(op2,lower.id,{action:'withdraw',version:1});
       const unavailable = await fetch(`${base}/quote/${lower.id}?date=${date}&version=1&price=1000.00`,{redirect:'manual'});
       assert.equal(unavailable.status,409); assert.match(await unavailable.text(),/Return to this week/);
+    });
+    await t.test('QAR WhatsApp enquiries use the displayed USD price and reject the source amount', async () => {
+      const qar = await service.save(op1,body({container_type:'40GP',currency:'QAR',price:'100'}));
+      const output = await service.publicRates({date,container:'40GP'});
+      assert.equal(output.rates.length,1); assert.equal(output.rates[0].reference,`${qar.id}:1`);
+      assert.equal(output.rates[0].currency,'USD'); assert.equal(output.rates[0].price,'27.40');
+      await assert.rejects(()=>service.quote(qar.id,{date,version:1,price:'100.00',currency:'QAR'}),e=>e.status===409);
+      const link = new URL(await service.quote(qar.id,{date,version:1,price:'27.40',currency:'USD'}));
+      assert.equal(link.pathname,'/12025550101'); assert.match(link.searchParams.get('text'),/Rate: USD 27.40/);
+      await service.decide(admin,qar.id,{action:'markup',version:1,markup_bps:1000});
+      assert.equal((await service.publicRates({date,container:'40GP'})).rates[0].price,'30.14');
+      await assert.rejects(()=>service.quote(qar.id,{date,version:1,price:'27.40'}),e=>e.status===409);
     });
     await t.test('HTTP denies anonymous, customer, query token, stale role and stalled users', async () => {
       assert.equal((await fetch(base)).status,401);
@@ -226,7 +283,7 @@ test('database persistence, API security, automatic publication and concurrent w
       const after = await service.history(op2,b.id);
       assert.deepEqual(after,before);
       const locations = (await service.catalogs()).locations;
-      assert.equal(locations.length,1958);
+      assert.equal(locations.length,2043);
       assert.equal(Number(locations.find(l => l.id === 'QAHMD').active),0);
       assert.equal((await service.publicRates({date,destination:'Hamad Port'})).rates.length,0);
       await service.configure(admin,'locations',{...location,active:true});

@@ -1,6 +1,5 @@
 import { useEffect, useId, useState } from 'react';
 import './FreightRates.css';
-import { groupPublicRoutes } from './freightRoutes.mjs';
 
 export default function FreightRates({ fullPage = false }) {
   const id = useId();
@@ -12,7 +11,6 @@ export default function FreightRates({ fullPage = false }) {
   const [refresh, setRefresh] = useState(0);
   const [moreBusy, setMoreBusy] = useState(false);
   const [automaticDate, setAutomaticDate] = useState(true);
-  const [selectedRates, setSelectedRates] = useState({});
   const Heading = fullPage ? 'h1' : 'h2';
 
   useEffect(() => {
@@ -51,7 +49,7 @@ export default function FreightRates({ fullPage = false }) {
       const response = await fetch(`/api/freight-rates/public?${params}`, { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
-      setResult(old => old && old.queryKey === queryKey ? { ...data, queryKey, rates: [...old.rates, ...data.rates.filter(r => !old.rates.some(o => o.reference === r.reference))] } : old);
+      setResult(old => old && old.queryKey === queryKey ? { ...data, queryKey, rates: [...new Map([...old.rates, ...data.rates].map(rate => [JSON.stringify([rate.origin_id,rate.destination_id,rate.container_type]),rate])).values()] } : old);
     } catch (e) { setResult(null); setError(e.message || 'Unable to load rates.'); }
     finally { setMoreBusy(false); }
   }
@@ -61,7 +59,7 @@ export default function FreightRates({ fullPage = false }) {
   };
   const quoteLink = rate => {
     const [rateId,version] = rate.reference.split(':');
-    return `/api/freight-rates/quote/${encodeURIComponent(rateId)}?` + new URLSearchParams({version,date:result.date,price:rate.price});
+    return `/api/freight-rates/quote/${encodeURIComponent(rateId)}?` + new URLSearchParams({version,date:result.date,price:rate.price,currency:rate.currency});
   };
   return <section className={`freight-rates-section ${fullPage ? 'freight-rates-page' : ''}`} aria-labelledby={`${id}-title`}>
     <div className="container">
@@ -89,17 +87,11 @@ export default function FreightRates({ fullPage = false }) {
           {!automaticDate && <button type="button" onClick={() => { setAutomaticDate(true); setFilters(f => ({ ...f, date: '' })); }}>Show today</button>}
         </p>
         <div className="freight-scroll" tabIndex={0} role="region" aria-label="Published freight rates, scroll for more routes" aria-busy={busy}>
-          <table className="freight-table" role="table"><caption className="freight-sr-only">Best rates for the selected date, grouped by equipment, currency and equivalent terms</caption>
+          <table className="freight-table" role="table"><caption className="freight-sr-only">Lowest listed freight prices in USD per origin, destination and container for the selected date</caption>
             <thead role="rowgroup"><tr role="row">{['Origin','Destination','Container','Best Rate','Valid Until','Action'].map(h => <th key={h} scope="col" role="columnheader">{h}</th>)}</tr></thead>
-            <tbody role="rowgroup">{groupPublicRoutes(result?.rates).map(lane => {
-              const rate = lane.options.find(option => option.reference === selectedRates[lane.key]) || lane.options[0];
-              return <tr key={lane.key} role="row">
+            <tbody role="rowgroup">{result?.rates.map(rate => {
+              return <tr key={JSON.stringify([rate.origin_id,rate.destination_id,rate.container_type])} role="row">
               <td role="cell" data-label="Origin · POL">{rate.origin}</td><td role="cell" data-label="Destination · POD">{rate.destination}</td><td role="cell" data-label="Container"><span className="freight-equipment">{rate.container_type}</span>
-                {lane.options.length > 1 && <label className="freight-options">{lane.options.length} rate options
-                  <select aria-label={`Rate option for ${rate.origin} to ${rate.destination}`} value={rate.reference} onChange={e => setSelectedRates(old => ({...old,[lane.key]:e.target.value}))}>
-                    {lane.options.map((option,index) => <option key={option.reference} value={option.reference}>{index+1}. {option.container_type} · {option.currency} {option.price} · {option.service} · {option.basis.replaceAll('_',' ')} · Includes: {option.inclusions.join(', ')} · Excludes: {option.exclusions.join(', ') || 'None declared'}</option>)}
-                  </select>
-                </label>}
               </td>
               <td role="cell" data-label="Best rate"><strong className="freight-price">{rate.currency} {Number(rate.price).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong><small>per {rate.container_type} container</small>
                 <details><summary>Price conditions</summary><p>{rate.service} · {rate.basis.replaceAll('_',' ')}<br />Includes: {rate.inclusions.join(', ')}<br />Excludes: {rate.exclusions.join(', ') || 'None declared'}<br />Valid from {rate.valid_from} to {rate.valid_until}</p></details>
@@ -112,7 +104,7 @@ export default function FreightRates({ fullPage = false }) {
           </div>
           {result?.nextOffset != null && <button className="freight-load" disabled={moreBusy} onClick={more}>{moreBusy ? 'Loading…' : 'Load more routes'}</button>}
         </div>
-        <div className="freight-footnote"><span>Freight rates are subject to availability and final confirmation.</span><span>Different currencies and price conditions are compared separately.</span></div>
+        <div className="freight-footnote"><span>Freight rates are subject to availability and final confirmation.</span><span>All prices in USD. QAR ÷ 3.65. Other charges are AT Actuals; check price conditions.</span></div>
       </div>
     </div>
   </section>;

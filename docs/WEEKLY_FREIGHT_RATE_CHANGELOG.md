@@ -192,3 +192,300 @@ The previously requested reversal in `backend/.env.example` is preserved. No act
 - `docs/WEEKLY_FREIGHT_RATE_SYSTEM.md`, `docs/WEEKLY_FREIGHT_RATE_CHANGELOG.md`: diagnosis, deployment/recovery and verification.
 
 46 automated checks passed using isolated MariaDB databases. Live read-only checks confirm feature endpoints return 500 and required client assets return 200; production schema/migration errors were not available for direct inspection. No changes to production DB credentials or existing RFQ forms. Deploy/restart is required before the live result can be confirmed.
+
+
+## One lowest public rate per POL/POD/container — 11 October 2026
+
+The user clarified that different container sizes must retain separate cheapest rates. The public SQL query now selects one lowest eligible customer total per exact origin, destination and container, before pagination. USD is the default display currency, with QAR and EUR available through a labeled currency filter. Currency amounts are never ranked against each other. The existing internal equivalent-service comparison is preserved; the public listing retains the selected offer's service, basis, inclusions and exclusions and explicitly tells visitors to check conditions. No claim is made that different service scopes are equivalent.
+
+The public rate-options dropdown and client-side grouping helper are removed. The WhatsApp redirect revalidates the same public winner and selected currency. Loading additional pages merges by facility/equipment identity. The currency/date filters retain the mobile layout.
+
+Verification: 47 automated checks passed without skips using disposable local MariaDB databases. Tests cover container separation, lower later submissions, confirmed surcharge totals, ties, currency isolation, unknown charges, expiry, withdrawal, 105 routes across pages, stale WhatsApp links and selected-currency enquiries. The Vite production build passed and its 47 prerendered pages were merged into the existing complete portal export. Deployment artifact checks and unchanged-title/description/H1/canonical checks passed. This change needs no new migration. Deploy the backend and generated frontend/out together and restart Node.js. No production deployment, sample data creation in the application database, or database credential changes were performed.
+
+Exact file inventory for this change (generated HTML changes reference the new shared asset hashes):
+
+| File | Change |
+| --- | --- |
+| `backend/src/freight/service.js` | Modified |
+| `backend/test/freight-integration.test.js` | Modified |
+| `backend/test/freight-public-routes.test.js` | Deleted |
+| `dist/about.html` | Modified |
+| `dist/assets/index-BLVJmJIZ.js` | Deleted |
+| `dist/assets/index-Br0vu_Bt.css` | Deleted |
+| `dist/assets/index-C_GLD6Uf.js` | Created |
+| `dist/assets/index-CvzJCYiV.css` | Created |
+| `dist/case-studies/fmcg-distribution-india/index.html` | Modified |
+| `dist/case-studies/heavy-lift-qatar/index.html` | Modified |
+| `dist/case-studies/pharma-cold-chain-uae/index.html` | Modified |
+| `dist/chairman-message.html` | Modified |
+| `dist/contact.html` | Modified |
+| `dist/freight-rates.html` | Modified |
+| `dist/index.html` | Modified |
+| `dist/industries/automotive-logistics/index.html` | Modified |
+| `dist/industries/construction-logistics/index.html` | Modified |
+| `dist/industries/healthcare-logistics/index.html` | Modified |
+| `dist/industries/industrial-logistics/index.html` | Modified |
+| `dist/industries/oil-gas-logistics/index.html` | Modified |
+| `dist/industries/retail-logistics/index.html` | Modified |
+| `dist/insights/gcc-freight-report/index.html` | Modified |
+| `dist/locations/bahrain/index.html` | Modified |
+| `dist/locations/china/index.html` | Modified |
+| `dist/locations/index.html` | Modified |
+| `dist/locations/india/index.html` | Modified |
+| `dist/locations/qatar/index.html` | Modified |
+| `dist/locations/turkey/index.html` | Modified |
+| `dist/locations/uae/index.html` | Modified |
+| `dist/resources/cbm-calculator/index.html` | Modified |
+| `dist/resources/chargeable-weight-calculator/index.html` | Modified |
+| `dist/resources/container-size-guide/index.html` | Modified |
+| `dist/resources/incoterms-guide/index.html` | Modified |
+| `dist/services.html` | Modified |
+| `dist/services/3pl-logistics/index.html` | Modified |
+| `dist/services/air-freight/index.html` | Modified |
+| `dist/services/customs-clearance/index.html` | Modified |
+| `dist/services/dangerous-goods/index.html` | Modified |
+| `dist/services/door-to-door-cargo/index.html` | Modified |
+| `dist/services/project-cargo/index.html` | Modified |
+| `dist/services/road-freight/index.html` | Modified |
+| `dist/services/sea-freight/index.html` | Modified |
+| `dist/services/vehicle-logistics/index.html` | Modified |
+| `dist/services/warehousing/index.html` | Modified |
+| `dist/team.html` | Modified |
+| `dist/tracking.html` | Modified |
+| `dist/trade-lanes/bahrain-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/china-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/china-to-uae/index.html` | Modified |
+| `dist/trade-lanes/index.html` | Modified |
+| `dist/trade-lanes/india-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/turkey-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/uae-to-qatar/index.html` | Modified |
+| `dist/why-us.html` | Modified |
+| `docs/WEEKLY_FREIGHT_RATE_CHANGELOG.md` | Modified |
+| `docs/WEEKLY_FREIGHT_RATE_SYSTEM.md` | Modified |
+| `frontend/out/about.html` | Modified |
+| `frontend/out/assets/index-C_GLD6Uf.js` | Created |
+| `frontend/out/assets/index-CvzJCYiV.css` | Created |
+| `frontend/out/case-studies/fmcg-distribution-india/index.html` | Modified |
+| `frontend/out/case-studies/heavy-lift-qatar/index.html` | Modified |
+| `frontend/out/case-studies/pharma-cold-chain-uae/index.html` | Modified |
+| `frontend/out/chairman-message.html` | Modified |
+| `frontend/out/contact.html` | Modified |
+| `frontend/out/freight-rates.html` | Modified |
+| `frontend/out/index.html` | Modified |
+| `frontend/out/industries/automotive-logistics/index.html` | Modified |
+| `frontend/out/industries/construction-logistics/index.html` | Modified |
+| `frontend/out/industries/healthcare-logistics/index.html` | Modified |
+| `frontend/out/industries/industrial-logistics/index.html` | Modified |
+| `frontend/out/industries/oil-gas-logistics/index.html` | Modified |
+| `frontend/out/industries/retail-logistics/index.html` | Modified |
+| `frontend/out/insights/gcc-freight-report/index.html` | Modified |
+| `frontend/out/locations/bahrain/index.html` | Modified |
+| `frontend/out/locations/china/index.html` | Modified |
+| `frontend/out/locations/index.html` | Modified |
+| `frontend/out/locations/india/index.html` | Modified |
+| `frontend/out/locations/qatar/index.html` | Modified |
+| `frontend/out/locations/turkey/index.html` | Modified |
+| `frontend/out/locations/uae/index.html` | Modified |
+| `frontend/out/resources/cbm-calculator/index.html` | Modified |
+| `frontend/out/resources/chargeable-weight-calculator/index.html` | Modified |
+| `frontend/out/resources/container-size-guide/index.html` | Modified |
+| `frontend/out/resources/incoterms-guide/index.html` | Modified |
+| `frontend/out/services.html` | Modified |
+| `frontend/out/services/3pl-logistics/index.html` | Modified |
+| `frontend/out/services/air-freight/index.html` | Modified |
+| `frontend/out/services/customs-clearance/index.html` | Modified |
+| `frontend/out/services/dangerous-goods/index.html` | Modified |
+| `frontend/out/services/door-to-door-cargo/index.html` | Modified |
+| `frontend/out/services/project-cargo/index.html` | Modified |
+| `frontend/out/services/road-freight/index.html` | Modified |
+| `frontend/out/services/sea-freight/index.html` | Modified |
+| `frontend/out/services/vehicle-logistics/index.html` | Modified |
+| `frontend/out/services/warehousing/index.html` | Modified |
+| `frontend/out/team.html` | Modified |
+| `frontend/out/tracking.html` | Modified |
+| `frontend/out/trade-lanes/bahrain-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/china-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/china-to-uae/index.html` | Modified |
+| `frontend/out/trade-lanes/index.html` | Modified |
+| `frontend/out/trade-lanes/india-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/turkey-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/uae-to-qatar/index.html` | Modified |
+| `frontend/out/why-us.html` | Modified |
+| `src/components/FreightRates.css` | Modified |
+| `src/components/FreightRates.jsx` | Modified |
+| `src/components/freightRoutes.mjs` | Deleted |
+
+
+## USD-only weekly prices and simplified rate form — 11 October 2026
+
+- `backend/src/freight/currency.js` (created): fixed user-configured QAR / 3.65 conversion, USD/QAR allowlist, exact SQL conversion expression, revision policy metadata.
+- `backend/src/freight/domain.js` (modified): mandatory Carrier, fixed AT Actuals exclusions, quoted-freight pricing mode, removed fields ignored, original amount and conversion metadata retained, USD-normalized comparison.
+- `backend/src/freight/service.js` (modified): SQL comparison and savings in USD, one converted winner per lane/container, USD-only public amounts and enquiry validation, uniform public exclusions, historical unsupported currency suppression.
+- `backend/test/freight-domain.test.js`, `backend/test/freight-integration.test.js` (modified): new policy, rounding, carrier/exclusion enforcement, legacy preservation and USD WhatsApp regression coverage.
+- `frontend/components/freight/FreightDashboard.tsx` (modified): QAR default, USD preview, mandatory Carrier, readonly AT Actuals, removed mandatory surcharges/details/confirmation, transit time, quotation reference, private remarks and PDF upload controls; original historical attachments remain downloadable. Admin savings/public price previews use USD.
+- `src/components/FreightRates.jsx`, `src/components/FreightRates.css` (modified): public currency selector removed, four-filter layout restored, USD conversion/actual-charges disclosure.
+- `docs/WEEKLY_FREIGHT_RATE_SYSTEM.md`, `docs/WEEKLY_FREIGHT_RATE_CHANGELOG.md` (modified): current policy, verification, compatibility and deployment instructions.
+- `dist/`, `frontend/out/` (regenerated): current marketing and portal production exports; exact generated file inventory is recorded below.
+
+Verification: 51 automated tests passed without skips with MariaDB. Headless browser checks passed against the built portal/public pages and a real isolated freight database. Next exported 28 routes; Vite prerendered 47 public pages; deployment assets and existing SEO invariants passed. No application sample data was retained, no existing revisions/attachments were deleted, and no environment/database credentials were edited. No production deployment performed. Deploy backend plus frontend/out and restart Node; no new schema migration required.
+
+Generated release inventory relative to current HEAD (includes the preceding uncommitted route-deduplication release):
+
+| File | Change |
+| --- | --- |
+| `dist/about.html` | Modified |
+| `dist/assets/index-BLVJmJIZ.js` | Deleted |
+| `dist/assets/index-BT7XPAq1.js` | Created |
+| `dist/assets/index-Br0vu_Bt.css` | Deleted |
+| `dist/assets/index-vxjnaPXe.css` | Created |
+| `dist/case-studies/fmcg-distribution-india/index.html` | Modified |
+| `dist/case-studies/heavy-lift-qatar/index.html` | Modified |
+| `dist/case-studies/pharma-cold-chain-uae/index.html` | Modified |
+| `dist/chairman-message.html` | Modified |
+| `dist/contact.html` | Modified |
+| `dist/freight-rates.html` | Modified |
+| `dist/index.html` | Modified |
+| `dist/industries/automotive-logistics/index.html` | Modified |
+| `dist/industries/construction-logistics/index.html` | Modified |
+| `dist/industries/healthcare-logistics/index.html` | Modified |
+| `dist/industries/industrial-logistics/index.html` | Modified |
+| `dist/industries/oil-gas-logistics/index.html` | Modified |
+| `dist/industries/retail-logistics/index.html` | Modified |
+| `dist/insights/gcc-freight-report/index.html` | Modified |
+| `dist/locations/bahrain/index.html` | Modified |
+| `dist/locations/china/index.html` | Modified |
+| `dist/locations/index.html` | Modified |
+| `dist/locations/india/index.html` | Modified |
+| `dist/locations/qatar/index.html` | Modified |
+| `dist/locations/turkey/index.html` | Modified |
+| `dist/locations/uae/index.html` | Modified |
+| `dist/resources/cbm-calculator/index.html` | Modified |
+| `dist/resources/chargeable-weight-calculator/index.html` | Modified |
+| `dist/resources/container-size-guide/index.html` | Modified |
+| `dist/resources/incoterms-guide/index.html` | Modified |
+| `dist/services.html` | Modified |
+| `dist/services/3pl-logistics/index.html` | Modified |
+| `dist/services/air-freight/index.html` | Modified |
+| `dist/services/customs-clearance/index.html` | Modified |
+| `dist/services/dangerous-goods/index.html` | Modified |
+| `dist/services/door-to-door-cargo/index.html` | Modified |
+| `dist/services/project-cargo/index.html` | Modified |
+| `dist/services/road-freight/index.html` | Modified |
+| `dist/services/sea-freight/index.html` | Modified |
+| `dist/services/vehicle-logistics/index.html` | Modified |
+| `dist/services/warehousing/index.html` | Modified |
+| `dist/team.html` | Modified |
+| `dist/tracking.html` | Modified |
+| `dist/trade-lanes/bahrain-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/china-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/china-to-uae/index.html` | Modified |
+| `dist/trade-lanes/index.html` | Modified |
+| `dist/trade-lanes/india-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/turkey-to-qatar/index.html` | Modified |
+| `dist/trade-lanes/uae-to-qatar/index.html` | Modified |
+| `dist/why-us.html` | Modified |
+| `frontend/out/404.html` | Modified |
+| `frontend/out/_next/static/chunks/5068-6d6e4a80aeb6f82c.js` | Created |
+| `frontend/out/_next/static/pbCAU_QhRvDZgDXx1rJA0/_buildManifest.js` | Created |
+| `frontend/out/_next/static/pbCAU_QhRvDZgDXx1rJA0/_ssgManifest.js` | Created |
+| `frontend/out/about.html` | Modified |
+| `frontend/out/admin/call-enquiries.html` | Modified |
+| `frontend/out/admin/call-enquiries.txt` | Modified |
+| `frontend/out/admin/freight-rates.html` | Modified |
+| `frontend/out/admin/freight-rates.txt` | Modified |
+| `frontend/out/admin/quotations.html` | Modified |
+| `frontend/out/admin/quotations.txt` | Modified |
+| `frontend/out/admin/register.html` | Modified |
+| `frontend/out/admin/register.txt` | Modified |
+| `frontend/out/assets/index-BT7XPAq1.js` | Created |
+| `frontend/out/assets/index-C_GLD6Uf.js` | Created |
+| `frontend/out/assets/index-CvzJCYiV.css` | Created |
+| `frontend/out/assets/index-vxjnaPXe.css` | Created |
+| `frontend/out/calculator.html` | Modified |
+| `frontend/out/calculator.txt` | Modified |
+| `frontend/out/calling-agent/enquiries.html` | Modified |
+| `frontend/out/calling-agent/enquiries.txt` | Modified |
+| `frontend/out/calling-agent/new.html` | Modified |
+| `frontend/out/calling-agent/new.txt` | Modified |
+| `frontend/out/calling-agent/phone.html` | Modified |
+| `frontend/out/calling-agent/phone.txt` | Modified |
+| `frontend/out/case-studies/fmcg-distribution-india/index.html` | Modified |
+| `frontend/out/case-studies/heavy-lift-qatar/index.html` | Modified |
+| `frontend/out/case-studies/pharma-cold-chain-uae/index.html` | Modified |
+| `frontend/out/chairman-message.html` | Modified |
+| `frontend/out/confirmed.html` | Modified |
+| `frontend/out/confirmed.txt` | Modified |
+| `frontend/out/contact.html` | Modified |
+| `frontend/out/contacts.html` | Modified |
+| `frontend/out/contacts.txt` | Modified |
+| `frontend/out/customer/rfq.html` | Modified |
+| `frontend/out/customer/rfq.txt` | Modified |
+| `frontend/out/customer/rfq/new.html` | Modified |
+| `frontend/out/customer/rfq/new.txt` | Modified |
+| `frontend/out/customers.html` | Modified |
+| `frontend/out/customers.txt` | Modified |
+| `frontend/out/dashboard.html` | Modified |
+| `frontend/out/dashboard.txt` | Modified |
+| `frontend/out/freight-rates.html` | Modified |
+| `frontend/out/index.html` | Modified |
+| `frontend/out/industries/automotive-logistics/index.html` | Modified |
+| `frontend/out/industries/construction-logistics/index.html` | Modified |
+| `frontend/out/industries/healthcare-logistics/index.html` | Modified |
+| `frontend/out/industries/industrial-logistics/index.html` | Modified |
+| `frontend/out/industries/oil-gas-logistics/index.html` | Modified |
+| `frontend/out/industries/retail-logistics/index.html` | Modified |
+| `frontend/out/insights/gcc-freight-report/index.html` | Modified |
+| `frontend/out/locations/bahrain/index.html` | Modified |
+| `frontend/out/locations/china/index.html` | Modified |
+| `frontend/out/locations/index.html` | Modified |
+| `frontend/out/locations/india/index.html` | Modified |
+| `frontend/out/locations/qatar/index.html` | Modified |
+| `frontend/out/locations/turkey/index.html` | Modified |
+| `frontend/out/locations/uae/index.html` | Modified |
+| `frontend/out/login.html` | Modified |
+| `frontend/out/login.txt` | Modified |
+| `frontend/out/operator/approvals.html` | Modified |
+| `frontend/out/operator/approvals.txt` | Modified |
+| `frontend/out/operator/freight-rates.html` | Modified |
+| `frontend/out/operator/freight-rates.txt` | Modified |
+| `frontend/out/quotation.html` | Modified |
+| `frontend/out/quotation.txt` | Modified |
+| `frontend/out/register.html` | Modified |
+| `frontend/out/register.txt` | Modified |
+| `frontend/out/reset-password.html` | Modified |
+| `frontend/out/reset-password.txt` | Modified |
+| `frontend/out/resources/cbm-calculator/index.html` | Modified |
+| `frontend/out/resources/chargeable-weight-calculator/index.html` | Modified |
+| `frontend/out/resources/container-size-guide/index.html` | Modified |
+| `frontend/out/resources/incoterms-guide/index.html` | Modified |
+| `frontend/out/rfq.html` | Modified |
+| `frontend/out/rfq.txt` | Modified |
+| `frontend/out/rfq/new.html` | Modified |
+| `frontend/out/rfq/new.txt` | Modified |
+| `frontend/out/sales/call-enquiries.html` | Modified |
+| `frontend/out/sales/call-enquiries.txt` | Modified |
+| `frontend/out/services.html` | Modified |
+| `frontend/out/services/3pl-logistics/index.html` | Modified |
+| `frontend/out/services/air-freight/index.html` | Modified |
+| `frontend/out/services/customs-clearance/index.html` | Modified |
+| `frontend/out/services/dangerous-goods/index.html` | Modified |
+| `frontend/out/services/door-to-door-cargo/index.html` | Modified |
+| `frontend/out/services/project-cargo/index.html` | Modified |
+| `frontend/out/services/road-freight/index.html` | Modified |
+| `frontend/out/services/sea-freight/index.html` | Modified |
+| `frontend/out/services/vehicle-logistics/index.html` | Modified |
+| `frontend/out/services/warehousing/index.html` | Modified |
+| `frontend/out/settings.html` | Modified |
+| `frontend/out/settings.txt` | Modified |
+| `frontend/out/summary.html` | Modified |
+| `frontend/out/summary.txt` | Modified |
+| `frontend/out/team.html` | Modified |
+| `frontend/out/tracking.html` | Modified |
+| `frontend/out/trade-lanes/bahrain-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/china-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/china-to-uae/index.html` | Modified |
+| `frontend/out/trade-lanes/index.html` | Modified |
+| `frontend/out/trade-lanes/india-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/turkey-to-qatar/index.html` | Modified |
+| `frontend/out/trade-lanes/uae-to-qatar/index.html` | Modified |
+| `frontend/out/why-us.html` | Modified |

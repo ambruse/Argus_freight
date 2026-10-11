@@ -3,7 +3,7 @@ class FreightError extends Error {
   constructor(message, status = 400) { super(message); this.status = status; }
 }
 const fail = (message, status) => { throw new FreightError(message, status); };
-const currencies = ['USD', 'QAR', 'EUR'];
+const { currencies, toUSDMinor, conversion } = require('./currency');
 const services = ['FCL', 'REEFER', 'SPECIAL_EQUIPMENT'];
 const bases = ['PORT_TO_PORT', 'DOOR_TO_PORT', 'PORT_TO_DOOR', 'DOOR_TO_DOOR'];
 function date(value) {
@@ -39,7 +39,7 @@ function terms(value) {
 }
 function groupKey(rate) {
   return createHash('sha256').update(JSON.stringify([rate.origin_id, rate.destination_id, rate.container_type,
-    rate.service, rate.basis, rate.details.inclusions, rate.details.exclusions])).digest('hex');
+    rate.service, rate.basis, rate.details.inclusions, rate.details.exclusions, rate.details.pricing_mode])).digest('hex');
 }
 function validate(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) fail('Provide a rate object.');
@@ -54,21 +54,23 @@ function validate(input) {
   rate.valid_from = date(input.valid_from); rate.valid_until = date(input.valid_until);
   if (rate.valid_until < rate.valid_from) fail('Valid Until cannot precede Valid From.');
   rate.base_minor = money(input.price);
-  if (typeof input.charges_confirmed !== 'boolean') fail('Confirm whether all mandatory charges are known.');
-  rate.charges_confirmed = input.charges_confirmed;
-  rate.surcharge_minor = input.surcharge === '' || input.surcharge == null ? null : money(input.surcharge, true);
-  if (rate.charges_confirmed && rate.surcharge_minor === null) fail('Enter mandatory surcharges explicitly, including 0 when none apply.');
-  rate.total_minor = rate.charges_confirmed ? rate.base_minor + rate.surcharge_minor : null;
-  rate.details = { inclusions: terms(input.inclusions), exclusions: terms(input.exclusions) };
+  if (toUSDMinor(rate.base_minor, rate.currency) < 1) fail('Rate must be at least USD 0.01 after conversion.');
+  // The entered price is the complete quoted freight amount, not an all-in cost.
+  // Additional charges are at actuals; deprecated fields cannot alter the price.
+  rate.charges_confirmed = true;
+  rate.surcharge_minor = 0;
+  rate.total_minor = rate.base_minor;
+  rate.details = { inclusions: terms(input.inclusions), exclusions: ['AT Actuals'], pricing_mode: 'FREIGHT_ONLY_ACTUALS' };
   if (!rate.details.inclusions.length) fail('Specify what the price includes.');
-  if (rate.details.inclusions.some(t => rate.details.exclusions.includes(t))) fail('A charge cannot be both included and excluded.');
-  for (const key of ['carrier', 'transit_time', 'remarks', 'quotation_reference', 'surcharge_details']) rate.details[key] = text(input[key]);
-  if (rate.surcharge_minor > 0 && !rate.details.surcharge_details) fail('Describe the mandatory surcharges.');
+  if (rate.details.inclusions.includes('at actuals')) fail('AT Actuals belongs in excluded charges.');
+  rate.details.carrier = text(input.carrier);
+  if (!rate.details.carrier) fail('Carrier / shipping line is required.');
+  rate.details.currency_conversion = conversion(rate.currency, rate.total_minor);
   rate.group_key = groupKey(rate);
   return rate;
 }
 function eligible(rate, onDate) {
-  return rate.status === 'active' && rate.total_minor != null &&
+  return rate.status === 'active' && toUSDMinor(rate.total_minor, rate.currency) > 0 &&
     rate.valid_from <= onDate && rate.valid_until >= onDate;
 }
 function selectBest(rates, onDate, published = false) {
@@ -76,8 +78,8 @@ function selectBest(rates, onDate, published = false) {
   const groups = new Map();
   for (const rate of rates) {
     if (!eligible(rate, onDate)) continue;
-    const key = `${rate.group_key}:${rate.currency}`;
-    const cost = published ? Math.ceil(Number(rate.total_minor) * (10000 + Number(rate.markup_bps || 0)) / 10000) : Number(rate.total_minor);
+    const key = rate.group_key;
+    const cost = toUSDMinor(published ? Math.ceil(Number(rate.total_minor) * (10000 + Number(rate.markup_bps || 0)) / 10000) : Number(rate.total_minor), rate.currency);
     const old = groups.get(key);
     if (!old || cost < old.cost || (cost === old.cost && `${rate.created_at}|${rate.id}` < `${old.rate.created_at}|${old.rate.id}`)) groups.set(key, { rate, cost });
   }

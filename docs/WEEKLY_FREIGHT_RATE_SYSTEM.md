@@ -1,6 +1,6 @@
 # Weekly Freight Rate System
 
-Implementation and local verification: 10 October 2026. This feature is implemented in the existing repository; it has **not been deployed to argusshipping.co**. The production database was not reachable from this environment. Database tests used an isolated local MariaDB 11.4.5 server with real InnoDB persistence.
+Implementation and local verification: 10–11 October 2026. This feature is implemented in the existing repository; it has **not been deployed to argusshipping.co**. The production database was not reachable from this environment. Database tests used an isolated local MariaDB 11.4.5 server with real InnoDB persistence.
 
 ## Architecture and integration
 
@@ -40,7 +40,7 @@ Run `npm run migrate:freight --prefix backend` before deploying the new API. The
 
 The relational identity/validity/price fields are typed and indexed. Optional carrier, transit time, private notes, quotation reference and charge lists are stored as JSON within each immutable revision. Foreign keys retain ownership and history. CHECK constraints enforce distinct ports, positive price, nonnegative surcharges, date ordering and consistent confirmed totals.
 
-Money uses integer minor units (cents), not floating-point input arithmetic. USD, QAR and EUR are the configured two-decimal currencies. Each base/surcharge input must be below 100,000,000. Timestamps are explicitly written using `UTC_TIMESTAMP(3)` and presented in Asia/Qatar. Validity dates are DATE values, never interpreted as midnight in the viewer's timezone.
+Money uses integer minor units (cents), not floating-point input arithmetic. USD and QAR are the allowed input currencies; public output is USD with exactly two decimal places. QAR inputs default in the operator form. Each quoted amount must be below 100,000,000. Original submitted currency/amount and fixed conversion metadata are retained in each new revision. Timestamps are explicitly written using `UTC_TIMESTAMP(3)` and presented in Asia/Qatar. Validity dates are DATE values, never interpreted as midnight in the viewer's timezone.
 
 Migration prerequisites: utf8mb4 database/table encoding for international facility names, InnoDB, CTEs and window functions, JSON, enforced CHECK constraints; use MySQL 8.0.16+ or compatible MariaDB (11.4.5 tested). Existing application initialization must already have created `users`, including `is_deleted` and `is_stalled`, which existing authentication also requires. Migration uses a named advisory lock. MySQL DDL auto-commits; each statement is idempotent so a failed additive migration can be inspected and rerun. Test/staging validation on the production engine/version is required before release.
 
@@ -79,30 +79,24 @@ The public response is a strict allowlist: public rate reference, stable facilit
 
 ## Comparison rules
 
-The trusted SQL engine partitions by a SHA-256 key of exact origin facility ID, destination facility ID, equipment, service, shipment basis and canonicalized inclusion/exclusion lists; currency is a separate partition key. Charge lists are trimmed, case-normalized, whitespace-normalized, de-duplicated and sorted. Different port identifiers remain separate even if their aliases overlap. Location identity/name/country cannot silently be reassigned after creation; create a separate facility when needed.
+The trusted SQL engine partitions equivalent internal offers by a SHA-256 key of exact origin facility ID, destination facility ID, equipment, service, shipment basis, canonicalized inclusions/exclusions and pricing mode. New quotations use `FREIGHT_ONLY_ACTUALS`: the entered amount is the quoted freight price, with other charges excluded at actuals. Carrier is mandatory after trimming. Included charges remain editable; exclusions are enforced as `AT Actuals` on the server. Removed surcharge/private fields are ignored on new writes and cannot affect the price. Compatibility columns store `surcharge_minor=0`, `total_minor=base_minor`, and confirmation of the quoted freight amount; this does **not** claim that additional actual charges are zero. Older revisions and their original totals/terms remain intact.
 
-An eligible quotation must:
+An eligible quotation must be active, belong to an enabled operator and use active locations/equipment, cover the selected date inclusively, and have a known positive price that converts to at least USD 0.01. Historical unconfirmed totals and unsupported currencies cannot win. Historical EUR entries are retained privately but excluded from publication; an operator must select USD or QAR and supply a carrier to revise them.
 
-1. Have active status (the same eligibility rule internally and publicly).
-2. Belong to an active, non-deleted owner and use active locations/equipment.
-3. Include the queried date in its inclusive validity interval.
-4. Explicitly confirm all mandatory charges for its service scope.
-5. Supply mandatory surcharge total explicitly, including `0` when none applies.
+**Fixed business conversion:** the user explicitly configured `USD = QAR / 3.65` on 11 October 2026 and removed EUR. `backend/src/freight/currency.js` defines this as the exact rational 100/365 applied to source cents. This is an Argus business rate, not a live market feed. Source currency, divisor, policy ID, converted USD cents and UTC recording timestamp are stored in each new revision's details. Existing QAR revisions use the same fixed policy at query time without overwriting their source amounts. Unsupported currencies have no conversion and cannot rank.
 
-The internal comparison uses `base_minor + surcharge_minor`. Unknown surcharges remain NULL and cannot win or publish. A low base rate with high mandatory charges cannot beat a lower equivalent total. Differing charge inclusions/exclusions create separate groups. The confirmation means exclusions are outside the stated service scope; operators must not declare required charges outside the total. Operators are responsible for accurate totals and customer-facing conditions; administrators can inspect or archive inaccurate records.
+Both SQL and JavaScript round converted values to the nearest USD cent. New inputs that would round to zero are rejected. Explicit markup is calculated in the source currency with the existing upward-cent rounding, then converted to USD. Administrator badges and savings use USD procurement values; public selection uses USD customer values. Original source amounts remain visible to the operator and in history.
 
-**No exchange-rate source was configured.** Cross-currency conversion is intentionally disabled. USD, QAR and EUR remain independently labeled groups; no implied conversion or cross-currency cheapest claim is made. A future verified FX implementation must store source, timestamp, effective date and applied conversion with the decision before currencies can be ranked together.
+The public engine returns one lowest listed USD price for each exact POL/POD/container combination, after conversion and before pagination. It retains separate 20GP, 40GP and 40HQ rows. Internal comparison still separates incompatible service scopes, while the public row retains the selected offer's service/basis/inclusions and always displays `AT Actuals` for excluded charges. This is a quoted freight price, not an all-inclusive final shipment cost.
 
-Internal ties resolve by earliest original submission timestamp, then lexicographically smallest UUID. All tied records remain visible internally. An administrator's operator/search filters apply after ranking, so hiding a competitor does not make a higher offer the best. Pagination similarly does not change the global comparison result.
-
-Public ranking considers active eligible customer totals within each equivalent group. If explicitly configured margins differ, the lowest customer price wins; the administrator badge remains the procurement-cost winner. This keeps procurement cost and sale price separate without claiming a higher customer price is cheapest.
+Equal rounded USD prices resolve by earliest original submission timestamp, then lexicographically smallest UUID. All competing records remain internally. Administrator filters do not alter ranking and pagination does not change winners. The public amount and WhatsApp enquiry always use the same USD price with two decimals.
 
 ## Automatic publication and lifecycle
 
 The user explicitly removed freight approval on 10 October 2026. This supersedes the original approval requirement, and does not change the unrelated shipment/RFQ Approvals module.
 
 - Saving a valid submission or revision immediately sets it active. The server recalculates the cheapest eligible price on every read; the public UI refreshes within one minute or when the tab becomes visible.
-- Current valid active rates with confirmed mandatory charges can publish automatically. Unknown-charge, future-dated and expired rates cannot appear as current prices.
+- Current valid active quotations with known freight prices can publish automatically. Historical unknown-charge totals, unsupported currencies, future-dated and expired rates cannot appear as current prices.
 - The migration activates existing pending and approved submissions once, records previous status in audit logs, and preserves revisions and historical approvals. Rejected, withdrawn and archived records stay inactive. Subsequent migration runs do not reactivate them.
 - Operators can edit/withdraw their own rates. Editing creates an immutable revision and activates it. Archived records cannot be edited. Records are never permanently deleted by this feature.
 - Admins retain comparison, archive, withdrawal and explicit markup controls. Approval/rejection actions are rejected by the API. Legacy rejected status is retained only for history/filtering.
@@ -119,11 +113,11 @@ Expiry does not require a cron job or mutable winner cache: every API query filt
 
 ## Public interface and quotation integration
 
-The public table renders exactly one row per origin/destination facility-ID pair. Multiple equipment, currencies or incompatible price conditions appear as selectable options inside that row. Every option remains a server-selected cheapest offer within its equivalent comparison group. The first option follows the stable server order; it is not a claim that one currency/equipment/basis is cheaper than another. Changing the option updates price, terms, expiry and WhatsApp reference together. Loading more results merges options into existing route rows without duplicating those rows.
+The public table renders exactly one row per origin/destination facility-ID pair **and container type**, following the user's clarification on 11 October 2026. It shows the lowest eligible listed customer freight price in USD after QAR conversion. The SQL engine chooses the row before pagination; duplicate quotations and per-row rate selectors are removed. There is no public currency filter because all prices are USD. Price conditions retain the selected service/basis/inclusions and disclose other charges as `AT Actuals`.
 
 Desktop uses a 484px maximum scroll viewport with sticky headers and approximately 4–5 regular rows visible. All results remain accessible, with up to 100 winners per API page and Load more. At widths of 760px or less, each table row becomes a compact two-column card with labeled origin/destination, price, container, validity and Request Quote. The mobile list scrolls vertically within 70vh; there is no sideways table scrolling. Semantic table roles and an accessible hidden header are retained. Inputs are 16px on mobile, actions have 44px touch targets, and the scroll region is keyboard-focusable.
 
-Origin and destination filters are independent case-insensitive partial searches across names, facility IDs and aliases. Queries debounce for 250ms; equipment/date filters also apply. Unknown search text returns no invented locations or prices.
+Origin and destination filters are independent case-insensitive partial searches across names, facility IDs and aliases. Queries debounce for 250ms; equipment/date filters also apply. Unknown search text returns no invented locations or prices. WhatsApp redirects revalidate the same route/container winner in USD; a formerly winning offer cannot be requested after a lower eligible offer replaces it.
 
 ### WhatsApp Settings and Request Quote
 
@@ -150,8 +144,8 @@ Base path: `/api/freight-rates`. Mutation bodies are JSON except PDF uploads.
 | Method/path | Access | Purpose |
 | --- | --- | --- |
 | `GET /catalog` | Public | Location/equipment catalogs and allowed currencies/services/bases |
-| `GET /public` | Public | Active eligible winners; `origin`, `destination`, `container`, `date`, `offset` |
-| `GET /quote/:id` | Public | Recheck `version`, selected `date`, exact `price`; 303 to the winning owner’s WhatsApp draft, or friendly stale/unavailable response |
+| `GET /public` | Public | One lowest listed offer per POL/POD/container; `origin`, `destination`, `container`, `date`, `offset`; output always USD |
+| `GET /quote/:id` | Public | Recheck `version`, selected `date`, exact USD `price` and current public winner (`currency`, if supplied, must be USD); 303 to the winning owner’s WhatsApp draft, or friendly stale/unavailable response |
 | `GET /contact-settings` | Operator/admin | Own WhatsApp setting only |
 | `PUT /contact-settings` | Operator/admin | Save own `country`, `calling_code`, `national_number` |
 | `GET /` | Operator/admin | Own/all submissions; above filters plus `operator` (admin), `status`, `from`, `until`, `sort` (`newest`, `route`, `price`), `offset` |
@@ -164,9 +158,9 @@ Base path: `/api/freight-rates`. Mutation bodies are JSON except PDF uploads.
 | `POST /config/containers` | Admin | `code`, `label`, boolean `active` |
 | `POST /config/locations` | Admin | Stable `id`, `name`, ISO country, aliases array, boolean `active` |
 
-Create/update requires `origin_id`, `destination_id`, `container_type`, `service`, `basis`, `currency`, ISO `valid_from` and `valid_until`, decimal `price`, explicit surcharge/charge confirmation, `inclusions` and `exclusions` arrays. Optional `carrier`, `transit_time`, `remarks`, `quotation_reference`, `surcharge_details` are revisioned. Unsupported/missing catalog identifiers are rejected. An unconfirmed-charge submission may be stored but cannot be ranked or published.
+Create/update requires `origin_id`, `destination_id`, `container_type`, `service`, `basis`, `currency` (USD/QAR), ISO `valid_from` and `valid_until`, positive decimal `price`, nonblank `carrier`, and an `inclusions` array. Exclusions are always `AT Actuals`. Surcharge amount/details, transit time, quotation reference and private remarks are no longer editable or accepted into new revision details. The Add/Edit and history attachment upload controls are removed; existing private attachments remain downloadable with ownership checks. Existing revision and attachment data are not deleted. Unsupported/missing catalog identifiers are rejected.
 
-Internal lists return 50 records per page. Both list endpoints return `nextOffset` or null. Public results also return the authoritative query date, Qatar today and week bounds. Typical errors: 400 validation, 401 missing/expired login, 403 role/CSRF, 404 inaccessible record, 409 stale revision/nonwinner/state conflict, 413 body too large, 429 throttled. Database failures return a generic 500 without sensitive SQL/data.
+Internal lists return 50 records per page. Both list endpoints return `nextOffset` or null. Public results also return the authoritative query date, selected currency, Qatar today and week bounds. Typical errors: 400 validation, 401 missing/expired login, 403 role/CSRF, 404 inaccessible record, 409 stale revision/nonwinner/state conflict, 413 body too large, 429 throttled. Database failures return a generic 500 without sensitive SQL/data.
 
 ## Verification results
 
@@ -268,3 +262,15 @@ My Freight Rates displays catalogue loading/error state, provides **Retry loadin
 Deployment: deploy the complete updated backend source, migration scripts, catalogs and regenerated `frontend/out`, then restart the Node application. Existing database credentials remain unchanged. Verify `/api/health` reports `freight: ready`, and catalog/public requests return 200. If readiness remains failed, run `npm run migrate:freight --prefix backend` from the repository root on the host and inspect its error (permissions, compatibility or data identity); the restart cannot override restricted database privileges. This migration seeds reference ports/equipment only, never users or prices.
 
 Verification: 46 automated tests passed without skips, including an empty-schema database, simultaneous first catalogue/public requests, serialized startup, retry recovery, limiter ordering and preservation of existing rates/revisions on repeated migrations. An additional check started the actual Express application against a fresh disposable database: it created the schema, returned 200 for catalog/public, imported 1,938 facilities and seeded zero users/prices. Production builds and export asset verification were repeated. No production database operation or credential edit was performed from this workspace.
+
+
+## Public route/container selection verification — 11 October 2026
+
+47 automated checks passed with real disposable MariaDB persistence and no skips. New coverage verifies one public row per POL/POD/container, separate 20GP and 40HQ winners, confirmed totals including surcharges, deterministic ties, separate currency filters, pagination after selection (105 routes), and WhatsApp rejection of an offer displaced by a cheaper offer with different disclosed terms. All 47 public pages rebuilt, their existing SEO invariants passed, and the merged frontend/out passed deployment asset checks. Internal portal source was unchanged. Deploy the updated backend and frontend/out together, then restart Node; no additional migration or credentials changes are needed for this update.
+
+
+## USD conversion and simplified form verification — 11 October 2026
+
+This policy supersedes the earlier no-FX and selectable-public-currency descriptions in historical verification entries. 51 automated checks passed with real disposable MariaDB databases, including SQL/JavaScript rounding parity, cross-currency winners, required carrier, immutable source/conversion metadata, forced exclusions, legacy EUR/unknown-total suppression, markup and USD WhatsApp enquiries. Browser verification used the real freight API against a separate disposable database and confirmed required Carrier, read-only AT Actuals, USD/QAR-only choices, QAR default, removal of the requested fields, USD preview, one converted winning row and no horizontal overflow at 390px. All temporary test databases were removed.
+
+The Next production build exported 28 routes; Vite prerendered 47 public pages. The combined frontend/out passed deployment asset checks and existing SEO/H1/canonical checks. Deploy the backend and complete frontend/out together and restart Node. This update uses existing schema/JSON revision details and requires no new migration. No credentials or production data were changed. Existing EUR entries remain in history and must be revised in USD/QAR to publish.

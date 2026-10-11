@@ -1,6 +1,7 @@
 const { randomUUID, createHash } = require('node:crypto');
 const D = require('./domain');
 const W = require('./whatsapp');
+const FX = require('./currency');
 
 const joined = `SELECT r.*, v.origin_id, v.destination_id, v.container_type, v.service, v.basis,
   v.valid_from, v.valid_until, v.currency, v.base_minor, v.surcharge_minor, v.total_minor,
@@ -11,7 +12,9 @@ const joined = `SELECT r.*, v.origin_id, v.destination_id, v.container_type, v.s
   o.port_name AS origin_port, d.port_name AS destination_port,
   o.aliases AS origin_aliases, d.aliases AS destination_aliases, u.username AS operator,
   wc.whatsapp_number,
-  CEIL(v.total_minor * (10000 + r.markup_bps) / 10000) AS customer_minor
+  CEIL(v.total_minor * (10000 + r.markup_bps) / 10000) AS customer_minor,
+  ${FX.usdSQL('v.total_minor')} AS usd_minor,
+  ${FX.usdSQL('CEIL(v.total_minor * (10000 + r.markup_bps) / 10000)')} AS customer_usd_minor
   FROM freight_rates r JOIN freight_rate_revisions v ON v.rate_id=r.id AND v.version=r.version
   JOIN freight_locations o ON o.id=v.origin_id JOIN freight_locations d ON d.id=v.destination_id
   JOIN freight_container_types c ON c.code=v.container_type JOIN users u ON u.id=r.operator_id
@@ -21,10 +24,18 @@ const json = value => typeof value === 'string' ? JSON.parse(value) : value;
 const hydrate = r => ({ ...r, details: json(r.details), origin_aliases: json(r.origin_aliases), destination_aliases: json(r.destination_aliases) });
 const rankSQL = (published) => `WITH candidates AS (${joined} WHERE ${available}
   AND r.status = 'active'
-  AND v.total_minor IS NOT NULL AND v.valid_from <= ? AND v.valid_until >= ?),
-  ranked AS (SELECT candidates.*, ROW_NUMBER() OVER (PARTITION BY group_key,currency
-    ORDER BY ${published ? 'customer_minor' : 'total_minor'},created_at,id) AS position,
-    MIN(total_minor) OVER (PARTITION BY group_key,currency) AS best_minor FROM candidates)`;
+  AND ${FX.usdSQL('v.total_minor')} > 0 AND v.valid_from <= ? AND v.valid_until >= ?),
+  ranked AS (SELECT candidates.*, ROW_NUMBER() OVER (PARTITION BY group_key
+    ORDER BY ${published ? 'customer_usd_minor' : 'usd_minor'},created_at,id) AS position,
+    MIN(usd_minor) OVER (PARTITION BY group_key) AS best_minor FROM candidates)`;
+// Public listing chooses one USD offer per exact lane/equipment after conversion.
+// Internal comparison still retains separate equivalent service/charge groups.
+const publicRankSQL = (clauses = []) => `${rankSQL(true)},
+  public_ranked AS (SELECT ranked.*, ROW_NUMBER() OVER (
+    PARTITION BY origin_id,destination_id,container_type
+    ORDER BY customer_usd_minor,created_at,id) AS public_position
+    FROM ranked WHERE position=1
+    ${clauses.length ? 'AND ' + clauses.join(' AND ') : ''})`;
 
 function createService(pool) {
   const query = async (sql, args = [], db = pool) => (await db.query(sql, args))[0];
@@ -120,18 +131,18 @@ function createService(pool) {
     if (onDate < bounds.start || onDate > bounds.end) D.fail('Choose a date within the current Qatar calendar week.');
     const { clauses, params } = filters(input);
     const offset = Math.max(0, Math.min(1000000, Number.parseInt(input.offset, 10) || 0));
-    const rows = await query(`${rankSQL(true)} SELECT * FROM ranked WHERE position=1
-      ${clauses.length ? 'AND ' + clauses.join(' AND ') : ''} ORDER BY origin,destination,container_type,group_key,currency LIMIT 101 OFFSET ?`, [onDate, onDate, ...params, offset]);
-    return { date: onDate, today, week: bounds, nextOffset: rows.length > 100 ? offset + 100 : null, rates: rows.slice(0,100).map(row => {
+    const rows = await query(`${publicRankSQL(clauses)} SELECT * FROM public_ranked WHERE public_position=1
+      ORDER BY origin,destination,container_type,origin_id,destination_id LIMIT 101 OFFSET ?`, [onDate, onDate, ...params, offset]);
+    return { date: onDate, today, currency: 'USD', week: bounds, nextOffset: rows.length > 100 ? offset + 100 : null, rates: rows.slice(0,100).map(row => {
       const r = hydrate(row);
       // Deliberate public allowlist. No supplier/operator/private quote identifiers.
       return { reference: `${r.id}:${r.version}`, origin: r.origin, destination: r.destination,
         origin_id:r.origin_id, destination_id:r.destination_id,
         origin_country:r.origin_country, destination_country:r.destination_country, origin_port:r.origin_port, destination_port:r.destination_port,
         container_type: r.container_type, service: r.service, basis: r.basis, valid_from: r.valid_from,
-        valid_until: r.valid_until, currency: r.currency, price: (Number(r.customer_minor) / 100).toFixed(2),
+        valid_until: r.valid_until, currency: 'USD', price: (Number(r.customer_usd_minor) / 100).toFixed(2),
         whatsapp_available: !!r.whatsapp_number,
-        inclusions: r.details.inclusions, exclusions: r.details.exclusions };
+        inclusions: r.details.inclusions, exclusions: ['AT Actuals'] };
     }) };
   }
   async function contact(user) {
@@ -154,10 +165,10 @@ function createService(pool) {
     if (!/^[1-9]\d{0,8}$/.test(String(input.version || ''))) D.fail('Choose a current rate with a valid revision.',400);
     const onDate = D.date(input.date || D.qatarToday()), bounds = D.week();
     if (onDate < bounds.start || onDate > bounds.end) D.fail('This rate is from a previous week. Choose a current rate.',409);
-    const [rate] = await query(`${rankSQL(true)} SELECT * FROM ranked WHERE position=1 AND id=? AND version=?`,[onDate,onDate,id,Number(input.version)]);
+    const [rate] = await query(`${publicRankSQL()} SELECT * FROM public_ranked WHERE public_position=1 AND id=? AND version=?`,[onDate,onDate,id,Number(input.version)]);
     if (!rate) D.fail('This rate has changed or is no longer available. Choose a current rate.',409);
-    if (input.price !== (Number(rate.customer_minor)/100).toFixed(2)) D.fail('This price has changed. Refresh the rates before requesting a quote.',409);
-    return W.quoteURL(rate.whatsapp_number,rate);
+    if ((input.currency && input.currency !== 'USD') || input.price !== (Number(rate.customer_usd_minor)/100).toFixed(2)) D.fail('This price has changed. Refresh the rates before requesting a quote.',409);
+    return W.quoteURL(rate.whatsapp_number,{...rate,currency:'USD',customer_minor:rate.customer_usd_minor});
   }
   async function list(user, input) {
     const onDate = D.date(input.date || D.qatarToday());
@@ -168,7 +179,7 @@ function createService(pool) {
     if (input.from) { clauses.push('allrates.valid_until>=?'); params.push(D.date(input.from)); }
     if (input.until) { clauses.push('allrates.valid_from<=?'); params.push(D.date(input.until)); }
     const offset = Math.max(0, Math.min(1000000, Number.parseInt(input.offset,10) || 0));
-    const sort = { price: 'allrates.currency,allrates.total_minor', route: 'allrates.origin,allrates.destination', newest: 'allrates.updated_at DESC' }[input.sort] || 'allrates.updated_at DESC';
+    const sort = { price: 'allrates.usd_minor IS NULL,allrates.usd_minor', route: 'allrates.origin,allrates.destination', newest: 'allrates.updated_at DESC' }[input.sort] || 'allrates.updated_at DESC';
     // Ordinary operators never receive ranking, competitors' prices or savings.
     const admin = user.role === 'admin';
     const rows = await query(`${admin ? rankSQL(false) : ''} SELECT allrates.*${admin ? ',ranked.position,ranked.best_minor' : ''}

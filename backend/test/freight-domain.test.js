@@ -1,11 +1,11 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const D = require('../src/freight/domain');
-const input = overrides => ({ origin_id:'CNSHA',destination_id:'QAHMD',container_type:'40HQ',service:'FCL',basis:'PORT_TO_PORT',currency:'USD',valid_from:'2026-10-10',valid_until:'2026-10-17',price:'1100',surcharge:'0',charges_confirmed:true,inclusions:['Ocean freight'],exclusions:[],...overrides });
+const input = overrides => ({ origin_id:'CNSHA',destination_id:'QAHMD',container_type:'40HQ',service:'FCL',basis:'PORT_TO_PORT',currency:'USD',valid_from:'2026-10-10',valid_until:'2026-10-17',price:'1100',carrier:'Test carrier',surcharge:'0',charges_confirmed:true,inclusions:['Ocean freight'],exclusions:[],...overrides });
 const rate = (id, overrides = {}) => ({ ...D.validate(input(overrides)),id,status:'active',created_at:'2026-10-01 00:00:00',...overrides });
 test('same lane selects 1100 over 1250', () => assert.equal(D.selectBest([rate('one',{price:'1250'}),rate('two')],'2026-10-10')[0].id,'two'));
 test('equipment, facility, service, basis and terms define separate comparison groups', () => {
-  for (const diff of [{container_type:'20GP'},{destination_id:'AEJEA'},{origin_id:'SGSIN'},{service:'REEFER'},{basis:'DOOR_TO_DOOR'},{exclusions:['customs']}]) {
+  for (const diff of [{container_type:'20GP'},{destination_id:'AEJEA'},{origin_id:'SGSIN'},{service:'REEFER'},{basis:'DOOR_TO_DOOR'},{inclusions:['customs']}]) {
     assert.equal(D.selectBest([rate('a'),rate('b',diff)],'2026-10-10').length,2);
   }
 });
@@ -21,12 +21,34 @@ test('new cheaper offer is public immediately without approval', () => {
   assert.equal(D.selectBest(offers,'2026-10-10',true)[0].id,'new');
 });
 
-test('mandatory charge totals and unknown surcharges prevent misleading comparisons', () => {
-  const offers = [rate('base',{price:'900',surcharge:'300',surcharge_details:'terminal charges'}),rate('total'),rate('unknown',{price:'700',charges_confirmed:false,surcharge:''})];
-  assert.equal(D.selectBest(offers,'2026-10-10')[0].id,'total');
-  assert.throws(() => D.validate(input({surcharge:''})),/surcharges/);
+test('simplified form fixes exclusions and excludes deprecated inputs from the quoted price', () => {
+  const value = D.validate(input({price:'900',surcharge:'300',charges_confirmed:false,exclusions:['customs'],remarks:'private',transit_time:'7 days',quotation_reference:'old',surcharge_details:'old'}));
+  assert.equal(value.total_minor,90000); assert.equal(value.surcharge_minor,0);
+  assert.deepEqual(value.details.exclusions,['AT Actuals']);
+  assert.equal(value.details.pricing_mode,'FREIGHT_ONLY_ACTUALS');
+  for (const key of ['remarks','transit_time','quotation_reference','surcharge_details']) assert.equal(value.details[key],undefined);
+  assert.equal(D.selectBest([rate('unknown',{total_minor:null})],'2026-10-10').length,0);
 });
-test('currencies never ranked together without verified conversion', () => assert.equal(D.selectBest([rate('usd'),rate('eur',{currency:'EUR'})],'2026-10-10').length,2));
+test('USD and QAR compare using the fixed QAR / 3.65 policy', () => {
+  assert.equal(D.selectBest([rate('usd'),rate('qar',{currency:'QAR',price:'3650'})],'2026-10-10')[0].id,'qar');
+  assert.throws(()=>D.validate(input({currency:'EUR'})),/currency/);
+  const value = D.validate(input({currency:'QAR',price:'3650'}));
+  assert.equal(value.details.currency_conversion.usd_minor,100000);
+  assert.equal(value.details.currency_conversion.divisor,'3.65');
+  assert.equal(value.currency,'QAR'); assert.equal(value.base_minor,365000);
+});
+test('USD conversion rounds to two decimals and never publishes a rounded zero', () => {
+  const {toUSDMinor} = require('../src/freight/currency');
+  assert.equal(toUSDMinor(10000,'QAR'),2740);
+  assert.equal(toUSDMinor(365000,'QAR'),100000);
+  assert.equal(toUSDMinor(9999999999,'QAR'),2739726027);
+  assert.equal(toUSDMinor(100,'EUR'),null);
+  assert.throws(()=>D.validate(input({currency:'QAR',price:'.01'})));
+  assert.throws(()=>D.validate(input({currency:'QAR',price:'0.01'})),/USD 0.01/);
+});
+test('carrier is mandatory after trimming', () => {
+  for (const carrier of ['', '   ', undefined]) assert.throws(()=>D.validate(input({carrier})),/Carrier/);
+});
 test('operator cannot manage another user submission', () => {
   assert.equal(D.canManage({id:1,role:'operator'},{operator_id:2}),false);
   assert.equal(D.canManage({id:2,role:'operator'},{operator_id:2}),true);
@@ -51,7 +73,7 @@ test('money and date validation reject malformed records', () => {
   for (const value of ['2026-02-30','2026-13-01','10/10/2026']) assert.throws(() => D.date(value));
   assert.throws(() => D.validate(input({origin_id:'QAHMD'})));
   assert.throws(() => D.validate(input({valid_until:'2026-10-09'})));
-  assert.throws(() => D.validate(input({inclusions:['freight'],exclusions:['freight']})));
+  assert.throws(() => D.validate(input({inclusions:['AT Actuals']})));
   assert.equal(D.money('0.29'),29);
 });
 test('published customer price includes explicit markup, rounded up to cents', () => {
