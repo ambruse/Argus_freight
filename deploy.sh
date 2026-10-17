@@ -36,12 +36,6 @@ fi
 npm install --legacy-peer-deps 2>&1 | tail -5
 echo "✅  Backend deps done."
 
-# Existing installation: run the additive freight migration before publishing assets.
-# Configure backend/.env on the server; deployment secrets are deliberately not in Git.
-echo "▶ Applying weekly freight database migration..."
-npm run migrate:freight
-echo "✅  Freight schema ready (no demo users or prices seeded)."
-
 # ── 2. Install & build Next.js frontend (static export) ───────
 echo ""
 echo "▶ [2/4] Installing frontend dependencies..."

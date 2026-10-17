@@ -138,22 +138,6 @@ const formatDimensionAndWeight = (form: FormState) => {
 
 export default function CustomerNewRFQPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [freightEquipment, setFreightEquipment] = useState("");
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const reference = params.get("freight_reference");
-    if (!reference || !/^[a-f0-9-]{36}:\d+$/.test(reference)) return;
-    const equipment = (params.get("container") || "").slice(0,16);
-    setFreightEquipment(equipment);
-    setForm(current => ({ ...current,
-      pol: (params.get("origin_port") || params.get("origin") || "").slice(0,160),
-      pol_country: (params.get("origin_country") || "").slice(0,100),
-      pod: (params.get("destination") || "").slice(0,160),
-      container: equipment,
-      mode: "Sea",
-      note: `Weekly freight rate reference: ${reference}. Equipment: ${equipment}. Requested date: ${(params.get("freight_date") || "").slice(0,10)}. Subject to availability and final confirmation.`
-    }));
-  }, []);
   const [files, setFiles] = useState<File[]>([]);
   
   const [submitting, setSubmitting] = useState(false);
@@ -720,7 +704,6 @@ export default function CustomerNewRFQPage() {
                     CONTAINER
                   </label>
                   <ContainerInput
-                    initialEquipment={freightEquipment}
                     onChange={(val) => setForm(prev => ({ ...prev, container: val }))}
                   />
                 </div>

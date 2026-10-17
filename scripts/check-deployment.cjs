@@ -3,7 +3,7 @@ const path = require('node:path');
 
 function checkDeployment(directory = path.resolve(__dirname, '../frontend/out')) {
   for (const file of ['index.html', 'login.html', 'settings.html', 'rfq/new.html',
-    'customer/rfq/new.html', 'operator/freight-rates.html', 'admin/freight-rates.html', 'freight-rates.html']) {
+    'customer/rfq/new.html']) {
     const filename = path.join(directory, file);
     if (!fs.existsSync(filename) || !fs.statSync(filename).isFile()) {
       throw new Error(`Incomplete website export: ${file} is missing. Run the full build from the repository root before deploying.`);
@@ -24,7 +24,7 @@ function checkDeployment(directory = path.resolve(__dirname, '../frontend/out'))
     }
   };
   visit(directory);
-  console.log('Deployment export verified: homepage, portal, freight pages and referenced scripts/styles exist.');
+  console.log('Deployment export verified: homepage and portal pages and referenced scripts/styles exist.');
 }
 
 if (require.main === module) {

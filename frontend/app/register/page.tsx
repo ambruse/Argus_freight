@@ -9,18 +9,11 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import api from "@/lib/api";
 import { authStorage } from "@/lib/auth";
-import { freightReturnPath } from "@/lib/freightReturn";
 import { encryptPassword } from "@/lib/crypto";
 import { COUNTRIES, updatePhoneForCountry } from "@/lib/countries";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [loginPath, setLoginPath] = useState("/login");
-  useEffect(() => {
-    const next = freightReturnPath(window.location.search,window.location.origin);
-    if (next) setLoginPath(`/login?next=${encodeURIComponent(next)}`);
-  }, []);
-
   const [newUsername,     setNewUsername]     = useState("");
   const [newPassword,     setNewPassword]     = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -88,7 +81,7 @@ export default function RegisterPage() {
         const securePassword = await encryptPassword(newPassword);
         await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress.trim(), contact_number: contactNumber.trim(), country });
         toast.success("Account created successfully!");
-        router.push(loginPath);
+        router.push("/login");
       } catch (err: any) {
         toast.error(err.response?.data?.message || "Registration failed.");
       } finally {
@@ -247,7 +240,7 @@ export default function RegisterPage() {
           </button>
 
           <div className="text-center mt-4 pt-4" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
-            <Link href={loginPath} className="text-[12px] font-semibold transition-colors hover:underline"
+            <Link href="/login" className="text-[12px] font-semibold transition-colors hover:underline"
               style={{ color: "var(--sidebar-avatar-text)" }}
             >
               Already have an account? Sign In

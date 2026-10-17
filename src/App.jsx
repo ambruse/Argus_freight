@@ -10,7 +10,6 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import ChairmanMessage from './pages/ChairmanMessage';
 import Tracking from './pages/Tracking';
-import FreightRates from './components/FreightRates';
 import { GlobalNetworkMenu, GlobalNetworkPage, CountryLinks } from './components/GlobalNetwork';
 import CommercialPage, { ShippingRoutes } from './pages/CommercialPage';
 import WhatsAppFloatingButton from './components/WhatsAppFloatingButton';
@@ -175,8 +174,6 @@ export default function App({ initialPath }) {
         return <Contact />;
       case '/tracking':
         return <Tracking />;
-      case '/freight-rates':
-        return <FreightRates fullPage />;
       case '/chairman-message':
         return <ChairmanMessage />;
       case '/login':
