@@ -179,7 +179,7 @@ const createLike = async (newTable, baseTable) => {
   }
 };
 
-(async () => {
+const coreSchemaReady = (async () => {
   try {
     // MySQL Normalized Tables Schema Execution
     try {
@@ -634,6 +634,7 @@ app.use('/api/call-enquiries', callEnquiryRoutes);
 app.use('/api/quotation', quotationRoutes);
 app.use('/api/3cx', cxRoutes);
 app.use('/api/track', trackingRoutes);
+app.use('/api/live-pricing', require('./live/router').createRouter(require('./config/db').pool, coreSchemaReady));
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {

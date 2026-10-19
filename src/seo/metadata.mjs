@@ -1,4 +1,5 @@
 import { SITE, commercialPages, byPath } from './commercial-pages.mjs';
+import { locationContacts } from './location-contacts.mjs';
 export const metadata = {
   '/locations/': { title: 'Our Global Logistics Network | Argus Shipping', description: 'Explore Argus Shipping’s network in Qatar, UAE, China, India, Turkey and Bahrain. Find market contacts, freight services and connected trade lanes.' },
   '/': { title: 'International Freight Forwarding & Logistics | Argus Shipping', description: 'Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.' },
@@ -29,7 +30,8 @@ export function schemaFor(path) {
     graph.push({ '@type': 'BreadcrumbList', '@id': `${SITE}${path}#breadcrumb`, itemListElement: crumbs.map((crumb, index) => ({ '@type': 'ListItem', position: index + 1, ...crumb })) });
     if (page) {
       if (page.group === 'locations') {
-        graph.push({ '@type': 'LocalBusiness', '@id': `${SITE}${path}#localbusiness`, name: `Argus Shipping ${page.label}`, url: `${SITE}${path}`, description: page.intro, parentOrganization: { '@id': organization['@id'] } });
+        const contacts = locationContacts[path.split('/')[2]] || [];
+        graph.push({ '@type': 'LocalBusiness', '@id': `${SITE}${path}#localbusiness`, name: `Argus Shipping ${page.label}`, url: `${SITE}${path}`, description: page.intro, ...(contacts.length ? { telephone: contacts.map(contact => contact.phone) } : {}), parentOrganization: { '@id': organization['@id'] } });
       } else if (page.group === 'resources' || page.group === 'case-studies' || page.group === 'insights') {
         graph.push({ '@type': 'Article', '@id': `${SITE}${path}#article`, headline: page.h1, description: page.intro, author: { '@id': organization['@id'] }, publisher: { '@id': organization['@id'] }, mainEntityOfPage: { '@id': `${SITE}${path}#webpage` } });
       } else {

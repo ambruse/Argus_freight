@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   // General
   { href: "/dashboard",             label: "Dashboard",        icon: "⬡",  section: "OVERVIEW" },
   // Operator / Admin RFQ
+  { href: "/operator/live-rates", label: "Freight Live Rates", icon: "◈", section: "FREIGHT" },
   { href: "/rfq/new",               label: "New RFQ",          icon: "✦",  section: "FREIGHT" },
   { href: "/rfq",                   label: "Sent RFQs",        icon: "◈",  section: "FREIGHT" },
   { href: "/operator/approvals",    label: "Approvals",        icon: "⚑",  section: "FREIGHT" },

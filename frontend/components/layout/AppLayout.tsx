@@ -69,6 +69,10 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
 
   useEffect(() => {
     if (!authStorage.isAuthenticated()) {
+      if (pathname === "/customer/rfq/new") {
+        const quote = new URLSearchParams(window.location.search).get("live_quote");
+        if (quote && /^[0-9a-f-]{36}$/.test(quote)) sessionStorage.setItem("argus_live_enquiry", quote);
+      }
       router.replace("/login");
     } else {
       const currentUser = authStorage.getUser();
@@ -152,6 +156,9 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
     ];
   }
 
+  if (user?.role === "operator" || user?.role === "admin") {
+    otherItems.unshift({ href: "/operator/live-rates", label: "Freight Live Rates", icon: Calculator });
+  }
   // Prepend Home and append Logout only for non-other-tab roles (customer, calling_agent)
   const navItems = [
     { href: "/", label: "Home", icon: Home },

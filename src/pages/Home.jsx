@@ -1,4 +1,4 @@
-import LogisticsSlider from '../components/LogisticsSlider';
+import LiveCalculator from '../components/live/LiveCalculator';
 import { GlobalNetworkSection } from '../components/GlobalNetwork';
 import { serviceLinks, tradePages } from '../seo/commercial-pages.mjs';
 import { Plane, Truck, Ship, ShieldCheck, Globe, Clock, ArrowRight, Anchor, Package, MapPin, TriangleAlert } from 'lucide-react';
@@ -112,7 +112,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
               </div>
             </div>
 
-            <LogisticsSlider modes={LOGISTICS_MODES} />
+            <LiveCalculator />
           </div>
         </div>
       </section>

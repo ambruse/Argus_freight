@@ -304,7 +304,7 @@ export default function App({ initialPath }) {
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
-                      <a href="tel:+971564337699">+86579 85299672</a>
+                      <a href="tel:+8657985299672">+86 579 85299672</a>
                     </span>
                   </div>
                 </div>
@@ -318,7 +318,7 @@ export default function App({ initialPath }) {
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
-                      <a href="tel:+97377034555">+97313641234</a>
+                      <a href="tel:+97313641234">+973 13641234</a>
                     </span>
                   </div>
                 </div>
@@ -346,7 +346,7 @@ export default function App({ initialPath }) {
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
-                      <a href="tel:919095054575">+91 9095054575</a>
+                      <a href="tel:+919095054575">+91 9095054575</a>
                     </span>
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export default function App({ initialPath }) {
                     </span>
                     <span className="location-detail-item">
                       <Phone size={13} />
-                      <a href="tel:919207062636">+91 9207062636</a>
+                      <a href="tel:+919207062636">+91 9207062636</a>
                     </span>
                   </div>
                 </div>

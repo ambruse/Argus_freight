@@ -54,7 +54,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (authStorage.isAuthenticated()) {
       const user = authStorage.getUser();
-      router.replace(user?.role === "sales" ? "/rfq/new" : "/dashboard");
+      router.replace(sessionStorage.getItem("argus_live_enquiry") ? "/customer/rfq/new" : user?.role === "sales" ? "/rfq/new" : "/dashboard");
     }
   }, [router]);
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
     try {
       const data = await login(username.trim(), password);
       toast.success("Welcome back!");
-      router.replace(data.user?.role === "sales" ? "/rfq/new" : "/dashboard");
+      router.replace(sessionStorage.getItem("argus_live_enquiry") ? "/customer/rfq/new" : data.user?.role === "sales" ? "/rfq/new" : "/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.message || "Username or password is incorrect.");
     } finally {

@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { encryptPassword } from "@/lib/crypto";
 import { COUNTRIES } from "@/lib/countries";
+import EnquiryEmailSettings from "@/components/settings/EnquiryEmailSettings";
 
 type CcRecipient = { id: number; name: string; email: string; multi_select: boolean };
 type AdminUser = { id: number; username: string; role: string; email_address: string | null; has_password: boolean };
@@ -718,6 +719,7 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {user?.role === "admin" && <EnquiryEmailSettings />}
         {/* Email Settings Card */}
         {user?.role !== "sales" && user?.role !== "customer" && (
           <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">

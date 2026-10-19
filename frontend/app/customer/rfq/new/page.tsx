@@ -138,6 +138,24 @@ const formatDimensionAndWeight = (form: FormState) => {
 
 export default function CustomerNewRFQPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  useEffect(() => {
+    const quote = new URLSearchParams(window.location.search).get("live_quote") || sessionStorage.getItem("argus_live_enquiry");
+    if (!quote || !/^[0-9a-f-]{36}$/.test(quote)) return;
+    sessionStorage.setItem("argus_live_enquiry", quote);
+    let cancelled = false;
+    Promise.all([api.get(`/live-pricing/quotes/${quote}`), api.get('/live-pricing/locations')]).then(([response, directory]) => {
+      if (cancelled) return;
+      const q = response.data, s = q.shipment;
+      const origin = directory.data.locations.find((l:any)=>l.id===s.origin_id);
+      const destination = directory.data.locations.find((l:any)=>l.id===s.destination_id);
+      setForm(p=>({...p,pol:origin?.name||q.origin,pol_country:origin?.country||'',pod:destination?.name||q.destination,
+        mode:s.mode==='TRUCK'?'Road':s.mode==='AIR'?'Air':'Sea',container:s.subtype==='FCL'?`${s.quantity} × ${s.size} FT ${s.equipment}`:'',
+        dim_unit:'cbm',dim_cbm:String(s.totals.cbm||''),weight:String(s.totals.kg||''),weight_unit:'KG',
+        no_dimension:!s.cargo.length,
+        note:`Live freight enquiry ${q.reference}\n${q.origin} → ${q.destination}\n${s.mode} / ${s.subtype} ${s.truck||''}\n${q.available?'Estimated USD '+q.estimate.total+'; expires '+q.expires_at:'Custom quotation required; no current estimate.'}\nCargo: ${JSON.stringify(s.cargo)}\n${q.available?'Includes: '+q.estimate.inclusions.join(', ')+'; Excludes: '+q.estimate.exclusions.join(', '):''}`}));
+    }).catch(()=>{if(!cancelled)toast.error('Could not load the live estimate. Retry this link or enter your shipment details.');});
+    return ()=>{cancelled=true;};
+  }, []);
   const [files, setFiles] = useState<File[]>([]);
   
   const [submitting, setSubmitting] = useState(false);
@@ -236,6 +254,10 @@ export default function CustomerNewRFQPage() {
 
   // ── Form Actions ────────────────────────────────────────────
   const handleClear = () => {
+    sessionStorage.removeItem("argus_live_enquiry");
+    if (new URLSearchParams(window.location.search).has("live_quote")) {
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+    }
     setForm(INITIAL_FORM);
     setFiles([]);
   };
