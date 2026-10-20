@@ -12,7 +12,7 @@ export default function LiveCalculator() {
     const [catalogError, setCatalogError] = useState('');
     const [expanded, setExpanded] = useState(false);
     const [step, setStep] = useState('contact'), [contactBusy, setContactBusy] = useState(false), [contactError, setContactError] = useState('');
-    const [contact, setContact] = useState({ phone_country: 'Qatar', phone: '', email: '' });
+    const [contact, setContact] = useState({ name: '', phone_country: 'Qatar', phone: '', email: '' });
     const enquiryAttempt = useRef(null), contactPending = useRef(false), contactSession = useRef(0);
     const dialogNode = useRef(null), searchNode = useRef(null), detailHeading = useRef(null);
     const [s, setS] = useState({ origin_id: '', destination_id: '', mode: '', subtype: '', size: '', equipment: '', truck: '', quantity: 1 }), [cargo, setCargo] = useState([blankCargo()]), [optional, setOptional] = useState(false), [profile, setProfile] = useState('');
@@ -104,12 +104,16 @@ export default function LiveCalculator() {
         e.preventDefault();
         if (contactPending.current) return;
         setContactError('');
+        if (!contact.name.trim()) {
+            setContactError('Enter your name.');
+            return;
+        }
         const country = phoneCountries.find(c => c.country === contact.phone_country);
         if (!/^[\d ()-]{4,24}$/.test(contact.phone) || contact.phone.replace(/\D/g, '').length < 4 || (country.code + contact.phone.replace(/\D/g, '')).length > 16) {
             setContactError('Enter a valid phone number without the country code.');
             return;
         }
-        const payload = { ...contact, country_code: country.code, origin_id: s.origin_id, destination_id: s.destination_id, mode: s.mode };
+        const payload = { ...contact, name: contact.name.trim(), country_code: country.code, origin_id: s.origin_id, destination_id: s.destination_id, mode: s.mode };
         const key = JSON.stringify(payload);
         if (enquiryAttempt.current?.key !== key) enquiryAttempt.current = { key, id: crypto.randomUUID() };
         contactPending.current = true;
@@ -175,6 +179,7 @@ export default function LiveCalculator() {
     const contactForm = <section className="live-calculator live-calculator-expanded live-contact"><header><span className="live-eyebrow">ARGUS SHIPPING · STEP 1 OF 2</span><h2 id="live-detail-title" ref={detailHeading} tabIndex={-1}>How can we reach you?</h2><p>Enter your contact details to continue with your shipment.</p><button type="button" className="live-close" aria-label="Close calculator" onClick={() => setExpanded(false)}><X size={20}/></button></header>
         <form onSubmit={continueToDetails}>
             <fieldset disabled={contactBusy} className="live-contact-fields">
+                <label>Name<input required type="text" autoComplete="name" maxLength={120} value={contact.name} onChange={e => setContact(c => ({ ...c, name: e.target.value }))} placeholder="Your full name"/></label>
                 <label>Country / calling code<select required autoComplete="country-name" value={contact.phone_country} onChange={e => setContact(c => ({ ...c, phone_country: e.target.value }))}>{phoneCountries.map(c => <option key={c.country} value={c.country}>{c.country} ({c.code})</option>)}</select></label>
                 <label>Phone number<input required type="tel" autoComplete="tel-national" inputMode="tel" maxLength={24} value={contact.phone} onChange={e => setContact(c => ({ ...c, phone: e.target.value }))} placeholder="Number without the country code"/></label>
                 <label>Email address<input required type="email" autoComplete="email" maxLength={254} value={contact.email} onChange={e => setContact(c => ({ ...c, email: e.target.value }))} placeholder="you@example.com"/></label>

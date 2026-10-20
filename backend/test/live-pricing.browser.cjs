@@ -63,6 +63,7 @@ const { createEnquiries } = require('../src/live/enquiries');
         const calc = page.locator('.live-calculator').last();
         async function contactStep() {
             assert.equal(await calc.locator('.live-cargo').count(), 0);
+            await calc.getByLabel('Name', { exact: true }).fill('Browser Customer');
             await calc.getByLabel('Phone number', { exact: true }).fill('55551234');
             await calc.getByLabel('Email address', { exact: true }).fill('visitor@example.com');
             await calc.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -222,6 +223,7 @@ const { createEnquiries } = require('../src/live/enquiries');
         await enquiryCard.getByRole('status').waitFor();
         assert.equal((await enquiryService.settings()).recipients.length, 2);
         await enquiryCard.screenshot({ path: path.join(shots, 'enquiry-settings.png') });
+        assert.ok(sentEnquiries.every(message => message.text.includes('Name: Browser Customer')));
         assert.deepEqual(errors, []);
         console.log('Browser checks passed: AIR, LCL, FCL, TRUCK, 320/390px, operator submission, admin approval, RFQ prefill across login, unavailable prices. Screenshots: ' + shots);
     }

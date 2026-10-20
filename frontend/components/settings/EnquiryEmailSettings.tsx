@@ -4,10 +4,24 @@ import api from "@/lib/api";
 import phoneCountries from "../../../shared/phoneCountries.json";
 
 type Settings = { version: number; enabled: boolean; host: string; port: number; email: string; has_password: boolean; recipients: { email: string; country: string }[] };
-type Delivery = { id: string; contact: { email: string; phone: string; phone_country: string }; route: { mode: string; origin: { country: string; name: string }; destination: { country: string; name: string } }; recipient: string; status: string; created_at: string };
+type Delivery = { id: string; contact: { name?: string; email: string; phone: string; phone_country: string }; route: { mode: string; origin: { country: string; name: string }; destination: { country: string; name: string } }; recipient: string; status: string; created_at: string };
 export default function EnquiryEmailSettings() {
     const [settings, setSettings] = useState<Settings | null>(null), [password, setPassword] = useState("");
     const [error, setError] = useState(""), [message, setMessage] = useState(""), [busy, setBusy] = useState(false), [deliveries, setDeliveries] = useState<Delivery[]>([]);
+    const [exporting, setExporting] = useState(false);
+    async function downloadContacts() {
+        setError(""); setExporting(true);
+        try {
+            const { data } = await api.get("/live-pricing/enquiries/export.csv", { responseType: "blob" });
+            const url = URL.createObjectURL(data);
+            const link = document.createElement("a");
+            link.href = url; link.download = "live-enquiry-contacts.csv";
+            document.body.appendChild(link); link.click(); link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch {
+            setError("Unable to download enquiry contacts. Please try again.");
+        } finally { setExporting(false); }
+    }
     async function load() {
         setError(""); setBusy(true);
         try {
@@ -30,6 +44,11 @@ export default function EnquiryEmailSettings() {
         <p className="text-sm text-muted mb-6">Continue sends the visitor’s contact details and route to one operator. Routing uses the selected phone country. Country matches take priority; otherwise Global recipients are used. Matching recipients rotate in the order below.</p>
         {error && <p role="alert" className="text-rose mb-4">{error}</p>}
         {message && <p role="status" className="text-gold mb-4">{message}</p>}
+        <div className="mb-6">
+            <h3 className="font-semibold text-primary mb-2">Enquiry contact records</h3>
+            <p className="text-sm text-muted mb-3">Download all saved enquiries as CSV: Name, Phone number (country code + number), Email address. Older enquiries may have a blank name.</p>
+            <button type="button" className="btn-secondary" disabled={exporting} onClick={downloadContacts}>{exporting ? "Downloading…" : "Download contacts CSV"}</button>
+        </div>
         {!settings ? <button type="button" className="btn-secondary" disabled={busy} onClick={load}>{busy ? "Loading…" : "Retry loading settings"}</button> : <form onSubmit={save}>
             <fieldset disabled={busy} className="space-y-5 min-w-0">
                 <label className="flex items-center gap-3 text-primary"><input type="checkbox" checked={settings.enabled} onChange={e => setSettings({ ...settings, enabled: e.target.checked })}/>Enable enquiry email delivery</label>
@@ -50,7 +69,7 @@ export default function EnquiryEmailSettings() {
             </fieldset>
         </form>}
         {settings && <div className="mt-8"><div className="flex flex-wrap items-center justify-between gap-3 mb-3"><h3 className="font-semibold text-primary">Recent enquiries</h3><button type="button" className="btn-secondary" disabled={busy} onClick={load}>Refresh</button></div><p className="text-xs text-muted mb-3">Sent means the SMTP server accepted the email. For uncertain or stalled sending entries, check the sender’s mail logs before any manual resend to avoid duplicates. Refresh reloads saved settings.</p>
-            <div className="max-h-80 overflow-auto" tabIndex={0} role="region" aria-label="Recent enquiry deliveries"><table className="w-full text-sm text-left"><thead><tr><th className="p-2">Customer</th><th className="p-2">Route</th><th className="p-2">Assigned operator</th><th className="p-2">Delivery</th></tr></thead><tbody>{deliveries.map(d => <tr key={d.id} className="border-t border-white/10"><td className="p-2 break-all">{d.contact.email}<br/>{d.contact.phone}<br/>{d.contact.phone_country}</td><td className="p-2">{d.route.origin.name} → {d.route.destination.name}<br/>{d.route.mode}</td><td className="p-2 break-all">{d.recipient}</td><td className="p-2">{d.status}<br/><small>{d.id}</small></td></tr>)}</tbody></table>{!deliveries.length && <p className="text-muted p-3">No enquiries yet.</p>}</div>
+            <div className="max-h-80 overflow-auto" tabIndex={0} role="region" aria-label="Recent enquiry deliveries"><table className="w-full text-sm text-left"><thead><tr><th className="p-2">Customer</th><th className="p-2">Route</th><th className="p-2">Assigned operator</th><th className="p-2">Delivery</th></tr></thead><tbody>{deliveries.map(d => <tr key={d.id} className="border-t border-white/10"><td className="p-2 break-all">{d.contact.name && <><strong>{d.contact.name}</strong><br/></>}{d.contact.email}<br/>{d.contact.phone}<br/>{d.contact.phone_country}</td><td className="p-2">{d.route.origin.name} → {d.route.destination.name}<br/>{d.route.mode}</td><td className="p-2">{d.recipient}</td><td className="p-2">{d.status}<br/><small>{d.id}</small></td></tr>)}</tbody></table>{!deliveries.length && <p className="text-muted p-3">No enquiries yet.</p>}</div>
         </div>}
     </section>;
 }

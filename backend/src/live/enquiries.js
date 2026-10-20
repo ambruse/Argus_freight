@@ -43,6 +43,7 @@ function recipientsFor(config, country) {
 }
 function validateContact(body) {
     if (!body || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.id || '')) fail('Invalid enquiry reference.');
+    if (typeof body.name !== 'string' || !body.name.trim() || body.name.length > 120 || /[\x00-\x1f\x7f]/.test(body.name)) fail('Enter a name of up to 120 characters.');
     const country = phoneCountries.find(c => c.country === body.phone_country);
     if (!country || country.code !== body.country_code) fail('Select a valid phone country and calling code.');
     if (typeof body.phone !== 'string' || !/^[\d ()-]{4,24}$/.test(body.phone)) fail('Enter your phone number without the country code.');
@@ -50,7 +51,18 @@ function validateContact(body) {
     if (digits.length < 4 || (country.code + digits).length > 16) fail('Enter a valid phone number.');
     if (!['AIR', 'SEA', 'TRUCK'].includes(body.mode)) fail('Select a transport mode.');
     if (![body.origin_id, body.destination_id].every(id => typeof id === 'string' && id.length <= 40 && id.length > 0) || body.origin_id === body.destination_id) fail('Select distinct origin and destination locations.');
-    return { email: email(body.email), phone_country: country.country, country_code: country.code, phone: country.code + digits };
+    return { name: body.name.trim(), email: email(body.email), phone_country: country.country, country_code: country.code, phone: country.code + digits };
+}
+function contactsCsv(contacts) {
+    const cell = (value, phone = false) => {
+        let str = String(value ?? '');
+        // Keep international phone numbers intact; neutralize spreadsheet formulas in free text.
+        if (/^\s*[=+\-@]/.test(str) && !(phone && /^\+\d{4,15}$/.test(str))) str = "'" + str;
+        return `"${str.replace(/"/g, '""')}"`;
+    };
+    return '\uFEFFName,Phone number,Email address\r\n' + contacts.map(contact =>
+        [cell(contact.name), cell(contact.phone, true), cell(contact.email)].join(',') + '\r\n'
+    ).join('');
 }
 function createEnquiries(pool, store, { transportFactory = transport } = {}) {
     let initialization;
@@ -146,7 +158,7 @@ function createEnquiries(pool, store, { transportFactory = transport } = {}) {
             deliveryStarted = true;
             const info = await smtp.sendMail({ from: { name: 'Argus Shipping Enquiries', address: current.email }, to: record.recipient, replyTo: details.email,
                 messageId: `<live-enquiry-${record.id}@argusshipping.co>`, subject: `Live freight enquiry · ${route.mode}`,
-                text: `Dear Team ,\nwe have got an live rate search , here is the details,\n\nPOL: ${route.origin.country}, ${route.origin.name}\nPOD: ${route.destination.country}, ${route.destination.name}\nMode: ${route.mode}\nNumber: ${details.phone}\nemail: ${details.email}` });
+                text: `Dear Team ,\nwe have got an live rate search , here is the details,\n\nPOL: ${route.origin.country}, ${route.origin.name}\nPOD: ${route.destination.country}, ${route.destination.name}\nMode: ${route.mode}\nName: ${details.name || ''}\nNumber: ${details.phone}\nemail: ${details.email}` });
             if (!info.accepted?.some(address => String(address).toLowerCase() === record.recipient)) throw Object.assign(new Error('Recipient rejected'), { code: 'EENVELOPE', responseCode: 550 });
             smtpAccepted = true;
             await pool.query("UPDATE live_enquiries SET status='sent',sent_at=UTC_TIMESTAMP(3),updated_at=UTC_TIMESTAMP(3),error_code=NULL WHERE id=?", [record.id]);
@@ -164,6 +176,13 @@ function createEnquiries(pool, store, { transportFactory = transport } = {}) {
         const [rows] = await pool.query('SELECT id,contact,route,recipient,status,attempts,error_code,created_at,sent_at FROM live_enquiries ORDER BY created_at DESC LIMIT 50');
         return { rows: rows.map(r => ({ ...r, contact: parse(r.contact), route: parse(r.route) })) };
     }
-    return { ready, settings, saveSettings, submit, history };
+    async function exportContacts(user) {
+        if (user?.role !== 'admin') fail('Administrator access required.', 403);
+        await ready();
+        // Export the full retained history, including delivery failures and legacy contacts without names.
+        const [rows] = await pool.query('SELECT contact FROM live_enquiries ORDER BY created_at DESC, id DESC');
+        return contactsCsv(rows.map(row => parse(row.contact)));
+    }
+    return { ready, settings, saveSettings, submit, history, exportContacts };
 }
-module.exports = { createEnquiries, recipientsFor, validateContact };
+module.exports = { createEnquiries, recipientsFor, validateContact, contactsCsv };

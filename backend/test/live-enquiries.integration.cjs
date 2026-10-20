@@ -6,17 +6,61 @@ const jwt = require('jsonwebtoken');
 const { randomUUID } = require('node:crypto');
 const { createRouter } = require('../src/live/router');
 const { createStore } = require('../src/live/store');
-const { createEnquiries, validateContact, recipientsFor } = require('../src/live/enquiries');
+const { createEnquiries, validateContact, recipientsFor, contactsCsv } = require('../src/live/enquiries');
 
 test('contact validation and country-specific/global selection', () => {
     assert.throws(() => validateContact({}), /reference/);
-    const body = { id: randomUUID(), email: 'client@example.com', phone_country: 'Qatar', country_code: '+974', phone: '5555 1234', origin_id: 'CNSHA', destination_id: 'QAHMD', mode: 'SEA' };
+    const body = { id: randomUUID(), name: '  Test Customer  ', email: 'client@example.com', phone_country: 'Qatar', country_code: '+974', phone: '5555 1234', origin_id: 'CNSHA', destination_id: 'QAHMD', mode: 'SEA' };
     assert.equal(validateContact(body).phone, '+97455551234');
+    assert.equal(validateContact(body).name, 'Test Customer');
+    for (const name of [undefined, '', '   ', 'x'.repeat(121), 'Customer\nInjected']) {
+        assert.throws(() => validateContact({ ...body, name }), /name/);
+    }
     assert.throws(() => validateContact({ ...body, country_code: '+91' }), /country/);
     assert.throws(() => validateContact({ ...body, email: 'a@example.com\r\nBcc:x@y.com' }), /email/);
     const config = { recipients: [{ email: 'global@example.com', country: '' }, { email: 'qa@example.com', country: 'Qatar' }] };
     assert.equal(recipientsFor(config, 'Qatar').recipients[0].email, 'qa@example.com');
     assert.equal(recipientsFor(config, 'India').recipients[0].email, 'global@example.com');
+});
+
+test('CSV preserves international phones, Unicode, quoted names and legacy records safely', () => {
+    assert.equal(contactsCsv([]), '\uFEFFName,Phone number,Email address\r\n');
+    const csv = contactsCsv([
+        { name: 'أحمد, "Ali"', phone: '+97455551234', email: 'ali@example.com' },
+        { phone: '+919876543210', email: 'old@example.com' },
+        { name: '=HYPERLINK("https://example.com")', phone: '+97455551235', email: '+test@example.com' },
+    ]);
+    assert.ok(csv.includes('"أحمد, ""Ali""","+97455551234","ali@example.com"\r\n'));
+    assert.ok(csv.includes('"","+919876543210","old@example.com"\r\n'));
+    assert.ok(csv.includes('"\'=HYPERLINK('));
+    assert.ok(csv.includes("\"'+test@example.com\""));
+});
+
+test('admin export includes more than the recent 50 records and denies other roles', async () => {
+    const contacts = Array.from({ length: 61 }, (_, i) => ({ name: `Customer ${i}`, phone: '+97455551234', email: `client${i}@example.com` }));
+    const db = {
+        query: async sql => {
+            if (sql.includes('GET_LOCK')) return [[{ acquired: 1 }]];
+            if (sql.includes('information_schema.tables')) return [[{ n: 2 }]];
+            return [[]];
+        },
+        release() {},
+    };
+    const pool = {
+        getConnection: async () => db,
+        query: async sql => {
+            assert.match(sql, /^SELECT contact FROM live_enquiries/);
+            assert.ok(!sql.includes('LIMIT'));
+            return [contacts.map(contact => ({ contact: JSON.stringify(contact) }))];
+        },
+    };
+    const service = createEnquiries(pool, { ready: async () => {} });
+    for (const user of [undefined, { role: 'operator' }, { role: 'customer' }]) {
+        await assert.rejects(service.exportContacts(user), { status: 403 });
+    }
+    const csv = await service.exportContacts({ role: 'admin' });
+    assert.equal(csv.split('\r\n').length, 63);
+    assert.ok(csv.includes('"Customer 60"'));
 });
 
 test('persistent routing, SMTP outcomes, idempotency, settings secrecy and admin permissions', { skip: !process.env.LIVE_TEST_DB_PASSWORD }, async () => {
@@ -47,7 +91,7 @@ test('persistent routing, SMTP outcomes, idempotency, settings secrecy and admin
         assert.equal(config.has_password, true);
         const [[saved]] = await pool.query("SELECT value FROM app_settings WHERE `key`='live_enquiry_email'");
         assert.ok(!saved.value.includes('test-only-secret'));
-        const body = { id: randomUUID(), email: 'client@example.com', phone_country: 'Qatar', country_code: '+974', phone: '55551234', origin_id: 'CNSHA', destination_id: 'QAHMD', mode: 'SEA' };
+        const body = { id: randomUUID(), name: 'Test Customer', email: 'client@example.com', phone_country: 'Qatar', country_code: '+974', phone: '55551234', origin_id: 'CNSHA', destination_id: 'QAHMD', mode: 'SEA' };
         for (let i = 0; i < 4; i++) await service.submit({ ...body, id: randomUUID() });
         assert.deepEqual(sent.map(m => m.to), ['one@example.com','two@example.com','three@example.com','one@example.com']);
         const first = await service.submit(body);
@@ -56,6 +100,8 @@ test('persistent routing, SMTP outcomes, idempotency, settings secrecy and admin
         assert.equal(first.delivery, 'sent');
         assert.equal(sent.at(-1).replyTo, body.email);
         assert.ok(sent.at(-1).text.includes('Port of Shanghai'));
+        assert.ok(sent.at(-1).text.includes('Name: Test Customer'));
+        await assert.rejects(service.submit({ ...body, name: 'Different Customer' }), /changed/);
         await assert.rejects(service.submit({ ...body, phone: '55551235' }), /changed/);
         config = await service.saveSettings({ id: 1, role: 'admin' }, { ...config, password: '', recipients: [...config.recipients, { email: 'qatar1@example.com', country: 'Qatar' }, { email: 'qatar2@example.com', country: 'Qatar' }] });
         await service.submit({ ...body, id: randomUUID() });
@@ -103,14 +149,22 @@ test('persistent routing, SMTP outcomes, idempotency, settings secrecy and admin
         server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
         const url = `http://127.0.0.1:${server.address().port}/api/live-pricing`;
         assert.equal((await fetch(url + '/enquiry-settings')).status, 401);
+        assert.equal((await fetch(url + '/enquiries/export.csv')).status, 401);
         const operatorHeaders = { Authorization: 'Bearer ' + jwt.sign({ id: 2, role: 'admin' }, process.env.JWT_SECRET) };
         assert.equal((await fetch(url + '/enquiry-settings', { headers: operatorHeaders })).status, 403);
         assert.equal((await fetch(url + '/enquiries', { headers: operatorHeaders })).status, 403);
+        assert.equal((await fetch(url + '/enquiries/export.csv', { headers: operatorHeaders })).status, 403);
         const adminHeaders = { Authorization: 'Bearer ' + jwt.sign({ id: 1 }, process.env.JWT_SECRET) };
         const publicSettings = await (await fetch(url + '/enquiry-settings', { headers: adminHeaders })).json();
         assert.equal(publicSettings.password, undefined);
         const log = await (await fetch(url + '/enquiries', { headers: adminHeaders })).json();
         assert.ok(log.rows.some(r => r.status === 'uncertain'));
+        assert.ok(log.rows.every(r => r.contact.name === 'Test Customer'));
+        const exported = await fetch(url + '/enquiries/export.csv', { headers: adminHeaders });
+        assert.equal(exported.status, 200);
+        assert.match(exported.headers.get('content-type'), /text\/csv/);
+        assert.match(exported.headers.get('content-disposition'), /attachment; filename="live-enquiry-contacts.csv"/);
+        assert.match(await exported.text(), /"Test Customer","\+97455551234","client@example.com"/);
         const crossSite = await fetch(url + '/enquiries', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'cross-site' }, body: JSON.stringify({ ...body, id: randomUUID() }) });
         assert.equal(crossSite.status, 403);
         for (let i = 0; i < 6; i++) {

@@ -76,13 +76,36 @@ export default function LiveRates() {
     const number = (key: string, title: string, positive = false) => <label key={key}>{title}<input required type="number" min={positive ? '0.000001' : '0'} step="any" value={c[key]} onChange={e => change(key, e.target.value)}/></label>;
     const select = (key: string, title: string, values: string[], names: Record<string, string> = {}) => <label>{title}<select required value={c[key]} onChange={e => change(key, e.target.value)}>{values.map(v => <option key={v} value={v}>{names[v] || v}</option>)}</select></label>;
     const mode = (value: string, subtype?: string) => { if (!window.confirm('Switch pricing configuration? Route locations incompatible with this mode and existing tiers will be reset.'))
-        return; const type = subtype || (value === 'SEA' ? 'LCL' : value === 'TRUCK' ? 'LTL' : 'AIR'); setC(p => ({ ...p, mode: value, subtype: type, model: models[value === 'SEA' ? type : value][0], tiers: [{ minimum: '0', price: '' }], charges: [], origin_id: locations.find(l => l.id === p.origin_id)?.kind === value ? p.origin_id : '', destination_id: locations.find(l => l.id === p.destination_id)?.kind === value ? p.destination_id : '' })); setDirty(true); setPreview(null); setCompare([]); };
+        return; const type = subtype || (value === 'SEA' ? 'LCL' : value === 'TRUCK' ? 'LTL' : 'AIR'); setC(p => ({ ...p, mode: value, subtype: type, model: models[value === 'SEA' ? type : value][0], size: p.size || '20', equipment: p.equipment || 'DRY', minimum_units: '0', rounding_step: '0', tiers: [{ minimum: '0', price: '' }], charges: [], origin_id: locations.find(l => l.id === p.origin_id)?.kind === value ? p.origin_id : '', destination_id: locations.find(l => l.id === p.destination_id)?.kind === value ? p.destination_id : '' })); setDirty(true); setPreview(null); setCompare([]); };
+    const pricingModel = (value: string) => {
+        if (value === c.model) return;
+        if (c.tiers.some((t: any) => t.price) && !window.confirm('Reset the selling price for the new pricing model?')) return;
+        setC(p => {
+            const container = value === 'CONTAINER';
+            const nextMode = container ? 'SEA' : p.mode;
+            const subtype = nextMode === 'SEA' ? (container ? 'FCL' : 'LCL') : p.subtype;
+            return {
+                ...p, model: value, mode: nextMode, subtype,
+                size: p.size || '20', equipment: p.equipment || 'DRY',
+                truck: nextMode === 'TRUCK' ? p.truck : '',
+                origin_id: locations.find(l => l.id === p.origin_id)?.kind === nextMode ? p.origin_id : '',
+                destination_id: locations.find(l => l.id === p.destination_id)?.kind === nextMode ? p.destination_id : '',
+                tiers: [{ minimum: '0', price: '' }], minimum_units: '0', rounding_step: '0',
+                charges: p.charges.filter((ch: any) => container
+                    ? ['SHIPMENT', 'PERCENT', 'CONTAINER'].includes(ch.basis)
+                    : ch.basis !== 'CONTAINER'),
+            };
+        });
+        setDirty(true); setPreview(null); setCompare([]);
+    };
     const sample = () => ({ ...c, quantity, cargo: c.subtype === 'FCL' && !volume && !weight ? [] : [{ input: 'CBM', cbm: volume, quantity: 1, weight, weight_unit: 'kg', weight_basis: 'LINE' }] });
     const previewRate = () => run(async () => { const { data } = await api.post('/live-pricing/preview', { config: c, shipment: sample() }); setPreview(data.result || { unavailable: true }); if (admin) {
         const comparison = await api.post('/live-pricing/comparison', { config: c, shipment: sample() });
         setCompare(comparison.data.rows);
     } });
     const flat = ['FIXED', 'VEHICLE', 'CONTAINER', 'KM'].includes(c.model);
+    const container = c.model === 'CONTAINER';
+    const pricingModels = [...(c.mode === 'SEA' ? models.LCL : models[c.mode]), 'CONTAINER'];
     return <AppLayout title="Freight Live Rates" subtitle="Customer selling tariffs · Asia/Qatar" action={allowed ? <button className="btn-primary" onClick={() => open(null)}>＋ Add rate</button> : undefined}><div className="live-admin">
   {authLoading ? <p>Checking access…</p> : !allowed ? <p>Only operators and administrators can manage live freight rates.</p> : <>
   <p>Enter customer selling prices. Drafts and pending rates remain private. {admin ? 'Approve a current revision to publish it.' : 'An administrator must approve each new or edited rate.'} Published estimates use USD; QAR is converted at 3.65 QAR per USD.</p>
@@ -94,14 +117,13 @@ export default function LiveRates() {
   {(['origin_id', 'destination_id'] as const).map((key, i) => <label key={key}>{i ? 'POD / Destination' : 'POL / Origin'}<SearchComboBox required label={i ? 'Destination' : 'Origin'} value={c[key]} onChange={v => change(key, v)} options={locations.filter(l => l.kind === c.mode && l.id !== c[i ? 'origin_id' : 'destination_id']).map(l => ({ value: l.id, label: `${l.country}, ${l.name}`, searchText: l.id + ' ' + l.aliases.join(' '), kind: l.kind }))}/></label>)}
   <label>Transport mode<select value={c.mode} onChange={e => mode(e.target.value)}><option>AIR</option><option>SEA</option><option>TRUCK</option></select></label>
   {c.mode !== 'AIR' && <label>Shipment type<select value={c.subtype} onChange={e => mode(c.mode, e.target.value)}>{(c.mode === 'SEA' ? ['LCL', 'FCL'] : ['LTL', 'FTL']).map(v => <option key={v}>{v}</option>)}</select></label>}
-  {c.subtype === 'FCL' && <>{select('size', 'Container size', ['20', '40', '40HQ'], { '20': '20 FT', '40': '40 FT', '40HQ': '40 FT High Cube' })}{select('equipment', 'Container type', ['DRY', 'REEFER'], { DRY: 'Standard / Dry', REEFER: 'Reefer' })}</>}
   {c.mode === 'TRUCK' && <label>Truck / load class<input required value={c.truck} maxLength={100} onChange={e => change('truck', e.target.value)}/></label>}
   <label>Carrier / shipping line<input required maxLength={120} value={c.carrier} onChange={e => change('carrier', e.target.value)}/></label><label>Comparable service name<input required maxLength={120} placeholder="e.g. Airport to airport · general cargo" value={c.service} onChange={e => change('service', e.target.value)}/></label>
   <label>Valid from (Qatar)<input required type="date" value={c.valid_from} onChange={e => change('valid_from', e.target.value)}/></label><label>Valid until (Qatar)<input required type="date" min={c.valid_from} value={c.valid_until} onChange={e => change('valid_until', e.target.value)}/></label>
-  <label>Pricing model<select value={c.model} onChange={e => { if (c.tiers.some((t: any) => t.price) && !window.confirm('Reset tiers for the new pricing unit?'))
-                return; setC(p => ({ ...p, model: e.target.value, tiers: [{ minimum: '0', price: '' }] })); setDirty(true); setPreview(null); }}>{models[c.mode === 'SEA' ? c.subtype : c.mode].map(v => <option key={v} value={v}>{labels[v]}</option>)}</select></label>{select('currency', 'Tariff currency', ['USD', 'QAR'])}
-  </div><h3>{flat ? 'Selling price' : 'Conditional pricing tiers'}</h3><p className="lr-note">{flat ? 'One price for the selected billing unit.' : 'Minimum thresholds are inclusive. Each tier ends where the next starts. Below the first threshold, no price is available unless an explicit minimum or weight-break policy applies.'}</p>
-  {c.tiers.map((tier: any, i: number) => <div key={i} className="lr-tier"><label>Minimum {labels[c.model]}<input type="number" min="0" step="any" required disabled={flat} value={tier.minimum} onChange={e => change('tiers', c.tiers.map((t: any, j: number) => i === j ? { ...t, minimum: e.target.value } : t))}/></label><label>Price ({c.currency}) {labels[c.model]}<input type="number" min="0.000001" step="any" required value={tier.price} onChange={e => change('tiers', c.tiers.map((t: any, j: number) => i === j ? { ...t, price: e.target.value } : t))}/></label>{!flat && c.tiers.length > 1 && <button type="button" onClick={() => change('tiers', c.tiers.filter((_: any, j: number) => j !== i))}>Remove</button>}</div>)}
+  <label>Pricing model<select value={c.model} onChange={e => pricingModel(e.target.value)}>{pricingModels.map(v => <option key={v} value={v}>{v === 'CONTAINER' ? 'Container' : labels[v]}</option>)}</select></label>{select('currency', 'Tariff currency', ['USD', 'QAR'])}
+  </div><h3>{container ? 'Container pricing' : flat ? 'Selling price' : 'Conditional pricing tiers'}</h3><p className="lr-note">{container ? 'Choose the container type and size, then enter one selling price per container. Container pricing uses SEA / FCL shipments.' : flat ? 'One price for the selected billing unit.' : 'Minimum thresholds are inclusive. Each tier ends where the next starts. Below the first threshold, no price is available unless an explicit minimum or weight-break policy applies.'}</p>
+  {container && <div className="lr-grid">{select('equipment', 'Container type', ['DRY', 'REEFER'], { DRY: 'Standard / Dry', REEFER: 'Reefer' })}{select('size', 'Container size (FT)', ['20', '40', '40HQ'], { '20': '20 FT', '40': '40 FT', '40HQ': '40 FT High Cube' })}</div>}
+  {c.tiers.map((tier: any, i: number) => <div key={i} className="lr-tier">{!flat && <label>Minimum {labels[c.model]}<input type="number" min="0" step="any" required value={tier.minimum} onChange={e => change('tiers', c.tiers.map((t: any, j: number) => i === j ? { ...t, minimum: e.target.value } : t))}/></label>}<label>Price ({c.currency}) {labels[c.model]}<input type="number" min="0.000001" step="any" required value={tier.price} onChange={e => change('tiers', c.tiers.map((t: any, j: number) => i === j ? { ...t, price: e.target.value } : t))}/></label>{!flat && c.tiers.length > 1 && <button type="button" onClick={() => change('tiers', c.tiers.filter((_: any, j: number) => j !== i))}>Remove</button>}</div>)}
   {!flat && <button type="button" onClick={() => change('tiers', [...c.tiers, { minimum: '', price: '' }])}>＋ Add tier</button>}
   <h3>Minimums and calculation rules</h3><div className="lr-grid">{!flat && number('minimum_units', `Minimum billable ${c.model}`)}{number('minimum_charge', `Minimum freight (${c.currency})`)}{!flat && number('rounding_step', `Round billable ${c.model} up to step (0 = exact)`)}{select('rounding', 'USD line-item rounding', ['NEAREST', 'UP'], { NEAREST: 'Nearest cent', UP: 'Round up to cent' })}
   {c.mode === 'AIR' && <>{number('divisor', 'Volumetric divisor (cm³/kg)', true)}<label className="lr-check"><input type="checkbox" checked={c.weight_break} onChange={e => change('weight_break', e.target.checked)}/>Allow higher weight break when final total is cheaper</label></>}

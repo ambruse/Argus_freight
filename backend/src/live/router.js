@@ -67,6 +67,10 @@ function createRouter(pool, coreReady = Promise.resolve(), enquiryOptions = {}) 
     router.get('/enquiry-settings', adminOnly, run(async (req, res) => res.json(await enquiries.settings())));
     router.put('/enquiry-settings', adminOnly, run(async (req, res) => res.json(await enquiries.saveSettings(req.user, req.body))));
     router.get('/enquiries', adminOnly, run(async (req, res) => res.json(await enquiries.history())));
+    router.get('/enquiries/export.csv', adminOnly, run(async (req, res) => {
+        const csv = await enquiries.exportContacts(req.user);
+        res.attachment('live-enquiry-contacts.csv').type('text/csv; charset=utf-8').send(csv);
+    }));
     router.post('/rates', run(async (req, res) => res.status(201).json(await store.save(req.user, req.body))));
     router.put('/rates/:id', run(async (req, res) => res.json(await store.save(req.user, req.body, req.params.id))));
     router.post('/rates/:id/action', run(async (req, res) => res.json(await store.action(req.user, req.params.id, req.body))));
