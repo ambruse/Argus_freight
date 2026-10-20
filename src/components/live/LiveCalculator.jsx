@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Plane, Ship, Truck, X, Search } from 'lucide-react';
 import CargoRows, { blankCargo } from './CargoRows';
 import LocationSelect from './LocationSelect';
+import ModeChangeDialog from './ModeChangeDialog';
 import phoneCountries from '../../../shared/phoneCountries.json';
 import './live.css';
 async function request(path, body) { const res = await fetch('/api/live-pricing' + path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined }); const data = await res.json(); if (!res.ok)
@@ -11,6 +12,7 @@ export default function LiveCalculator() {
     const [catalog, setCatalog] = useState({ locations: [], groups: [] }), [all, setAll] = useState([]), [custom, setCustom] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState(''), [busy, setBusy] = useState(false), [result, setResult] = useState(null);
     const [catalogError, setCatalogError] = useState('');
     const [expanded, setExpanded] = useState(false);
+    const [pendingMode, setPendingMode] = useState(null);
     const [step, setStep] = useState('contact'), [contactBusy, setContactBusy] = useState(false), [contactError, setContactError] = useState('');
     const [contact, setContact] = useState({ name: '', phone_country: 'Qatar', phone: '', email: '' });
     const enquiryAttempt = useRef(null), contactPending = useRef(false), contactSession = useRef(0);
@@ -75,8 +77,16 @@ export default function LiveCalculator() {
     const lane = catalog.groups.filter(g => g.origin_id === s.origin_id && g.destination_id === s.destination_id && g.mode === s.mode && g.subtype === s.subtype);
     const groups = lane.filter(g => (s.subtype !== 'FCL' || (g.size === s.size && g.equipment === s.equipment)) && (s.mode !== 'TRUCK' || g.truck === s.truck));
     const group = groups.find(g => g.id === profile) || (groups.length === 1 ? groups[0] : null);
-    const mode = value => { const incompatible = [s.origin_id, s.destination_id].some(id => id && ls.find(l => l.id === id)?.kind !== value); if (incompatible && !window.confirm('This mode uses different locations. Clear the route and keep your cargo details?'))
-        return; reset(); setS(prev => ({ ...prev, mode: value, subtype: value === 'AIR' ? 'AIR' : value === 'TRUCK' ? 'LTL' : '', size: '', equipment: '', truck: '', quantity: 1, ...(incompatible ? { origin_id: '', destination_id: '' } : {}) })); };
+    const applyMode = (value, clearRoute = false) => {
+        reset();
+        setS(prev => ({ ...prev, mode: value, subtype: value === 'AIR' ? 'AIR' : value === 'TRUCK' ? 'LTL' : '', size: '', equipment: '', truck: '', quantity: 1, ...(clearRoute ? { origin_id: '', destination_id: '' } : {}) }));
+    };
+    const mode = value => {
+        if (value === s.mode) return;
+        const incompatible = [s.origin_id, s.destination_id].some(id => id && ls.find(l => l.id === id)?.kind !== value);
+        if (incompatible) setPendingMode(value);
+        else applyMode(value);
+    };
     const submit = async (e) => { e.preventDefault(); setError(''); if (!s.origin_id || !s.destination_id) {
         setError('Select both origin and destination from the suggestions.');
         return;
@@ -193,5 +203,6 @@ export default function LiveCalculator() {
         if (e.target !== e.currentTarget) return;
         const rect = e.currentTarget.getBoundingClientRect();
         if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) setExpanded(false);
-    }}>{step === 'contact' ? contactForm : calculator(true)}</dialog>, document.body)}</>;
+    }}>{step === 'contact' ? contactForm : calculator(true)}</dialog>, document.body)}
+    {pendingMode && <ModeChangeDialog mode={pendingMode} onCancel={() => setPendingMode(null)} onConfirm={() => { applyMode(pendingMode, true); setPendingMode(null); }}/>}</>;
 }
