@@ -2,19 +2,19 @@ import { serviceById, tradePages } from '../seo/commercial-pages.mjs';
 import './CommercialPage.css';
 import { NetworkContext } from '../components/GlobalNetwork';
 import { locationContacts, phoneHref } from '../seo/location-contacts.mjs';
+import { breadcrumbsFor } from '../seo/metadata.mjs';
 
 export default function CommercialPage({ page }) {
   const isRoute = page.group === 'trade-lanes';
   const isCountry = page.group === 'locations';
-  const contacts = isCountry ? (locationContacts[page.path.split('/')[2]] || []) : locationContacts.qatar;
-  const team = isCountry ? `team supporting ${page.label}` : 'Doha team';
+  const destination = isRoute ? page.path.split('/')[2].split('-to-')[1] : null;
+  const contacts = isCountry ? (locationContacts[page.path.split('/')[2]] || []) : (locationContacts[destination] || locationContacts.qatar);
+  const team = isCountry ? `team supporting ${page.label}` : destination === 'uae' ? 'Dubai team' : 'Doha team';
   return <article className="commercial-page">
     <header className="services-hero-section">
       <div className="container">
         <nav aria-label="Breadcrumb" className="commercial-breadcrumb"><ol>
-          <li><a href="/">Home</a></li>
-          <li><a href={isCountry ? '/locations/' : isRoute ? '/trade-lanes/' : '/services'}>{isCountry ? 'Global Network' : isRoute ? 'Trade Lanes' : 'Services'}</a></li>
-          <li aria-current="page">{page.label}</li>
+          {breadcrumbsFor(page.path).map((crumb, index, crumbs) => <li key={crumb.path} aria-current={index === crumbs.length - 1 ? 'page' : undefined}>{index === crumbs.length - 1 ? crumb.name : <a href={crumb.path}>{crumb.name}</a>}</li>)}
         </ol></nav>
         <span className="services-hero-tag font-gold">{isCountry ? `Global Network / ${page.label}` : isRoute ? 'International shipping' : 'Argus Shipping'}</span>
         <h1 className="services-hero-title">{page.h1}</h1>

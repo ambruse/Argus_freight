@@ -76,6 +76,9 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       router.replace("/login");
     } else {
       const currentUser = authStorage.getUser();
+      if (currentUser?.role === "rater" && !["/operator/live-rates", "/settings"].includes(pathname.replace(/\/+$/, ""))) {
+        router.replace("/operator/live-rates");
+      }
       if (currentUser?.role === "sales") {
         if (pathname.startsWith("/contacts")) {
           router.replace("/rfq/new");
@@ -92,7 +95,12 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   let otherItems: { href?: string; label: string; icon: any; onClick?: () => void }[] = [];
   const showOtherTab = user?.role === "operator" || user?.role === "admin" || user?.role === "sales";
 
-  if (user?.role === "customer") {
+  if (user?.role === "rater") {
+    roleItems = [
+      { href: "/operator/live-rates", label: "Freight Live Rates", icon: Calculator },
+      { href: "/settings", label: "Account", icon: Settings },
+    ];
+  } else if (user?.role === "customer") {
     roleItems = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/customer/rfq/new", label: "Request", icon: PlusCircle },
@@ -166,6 +174,10 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
     ...(showOtherTab ? [{ label: "Other", icon: MoreHorizontal, onClick: () => setIsOtherOpen(!isOtherOpen) }] : []),
     ...(!showOtherTab ? [{ label: "Logout", icon: LogOut, onClick: logout }] : [])
   ];
+
+  if (user?.role === "rater" && !["/operator/live-rates", "/settings"].includes(pathname.replace(/\/+$/, ""))) {
+    return null;
+  }
 
   return (
     <div className="flex h-[100dvh] max-w-full overflow-hidden" style={{ background: "var(--surface)" }}>

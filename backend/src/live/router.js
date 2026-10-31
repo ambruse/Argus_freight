@@ -60,7 +60,7 @@ function createRouter(pool, coreReady = Promise.resolve(), enquiryOptions = {}) 
     router.get('/quotes/:id', run(async (req, res) => res.json(await store.getQuote(req.params.id))));
     router.use((req, res, next) => { if (!/^Bearer \S+$/.test(req.headers.authorization || ''))
         return res.status(401).json({ message: 'Sign in to manage freight rates.' }); authenticateToken(req, res, next); });
-    router.use((req, res, next) => { pool.query('SELECT id,role,is_deleted,is_stalled FROM users WHERE id=?', [req.user.id]).then(([[u]]) => { if (!u || u.is_deleted || u.is_stalled || !['operator', 'admin'].includes(u.role))
+    router.use((req, res, next) => { pool.query('SELECT id,role,is_deleted,is_stalled FROM users WHERE id=?', [req.user.id]).then(([[u]]) => { if (!u || u.is_deleted || u.is_stalled || !['operator', 'admin', 'rater'].includes(u.role))
         return res.status(403).json({ message: 'Freight rate access is not permitted.' }); req.user = u; next(); }, next); });
     router.get('/rates', run(async (req, res) => res.json(await store.list(req.user, req.query))));
     const adminOnly = (req, res, next) => req.user.role === 'admin' ? next() : res.status(403).json({ message: 'Administrator access required.' });
@@ -76,8 +76,8 @@ function createRouter(pool, coreReady = Promise.resolve(), enquiryOptions = {}) 
     router.post('/rates/:id/action', run(async (req, res) => res.json(await store.action(req.user, req.params.id, req.body))));
     router.get('/rates/:id/history', run(async (req, res) => res.json(await store.history(req.user, req.params.id))));
     router.post('/preview', run(async (req, res) => res.json(await store.preview(req.body))));
-    router.post('/comparison', run(async (req, res) => { if (req.user.role !== 'admin')
-        return res.status(403).json({ message: 'Administrator access required.' }); res.json(await store.comparison(req.body)); }));
+    router.post('/comparison', run(async (req, res) => { if (!['admin', 'rater'].includes(req.user.role))
+        return res.status(403).json({ message: 'Administrator or Rater access required.' }); res.json(await store.comparison(req.body)); }));
     router.post('/road-locations', run(async (req, res) => res.status(201).json(await store.road(req.user, req.body))));
     router.use((err, req, res, next) => { if (res.headersSent)
         return next(err); if (!err.status)

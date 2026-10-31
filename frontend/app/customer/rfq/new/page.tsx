@@ -12,6 +12,8 @@ import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 import { MAJOR_PORTS, ALL_COUNTRIES } from "@/lib/ports";
+import { trackEvent } from "../../../../../shared/analytics.mjs";
+import { installAnalyticsConsent } from "../../../../../shared/analytics-consent.mjs";
 
 type DimItem = {
   length: string;
@@ -138,6 +140,9 @@ const formatDimensionAndWeight = (form: FormState) => {
 
 export default function CustomerNewRFQPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const quoteStartTracked = useRef(false);
+  useEffect(() => { installAnalyticsConsent(); }, []);
+  const analyticsContext = () => ({ form_type: 'customer-rfq', service: ({ Air: 'air-freight', Sea: 'sea-freight', Road: 'road-freight' } as Record<string, string>)[form.mode] });
   useEffect(() => {
     const quote = new URLSearchParams(window.location.search).get("live_quote") || sessionStorage.getItem("argus_live_enquiry");
     if (!quote || !/^[0-9a-f-]{36}$/.test(quote)) return;
@@ -331,8 +336,12 @@ export default function CustomerNewRFQPage() {
         weight: weightInKg
       };
 
+      trackEvent('quote_submit', analyticsContext());
       const genRes = await api.post("/rfq/customer-generate", payload);
       const ref_no = genRes.data.data.ref_no;
+      // A saved RFQ is a success; attachments/email have independent outcomes.
+      // Never pass ref_no, payload, files, customer identity or shipment details.
+      if (ref_no) trackEvent('quote_success', analyticsContext());
 
       // 2. Upload Files if selected
       if (files.length > 0) {
@@ -386,7 +395,7 @@ export default function CustomerNewRFQPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* ── Main Form Container ────────────────────────────── */}
-        <div className="glass rounded-2xl p-4 sm:p-6 shadow-card space-y-8 animate-fade-in" onKeyDown={handleKeyDown}>
+        <div className="glass rounded-2xl p-4 sm:p-6 shadow-card space-y-8 animate-fade-in" onKeyDown={handleKeyDown} onFocusCapture={() => { if (!quoteStartTracked.current) quoteStartTracked.current = trackEvent('quote_start', analyticsContext()); }}>
           
           {/* Section 1: Cargo & Shipping Details */}
           <div className="relative z-20">

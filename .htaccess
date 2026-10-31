@@ -1,6 +1,17 @@
 Options -Indexes
 RewriteEngine On
 
+# SEO response protection. Authentication remains the application's responsibility.
+# Query strings are not public landing pages; allow campaign-only attribution URLs.
+RewriteCond %{QUERY_STRING} !^$
+RewriteCond %{QUERY_STRING} !(^|&)(origin|destination|ref|reference|tracking|live_quote|search|q|page|filter)= [NC]
+RewriteCond %{QUERY_STRING} ^(?:(?:utm_[a-z_]+|gclid|dclid|fbclid|msclkid)=[^&]*&?)+$ [NC]
+RewriteRule ^ - [E=SEO_CAMPAIGN:1]
+RewriteCond %{QUERY_STRING} !^$
+RewriteCond %{ENV:SEO_CAMPAIGN} !=1
+RewriteRule ^ - [E=SEO_NOINDEX:1]
+RewriteRule ^(?:api|admin|operator|customer|customers|rfq|dashboard|confirmed|contacts|quotation|calling-agent|sales|settings|summary|calculator|login|register|reset-password|landing)(?:/|\.html$|$) - [E=SEO_NOINDEX:1,NC]
+
 # ── SEO 301 Redirects for Legacy URLs ───────────────────────
 RewriteRule ^services/(.+)-qatar/?$ /services/$1/ [R=301,L]
 RewriteRule ^shipping/(.+)-to-qatar/?$ /trade-lanes/$1-to-qatar/ [R=301,L]
@@ -22,6 +33,8 @@ RewriteRule ^ - [L]
 
 # ── Security headers ─────────────────────────────────────────
 <IfModule mod_headers.c>
+    Header always set X-Robots-Tag "noindex, nofollow" env=SEO_NOINDEX
+    Header always set X-Robots-Tag "noindex, nofollow" env=REDIRECT_SEO_NOINDEX
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set X-XSS-Protection "1; mode=block"

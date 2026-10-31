@@ -112,7 +112,7 @@ const login = async (req, res, next) => {
 
     // Ensure operator sandbox tables exist on login (for users registered before sandboxing, etc.)
     const cleanUsername = user.username.toLowerCase();
-    if (user.role !== 'admin' && cleanUsername !== 'admin') {
+    if (!['admin', 'rater'].includes(user.role) && cleanUsername !== 'admin') {
       const { ensureUserTables } = require('../config/dbHelper');
       await ensureUserTables(user);
 
@@ -319,7 +319,7 @@ const register = async (req, res, next) => {
     // 3. Create new user
     const salt = await bcrypt.genSalt(10);
     const newHash = await bcrypt.hash(newPassword, salt);
-    const validRoles = ['admin', 'sales', 'operator', 'calling_agent', 'customer'];
+    const validRoles = ['admin', 'sales', 'operator', 'calling_agent', 'customer', 'rater'];
     const newRole = validRoles.includes(role) ? role : 'operator';
 
     let finalCustomerId = null;
@@ -358,7 +358,7 @@ const register = async (req, res, next) => {
     // 4. Create and seed user-specific tables
     const newUser = insertRes.rows[0];
     const cleanUsername = newUsername.toLowerCase();
-    if (cleanUsername !== 'admin') {
+    if (newRole !== 'rater' && cleanUsername !== 'admin') {
       const { ensureUserTables } = require('../config/dbHelper');
       await ensureUserTables(newUser);
 
@@ -512,8 +512,8 @@ const updateAdminUserEmail = async (req, res, next) => {
     }
     const targetUser = userCheck.rows[0];
 
-    if (targetUser.role === 'customer' || targetUser.role === 'sales') {
-      return res.status(400).json({ success: false, message: 'User SMTP credentials are not needed for Customer and Sales roles.' });
+    if (['customer', 'sales', 'rater'].includes(targetUser.role)) {
+      return res.status(400).json({ success: false, message: 'User SMTP credentials are not needed for Customer, Sales and Rater roles.' });
     }
 
     if (action === 'remove') {

@@ -77,7 +77,7 @@ function createStore(pool) {
         (lane ? ' AND r.origin_id=? AND r.destination_id=? AND r.mode=?' : ''),
         [e.today(), e.today(), ...(lane ? [lane.origin_id,lane.destination_id,lane.mode] : [])]);
     function authorize(r, user, e) { if (!r)
-        e.fail('Rate not found.', 404); if (user.role !== 'admin' && Number(r.operator_id) !== Number(user.id))
+        e.fail('Rate not found.', 404); if (!['admin', 'rater'].includes(user.role) && Number(r.operator_id) !== Number(user.id))
         e.fail('You cannot access another operator’s rate.', 403); }
     return { ready, transaction,
         async limit(key, max = 60) { await ready(); const bucket = hash(`${key}|${Math.floor(Date.now() / 60000)}`); await pool.query('DELETE FROM live_request_limits WHERE expires_at<UTC_TIMESTAMP()'); await pool.query('INSERT INTO live_request_limits VALUES (?,1,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 2 MINUTE)) ON DUPLICATE KEY UPDATE hits=hits+1', [bucket]); const [[r]] = await pool.query('SELECT hits FROM live_request_limits WHERE bucket=?', [bucket]); if (r.hits > max)
@@ -87,7 +87,7 @@ function createStore(pool) {
             groups.set(group(c, e), { id: group(c, e), origin_id: c.origin_id, destination_id: c.destination_id, mode: c.mode, subtype: c.subtype, size: c.size, equipment: c.equipment, truck: c.truck, service: c.service, inclusions: c.inclusions, exclusions: c.exclusions });
         } const ls = await locations(db); return { groups: [...groups.values()], locations: ls.filter(l => rs.some(r => r.origin_id === l.id || r.destination_id === l.id)) }; }); },
         async options() { await ready(); return { locations: await locations(pool), countries: catalog.countries }; },
-        async list(user, query) { return transaction(async (db, e) => { const page = Math.max(1, Math.min(100000, Math.floor(Number(query.page)) || 1)); const args = [], where = []; if (user.role !== 'admin') {
+        async list(user, query) { return transaction(async (db, e) => { const page = Math.max(1, Math.min(100000, Math.floor(Number(query.page)) || 1)); const args = [], where = []; if (!['admin', 'rater'].includes(user.role)) {
             where.push('r.operator_id=?');
             args.push(user.id);
         } if (query.status) {
@@ -136,8 +136,8 @@ function createStore(pool) {
                 const transitions = { submit: ['draft', 'rejected'], approve: ['pending'], reject: ['pending'], inactive: ['approved', 'pending', 'draft', 'rejected'], archive: ['draft', 'pending', 'approved', 'inactive', 'expired', 'rejected'] };
                 if (!transitions[body.action]?.includes(r.status))
                     e.fail('This action is not available for the current status.', 409);
-                if (['approve', 'reject'].includes(body.action) && user.role !== 'admin')
-                    e.fail('Administrator approval is required.', 403);
+                if (['approve', 'reject'].includes(body.action) && !['admin', 'rater'].includes(user.role))
+                    e.fail('Administrator or Rater approval is required.', 403);
                 if (['approve', 'submit'].includes(body.action) && r.config.valid_until < e.today())
                     e.fail('Extend the validity before submitting or approving.');
                 const status = { submit: 'pending', approve: 'approved', reject: 'rejected', inactive: 'inactive', archive: 'archived' }[body.action];

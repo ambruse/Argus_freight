@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { metadata, schemaFor } from '../src/seo/metadata.mjs';
 import { SITE } from '../src/seo/commercial-pages.mjs';
+import { canonicalUrl } from '../src/seo/urls.mjs';
+import { pageRegistry, locales, alternatesFor, validateInternational } from '../src/seo/international.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'dist');
@@ -11,14 +13,19 @@ const template = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
 const escape = value => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const vite = await createServer({ root, server: { middlewareMode: true, watch: null }, appType: 'custom' });
 try {
+  const errors = validateInternational();
+  if (errors.length) throw new Error(errors.join('\n'));
   const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
   for (const [route, page] of Object.entries(metadata)) {
-    let html = template.replace(/<title>.*?<\/title>/s, `<title>${escape(page.title)}</title>`);
+    const locale = locales[pageRegistry[route].locale];
+    let html = template.replace(/<title>.*?<\/title>/s, `<title>${escape(page.title)}</title>`)
+      .replace(/<html\s+lang="[^"]*"/, `<html lang="${locale.language}" dir="${locale.dir}"`);
     for (const [key, value] of Object.entries({ description: page.description, 'og:title': page.title, 'og:description': page.description, 'og:url': SITE + route, 'twitter:title': page.title, 'twitter:description': page.description, 'twitter:url': SITE + route })) {
       const pattern = new RegExp(`(<meta\\s+(?:name|property)="${key}"\\s+content=")[^"]*(")`);
       html = html.replace(pattern, (_, before, after) => before + escape(value) + after);
     }
-    html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${SITE}${route}$2`)
+    html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${canonicalUrl(route)}$2`)
+      .replace('</head>', `${alternatesFor(route).map(a => `<link rel="alternate" hreflang="${a.locale}" href="${escape(a.url)}" />`).join('\n')}</head>`)
       .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')
       .replace('</head>', `<script type="application/ld+json">${JSON.stringify(schemaFor(route)).replace(/</g, '\\u003c')}</script></head>`)
       .replace('<body>', '<body class="light-theme">')

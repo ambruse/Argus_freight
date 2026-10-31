@@ -71,9 +71,9 @@ export default function About({ onNavigate }) {
             <p style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2.5rem' }}>
               Chairman, Argus Shipping
             </p>
-            <button className="cta-button" onClick={() => onNavigate('/chairman-message')}>
+            <a className="cta-button" href="/chairman-message" onClick={(event) => { if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigate('/chairman-message'); } }}>
               Read Full Message
-            </button>
+            </a>
           </div>
         </div>
       </section>

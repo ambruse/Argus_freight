@@ -1,6 +1,7 @@
 "use client";
 
 import styles from "./WhatsAppFloatingButton.module.css";
+import { usePathname } from "next/navigation";
 
 const WHATSAPP_NUMBERS = [
   "97455792233",
@@ -9,6 +10,10 @@ const WHATSAPP_NUMBERS = [
 ] as const;
 
 export default function WhatsAppFloatingButton() {
+  const pathname = usePathname();
+  // Keep the freight editor and its mobile account navigation unobstructed.
+  if (pathname.startsWith("/operator/live-rates")) return null;
+
   const handleClick = () => {
     const selectedNumber =
       WHATSAPP_NUMBERS[Math.floor(Math.random() * WHATSAPP_NUMBERS.length)];

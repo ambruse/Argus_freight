@@ -103,7 +103,7 @@ export const servicePages = [
 const lane = (slug, label, h1, keyword, intro, sections, keywords, evidence) => ({
   path: `/trade-lanes/${slug}/`, group: 'trade-lanes', label, h1, keyword, intro, sections,
   title: `${h1} | Argus Shipping`, description: `${intro.split('. ')[0]}. Discuss collection, freight and delivery with Argus Shipping.`,
-  keywords: keywords.split('; '), related: ['uae', 'bahrain'].includes(slug) ? ['road-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'] : ['air-freight', 'sea-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'], evidence, priority: 'P2',
+  keywords: keywords.split('; '), related: ['uae-to-qatar', 'bahrain-to-qatar'].includes(slug) ? ['road-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'] : ['air-freight', 'sea-freight', 'door-to-door-cargo', 'customs-clearance', 'warehousing'], evidence, priority: 'P2',
 });
 export const tradePages = [
   lane('china-to-qatar', 'China to Qatar', 'Shipping from China to Qatar', 'shipping from China to Qatar',
@@ -242,7 +242,9 @@ export const industryPages = [
       s('Oversized and heavy-lift handling', 'Industrial projects often involve components too large for standard containers. We charter breakbulk vessels and coordinate specialized road transport for colossal cargo.'),
       s('End-to-end project management', 'Our project team serves as a single point of contact, orchestrating multiple suppliers, carriers, and customs authorities to execute massive industrial movements flawlessly.')
     ], 'industrial logistics; project logistics; plant relocation transport; manufacturing supply chain; heavy lift engineering')
-, 
+];
+
+tradePages.push(
   lane('china-to-uae', 'China to UAE', 'Shipping from China to UAE', 'shipping from China to UAE',
     'Argus Shipping coordinates China-to-UAE freight through its Guangzhou, Yiwu, and Dubai network. Businesses sourcing from multiple Chinese suppliers can discuss collection, consolidation, and delivery directly to the UAE.', [
       s('Guangzhou and Yiwu supplier coordination', 'We manage direct cargo collection from suppliers across China. Our hubs in Guangzhou and Yiwu provide the perfect consolidation points before dispatch to Jebel Ali Port or Dubai International Airport.'),
@@ -251,7 +253,7 @@ export const industryPages = [
       s('UAE customs clearance and delivery', 'We handle the export documentation in China and the import customs clearance in the UAE. Request a door-to-door quotation to cover origin collection, freight, and final delivery to any emirate.')
     ], 'China to UAE shipping; freight from China to UAE; China to UAE freight; China to Dubai cargo; sea freight China to UAE; air freight China to Dubai; Guangzhou to Dubai cargo', 'App.jsx: Guangzhou and Dubai addresses'),
 
-];
+);
 
 const resource = (slug, label, h1, keyword, intro, sections, keywords) => ({
   path: `/resources/${slug}/`, group: 'resources', label, h1, keyword, intro, sections,

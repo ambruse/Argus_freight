@@ -54,7 +54,7 @@ export default function RegisterPage() {
   };
 
   useEffect(() => {
-    if (authStorage.isAuthenticated()) router.replace("/dashboard");
+    if (authStorage.isAuthenticated()) router.replace(authStorage.getUser()?.role === "rater" ? "/operator/live-rates" : "/dashboard");
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("role") === "customer") {
@@ -173,6 +173,7 @@ export default function RegisterPage() {
                 disabled={isRoleLocked}
               >
                 <option value="operator">Operator</option>
+                <option value="rater">Rater</option>
                 <option value="calling_agent">Calling Agent</option>
                 <option value="admin">Admin</option>
                 <option value="sales">Sales</option>

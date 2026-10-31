@@ -1,0 +1,43 @@
+{
+  "capturedAt": "2026-10-31T13:56:44.688Z",
+  "missingGroupParents": [
+    {
+      "path": "/industries/",
+      "status": 404,
+      "location": null
+    },
+    {
+      "path": "/resources/",
+      "status": 404,
+      "location": null
+    },
+    {
+      "path": "/case-studies/",
+      "status": 404,
+      "location": null
+    },
+    {
+      "path": "/insights/",
+      "status": 404,
+      "location": null
+    }
+  ],
+  "pageSpeedAttempts": [
+    {
+      "strategy": "mobile",
+      "status": 429,
+      "result": "Quota exceeded; no field or lab data returned"
+    },
+    {
+      "strategy": "desktop",
+      "status": 429,
+      "result": "Quota exceeded; no field or lab data returned"
+    }
+  ],
+  "image": {
+    "originalBytes": 95759,
+    "losslessWebpBytes": 47112,
+    "decodedPixelsIdentical": true,
+    "backgroundFramesBytes": 7808783
+  }
+}

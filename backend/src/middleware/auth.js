@@ -22,6 +22,20 @@ const authenticateToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // { id, username, role, iat, exp }
+    // Raters manage tariffs only, plus their own account/password. Enforce this
+    // centrally so direct API calls cannot bypass the restricted navigation.
+    if (decoded.role === 'rater') {
+      const route = `${req.baseUrl}${req.path}`.replace(/\/+$/, '').toLowerCase();
+      const accountRoutes = {
+        '/api/auth/me': ['GET'],
+        '/api/auth/profile': ['GET', 'POST'],
+        '/api/auth/verify-password': ['POST'],
+        '/api/auth/change-password': ['POST'],
+      };
+      if (!route.startsWith('/api/live-pricing/') && !accountRoutes[route]?.includes(req.method)) {
+        return res.status(403).json({ success: false, message: 'Rater access is limited to live freight rates and your own account.' });
+      }
+    }
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {

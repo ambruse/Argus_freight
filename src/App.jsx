@@ -15,6 +15,9 @@ import CommercialPage, { ShippingRoutes } from './pages/CommercialPage';
 import WhatsAppFloatingButton from './components/WhatsAppFloatingButton';
 import { byPath, normalizePath } from './seo/commercial-pages.mjs';
 import { metadata as seoMetadata, schemaFor } from './seo/metadata.mjs';
+import { canonicalUrl } from './seo/urls.mjs';
+import { alternatesFor, pageRegistry, locales } from './seo/international.mjs';
+import { trackEvent, rememberLanding, locationPageView, observePublicClicks } from '../shared/analytics.mjs';
 import { Mail, Phone, MapPin } from 'lucide-react';
 
 export default function App({ initialPath }) {
@@ -24,6 +27,14 @@ export default function App({ initialPath }) {
     return requestedPath !== '/login' ? requestedPath : '/';
   });
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
+  useEffect(() => {
+    document.addEventListener('click', observePublicClicks);
+    return () => document.removeEventListener('click', observePublicClicks);
+  }, []);
+  useEffect(() => {
+    rememberLanding();
+    locationPageView();
+  }, [currentPath]);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
     // Light is the public site's default; retain an explicit visitor preference.
@@ -85,7 +96,16 @@ export default function App({ initialPath }) {
     if (currentPath === '/services' && window.location.pathname === '/services.html') {
       window.history.replaceState({}, '', '/services');
     }
-    const canonicalUrl = `https://www.argusshipping.co${metadataPath === '/' ? '/' : metadataPath}`;
+    const canonical = canonicalUrl(metadataPath);
+    const locale = locales[pageRegistry[metadataPath].locale];
+    document.documentElement.lang = locale.language;
+    document.documentElement.dir = locale.dir;
+    document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach(tag => tag.remove());
+    for (const alternate of alternatesFor(metadataPath)) {
+      const tag = document.createElement('link');
+      tag.rel = 'alternate'; tag.hreflang = alternate.locale; tag.href = alternate.url;
+      document.head.appendChild(tag);
+    }
     document.title = title;
 
     const setMeta = (selector, attribute, value) => {
@@ -111,11 +131,11 @@ export default function App({ initialPath }) {
     setMeta('meta[name="description"]', 'content', description);
     setMeta('meta[property="og:title"]', 'content', title);
     setMeta('meta[property="og:description"]', 'content', description);
-    setMeta('meta[property="og:url"]', 'content', canonicalUrl);
+    setMeta('meta[property="og:url"]', 'content', canonical);
     setMeta('meta[name="twitter:title"]', 'content', title);
     setMeta('meta[name="twitter:description"]', 'content', description);
-    setMeta('meta[name="twitter:url"]', 'content', canonicalUrl);
-    setCanonical(canonicalUrl);
+    setMeta('meta[name="twitter:url"]', 'content', canonical);
+    setCanonical(canonical);
     document.head.querySelectorAll('script[type="application/ld+json"]').forEach(tag => tag.remove());
     const structuredData = document.createElement('script');
     structuredData.type = 'application/ld+json';
@@ -146,6 +166,7 @@ export default function App({ initialPath }) {
   };
 
   const handleOpenQuote = () => {
+    trackEvent('quote_start');
     const token = typeof window !== 'undefined' ? localStorage.getItem("freight_token") : null;
     if (token) {
       window.location.href = '/customer/rfq/new';
@@ -204,6 +225,7 @@ export default function App({ initialPath }) {
         setIsDarkMode={setIsDarkMode}
       />
       <GlobalNetworkMenu currentPath={currentPath} />
+      {alternatesFor(currentPath).length > 0 && <nav aria-label="Page language">{alternatesFor(currentPath).filter(a => a.locale !== 'x-default').map(a => <a key={a.locale} href={a.path} hrefLang={a.locale} lang={a.locale} aria-current={a.path === currentPath ? 'page' : undefined}>{a.label}</a>)}</nav>}
 
       {/* Main Page Area */}
       <main>

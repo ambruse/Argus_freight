@@ -1,0 +1,5046 @@
+{
+  "capturedAt": "2026-10-31T13:34:31.910Z",
+  "scope": "Public source HTML and HTTP; no authenticated data or field metrics",
+  "pages": [
+    {
+      "url": "http://argusshipping.co/",
+      "finalUrl": "https://www.argusshipping.co/",
+      "hops": [
+        {
+          "url": "http://argusshipping.co/",
+          "status": 301,
+          "location": "https://www.argusshipping.co/",
+          "robots": null
+        },
+        {
+          "url": "https://www.argusshipping.co/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight Forwarding &amp; Logistics | Argus Shipping",
+      "description": "Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.",
+      "canonical": "https://www.argusshipping.co/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight Forwarding &amp; Logistics"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/dangerous-goods/",
+        "/trade-lanes/china-to-qatar/",
+        "/trade-lanes/india-to-qatar/",
+        "/trade-lanes/uae-to-qatar/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "ARGUS SHIPPING",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/globe.png",
+          "alt": "Integrated Global Network",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 55292
+    },
+    {
+      "url": "http://www.argusshipping.co/",
+      "finalUrl": "https://www.argusshipping.co/",
+      "hops": [
+        {
+          "url": "http://www.argusshipping.co/",
+          "status": 301,
+          "location": "https://www.argusshipping.co/",
+          "robots": null
+        },
+        {
+          "url": "https://www.argusshipping.co/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight Forwarding &amp; Logistics | Argus Shipping",
+      "description": "Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.",
+      "canonical": "https://www.argusshipping.co/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight Forwarding &amp; Logistics"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/dangerous-goods/",
+        "/trade-lanes/china-to-qatar/",
+        "/trade-lanes/india-to-qatar/",
+        "/trade-lanes/uae-to-qatar/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "ARGUS SHIPPING",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/globe.png",
+          "alt": "Integrated Global Network",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 55292
+    },
+    {
+      "url": "https://argusshipping.co/",
+      "finalUrl": "https://www.argusshipping.co/",
+      "hops": [
+        {
+          "url": "https://argusshipping.co/",
+          "status": 301,
+          "location": "https://www.argusshipping.co/",
+          "robots": null
+        },
+        {
+          "url": "https://www.argusshipping.co/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight Forwarding &amp; Logistics | Argus Shipping",
+      "description": "Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.",
+      "canonical": "https://www.argusshipping.co/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight Forwarding &amp; Logistics"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/dangerous-goods/",
+        "/trade-lanes/china-to-qatar/",
+        "/trade-lanes/india-to-qatar/",
+        "/trade-lanes/uae-to-qatar/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "ARGUS SHIPPING",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/globe.png",
+          "alt": "Integrated Global Network",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 55292
+    },
+    {
+      "url": "https://www.argusshipping.co/",
+      "finalUrl": "https://www.argusshipping.co/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight Forwarding &amp; Logistics | Argus Shipping",
+      "description": "Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.",
+      "canonical": "https://www.argusshipping.co/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight Forwarding &amp; Logistics"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/dangerous-goods/",
+        "/trade-lanes/china-to-qatar/",
+        "/trade-lanes/india-to-qatar/",
+        "/trade-lanes/uae-to-qatar/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "ARGUS SHIPPING",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/globe.png",
+          "alt": "Integrated Global Network",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 55292
+    },
+    {
+      "url": "https://www.argusshipping.co/?origin=seo-test&destination=seo-test",
+      "finalUrl": "https://www.argusshipping.co/?origin=seo-test&destination=seo-test",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/?origin=seo-test&destination=seo-test",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight Forwarding &amp; Logistics | Argus Shipping",
+      "description": "Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.",
+      "canonical": "https://www.argusshipping.co/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight Forwarding &amp; Logistics"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/dangerous-goods/",
+        "/trade-lanes/china-to-qatar/",
+        "/trade-lanes/india-to-qatar/",
+        "/trade-lanes/uae-to-qatar/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "ARGUS SHIPPING",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/globe.png",
+          "alt": "Integrated Global Network",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 55292
+    },
+    {
+      "url": "https://www.argusshipping.co/about",
+      "finalUrl": "https://www.argusshipping.co/about",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/about",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "About Argus Shipping | International Logistics Expertise",
+      "description": "Learn about Argus Shipping, its international logistics network, experience and freight forwarding services for businesses.",
+      "canonical": "https://www.argusshipping.co/about",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "About Argus Shipping"
+      ],
+      "h2Count": 2,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 34244
+    },
+    {
+      "url": "https://www.argusshipping.co/case-studies/fmcg-distribution-india/",
+      "finalUrl": "https://www.argusshipping.co/case-studies/fmcg-distribution-india/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/case-studies/fmcg-distribution-india/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "FMCG Consolidation and 3PL Distribution in India | Argus Shipping Case Studies",
+      "description": "Argus Shipping streamlined the supply chain for a major retail brand, transitioning them from fragmented imports to a centralized consolidation and 3PL distribution model in India..",
+      "canonical": "https://www.argusshipping.co/case-studies/fmcg-distribution-india/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "FMCG Consolidation and 3PL Distribution in India"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32947
+    },
+    {
+      "url": "https://www.argusshipping.co/case-studies/heavy-lift-qatar/",
+      "finalUrl": "https://www.argusshipping.co/case-studies/heavy-lift-qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/case-studies/heavy-lift-qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Oversized Machinery Transport from China to Qatar | Argus Shipping Case Studies",
+      "description": "Argus Shipping successfully coordinated the end-to-end transport of out-of-gauge construction machinery from Guangzhou, China, to a major infrastructure site in Doha, Qatar..",
+      "canonical": "https://www.argusshipping.co/case-studies/heavy-lift-qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Oversized Machinery Transport from China to Qatar"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32889
+    },
+    {
+      "url": "https://www.argusshipping.co/case-studies/pharma-cold-chain-uae/",
+      "finalUrl": "https://www.argusshipping.co/case-studies/pharma-cold-chain-uae/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/case-studies/pharma-cold-chain-uae/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Temperature-Controlled Pharma Delivery to Dubai | Argus Shipping Case Studies",
+      "description": "Argus Shipping executed a time-critical, temperature-controlled air freight movement of sensitive pharmaceuticals from Europe to Dubai, UAE..",
+      "canonical": "https://www.argusshipping.co/case-studies/pharma-cold-chain-uae/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Temperature-Controlled Pharma Delivery to Dubai"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/warehousing/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32695
+    },
+    {
+      "url": "https://www.argusshipping.co/chairman-message",
+      "finalUrl": "https://www.argusshipping.co/chairman-message",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/chairman-message",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Chairman’s Message | Argus Shipping",
+      "description": "Read the chairman’s perspective on Argus Shipping, its freight forwarding operations and service to clients.",
+      "canonical": "https://www.argusshipping.co/chairman-message",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Chairman&#x27;s Message"
+      ],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 30757
+    },
+    {
+      "url": "https://www.argusshipping.co/contact",
+      "finalUrl": "https://www.argusshipping.co/contact",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/contact",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Contact Argus Shipping | International Freight Quotes",
+      "description": "Contact Argus Shipping about air freight, sea freight, road transport, warehousing or a tailored international cargo quote.",
+      "canonical": "https://www.argusshipping.co/contact",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Contact Us"
+      ],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 33347
+    },
+    {
+      "url": "https://www.argusshipping.co/industries/automotive-logistics/",
+      "finalUrl": "https://www.argusshipping.co/industries/automotive-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/industries/automotive-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Automotive Logistics Solutions | Argus Shipping",
+      "description": "Argus Shipping coordinates supply chains for the automotive industry. Discuss your industry-specific supply chain with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/industries/automotive-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Automotive Logistics Solutions"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 32425
+    },
+    {
+      "url": "https://www.argusshipping.co/industries/construction-logistics/",
+      "finalUrl": "https://www.argusshipping.co/industries/construction-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/industries/construction-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Construction Logistics Solutions | Argus Shipping",
+      "description": "Argus Shipping provides specialized logistics for the construction and infrastructure sector. Discuss your industry-specific supply chain with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/industries/construction-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Construction Logistics Solutions"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 32680
+    },
+    {
+      "url": "https://www.argusshipping.co/industries/healthcare-logistics/",
+      "finalUrl": "https://www.argusshipping.co/industries/healthcare-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/industries/healthcare-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Healthcare &amp; Medical Logistics Solutions | Argus Shipping",
+      "description": "Argus Shipping handles temperature-controlled and time-sensitive logistics for the healthcare and pharmaceutical sectors, ensuring absolute product integrity.. Discuss your industry-specific supply chain with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/industries/healthcare-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Healthcare &amp; Medical Logistics Solutions"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 32923
+    },
+    {
+      "url": "https://www.argusshipping.co/industries/industrial-logistics/",
+      "finalUrl": "https://www.argusshipping.co/industries/industrial-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/industries/industrial-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Industrial &amp; Project Logistics Solutions | Argus Shipping",
+      "description": "Argus Shipping designs bespoke logistics for industrial manufacturing and complex engineering projects, managing oversized cargo and massive supply networks.. Discuss your industry-specific supply chain with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/industries/industrial-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Industrial &amp; Project Logistics Solutions"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 32917
+    },
+    {
+      "url": "https://www.argusshipping.co/industries/oil-gas-logistics/",
+      "finalUrl": "https://www.argusshipping.co/industries/oil-gas-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/industries/oil-gas-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Oil &amp; Gas Logistics Solutions | Argus Shipping",
+      "description": "Argus Shipping delivers mission-critical logistics for the energy sector. Discuss your industry-specific supply chain with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/industries/oil-gas-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Oil &amp; Gas Logistics Solutions"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 32486
+    },
+    {
+      "url": "https://www.argusshipping.co/industries/retail-logistics/",
+      "finalUrl": "https://www.argusshipping.co/industries/retail-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/industries/retail-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Retail &amp; Distribution Logistics Solutions | Argus Shipping",
+      "description": "Argus Shipping optimizes supply chains for the retail and FMCG sectors. Discuss your industry-specific supply chain with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/industries/retail-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Retail &amp; Distribution Logistics Solutions"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/project-cargo/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 32537
+    },
+    {
+      "url": "https://www.argusshipping.co/insights/gcc-freight-report/",
+      "finalUrl": "https://www.argusshipping.co/insights/gcc-freight-report/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/insights/gcc-freight-report/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "State of GCC Logistics &amp; Freight Report | Argus Shipping Insights",
+      "description": "Argus Shipping’s annual original research report on the state of cross-border logistics, supply chain resilience, and freight forwarder performance across the GCC..",
+      "canonical": "https://www.argusshipping.co/insights/gcc-freight-report/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "State of GCC Logistics &amp; Freight Report"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32744
+    },
+    {
+      "url": "https://www.argusshipping.co/locations",
+      "finalUrl": "https://www.argusshipping.co/locations/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations",
+          "status": 301,
+          "location": "/locations/",
+          "robots": null
+        },
+        {
+          "url": "https://www.argusshipping.co/locations/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Our Global Logistics Network | Argus Shipping",
+      "description": "Explore Argus Shipping’s network in Qatar, UAE, China, India, Turkey and Bahrain. Find market contacts, freight services and connected trade lanes.",
+      "canonical": "https://www.argusshipping.co/locations/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Our Global Logistics Network"
+      ],
+      "h2Count": 2,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "bytes": 31150
+    },
+    {
+      "url": "https://www.argusshipping.co/locations/",
+      "finalUrl": "https://www.argusshipping.co/locations/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Our Global Logistics Network | Argus Shipping",
+      "description": "Explore Argus Shipping’s network in Qatar, UAE, China, India, Turkey and Bahrain. Find market contacts, freight services and connected trade lanes.",
+      "canonical": "https://www.argusshipping.co/locations/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Our Global Logistics Network"
+      ],
+      "h2Count": 2,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "bytes": 31150
+    },
+    {
+      "url": "https://www.argusshipping.co/locations/bahrain/",
+      "finalUrl": "https://www.argusshipping.co/locations/bahrain/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations/bahrain/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Forwarding &amp; Logistics Services in Bahrain | Argus Shipping",
+      "description": "Argus Shipping offers reliable freight forwarding and logistics services in Bahrain. Contact the Argus Shipping team in Bahrain for tailored logistics support.",
+      "canonical": "https://www.argusshipping.co/locations/bahrain/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Forwarding &amp; Logistics Services in Bahrain"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/warehousing/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "LocalBusiness"
+      ],
+      "schemaErrors": [],
+      "bytes": 33697
+    },
+    {
+      "url": "https://www.argusshipping.co/locations/china/",
+      "finalUrl": "https://www.argusshipping.co/locations/china/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations/china/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Forwarding &amp; Logistics Services in China | Argus Shipping",
+      "description": "Argus Shipping provides specialized freight forwarding and logistics services in China. Contact the Argus Shipping team in China for tailored logistics support.",
+      "canonical": "https://www.argusshipping.co/locations/china/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Forwarding &amp; Logistics Services in China"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/china-to-uae/",
+        "/trade-lanes/china-to-qatar/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/warehousing/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "LocalBusiness"
+      ],
+      "schemaErrors": [],
+      "bytes": 33978
+    },
+    {
+      "url": "https://www.argusshipping.co/locations/india/",
+      "finalUrl": "https://www.argusshipping.co/locations/india/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations/india/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Forwarding &amp; Logistics Services in India | Argus Shipping",
+      "description": "Argus Shipping offers dedicated freight forwarding and logistics services in India. Contact the Argus Shipping team in India for tailored logistics support.",
+      "canonical": "https://www.argusshipping.co/locations/india/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Forwarding &amp; Logistics Services in India"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/india-to-qatar/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/warehousing/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "LocalBusiness"
+      ],
+      "schemaErrors": [],
+      "bytes": 33863
+    },
+    {
+      "url": "https://www.argusshipping.co/locations/qatar/",
+      "finalUrl": "https://www.argusshipping.co/locations/qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations/qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Forwarding &amp; Logistics Company in Qatar | Argus Shipping",
+      "description": "Argus Shipping is a leading freight forwarding and logistics company in Qatar. Contact the Argus Shipping team in Qatar for tailored logistics support.",
+      "canonical": "https://www.argusshipping.co/locations/qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Forwarding &amp; Logistics Company in Qatar"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/china-to-qatar/",
+        "/trade-lanes/india-to-qatar/",
+        "/trade-lanes/uae-to-qatar/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/warehousing/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "LocalBusiness"
+      ],
+      "schemaErrors": [],
+      "bytes": 34324
+    },
+    {
+      "url": "https://www.argusshipping.co/locations/turkey/",
+      "finalUrl": "https://www.argusshipping.co/locations/turkey/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations/turkey/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Forwarding &amp; Logistics Services in Turkey | Argus Shipping",
+      "description": "Argus Shipping coordinates freight forwarding and logistics services in Turkey. Contact the Argus Shipping team in Turkey for tailored logistics support.",
+      "canonical": "https://www.argusshipping.co/locations/turkey/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Forwarding &amp; Logistics Services in Turkey"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/warehousing/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "LocalBusiness"
+      ],
+      "schemaErrors": [],
+      "bytes": 33572
+    },
+    {
+      "url": "https://www.argusshipping.co/locations/uae/",
+      "finalUrl": "https://www.argusshipping.co/locations/uae/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/locations/uae/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Forwarding &amp; Logistics Services in the UAE | Argus Shipping",
+      "description": "Argus Shipping provides comprehensive freight forwarding and logistics services in the UAE. Contact the Argus Shipping team in UAE for tailored logistics support.",
+      "canonical": "https://www.argusshipping.co/locations/uae/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Forwarding &amp; Logistics Services in the UAE"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/china-to-uae/",
+        "/trade-lanes/uae-to-qatar/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/warehousing/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "LocalBusiness"
+      ],
+      "schemaErrors": [],
+      "bytes": 33929
+    },
+    {
+      "url": "https://www.argusshipping.co/login",
+      "finalUrl": "https://www.argusshipping.co/login",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/login",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "ARGUS — Cargo &amp; RFQ Management",
+      "description": "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
+      "canonical": null,
+      "robots": "noindex, nofollow",
+      "lang": "en",
+      "h1": [
+        "Sign in"
+      ],
+      "h2Count": 1,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/register"
+      ],
+      "images": [
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "ARGUS Shipping",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [],
+      "schemaErrors": [],
+      "bytes": 30766
+    },
+    {
+      "url": "https://www.argusshipping.co/operator/live-rates",
+      "finalUrl": "https://www.argusshipping.co/operator/live-rates",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/operator/live-rates",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Live Rates | Argus Shipping",
+      "description": "Enterprise-grade freight and RFQ management system for shipping operations. Track shipments, manage quotes, and handle cargo documentation.",
+      "canonical": null,
+      "robots": "noindex, nofollow",
+      "lang": "en",
+      "h1": [
+        "Freight Live Rates"
+      ],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/dashboard",
+        "/operator/live-rates",
+        "/rfq/new",
+        "/rfq",
+        "/operator/approvals",
+        "/confirmed",
+        "/quotation",
+        "/summary",
+        "/contacts",
+        "/customers",
+        "/calculator",
+        "/customer/rfq/new",
+        "/customer/rfq",
+        "/calling-agent/new",
+        "/calling-agent/enquiries",
+        "/admin/call-enquiries",
+        "/admin/quotations",
+        "/admin/register",
+        "/sales/call-enquiries",
+        "/settings"
+      ],
+      "images": [
+        {
+          "src": "/logo.png",
+          "alt": "ARGUS Shipping",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [],
+      "schemaErrors": [],
+      "bytes": 34328
+    },
+    {
+      "url": "https://www.argusshipping.co/resources/cbm-calculator/",
+      "finalUrl": "https://www.argusshipping.co/resources/cbm-calculator/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/resources/cbm-calculator/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "CBM Calculator &amp; Freight Volume Tool | Argus Shipping",
+      "description": "Calculate your cargo volume in Cubic Meters (CBM) for ocean and air freight shipments. Access logistics tools and guides from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/resources/cbm-calculator/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "CBM Calculator &amp; Freight Volume Tool"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32741
+    },
+    {
+      "url": "https://www.argusshipping.co/resources/chargeable-weight-calculator/",
+      "finalUrl": "https://www.argusshipping.co/resources/chargeable-weight-calculator/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/resources/chargeable-weight-calculator/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Chargeable Weight Calculator Guide | Argus Shipping",
+      "description": "Understand how airlines and shipping lines determine the chargeable weight of your cargo. Access logistics tools and guides from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/resources/chargeable-weight-calculator/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Chargeable Weight Calculator Guide"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32869
+    },
+    {
+      "url": "https://www.argusshipping.co/resources/container-size-guide/",
+      "finalUrl": "https://www.argusshipping.co/resources/container-size-guide/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/resources/container-size-guide/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Shipping Container Dimensions &amp; Size Guide | Argus Shipping",
+      "description": "Choose the right equipment for your ocean freight with our comprehensive shipping container size guide. Access logistics tools and guides from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/resources/container-size-guide/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Shipping Container Dimensions &amp; Size Guide"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32843
+    },
+    {
+      "url": "https://www.argusshipping.co/resources/incoterms-guide/",
+      "finalUrl": "https://www.argusshipping.co/resources/incoterms-guide/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/resources/incoterms-guide/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Incoterms 2020 Guide | Argus Shipping",
+      "description": "Navigate global trade with our comprehensive guide to ICC Incoterms 2020. Access logistics tools and guides from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/resources/incoterms-guide/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Incoterms 2020 Guide"
+      ],
+      "h2Count": 6,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Article"
+      ],
+      "schemaErrors": [],
+      "bytes": 32608
+    },
+    {
+      "url": "https://www.argusshipping.co/robots.txt",
+      "finalUrl": "https://www.argusshipping.co/robots.txt",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/robots.txt",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": null,
+      "description": null,
+      "canonical": null,
+      "robots": null,
+      "lang": null,
+      "h1": [],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [],
+      "images": [],
+      "schemaTypes": [],
+      "schemaErrors": [],
+      "bytes": 129,
+      "body": "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /operator/\nDisallow: /admin/\n\nSitemap: https://www.argusshipping.co/sitemap.xml\n"
+    },
+    {
+      "url": "https://www.argusshipping.co/seo-missing-page-check/",
+      "finalUrl": "https://www.argusshipping.co/seo-missing-page-check/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/seo-missing-page-check/",
+          "status": 404,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 404,
+      "title": null,
+      "description": null,
+      "canonical": null,
+      "robots": null,
+      "lang": null,
+      "h1": [],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [],
+      "images": [],
+      "schemaTypes": [],
+      "schemaErrors": [],
+      "bytes": 49
+    },
+    {
+      "url": "https://www.argusshipping.co/services",
+      "finalUrl": "https://www.argusshipping.co/services",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight &amp; Logistics Services | Argus Shipping",
+      "description": "Explore Argus Shipping air and sea freight, GCC road transport, warehousing, consolidation and specialized logistics services for businesses.",
+      "canonical": "https://www.argusshipping.co/services",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight &amp; Logistics Services"
+      ],
+      "h2Count": 18,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/customs-clearance/",
+        "/services/project-cargo/",
+        "/trade-lanes/",
+        "/services/dangerous-goods/",
+        "/services/sea-freight/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/vehicle-logistics/",
+        "/services/warehousing/",
+        "/services/3pl-logistics/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/home-slider-dangerous-goods.png",
+          "alt": "Dangerous Goods Freight",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 62673
+    },
+    {
+      "url": "https://www.argusshipping.co/services.html",
+      "finalUrl": "https://www.argusshipping.co/services.html",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services.html",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight &amp; Logistics Services | Argus Shipping",
+      "description": "Explore Argus Shipping air and sea freight, GCC road transport, warehousing, consolidation and specialized logistics services for businesses.",
+      "canonical": "https://www.argusshipping.co/services",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight &amp; Logistics Services"
+      ],
+      "h2Count": 18,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/customs-clearance/",
+        "/services/project-cargo/",
+        "/trade-lanes/",
+        "/services/dangerous-goods/",
+        "/services/sea-freight/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/vehicle-logistics/",
+        "/services/warehousing/",
+        "/services/3pl-logistics/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/home-slider-dangerous-goods.png",
+          "alt": "Dangerous Goods Freight",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 62673
+    },
+    {
+      "url": "https://www.argusshipping.co/services/",
+      "finalUrl": "https://www.argusshipping.co/services",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/",
+          "status": 301,
+          "location": "https://www.argusshipping.co/services",
+          "robots": null
+        },
+        {
+          "url": "https://www.argusshipping.co/services",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Freight &amp; Logistics Services | Argus Shipping",
+      "description": "Explore Argus Shipping air and sea freight, GCC road transport, warehousing, consolidation and specialized logistics services for businesses.",
+      "canonical": "https://www.argusshipping.co/services",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Freight &amp; Logistics Services"
+      ],
+      "h2Count": 18,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/customs-clearance/",
+        "/services/project-cargo/",
+        "/trade-lanes/",
+        "/services/dangerous-goods/",
+        "/services/sea-freight/",
+        "/services/air-freight/",
+        "/services/road-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/vehicle-logistics/",
+        "/services/warehousing/",
+        "/services/3pl-logistics/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/home-slider-dangerous-goods.png",
+          "alt": "Dangerous Goods Freight",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 62673
+    },
+    {
+      "url": "https://www.argusshipping.co/services/3pl-logistics/",
+      "finalUrl": "https://www.argusshipping.co/services/3pl-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/3pl-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "3PL &amp; Contract Logistics Services | Argus Shipping",
+      "description": "Argus Shipping offers third-party logistics connecting inventory storage, order fulfilment and regional distribution. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/3pl-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "3PL &amp; Contract Logistics Services"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/warehousing/",
+        "/services/road-freight/",
+        "/services/door-to-door-cargo/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33880
+    },
+    {
+      "url": "https://www.argusshipping.co/services/air-freight-qatar/",
+      "finalUrl": "https://www.argusshipping.co/services/air-freight/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/air-freight-qatar/",
+          "status": 301,
+          "location": "https://www.argusshipping.co/services/air-freight/",
+          "robots": null
+        },
+        {
+          "url": "https://www.argusshipping.co/services/air-freight/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Air Freight Services | Argus Shipping",
+      "description": "Argus Shipping coordinates international air freight for businesses importing to and exporting from Qatar. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/air-freight/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Air Freight Services"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/sea-freight/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 34275
+    },
+    {
+      "url": "https://www.argusshipping.co/services/air-freight/",
+      "finalUrl": "https://www.argusshipping.co/services/air-freight/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/air-freight/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Air Freight Services | Argus Shipping",
+      "description": "Argus Shipping coordinates international air freight for businesses importing to and exporting from Qatar. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/air-freight/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Air Freight Services"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/sea-freight/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 34275
+    },
+    {
+      "url": "https://www.argusshipping.co/services/customs-clearance/",
+      "finalUrl": "https://www.argusshipping.co/services/customs-clearance/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/customs-clearance/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Customs Clearance &amp; Brokerage Support | Argus Shipping",
+      "description": "Argus Shipping coordinates customs clearance support for cargo moving to and from Qatar. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/customs-clearance/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Customs Clearance &amp; Brokerage Support"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33685
+    },
+    {
+      "url": "https://www.argusshipping.co/services/dangerous-goods/",
+      "finalUrl": "https://www.argusshipping.co/services/dangerous-goods/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/dangerous-goods/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Dangerous Goods Shipping &amp; Freight | Argus Shipping",
+      "description": "Discuss dangerous goods shipping with Argus Shipping. Cargo-specific freight planning, documentation and carrier acceptance coordination. Request an assessment.",
+      "canonical": "https://www.argusshipping.co/services/dangerous-goods/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Dangerous Goods Shipping Services"
+      ],
+      "h2Count": 10,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/home-slider-dangerous-goods.png",
+          "alt": "Illustration of Argus dangerous goods cargo handling",
+          "width": "556",
+          "height": "469",
+          "loading": "lazy"
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 36189
+    },
+    {
+      "url": "https://www.argusshipping.co/services/door-to-door-cargo/",
+      "finalUrl": "https://www.argusshipping.co/services/door-to-door-cargo/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/door-to-door-cargo/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Door-to-Door Freight Services | Argus Shipping",
+      "description": "Argus Shipping coordinates door-to-door cargo for businesses shipping to Qatar. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/door-to-door-cargo/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Door-to-Door Freight Services"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 34085
+    },
+    {
+      "url": "https://www.argusshipping.co/services/project-cargo/",
+      "finalUrl": "https://www.argusshipping.co/services/project-cargo/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/project-cargo/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Project Cargo &amp; Heavy-Lift Logistics | Argus Shipping",
+      "description": "Argus Shipping supports heavy-lift transport and project cargo coordination. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/project-cargo/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Project Cargo &amp; Heavy-Lift Logistics"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/services/customs-clearance/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33708
+    },
+    {
+      "url": "https://www.argusshipping.co/services/road-freight/",
+      "finalUrl": "https://www.argusshipping.co/services/road-freight/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/road-freight/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Road Freight &amp; Cross-Border Transportation | Argus Shipping",
+      "description": "Argus Shipping coordinates road freight in Qatar and across the GCC. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/road-freight/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Road Freight &amp; Cross-Border Transportation"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/customs-clearance/",
+        "/services/door-to-door-cargo/",
+        "/services/warehousing/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33708
+    },
+    {
+      "url": "https://www.argusshipping.co/services/sea-freight/",
+      "finalUrl": "https://www.argusshipping.co/services/sea-freight/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/sea-freight/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Sea Freight Services | Argus Shipping",
+      "description": "Argus Shipping arranges FCL and LCL sea freight for Qatar importers and exporters. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/sea-freight/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Sea Freight Services"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/customs-clearance/",
+        "/services/warehousing/",
+        "/services/door-to-door-cargo/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 34057
+    },
+    {
+      "url": "https://www.argusshipping.co/services/vehicle-logistics/",
+      "finalUrl": "https://www.argusshipping.co/services/vehicle-logistics/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/vehicle-logistics/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Vehicle Logistics &amp; Car Shipping Services | Argus Shipping",
+      "description": "Argus Shipping offers vehicle import and export logistics for dealers and private owners. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/vehicle-logistics/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Vehicle Logistics &amp; Car Shipping Services"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/customs-clearance/",
+        "/services/sea-freight/",
+        "/services/road-freight/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33667
+    },
+    {
+      "url": "https://www.argusshipping.co/services/warehousing/",
+      "finalUrl": "https://www.argusshipping.co/services/warehousing/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/services/warehousing/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Warehousing &amp; Distribution Services | Argus Shipping",
+      "description": "Argus Shipping provides warehousing and inventory support for commercial cargo. Discuss your cargo and request a tailored quote from Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/services/warehousing/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Warehousing &amp; Distribution Services"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/services/3pl-logistics/",
+        "/services/road-freight/",
+        "/services/sea-freight/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33765
+    },
+    {
+      "url": "https://www.argusshipping.co/shipping/china-to-qatar/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/shipping/china-to-qatar/",
+          "status": 301,
+          "location": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+          "robots": null
+        },
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Shipping from China to Qatar | Argus Shipping",
+      "description": "Argus Shipping coordinates China-to-Qatar freight through its Guangzhou and Yiwu network. Discuss collection, freight and delivery with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Shipping from China to Qatar"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/warehousing/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33545
+    },
+    {
+      "url": "https://www.argusshipping.co/sitemap.xml",
+      "finalUrl": "https://www.argusshipping.co/sitemap.xml",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/sitemap.xml",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": null,
+      "description": null,
+      "canonical": null,
+      "robots": null,
+      "lang": null,
+      "h1": [],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [],
+      "images": [],
+      "schemaTypes": [],
+      "schemaErrors": [],
+      "bytes": 3604,
+      "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url><loc>https://www.argusshipping.co/locations/</loc></url>\n  <url><loc>https://www.argusshipping.co/</loc></url>\n  <url><loc>https://www.argusshipping.co/services</loc></url>\n  <url><loc>https://www.argusshipping.co/about</loc></url>\n  <url><loc>https://www.argusshipping.co/why-us</loc></url>\n  <url><loc>https://www.argusshipping.co/team</loc></url>\n  <url><loc>https://www.argusshipping.co/contact</loc></url>\n  <url><loc>https://www.argusshipping.co/tracking</loc></url>\n  <url><loc>https://www.argusshipping.co/chairman-message</loc></url>\n  <url><loc>https://www.argusshipping.co/trade-lanes/</loc></url>\n  <url><loc>https://www.argusshipping.co/insights/gcc-freight-report/</loc></url>\n  <url><loc>https://www.argusshipping.co/case-studies/heavy-lift-qatar/</loc></url>\n  <url><loc>https://www.argusshipping.co/case-studies/pharma-cold-chain-uae/</loc></url>\n  <url><loc>https://www.argusshipping.co/case-studies/fmcg-distribution-india/</loc></url>\n  <url><loc>https://www.argusshipping.co/resources/cbm-calculator/</loc></url>\n  <url><loc>https://www.argusshipping.co/resources/chargeable-weight-calculator/</loc></url>\n  <url><loc>https://www.argusshipping.co/resources/incoterms-guide/</loc></url>\n  <url><loc>https://www.argusshipping.co/resources/container-size-guide/</loc></url>\n  <url><loc>https://www.argusshipping.co/industries/construction-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/industries/oil-gas-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/industries/automotive-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/industries/healthcare-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/industries/retail-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/industries/industrial-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/trade-lanes/china-to-uae/</loc></url>\n  <url><loc>https://www.argusshipping.co/locations/qatar/</loc></url>\n  <url><loc>https://www.argusshipping.co/locations/uae/</loc></url>\n  <url><loc>https://www.argusshipping.co/locations/india/</loc></url>\n  <url><loc>https://www.argusshipping.co/locations/china/</loc></url>\n  <url><loc>https://www.argusshipping.co/locations/turkey/</loc></url>\n  <url><loc>https://www.argusshipping.co/locations/bahrain/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/dangerous-goods/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/air-freight/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/sea-freight/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/road-freight/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/warehousing/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/customs-clearance/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/3pl-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/door-to-door-cargo/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/project-cargo/</loc></url>\n  <url><loc>https://www.argusshipping.co/services/vehicle-logistics/</loc></url>\n  <url><loc>https://www.argusshipping.co/trade-lanes/china-to-qatar/</loc></url>\n  <url><loc>https://www.argusshipping.co/trade-lanes/india-to-qatar/</loc></url>\n  <url><loc>https://www.argusshipping.co/trade-lanes/uae-to-qatar/</loc></url>\n  <url><loc>https://www.argusshipping.co/trade-lanes/turkey-to-qatar/</loc></url>\n  <url><loc>https://www.argusshipping.co/trade-lanes/bahrain-to-qatar/</loc></url>\n</urlset>\n"
+    },
+    {
+      "url": "https://www.argusshipping.co/team",
+      "finalUrl": "https://www.argusshipping.co/team",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/team",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Our Team | Argus Shipping",
+      "description": "Meet the people supporting Argus Shipping’s international freight forwarding and logistics operations.",
+      "canonical": "https://www.argusshipping.co/team",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Our Expert Team"
+      ],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 32495
+    },
+    {
+      "url": "https://www.argusshipping.co/tracking",
+      "finalUrl": "https://www.argusshipping.co/tracking",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/tracking",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Track a Shipment | Argus Shipping",
+      "description": "Use Argus Shipping shipment tracking to check cargo progress and contact the logistics team about your consignment.",
+      "canonical": "https://www.argusshipping.co/tracking",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Track Cargo &amp; RFQ Status"
+      ],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 34610
+    },
+    {
+      "url": "https://www.argusshipping.co/tracking?ref=seo-test",
+      "finalUrl": "https://www.argusshipping.co/tracking?ref=seo-test",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/tracking?ref=seo-test",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Track a Shipment | Argus Shipping",
+      "description": "Use Argus Shipping shipment tracking to check cargo progress and contact the logistics team about your consignment.",
+      "canonical": "https://www.argusshipping.co/tracking",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Track Cargo &amp; RFQ Status"
+      ],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 34610
+    },
+    {
+      "url": "https://www.argusshipping.co/trade-lanes/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "International Trade Lanes | Argus Shipping",
+      "description": "Explore Argus Shipping’s international freight routes. Discuss origin collection, consolidation, transport and destination delivery for your shipment.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "International Shipping &amp; Trade Lanes"
+      ],
+      "h2Count": 5,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/china-to-qatar/",
+        "/trade-lanes/india-to-qatar/",
+        "/trade-lanes/uae-to-qatar/",
+        "/trade-lanes/turkey-to-qatar/",
+        "/trade-lanes/bahrain-to-qatar/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "bytes": 31315
+    },
+    {
+      "url": "https://www.argusshipping.co/trade-lanes/bahrain-to-qatar/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/bahrain-to-qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/bahrain-to-qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Shipping from Bahrain to Qatar | Argus Shipping",
+      "description": "Argus Shipping’s Bahrain office and GCC network support Bahrain-to-Qatar cargo coordination. Discuss collection, freight and delivery with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/bahrain-to-qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Shipping from Bahrain to Qatar"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/warehousing/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33559
+    },
+    {
+      "url": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Shipping from China to Qatar | Argus Shipping",
+      "description": "Argus Shipping coordinates China-to-Qatar freight through its Guangzhou and Yiwu network. Discuss collection, freight and delivery with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Shipping from China to Qatar"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/warehousing/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33545
+    },
+    {
+      "url": "https://www.argusshipping.co/trade-lanes/china-to-uae/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/china-to-uae/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/china-to-uae/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Shipping from China to UAE | Argus Shipping",
+      "description": "Argus Shipping coordinates China-to-UAE freight through its Guangzhou, Yiwu, and Dubai network. Discuss collection, freight and delivery with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/china-to-uae/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Shipping from China to UAE"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/warehousing/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33225
+    },
+    {
+      "url": "https://www.argusshipping.co/trade-lanes/india-to-qatar/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/india-to-qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/india-to-qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Shipping from India to Qatar | Argus Shipping",
+      "description": "Argus Shipping supports India-to-Qatar cargo through its India network and consolidation service. Discuss collection, freight and delivery with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/india-to-qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Shipping from India to Qatar"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/warehousing/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33516
+    },
+    {
+      "url": "https://www.argusshipping.co/trade-lanes/turkey-to-qatar/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/turkey-to-qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/turkey-to-qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Shipping from Turkey to Qatar | Argus Shipping",
+      "description": "Argus Shipping’s Istanbul consolidation network supports Turkey-to-Qatar cargo enquiries. Discuss collection, freight and delivery with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/turkey-to-qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Shipping from Turkey to Qatar"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/warehousing/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33414
+    },
+    {
+      "url": "https://www.argusshipping.co/trade-lanes/uae-to-qatar/",
+      "finalUrl": "https://www.argusshipping.co/trade-lanes/uae-to-qatar/",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/trade-lanes/uae-to-qatar/",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Freight Shipping from UAE to Qatar | Argus Shipping",
+      "description": "Argus Shipping coordinates UAE-to-Qatar freight through its Dubai network and GCC road service. Discuss collection, freight and delivery with Argus Shipping.",
+      "canonical": "https://www.argusshipping.co/trade-lanes/uae-to-qatar/",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Freight Shipping from UAE to Qatar"
+      ],
+      "h2Count": 7,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/",
+        "/services/air-freight/",
+        "/services/sea-freight/",
+        "/services/door-to-door-cargo/",
+        "/services/customs-clearance/",
+        "/services/warehousing/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "Service"
+      ],
+      "schemaErrors": [],
+      "bytes": 33490
+    },
+    {
+      "url": "https://www.argusshipping.co/why-us",
+      "finalUrl": "https://www.argusshipping.co/why-us",
+      "hops": [
+        {
+          "url": "https://www.argusshipping.co/why-us",
+          "status": 200,
+          "location": null,
+          "robots": null
+        }
+      ],
+      "status": 200,
+      "title": "Why Choose Argus Shipping | International Freight Forwarding",
+      "description": "Discover Argus Shipping’s logistics network, cargo capabilities and customer support for international freight movements.",
+      "canonical": "https://www.argusshipping.co/why-us",
+      "robots": null,
+      "lang": "en",
+      "h1": [
+        "Why Choose Argus Shipping"
+      ],
+      "h2Count": 0,
+      "alternates": [],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/services",
+        "/tracking",
+        "/why-us",
+        "/team",
+        "/contact",
+        "/login",
+        "/locations/qatar/",
+        "/locations/uae/",
+        "/locations/china/",
+        "/locations/india/",
+        "/locations/turkey/",
+        "/locations/bahrain/",
+        "/locations/",
+        "/trade-lanes/"
+      ],
+      "images": [
+        {
+          "src": "/images/logo.png",
+          "alt": "Loading...",
+          "width": null,
+          "height": null,
+          "loading": null
+        },
+        {
+          "src": "/images/AR.png",
+          "alt": "",
+          "width": "32",
+          "height": "29",
+          "loading": null
+        },
+        {
+          "src": "/images/argus_shipping_logo_hero.png",
+          "alt": "",
+          "width": "154",
+          "height": "69",
+          "loading": null
+        },
+        {
+          "src": "/images/logo.png",
+          "alt": "Argus Shipping Logo",
+          "width": null,
+          "height": null,
+          "loading": null
+        }
+      ],
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "bytes": 34508
+    }
+  ]
+}

@@ -212,9 +212,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
-    if (!token) return;
+    if (!token || !user) return;
 
-    api.get("/auth/email-settings")
+    if (user.role !== "rater") api.get("/auth/email-settings")
       .then(res => {
         const email = res.data.data.email_address || "";
         setEmailAddress(email);
@@ -721,7 +721,7 @@ export default function SettingsPage() {
 
         {user?.role === "admin" && <EnquiryEmailSettings />}
         {/* Email Settings Card */}
-        {user?.role !== "sales" && user?.role !== "customer" && (
+        {user?.role !== "sales" && user?.role !== "customer" && user?.role !== "rater" && (
           <div className="glass p-6 rounded-2xl border border-white/5 shadow-card">
             <h2 className="text-lg font-bold text-primary mb-1 flex items-center gap-2">
               <span>✉️</span> Email Settings
@@ -1228,10 +1228,10 @@ export default function SettingsPage() {
             </div>
             
             <div className="space-y-4">
-              {adminUsers.filter(u => u.role !== "customer" && u.role !== "sales").length === 0 && (
+              {adminUsers.filter(u => u.role !== "customer" && u.role !== "sales" && u.role !== "rater").length === 0 && (
                 <p className="text-xs text-muted/50 italic">No users found.</p>
               )}
-              {adminUsers.filter(u => u.role !== "customer" && u.role !== "sales").map(u => (
+              {adminUsers.filter(u => u.role !== "customer" && u.role !== "sales" && u.role !== "rater").map(u => (
                 <div
                   key={u.id}
                   className="flex flex-col gap-3 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl"

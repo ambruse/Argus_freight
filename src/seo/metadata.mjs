@@ -1,5 +1,6 @@
 import { SITE, commercialPages, byPath } from './commercial-pages.mjs';
 import { locationContacts } from './location-contacts.mjs';
+import { canonicalUrl } from './urls.mjs';
 export const metadata = {
   '/locations/': { title: 'Our Global Logistics Network | Argus Shipping', description: 'Explore Argus Shipping’s network in Qatar, UAE, China, India, Turkey and Bahrain. Find market contacts, freight services and connected trade lanes.' },
   '/': { title: 'International Freight Forwarding & Logistics | Argus Shipping', description: 'Global air, sea and road freight, warehousing and international logistics. Argus Shipping operates an international freight network. Request a freight quote.' },
@@ -13,25 +14,30 @@ export const metadata = {
   '/trade-lanes/': { title: 'International Trade Lanes | Argus Shipping', description: 'Explore Argus Shipping’s international freight routes. Discuss origin collection, consolidation, transport and destination delivery for your shipment.' },
   ...Object.fromEntries(commercialPages.map(page => [page.path, { title: page.title, description: page.description }])),
 };
+export function breadcrumbsFor(path) {
+  const page = byPath[path];
+  if (!page && !['/trade-lanes/', '/locations/'].includes(path)) return [];
+  const crumbs = [{ name: 'Home', path: '/' }];
+  const parent = { services: ['Services', '/services'], locations: ['Global Network', '/locations/'], 'trade-lanes': ['Trade Lanes', '/trade-lanes/'] }[page?.group];
+  if (parent) crumbs.push({ name: parent[0], path: parent[1] });
+  crumbs.push({ name: page?.label || (path === '/locations/' ? 'Global Network' : 'Trade Lanes'), path });
+  return crumbs;
+}
+
 export function schemaFor(path) {
   const organization = { '@type': 'Organization', '@id': `${SITE}/#organization`, name: 'Argus Shipping', url: `${SITE}/`, logo: `${SITE}/images/logo.png`, telephone: '+974 44116544', email: 'info@argusshipping.co', address: { '@type': 'PostalAddress', postOfficeBoxNumber: '31861', addressLocality: 'Doha', addressCountry: 'QA' } };
   const graph = [organization, { '@type': 'WebSite', '@id': `${SITE}/#website`, url: `${SITE}/`, name: 'Argus Shipping', publisher: { '@id': organization['@id'] } }];
   graph.push({ '@type': 'WebPage', '@id': `${SITE}${path}#webpage`, url: `${SITE}${path}`, name: metadata[path].title, description: metadata[path].description, isPartOf: { '@id': `${SITE}/#website` } });
   const page = byPath[path];
   if (page || path === '/trade-lanes/' || path === '/locations/') {
-    const crumbs = [{ name: 'Home', item: `${SITE}/` }];
-    if (page) {
-      const groupName = page.group === 'trade-lanes' ? 'Trade Lanes' : page.group === 'locations' ? 'Locations' : page.group === 'industries' ? 'Industries' : page.group === 'resources' ? 'Resources' : page.group === 'case-studies' ? 'Case Studies' : page.group === 'insights' ? 'Insights' : 'Services';
-      const groupPath = page.group === 'trade-lanes' ? '/trade-lanes/' : page.group === 'locations' ? '/locations/' : page.group === 'industries' ? '/industries/' : page.group === 'resources' ? '/resources/' : page.group === 'case-studies' ? '/case-studies/' : page.group === 'insights' ? '/insights/' : '/services';
-      crumbs.push({ name: groupName, item: `${SITE}${groupPath}` });
-    }
-    if (page?.group === 'locations') crumbs[1].name = 'Global Network';
-    crumbs.push({ name: page?.label || (path === '/locations/' ? 'Global Network' : 'Trade Lanes'), item: `${SITE}${path}` });
+    const crumbs = breadcrumbsFor(path).map(crumb => ({ name: crumb.name, item: canonicalUrl(crumb.path) }));
     graph.push({ '@type': 'BreadcrumbList', '@id': `${SITE}${path}#breadcrumb`, itemListElement: crumbs.map((crumb, index) => ({ '@type': 'ListItem', position: index + 1, ...crumb })) });
     if (page) {
       if (page.group === 'locations') {
         const contacts = locationContacts[path.split('/')[2]] || [];
-        graph.push({ '@type': 'LocalBusiness', '@id': `${SITE}${path}#localbusiness`, name: `Argus Shipping ${page.label}`, url: `${SITE}${path}`, description: page.intro, ...(contacts.length ? { telephone: contacts.map(contact => contact.phone) } : {}), parentOrganization: { '@id': organization['@id'] } });
+        for (const contact of contacts.filter(contact => contact.businessName && contact.address)) {
+          graph.push({ '@type': 'LocalBusiness', '@id': `${SITE}${path}#${contact.office.toLowerCase()}`, name: contact.businessName, url: canonicalUrl(path), telephone: contact.phone, address: { '@type': 'PostalAddress', ...contact.address } });
+        }
       } else if (page.group === 'resources' || page.group === 'case-studies' || page.group === 'insights') {
         graph.push({ '@type': 'Article', '@id': `${SITE}${path}#article`, headline: page.h1, description: page.intro, author: { '@id': organization['@id'] }, publisher: { '@id': organization['@id'] }, mainEntityOfPage: { '@id': `${SITE}${path}#webpage` } });
       } else {

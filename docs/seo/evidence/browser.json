@@ -1,0 +1,707 @@
+{
+  "capturedAt": "2026-10-31T13:56:24.774Z",
+  "local": [
+    {
+      "route": "/locations/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/about",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/why-us",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/team",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/contact",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/tracking",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/chairman-message",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/insights/gcc-freight-report/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/case-studies/heavy-lift-qatar/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/case-studies/pharma-cold-chain-uae/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/case-studies/fmcg-distribution-india/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/cbm-calculator/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/chargeable-weight-calculator/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/incoterms-guide/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/container-size-guide/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/construction-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/oil-gas-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/automotive-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/healthcare-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/retail-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/industrial-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/qatar/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/uae/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/india/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/china/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/turkey/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/bahrain/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/dangerous-goods/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/air-freight/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/sea-freight/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/road-freight/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/warehousing/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/customs-clearance/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/3pl-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/door-to-door-cargo/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/project-cargo/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/vehicle-logistics/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/china-to-qatar/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/india-to-qatar/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/uae-to-qatar/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/turkey-to-qatar/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/bahrain-to-qatar/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/china-to-uae/",
+      "width": 1440,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/about",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/why-us",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/team",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/contact",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/tracking",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/chairman-message",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/insights/gcc-freight-report/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/case-studies/heavy-lift-qatar/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/case-studies/pharma-cold-chain-uae/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/case-studies/fmcg-distribution-india/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/cbm-calculator/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/chargeable-weight-calculator/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/incoterms-guide/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/resources/container-size-guide/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/construction-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/oil-gas-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/automotive-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/healthcare-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/retail-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/industries/industrial-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/qatar/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/uae/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/india/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/china/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/turkey/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/locations/bahrain/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/dangerous-goods/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/air-freight/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/sea-freight/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/road-freight/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/warehousing/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/customs-clearance/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/3pl-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/door-to-door-cargo/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/project-cargo/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/services/vehicle-logistics/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/china-to-qatar/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/india-to-qatar/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/uae-to-qatar/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/turkey-to-qatar/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/bahrain-to-qatar/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    },
+    {
+      "route": "/trade-lanes/china-to-uae/",
+      "width": 390,
+      "status": 200,
+      "visibleH1": true,
+      "overflow": false
+    }
+  ],
+  "fixtures": {
+    "enquiries": 2,
+    "searches": 1,
+    "tracking": "success and missing",
+    "analytics": "consent and no sensitive fields; no success on failed dispatch"
+  },
+  "noJavaScript": 4,
+  "live": [
+    {
+      "route": "/",
+      "width": 1440,
+      "status": 200,
+      "title": "International Freight Forwarding & Logistics | Argus Shipping",
+      "visibleH1": true,
+      "canonical": "https://www.argusshipping.co/"
+    },
+    {
+      "route": "/locations/qatar/",
+      "width": 1440,
+      "status": 200,
+      "title": "Freight Forwarding & Logistics Company in Qatar | Argus Shipping",
+      "visibleH1": true,
+      "canonical": "https://www.argusshipping.co/locations/qatar/"
+    },
+    {
+      "route": "/trade-lanes/china-to-uae/",
+      "width": 1440,
+      "status": 200,
+      "title": "Shipping from China to UAE | Argus Shipping",
+      "visibleH1": true,
+      "canonical": "https://www.argusshipping.co/trade-lanes/china-to-uae/"
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "status": 200,
+      "title": "International Freight Forwarding & Logistics | Argus Shipping",
+      "visibleH1": true,
+      "canonical": "https://www.argusshipping.co/"
+    },
+    {
+      "route": "/locations/qatar/",
+      "width": 390,
+      "status": 200,
+      "title": "Freight Forwarding & Logistics Company in Qatar | Argus Shipping",
+      "visibleH1": true,
+      "canonical": "https://www.argusshipping.co/locations/qatar/"
+    },
+    {
+      "route": "/trade-lanes/china-to-uae/",
+      "width": 390,
+      "status": 200,
+      "title": "Shipping from China to UAE | Argus Shipping",
+      "visibleH1": true,
+      "canonical": "https://www.argusshipping.co/trade-lanes/china-to-uae/"
+    }
+  ],
+  "localExceptions": []
+}

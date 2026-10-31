@@ -68,11 +68,12 @@ export default function Home({ onNavigate, onOpenQuote }) {
             <div className="hero-copy" style={{ animation: 'slideUp 0.8s ease', position: 'relative', zIndex: 5 }}>
               <span className="hero-subtitle">Logistics Management</span>
               <div className="hero-logo-container hero-logo-container-home">
-                <img 
+                <picture><source srcSet="/images/argus_shipping_logo_hero.webp" type="image/webp" /><img
                   src="/images/argus_shipping_logo_hero.png" 
                   alt="ARGUS SHIPPING" 
                   className="hero-logo-img"
-                />
+                  width="765" height="326" decoding="async" fetchPriority="high"
+                /></picture>
               </div>
               <h1 className="hero-primary-heading">International Freight Forwarding &amp; Logistics</h1>
               <p className="hero-description">
@@ -263,7 +264,7 @@ export default function Home({ onNavigate, onOpenQuote }) {
             </div>
 
             <div className="about-image-wrapper">
-              <img src="/images/globe.png" alt="Integrated Global Network" className="about-img-main" />
+              <img src="/images/globe.png" alt="Integrated Global Network" className="about-img-main" width="1024" height="1024" loading="lazy" decoding="async" />
             </div>
           </div>
         </div>

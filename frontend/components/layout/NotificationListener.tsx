@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { authStorage } from "@/lib/auth";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { io } from "socket.io-client";
@@ -248,6 +249,7 @@ export default function NotificationListener() {
 
   useEffect(() => {
     // Check if token exists in localStorage
+    if (authStorage.getUser()?.role === "rater") return;
     const hasToken = () => typeof window !== "undefined" && !!localStorage.getItem("freight_token");
 
     if (pathname === "/login" || pathname === "/register" || !hasToken()) {

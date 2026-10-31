@@ -295,11 +295,13 @@ export default function AdminRegisterUserPage() {
                 className="input w-full"
               >
                 <option value="operator">Operator</option>
+                <option value="rater">Rater</option>
                 <option value="calling_agent">Calling Agent</option>
                 <option value="admin">Admin</option>
                 <option value="sales">Sales</option>
                 <option value="customer">Customer</option>
               </select>
+              {role === "rater" && <p className="text-xs text-muted">Manage all live freight rates, including editing, publishing and archiving. Access to other business modules is restricted.</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -407,6 +409,7 @@ export default function AdminRegisterUserPage() {
                   <option value="all">All Roles</option>
                   <option value="admin">Admin</option>
                   <option value="operator">Operator</option>
+                  <option value="rater">Rater</option>
                   <option value="sales">Sales</option>
                   <option value="calling_agent">Calling Agent</option>
                   <option value="customer">Customer</option>
@@ -475,7 +478,7 @@ export default function AdminRegisterUserPage() {
                             {u.email_address ? (
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-xs text-primary">{u.email_address}</span>
-                                {u.role !== "customer" && u.role !== "sales" && (
+                                {u.role !== "customer" && u.role !== "sales" && u.role !== "rater" && (
                                   u.has_password ? (
                                     <span className="self-start text-[9px] px-1 py-0.2 rounded bg-blue/10 text-blue/80 border border-blue/20">SMTP Active</span>
                                   ) : (

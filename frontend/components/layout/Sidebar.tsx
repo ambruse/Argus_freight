@@ -109,6 +109,7 @@ export default function Sidebar() {
   /* ── Unread badge polling ───────────────────────────────── */
   useEffect(() => {
     const fetchUnread = async () => {
+      if (!user || user.role === "rater") return;
       const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
       if (!token) return;
       try {
@@ -137,7 +138,7 @@ export default function Sidebar() {
       window.removeEventListener("rfq-list-update", handleRefresh);
       window.removeEventListener("refresh-unread-replies", handleRefresh);
     };
-  }, []);
+  }, [user?.role]);
 
   /* ── Approval pending badge (operator only) ─────── */
   useEffect(() => {
@@ -189,6 +190,7 @@ export default function Sidebar() {
 
   /* ── Filter nav by role ─────────────────────────────────── */
   const visibleItems = NAV_ITEMS.filter(item => {
+    if (user?.role === "rater")         return ["/operator/live-rates", "/settings"].includes(item.href);
     if (user?.role === "customer")      return ["/dashboard", "/customer/rfq/new", "/customer/rfq", "/settings"].includes(item.href);
     if (user?.role === "sales")         return ["/rfq/new", "/rfq", "/confirmed", "/quotation", "/summary", "/sales/call-enquiries", "/settings", "/customers", "/calculator"].includes(item.href);
     if (user?.role === "calling_agent") return ["/dashboard", "/calling-agent/new", "/calling-agent/enquiries", "/settings"].includes(item.href);

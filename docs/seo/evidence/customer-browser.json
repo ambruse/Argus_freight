@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-10-31T13:55:36.747Z",
+  "scope": "Loopback synthetic APIs; no real credentials or persistence",
+  "requests": 2,
+  "failedSaveSuccessEvents": 0,
+  "savedRfqSuccessEvents": 1,
+  "events": [
+    {
+      "event": "quote_start",
+      "page_path": "/customer/rfq/new",
+      "landing_page": "unknown",
+      "country": "unknown",
+      "service": "air-freight",
+      "form_type": "customer-rfq"
+    },
+    {
+      "event": "quote_submit",
+      "page_path": "/customer/rfq/new",
+      "landing_page": "unknown",
+      "country": "unknown",
+      "service": "air-freight",
+      "form_type": "customer-rfq"
+    },
+    {
+      "event": "quote_submit",
+      "page_path": "/customer/rfq/new",
+      "landing_page": "unknown",
+      "country": "unknown",
+      "service": "air-freight",
+      "form_type": "customer-rfq"
+    },
+    {
+      "event": "quote_success",
+      "page_path": "/customer/rfq/new",
+      "landing_page": "unknown",
+      "country": "unknown",
+      "service": "air-freight",
+      "form_type": "customer-rfq"
+    }
+  ],
+  "exceptions": []
+}

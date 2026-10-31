@@ -6,6 +6,7 @@ import LocationSelect from './LocationSelect';
 import ModeChangeDialog from './ModeChangeDialog';
 import phoneCountries from '../../../shared/phoneCountries.json';
 import './live.css';
+import { trackEvent } from '../../../shared/analytics.mjs';
 async function request(path, body) { const res = await fetch('/api/live-pricing' + path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined }); const data = await res.json(); if (!res.ok)
     throw new Error(data.message || 'Unable to load live pricing.'); return data; }
 export default function LiveCalculator() {
@@ -94,6 +95,7 @@ export default function LiveCalculator() {
         setError('Choose the service conditions to compare.');
         return;
     } setBusy(true); const current = revision.current; try {
+        trackEvent('rate_search', { service: { AIR: 'air-freight', SEA: 'sea-freight', TRUCK: 'road-freight' }[s.mode] });
         const data = await request('/quotes', { group: group?.id, shipment: { ...s, cargo: s.subtype === 'FCL' && !optional ? [] : cargo } });
         if (current === revision.current) {
             setResult(data);
@@ -130,8 +132,10 @@ export default function LiveCalculator() {
         const session = contactSession.current;
         setContactBusy(true);
         try {
+            trackEvent('quote_submit', { form_type: 'live-rate-enquiry', service: { AIR: 'air-freight', SEA: 'sea-freight', TRUCK: 'road-freight' }[s.mode] });
             const sent = await request('/enquiries', { ...payload, id: enquiryAttempt.current.id });
             if (sent.delivery !== 'sent') throw new Error('Your enquiry could not be sent. Please try again.');
+            trackEvent('quote_success', { form_type: 'live-rate-enquiry', service: { AIR: 'air-freight', SEA: 'sea-freight', TRUCK: 'road-freight' }[s.mode] });
             if (session === contactSession.current) {
                 setStep('details');
                 setTimeout(() => detailHeading.current?.focus(), 0);
@@ -152,6 +156,7 @@ export default function LiveCalculator() {
         setError('');
         setContactError('');
         contactSession.current++;
+        trackEvent('quote_start', { form_type: 'live-rate-enquiry', service: { AIR: 'air-freight', SEA: 'sea-freight', TRUCK: 'road-freight' }[s.mode] });
         setStep('contact');
         setExpanded(true);
     };

@@ -6,8 +6,12 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
     "dev:landing": "vite",
-    "build:landing": "vite build && node scripts/prerender.mjs",
+    "build:landing": "node scripts/seo-route-paths.mjs && vite build && node scripts/prerender.mjs",
     "check:seo": "node scripts/check-seo.mjs frontend/out",
+    "test:seo": "node --test scripts/seo.test.mjs",
+    "check:seo:browser": "node scripts/check-seo-browser.mjs",
+    "audit:seo:live": "node scripts/audit-live-seo.mjs",
+    "docs:international": "node scripts/international-matrix.mjs",
     "docs:seo": "node scripts/seo-docs.mjs",
     "copy:landing": "node scripts/copy-landing.cjs",
     "build:frontend": "npm run build --prefix frontend",

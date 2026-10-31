@@ -1,0 +1,738 @@
+[
+  {
+    "route": "/locations/",
+    "group": "base",
+    "entity": "/locations/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/locations/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/",
+    "group": "base",
+    "entity": "/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services",
+    "group": "base",
+    "entity": "/services",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/about",
+    "group": "base",
+    "entity": "/about",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/about",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/why-us",
+    "group": "base",
+    "entity": "/why-us",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/why-us",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/team",
+    "group": "base",
+    "entity": "/team",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/team",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/contact",
+    "group": "base",
+    "entity": "/contact",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/contact",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/tracking",
+    "group": "base",
+    "entity": "/tracking",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/tracking",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/chairman-message",
+    "group": "base",
+    "entity": "/chairman-message",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/chairman-message",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/trade-lanes/",
+    "group": "base",
+    "entity": "/trade-lanes/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/trade-lanes/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/insights/gcc-freight-report/",
+    "group": "insights",
+    "entity": "/insights/gcc-freight-report/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/insights/gcc-freight-report/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/case-studies/heavy-lift-qatar/",
+    "group": "case-studies",
+    "entity": "/case-studies/heavy-lift-qatar/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/case-studies/heavy-lift-qatar/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/case-studies/pharma-cold-chain-uae/",
+    "group": "case-studies",
+    "entity": "/case-studies/pharma-cold-chain-uae/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/case-studies/pharma-cold-chain-uae/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/case-studies/fmcg-distribution-india/",
+    "group": "case-studies",
+    "entity": "/case-studies/fmcg-distribution-india/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/case-studies/fmcg-distribution-india/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/resources/cbm-calculator/",
+    "group": "resources",
+    "entity": "/resources/cbm-calculator/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/resources/cbm-calculator/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/resources/chargeable-weight-calculator/",
+    "group": "resources",
+    "entity": "/resources/chargeable-weight-calculator/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/resources/chargeable-weight-calculator/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/resources/incoterms-guide/",
+    "group": "resources",
+    "entity": "/resources/incoterms-guide/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/resources/incoterms-guide/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/resources/container-size-guide/",
+    "group": "resources",
+    "entity": "/resources/container-size-guide/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/resources/container-size-guide/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/industries/construction-logistics/",
+    "group": "industries",
+    "entity": "/industries/construction-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/industries/construction-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/industries/oil-gas-logistics/",
+    "group": "industries",
+    "entity": "/industries/oil-gas-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/industries/oil-gas-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/industries/automotive-logistics/",
+    "group": "industries",
+    "entity": "/industries/automotive-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/industries/automotive-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/industries/healthcare-logistics/",
+    "group": "industries",
+    "entity": "/industries/healthcare-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/industries/healthcare-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/industries/retail-logistics/",
+    "group": "industries",
+    "entity": "/industries/retail-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/industries/retail-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/industries/industrial-logistics/",
+    "group": "industries",
+    "entity": "/industries/industrial-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/industries/industrial-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/locations/qatar/",
+    "group": "locations",
+    "entity": "/locations/qatar/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/locations/qatar/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/locations/uae/",
+    "group": "locations",
+    "entity": "/locations/uae/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/locations/uae/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/locations/india/",
+    "group": "locations",
+    "entity": "/locations/india/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/locations/india/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/locations/china/",
+    "group": "locations",
+    "entity": "/locations/china/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/locations/china/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/locations/turkey/",
+    "group": "locations",
+    "entity": "/locations/turkey/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/locations/turkey/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/locations/bahrain/",
+    "group": "locations",
+    "entity": "/locations/bahrain/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/locations/bahrain/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/dangerous-goods/",
+    "group": "services",
+    "entity": "/services/dangerous-goods/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/dangerous-goods/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/air-freight/",
+    "group": "services",
+    "entity": "/services/air-freight/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/air-freight/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/sea-freight/",
+    "group": "services",
+    "entity": "/services/sea-freight/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/sea-freight/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/road-freight/",
+    "group": "services",
+    "entity": "/services/road-freight/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/road-freight/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/warehousing/",
+    "group": "services",
+    "entity": "/services/warehousing/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/warehousing/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/customs-clearance/",
+    "group": "services",
+    "entity": "/services/customs-clearance/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/customs-clearance/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/3pl-logistics/",
+    "group": "services",
+    "entity": "/services/3pl-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/3pl-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/door-to-door-cargo/",
+    "group": "services",
+    "entity": "/services/door-to-door-cargo/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/door-to-door-cargo/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/project-cargo/",
+    "group": "services",
+    "entity": "/services/project-cargo/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/project-cargo/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/services/vehicle-logistics/",
+    "group": "services",
+    "entity": "/services/vehicle-logistics/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/services/vehicle-logistics/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/trade-lanes/china-to-qatar/",
+    "group": "trade-lanes",
+    "entity": "/trade-lanes/china-to-qatar/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/trade-lanes/china-to-qatar/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/trade-lanes/india-to-qatar/",
+    "group": "trade-lanes",
+    "entity": "/trade-lanes/india-to-qatar/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/trade-lanes/india-to-qatar/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/trade-lanes/uae-to-qatar/",
+    "group": "trade-lanes",
+    "entity": "/trade-lanes/uae-to-qatar/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/trade-lanes/uae-to-qatar/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/trade-lanes/turkey-to-qatar/",
+    "group": "trade-lanes",
+    "entity": "/trade-lanes/turkey-to-qatar/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/trade-lanes/turkey-to-qatar/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/trade-lanes/bahrain-to-qatar/",
+    "group": "trade-lanes",
+    "entity": "/trade-lanes/bahrain-to-qatar/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/trade-lanes/bahrain-to-qatar/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  },
+  {
+    "route": "/trade-lanes/china-to-uae/",
+    "group": "trade-lanes",
+    "entity": "/trade-lanes/china-to-uae/",
+    "locale": "en",
+    "status": "published-source",
+    "indexable": true,
+    "canonical": "https://www.argusshipping.co/trade-lanes/china-to-uae/",
+    "translation": null,
+    "alternates": [],
+    "gaps": {
+      "ar": "No approved complete translation supplied",
+      "zh-Hans": "No approved complete translation supplied",
+      "tr": "No approved complete translation supplied"
+    }
+  }
+]
