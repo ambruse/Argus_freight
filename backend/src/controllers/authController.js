@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createSmtpTransporter } = require('../utils/mailer');
 const { encrypt, decrypt } = require('../utils/crypto');
+const registrationRoles = Object.freeze(['admin', 'sales', 'operator', 'calling_agent', 'customer', 'rater']);
 
 // Generate ephemeral 2048-bit RSA keypair for password transit encryption
 const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
@@ -25,7 +26,7 @@ const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
 
 const getPublicKey = async (req, res, next) => {
   try {
-    res.json({ success: true, publicKey });
+    res.json({ success: true, publicKey, registrationRoles });
   } catch (err) {
     next(err);
   }
@@ -244,6 +245,10 @@ const me = async (req, res, next) => {
 const register = async (req, res, next) => {
   try {
     let { newUsername, newPassword, role, name, email_address, contact_number, adminUsername, adminPassword, agent_extension, country } = req.body;
+    role = typeof role === 'string' ? role.trim().toLowerCase() : '';
+    if (!registrationRoles.includes(role)) {
+      return res.status(400).json({ success: false, message: 'Select a valid account role. No account was created.' });
+    }
     newPassword = decryptPassword(newPassword);
     adminPassword = decryptPassword(adminPassword);
 
@@ -319,8 +324,7 @@ const register = async (req, res, next) => {
     // 3. Create new user
     const salt = await bcrypt.genSalt(10);
     const newHash = await bcrypt.hash(newPassword, salt);
-    const validRoles = ['admin', 'sales', 'operator', 'calling_agent', 'customer', 'rater'];
-    const newRole = validRoles.includes(role) ? role : 'operator';
+    const newRole = role;
 
     let finalCustomerId = null;
     if (newRole === 'customer' || newRole === 'sales') {

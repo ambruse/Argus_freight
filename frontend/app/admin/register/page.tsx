@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { encryptPassword } from "@/lib/crypto";
+import { registerAccount } from "@/lib/registration";
 import { COUNTRIES, updatePhoneForCountry } from "@/lib/countries";
 
 export default function AdminRegisterUserPage() {
@@ -112,7 +113,7 @@ export default function AdminRegisterUserPage() {
       setLoading(true);
       try {
         const securePassword = await encryptPassword(newPassword);
-        await api.post("/auth/register", {
+        await registerAccount({
           newUsername,
           newPassword: securePassword,
           role,
@@ -132,7 +133,7 @@ export default function AdminRegisterUserPage() {
         setEmailAddress("");
         setContactNumber("");
       } catch (err: any) {
-        toast.error(err.response?.data?.message || "Registration failed.");
+        toast.error(err.response?.data?.message || err.message || "Registration failed.");
       } finally {
         setLoading(false);
       }
@@ -156,7 +157,7 @@ export default function AdminRegisterUserPage() {
     try {
       const secureNewPassword = await encryptPassword(newPassword);
       const secureAdminPassword = await encryptPassword(adminPassword);
-      await api.post("/auth/register", {
+      await registerAccount({
         newUsername,
         newPassword: secureNewPassword,
         role,
@@ -180,7 +181,7 @@ export default function AdminRegisterUserPage() {
       setShowAdminModal(false);
       setAdminPassword("");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Registration failed.");
+      toast.error(err.response?.data?.message || err.message || "Registration failed.");
     } finally {
       setLoading(false);
     }

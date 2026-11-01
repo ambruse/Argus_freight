@@ -8,12 +8,14 @@ test('Rater registration requires an admin and login preserves the role without 
     const controllerPath = require.resolve('../src/controllers/authController');
     const previous = require.cache[dbPath];
     let user;
+    let insertCount = 0;
     const passwordHash = await bcrypt.hash('AdminTest123', 4);
     const fakeDb = {
         async query(sql, args) {
             if (sql.startsWith('SELECT password_hash, role')) return { rows: [{ password_hash: passwordHash, role: 'admin' }] };
             if (sql.startsWith('SELECT id FROM users')) return { rows: [] };
             if (sql.startsWith('INSERT INTO users')) {
+                insertCount++;
                 user = { id: 71, username: args[0], password_hash: args[1], role: args[2], email_address: args[4] };
                 return { rows: [user] };
             }
@@ -28,13 +30,21 @@ test('Rater registration requires an admin and login preserves the role without 
         else delete require.cache[dbPath];
         delete require.cache[controllerPath];
     });
-    const { register, login } = require(controllerPath);
+    const { register, login, getPublicKey } = require(controllerPath);
     const invoke = async (handler, body) => {
         const response = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(data) { this.data = data; } };
         await handler({ body }, response, err => { throw err; });
         return response;
     };
     const body = { newUsername: 'rater_test', newPassword: 'RateTest123', role: 'rater', email_address: 'rater@example.com' };
+    const capabilities = await invoke(getPublicKey, {});
+    assert.ok(capabilities.data.registrationRoles.includes('rater'));
+    for (const role of [undefined, null, '', 'unknown', 'rate', 1, ['rater']]) {
+        const rejected = await invoke(register, { ...body, role, adminUsername: 'admin', adminPassword: 'AdminTest123' });
+        assert.equal(rejected.statusCode, 400);
+        assert.match(rejected.data.message, /valid account role/);
+    }
+    assert.equal(insertCount, 0, 'Invalid or missing roles must never silently create Operator accounts');
     assert.equal((await invoke(register, body)).statusCode, 400);
     assert.equal(user, undefined);
     const created = await invoke(register, { ...body, adminUsername: 'admin', adminPassword: 'AdminTest123' });
@@ -45,4 +55,9 @@ test('Rater registration requires an admin and login preserves the role without 
     assert.equal(signedIn.statusCode, 200);
     assert.equal(signedIn.data.user.role, 'rater');
     assert.equal(jwt.verify(signedIn.data.token, process.env.JWT_SECRET).role, 'rater');
+    for (const role of ['Rater', ' RATER ', ' rater ']) {
+        const normalized = await invoke(register, { ...body, role, adminUsername: 'admin', adminPassword: 'AdminTest123' });
+        assert.equal(normalized.statusCode, 201);
+        assert.equal(normalized.data.user.role, 'rater');
+    }
 });

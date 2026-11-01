@@ -10,6 +10,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { authStorage } from "@/lib/auth";
 import { encryptPassword } from "@/lib/crypto";
+import { registerAccount } from "@/lib/registration";
 import { COUNTRIES, updatePhoneForCountry } from "@/lib/countries";
 
 export default function RegisterPage() {
@@ -79,11 +80,11 @@ export default function RegisterPage() {
       setLoading(true);
       try {
         const securePassword = await encryptPassword(newPassword);
-        await api.post("/auth/register", { newUsername, newPassword: securePassword, role, name, email_address: emailAddress.trim(), contact_number: contactNumber.trim(), country });
+        await registerAccount({ newUsername, newPassword: securePassword, role, name, email_address: emailAddress.trim(), contact_number: contactNumber.trim(), country });
         toast.success("Account created successfully!");
         router.push("/login");
       } catch (err: any) {
-        toast.error(err.response?.data?.message || "Registration failed.");
+        toast.error(err.response?.data?.message || err.message || "Registration failed.");
       } finally {
         setLoading(false);
       }
@@ -100,11 +101,11 @@ export default function RegisterPage() {
     try {
       const secureNewPassword = await encryptPassword(newPassword);
       const secureAdminPassword = await encryptPassword(adminPassword);
-      await api.post("/auth/register", { newUsername, newPassword: secureNewPassword, role, email_address: emailAddress.trim(), contact_number: contactNumber.trim(), adminUsername, adminPassword: secureAdminPassword, country });
+      await registerAccount({ newUsername, newPassword: secureNewPassword, role, email_address: emailAddress.trim(), contact_number: contactNumber.trim(), adminUsername, adminPassword: secureAdminPassword, country });
       toast.success("Account created successfully!");
       router.push("/login");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Registration failed.");
+      toast.error(err.response?.data?.message || err.message || "Registration failed.");
     } finally {
       setLoading(false);
     }
