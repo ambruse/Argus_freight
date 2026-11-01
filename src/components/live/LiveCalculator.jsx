@@ -3,12 +3,14 @@ import { createPortal } from 'react-dom';
 import { Plane, Ship, Truck, X, Search } from 'lucide-react';
 import CargoRows, { blankCargo } from './CargoRows';
 import LocationSelect from './LocationSelect';
+import { withCityNames } from './locationDirectory';
 import ModeChangeDialog from './ModeChangeDialog';
 import phoneCountries from '../../../shared/phoneCountries.json';
 import './live.css';
 import { trackEvent } from '../../../shared/analytics.mjs';
 async function request(path, body) { const res = await fetch('/api/live-pricing' + path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined }); const data = await res.json(); if (!res.ok)
-    throw new Error(data.message || 'Unable to load live pricing.'); return data; }
+    throw new Error(data.message || 'Unable to load live pricing.');
+    return Array.isArray(data.locations) ? { ...data, locations: await withCityNames(data.locations) } : data; }
 export default function LiveCalculator() {
     const [catalog, setCatalog] = useState({ locations: [], groups: [] }), [all, setAll] = useState([]), [custom, setCustom] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState(''), [busy, setBusy] = useState(false), [result, setResult] = useState(null);
     const [catalogError, setCatalogError] = useState('');

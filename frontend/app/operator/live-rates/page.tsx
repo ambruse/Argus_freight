@@ -5,6 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import SearchComboBox from '@/components/ui/SearchComboBox';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/api';
+import { locationLabel } from '../../../../shared/locationLabel.mjs';
 import './rates.css';
 type Config = Record<string, any>;
 type Rate = {
@@ -18,6 +19,7 @@ type Location = {
     id: string;
     name: string;
     country: string;
+    city?: string;
     kind: string;
     aliases: string[];
 };
@@ -76,7 +78,7 @@ export default function LiveRates() {
     finally {
         setBusy(false);
     } };
-    const label = (id: string) => { const l = locations.find(x => x.id === id); return l ? `${l.country}, ${l.name}` : id; };
+    const label = (id: string) => { const l = locations.find(x => x.id === id); return l ? locationLabel(l) : id; };
     const open = (r: Rate | null) => { if (dirty && !window.confirm('Discard unsaved changes?'))
         return; setCurrent(r); setC(r ? structuredClone(r.config) : defaults()); setEditor(true); setDirty(false); setPreview(null); setCompare([]); setHistory(null); setError(''); setMessage(''); setVolume(''); setWeight(''); setQuantity('1'); };
     const closeEditor = () => { if (!dirty || window.confirm('Discard unsaved changes?')) { setEditor(false); setDirty(false); setError(''); } };
@@ -109,7 +111,7 @@ export default function LiveRates() {
         return; await api.post(`/live-pricing/rates/${r.id}/action`, { version: r.version, action: a, reason }); setMessage(a === 'duplicate' ? 'Rate duplicated as a draft. Find it in your drafts to edit.' : 'Rate updated.'); setExpandedId(null); await refresh(); });
     const number = (key: string, title: string, positive = false) => <label key={key}>{title}<input required type="number" min={positive ? '0.000001' : '0'} step="any" value={c[key]} onChange={e => change(key, e.target.value)}/></label>;
     const select = (key: string, title: string, values: string[], names: Record<string, string> = {}) => <label>{title}<select required value={c[key]} onChange={e => change(key, e.target.value)}>{values.map(v => <option key={v} value={v}>{names[v] || v}</option>)}</select></label>;
-    const mode = (value: string, subtype?: string) => { if (value === c.mode && (!subtype || subtype === c.subtype)) return; if ((c.tiers.some((t: any) => t.price) || c.origin_id || c.destination_id || c.charges.length) && !window.confirm('Switch pricing configuration? Route locations incompatible with this mode and existing tiers will be reset.'))
+    const mode = (value: string, subtype?: string) => { if (value === c.mode && (!subtype || subtype === c.subtype)) return; if ((c.tiers.some((t: any) => t.price) || c.origin_id || c.destination_id || c.charges.length) && !window.confirm('Switch transport mode? Incompatible locations, prices and conditions will be reset.'))
         return; const type = subtype || (value === 'SEA' ? 'LCL' : value === 'TRUCK' ? 'LTL' : 'AIR'); setC(p => ({ ...p, mode: value, subtype: type, model: models[value === 'SEA' ? type : value][0], size: p.size || '20', equipment: p.equipment || 'DRY', minimum_units: '0', rounding_step: '0', tiers: [{ minimum: '0', price: '' }], charges: [], origin_id: locations.find(l => l.id === p.origin_id)?.kind === value ? p.origin_id : '', destination_id: locations.find(l => l.id === p.destination_id)?.kind === value ? p.destination_id : '' })); setDirty(true); setPreview(null); setCompare([]); };
     const pricingModel = (value: string) => {
         if (value === c.model) return;
@@ -179,7 +181,7 @@ export default function LiveRates() {
                     <div className="lr-grid">
                       {c.mode !== 'AIR' && <label>Shipment type<select value={c.subtype} onChange={e => mode(c.mode, e.target.value)}>{(c.mode === 'SEA' ? ['LCL', 'FCL'] : ['LTL', 'FTL']).map(v => <option key={v}>{v}</option>)}</select></label>}
                       {c.mode === 'TRUCK' && <label>Truck / load class<input required value={c.truck} maxLength={100} onChange={e => change('truck', e.target.value)} placeholder="e.g. 3-ton box truck" /></label>}
-                      {(['origin_id', 'destination_id'] as const).map((key, i) => <label key={key}>{i ? 'Destination (POD)' : 'Origin (POL)'}<SearchComboBox required label={i ? 'Destination' : 'Origin'} value={c[key]} onChange={v => change(key, v)} options={locations.filter(l => l.kind === c.mode && l.id !== c[i ? 'origin_id' : 'destination_id']).map(l => ({ value: l.id, label: `${l.country}, ${l.name}`, searchText: l.id + ' ' + l.aliases.join(' '), kind: l.kind }))} /></label>)}
+                      {(['origin_id', 'destination_id'] as const).map((key, i) => <label key={key}>{i ? 'Destination (POD)' : 'Origin (POL)'}<SearchComboBox required label={i ? 'Destination' : 'Origin'} placeholder="Search country, city or port" value={c[key]} onChange={v => change(key, v)} options={locations.filter(l => l.kind === c.mode && l.id !== c[i ? 'origin_id' : 'destination_id']).map(l => ({ value: l.id, label: locationLabel(l), searchText: l.id + ' ' + l.aliases.join(' '), kind: l.kind }))} /></label>)}
                       <label>Carrier / shipping line<input required maxLength={120} value={c.carrier} onChange={e => change('carrier', e.target.value)} placeholder="Enter carrier name" /></label>
                       <label>Comparable service name<input required maxLength={120} value={c.service} onChange={e => change('service', e.target.value)} placeholder="e.g. Airport to airport · general cargo" /></label>
                       <label>Valid from<input required type="date" value={c.valid_from} onChange={e => change('valid_from', e.target.value)} /></label>
@@ -196,23 +198,16 @@ export default function LiveRates() {
                       {select('currency', 'Rate currency', ['USD', 'QAR'])}
                       {container && <>{select('equipment', 'Container type', ['DRY', 'REEFER'], { DRY: 'Standard / Dry', REEFER: 'Reefer' })}{select('size', 'Container size', ['20', '40', '40HQ'], { '20': '20 FT', '40': '40 FT', '40HQ': '40 FT High Cube' })}</>}
                     </div>
-                    {c.tiers.map((tier: any, i: number) => <div key={i} className={`lr-tier ${flat ? 'lr-tier-flat' : ''}`}>
-                      {!flat && <label>Minimum {c.model === 'KG' ? 'weight (kg)' : c.model === 'CBM' ? 'volume (CBM)' : 'units'}<input type="number" min="0" step="any" required value={tier.minimum} onChange={e => change('tiers', c.tiers.map((t: any, j: number) => i === j ? { ...t, minimum: e.target.value } : t))} /></label>}
+                    {c.tiers.map((tier: any, i: number) => {
+                      // New rates start at zero. Keep an existing rate's first condition editable.
+                      const conditional = !flat && (i > 0 || Number(current?.config.tiers[0]?.minimum || 0) > 0);
+                      return <div key={i} className={`lr-tier ${conditional ? '' : 'lr-tier-flat'}`}>
+                      {conditional && <label>{c.model === 'KG' ? 'Weight from (kg)' : c.model === 'CBM' ? 'Volume from (CBM)' : c.model === 'TONNE' ? 'Weight from (tonnes)' : 'From W/M units'}<input type="number" min="0" step="any" required placeholder={c.model === 'KG' ? 'e.g. 100' : 'e.g. 5'} value={tier.minimum} onChange={e => change('tiers', c.tiers.map((t: any, j: number) => i === j ? { ...t, minimum: e.target.value } : t))} /></label>}
                       <label>Price ({c.currency}) {labels[c.model]}<input type="number" min="0.000001" step="any" required placeholder="0.00" value={tier.price} onChange={e => change('tiers', c.tiers.map((t: any, j: number) => i === j ? { ...t, price: e.target.value } : t))} /></label>
-                      {!flat && c.tiers.length > 1 && <button className="lr-icon-button" aria-label={`Remove tier ${i + 1}`} type="button" onClick={() => change('tiers', c.tiers.filter((_: any, j: number) => j !== i))}><Trash2 size={16} /></button>}
-                    </div>)}
-                    {!flat && <><button className="lr-text-button" type="button" onClick={() => change('tiers', [...c.tiers, { minimum: '', price: '' }])}><Plus size={16} aria-hidden="true" /> Add price tier</button><p className="lr-note">Each minimum is inclusive. Its price applies until the next tier; below the first tier, a minimum or weight-break rule is needed.</p></>}
+                      {!flat && i > 0 && <button className="lr-icon-button" aria-label={`Remove condition ${i}`} type="button" onClick={() => change('tiers', c.tiers.filter((_: any, j: number) => j !== i))}><Trash2 size={16} /></button>}
+                    </div>; })}
+                    {!flat && <><button className="lr-text-button" type="button" onClick={() => change('tiers', [...c.tiers, { minimum: '', price: '' }])}><Plus size={16} aria-hidden="true" /> Add conditions</button>{c.tiers.length > 1 && <p className="lr-note">Each condition sets the price from that quantity up to the next condition. Your starting price applies below it.</p>}</>}
                     {c.model === 'KM' && <div className="lr-grid">{number('distance', 'Verified route distance (km)', true)}<label>Distance source<input required value={c.distance_source} onChange={e => change('distance_source', e.target.value)} /></label></div>}
-                    <details className="lr-advanced">
-                      <summary>Minimums & calculation rules<ChevronDown size={16} aria-hidden="true" /></summary>
-                      <div className="lr-grid">
-                        {!flat && number('minimum_units', `Minimum billable ${c.model}`)}{number('minimum_charge', `Minimum freight (${c.currency})`)}
-                        {!flat && number('rounding_step', 'Round billable units up to step (0 = exact)')}{select('rounding', 'USD rounding', ['NEAREST', 'UP'], { NEAREST: 'Nearest cent', UP: 'Round up to cent' })}
-                        {c.mode === 'AIR' && <>{number('divisor', 'Volumetric divisor (cm³/kg)', true)}<label className="lr-check"><input type="checkbox" checked={c.weight_break} onChange={e => change('weight_break', e.target.checked)} /> Use a higher weight break when its final total is cheaper</label></>}
-                        {c.model === 'WM' && <>{number('wm_cbm', 'CBM per W/M unit', true)}{number('wm_tonne', 'Tonnes per W/M unit', true)}</>}
-                        {number('capacity_kg', `Maximum kg ${['FCL', 'FTL'].includes(c.subtype) ? 'per container / truck' : 'per shipment'}`)}{number('capacity_cbm', `Maximum CBM ${['FCL', 'FTL'].includes(c.subtype) ? 'per container / truck' : 'per shipment'}`)}
-                      </div><p className="lr-note">Set a capacity to 0 when no limit applies.</p>
-                    </details>
                   </section>
 
                   <section className="lr-form-section" aria-labelledby="charges-heading">
@@ -244,7 +239,7 @@ export default function LiveRates() {
                   </div>
                   {c.subtype === 'FCL' && <p className="lr-note">Cargo volume and weight are optional for container pricing unless capacity limits apply.</p>}
                   <button className="lr-wide" type="button" onClick={previewRate}>{busy ? 'Working…' : 'Calculate preview'}</button>
-                  {preview ? preview.unavailable ? <p role="status" className="lr-preview-warning">No price is available. Check tier minimums and capacity limits.</p> : <div className="lr-preview-result" role="status"><span>Customer estimate</span><strong><small>USD</small> {preview.total}</strong><dl><div><dt>Base freight</dt><dd>USD {preview.base}</dd></div>{preview.charges.map((ch: any, i: number) => <div key={i}><dt>{ch.name}</dt><dd>USD {ch.amount}</dd></div>)}</dl><p className="lr-note">Billable: {preview.pricing_units} {preview.basis}{preview.divisor ? ` · Divisor ${preview.divisor}` : ''}</p></div> : <p className="lr-preview-hint">Complete the rate and calculate a preview to enable {canPublish ? 'publishing' : 'submission'}.</p>}
+                  {preview ? preview.unavailable ? <p role="status" className="lr-preview-warning">This sample shipment does not match the rate’s conditions. Check the sample weight and volume.</p> : <div className="lr-preview-result" role="status"><span>Customer estimate</span><strong><small>USD</small> {preview.total}</strong><dl><div><dt>Base freight</dt><dd>USD {preview.base}</dd></div>{preview.charges.map((ch: any, i: number) => <div key={i}><dt>{ch.name}</dt><dd>USD {ch.amount}</dd></div>)}</dl><p className="lr-note">Billable: {preview.pricing_units} {preview.basis}</p></div> : <p className="lr-preview-hint">Complete the rate and calculate a preview to enable {canPublish ? 'publishing' : 'submission'}.</p>}
                   <div className="lr-save-actions"><button type="button" className="lr-primary lr-wide" disabled={!preview || preview.unavailable} onClick={() => save(true)}>{canPublish ? 'Save & publish' : 'Save & submit for approval'}<ArrowRight size={16} aria-hidden="true" /></button><button type="submit" className="lr-wide">Save draft</button></div>
                   <p className="lr-note">Drafts stay private. Editing a published rate removes it from new estimates until it is published again.</p>
                   <p className="lr-note">Customer estimates use USD.<br />Conversion: 3.65 QAR = 1 USD.</p>

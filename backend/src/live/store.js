@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const { randomUUID, createHash } = require('crypto');
 const catalog = require('../../../frontend/lib/data/port-catalog.json');
+const cities = new Map(catalog.ports.map(p => [p.id, p.city]));
 const parse = v => typeof v === 'string' ? JSON.parse(v) : v;
 const hash = v => createHash('sha256').update(v).digest('hex');
 const engine = import('../../../shared/livePricing.mjs');
@@ -65,7 +66,7 @@ function createStore(pool) {
         const [rows] = await db.query(`SELECT r.*,v.config,u.username AS operator_name FROM live_rates r JOIN live_rate_versions v ON v.rate_id=r.id AND v.version=r.version JOIN users u ON u.id=r.operator_id ${where}`, args);
         return rows.map(r => ({ ...r, config: parse(r.config) }));
     }
-    async function locations(db) { const [rows] = await db.query('SELECT id,name,country,kind,aliases FROM live_locations WHERE active=1 ORDER BY country,name'); return rows.map(r => ({ ...r, aliases: parse(r.aliases) })); }
+    async function locations(db) { const [rows] = await db.query('SELECT id,name,country,kind,aliases FROM live_locations WHERE active=1 ORDER BY country,name'); return rows.map(r => ({ ...r, city: cities.get(r.id) || (r.kind === 'TRUCK' ? r.name : ''), aliases: parse(r.aliases) })); }
     async function validateLocations(db, c, e) {
         const [rows] = await db.query('SELECT id,kind FROM live_locations WHERE id IN (?,?) AND active=1', [c.origin_id, c.destination_id]);
         if (rows.length !== 2 || rows.some(r => r.kind !== c.mode))

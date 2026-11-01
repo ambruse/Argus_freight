@@ -42,7 +42,7 @@ function createRouter(pool, coreReady = Promise.resolve(), enquiryOptions = {}) 
             return res.json({
                 directory_source: 'reference',
                 countries: referenceCatalog.countries,
-                locations: referenceCatalog.ports.map(p => ({ id: p.id, name: p.port_name, country: p.country_name, kind: p.mode, aliases: p.aliases || [] }))
+                locations: referenceCatalog.ports.map(p => ({ id: p.id, name: p.port_name, city: p.city, country: p.country_name, kind: p.mode, aliases: p.aliases || [] }))
             });
         }
     }));

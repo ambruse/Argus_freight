@@ -23,3 +23,26 @@ test('facility IDs remain stable and airport/seaport identities stay distinct', 
   assert.equal(hamad.length,2); assert.equal(new Set(hamad.map(p => p.mode)).size,2);
   assert.notEqual(catalog.ports.find(p => p.port_name === 'Doha Port').id,'QAHMD');
 });
+
+test('all facilities have a sourced city or locality, including ports not named after their city', () => {
+  const cities = require('../../frontend/lib/data/port-cities.json').locations;
+  for (const port of catalog.ports) {
+    assert.ok(port.city.trim(), port.port_name);
+    assert.equal(port.city, cities[port.id].city, port.port_name);
+    assert.ok(cities[port.id].source, port.port_name);
+  }
+  for (const [name, city] of [
+    ['Jebel Ali Port', 'Dubai'], ['Hamad Port', 'Umm Al Houl'],
+    ['King Abdulaziz Port', 'Dammam'], ['Jawaharlal Nehru Port', 'Navi Mumbai'],
+    ['Indira Gandhi International Airport', 'New Delhi'], ['Heathrow Airport', 'London'],
+    ['Port of Tanjung Priok', 'Jakarta'],
+  ]) assert.equal(catalog.ports.find(p => p.port_name === name).city, city);
+});
+
+test('location labels expose cities for search without changing facility names or IDs', async () => {
+  const { locationLabel } = await import('../../shared/locationLabel.mjs');
+  const port = catalog.ports.find(p => p.id === 'AEJEA');
+  assert.equal(locationLabel({ country: port.country_name, city: port.city, name: port.port_name }), 'Dubai — Jebel Ali Port, United Arab Emirates');
+  assert.equal(locationLabel({ name: 'Doha', city: 'Doha', country: 'Qatar' }), 'Doha, Qatar');
+  assert.equal(locationLabel({ name: 'Legacy port', country: 'Qatar' }), 'Qatar, Legacy port');
+});

@@ -62,7 +62,6 @@
   align-self: center;
   padding: clamp(20px, 2.5vw, 34px);
   border: 1px solid var(--live-outline);
-  border-top: 3px solid #bb8d39;
   border-radius: 28px;
   background: linear-gradient(145deg, var(--live-wash), transparent 65%), var(--live-surface);
   color: var(--live-text);

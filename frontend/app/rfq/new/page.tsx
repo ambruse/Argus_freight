@@ -801,7 +801,7 @@ export default function NewRFQPage() {
                     <PortAutoSuggest
                       value={(form as any)[f.name]}
                       onChange={(val) => setForm(prev => ({ ...prev, [f.name]: val }))}
-                      placeholder={`Select or type ${f.label.toLowerCase()}...`}
+                      placeholder="Search city or port…"
                       mode={form.mode}
                       country={f.name === "pol" ? form.pol_country : undefined}
                       isPod={f.name === "pod"}

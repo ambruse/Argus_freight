@@ -20,6 +20,7 @@ test('database outage preserves real location search but never fabricates pricin
         assert.deepEqual(data.locations[0], {
             id: catalog.ports[0].id, name: catalog.ports[0].port_name,
             country: catalog.ports[0].country_name, kind: catalog.ports[0].mode,
+            city: catalog.ports[0].city,
             aliases: catalog.ports[0].aliases || []
         });
         for (const [endpoint, options] of [
