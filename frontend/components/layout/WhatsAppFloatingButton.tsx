@@ -3,11 +3,7 @@
 import styles from "./WhatsAppFloatingButton.module.css";
 import { usePathname } from "next/navigation";
 
-const WHATSAPP_NUMBERS = [
-  "97455792233",
-  "97430512233",
-  "97471261234",
-] as const;
+import { selectWhatsAppNumber, whatsAppUrl } from "../../../shared/whatsapp.mjs";
 
 export default function WhatsAppFloatingButton() {
   const pathname = usePathname();
@@ -15,11 +11,10 @@ export default function WhatsAppFloatingButton() {
   if (pathname.startsWith("/operator/live-rates")) return null;
 
   const handleClick = () => {
-    const selectedNumber =
-      WHATSAPP_NUMBERS[Math.floor(Math.random() * WHATSAPP_NUMBERS.length)];
+    const selectedNumber = selectWhatsAppNumber();
 
     window.open(
-      `https://wa.me/${selectedNumber}`,
+      whatsAppUrl(selectedNumber),
       "_blank",
       "noopener,noreferrer",
     );

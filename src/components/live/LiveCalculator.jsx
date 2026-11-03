@@ -8,10 +8,13 @@ import ModeChangeDialog from './ModeChangeDialog';
 import phoneCountries from '../../../shared/phoneCountries.json';
 import './live.css';
 import { trackEvent } from '../../../shared/analytics.mjs';
+import { selectWhatsAppNumber, whatsAppUrl } from '../../../shared/whatsapp.mjs';
+import { shipmentMessage } from './whatsapp.mjs';
 async function request(path, body) { const res = await fetch('/api/live-pricing' + path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined }); const data = await res.json(); if (!res.ok)
     throw new Error(data.message || 'Unable to load live pricing.');
     return Array.isArray(data.locations) ? { ...data, locations: await withCityNames(data.locations) } : data; }
 export default function LiveCalculator() {
+    const [whatsAppNumber] = useState(selectWhatsAppNumber);
     const [catalog, setCatalog] = useState({ locations: [], groups: [] }), [all, setAll] = useState([]), [custom, setCustom] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState(''), [busy, setBusy] = useState(false), [result, setResult] = useState(null);
     const [catalogError, setCatalogError] = useState('');
     const [expanded, setExpanded] = useState(false);
@@ -111,7 +114,12 @@ export default function LiveCalculator() {
     finally {
         setBusy(false);
     } };
-    const enquiry = result ? `/customer/rfq/new?live_quote=${encodeURIComponent(result.reference)}` : '/customer/rfq/new';
+    const enquiry = intent => whatsAppUrl(whatsAppNumber, shipmentMessage({
+        shipment: s, cargo: s.subtype === 'FCL' && !optional ? [] : cargo,
+        contact, countryCode: phoneCountries.find(c => c.country === contact.phone_country)?.code,
+        locations: ls, group, result, intent,
+    }));
+    const trackWhatsApp = () => trackEvent('whatsapp_click', { form_type: 'live-rate-enquiry' });
     const types = s.mode === 'SEA' ? ['LCL', 'FCL'] : s.mode === 'TRUCK' ? ['LTL', 'FTL'] : [];
     const options = (values) => [...new Set(values)].filter(Boolean);
     const continueToDetails = async e => {
@@ -188,10 +196,10 @@ export default function LiveCalculator() {
     {['LCL', 'LTL', 'FTL'].includes(s.subtype) && <p className="live-note">Preview total: volume and weight above. Freight minimums and additional charges are included when you check the price.</p>}
     <button className="live-primary" disabled={busy} type="submit">{busy ? 'Calculating…' : 'Check Price'}</button></>}
     </form>}
-    {(error || (details && catalogError)) && <div className="live-error" role="alert">{error || catalogError} <button type="button" onClick={load}>Retry loading routes</button> <a href={enquiry}>Request a custom quotation</a></div>}
+    {(error || (details && catalogError)) && <div className="live-error" role="alert">{error || catalogError} <button type="button" onClick={load}>Retry loading routes</button> <a href={enquiry("quotation")} target="_blank" rel="noopener noreferrer" onClick={trackWhatsApp}>Request a custom quotation</a></div>}
     {!details && catalogError && !error && <p className="live-note" role="status">Instant pricing is temporarily unavailable. You can still enter your shipment details.</p>}
     {details && result && <div className="live-result" ref={resultNode} tabIndex={-1}><h3>{result.available ? 'Your freight estimate' : 'Custom quotation'}</h3><p>{result.origin} → {result.destination}</p><p>{s.mode} · {s.subtype}{s.subtype === 'FCL' ? ` · ${s.size} FT ${s.equipment} × ${s.quantity}` : ''}</p>{result.available ? <><div className="live-amount">USD {result.estimate.total}</div><dl><dt>Rate basis</dt><dd>{result.estimate.pricing_units.toLocaleString()} {result.estimate.basis} · {result.estimate.service}</dd><dt>Base freight</dt><dd>USD {result.estimate.base}</dd>{result.estimate.charges.map((c, i) => <div className="live-breakdown" key={i}><dt>{c.name}<small>{c.tax}</small></dt><dd>USD {c.amount}</dd></div>)}<dt>Total volume / actual weight</dt><dd>{result.estimate.cbm.toLocaleString()} m³ / {result.estimate.actual_kg.toLocaleString()} kg</dd>{s.mode === 'AIR' && <><dt>Volumetric / chargeable / billed weight</dt><dd>{result.estimate.volumetric_kg.toFixed(2)} / {result.estimate.chargeable_kg.toFixed(2)} / {result.estimate.billed_kg.toFixed(2)} kg<br />Divisor {result.estimate.divisor} cm³/kg</dd></>}<dt>Rate validity (Qatar)</dt><dd>{result.estimate.valid_from} – {result.estimate.valid_until}</dd></dl><p className="live-note">Includes: {result.estimate.inclusions.join(', ')}.<br />Excludes: {result.estimate.exclusions.join(', ') || 'none stated'}.<br />Estimate based on current published rates, subject to availability and final operational confirmation.</p></> : <p>Live pricing is currently unavailable for this shipment. Request a custom quotation.</p>}
-    <p className="live-note">Reference: {result.reference}<br />Estimate expires: {new Date(result.expires_at).toLocaleString('en-GB', { timeZone: 'Asia/Qatar' })} (Qatar)</p><div className="live-choice"><a className="live-primary" href={enquiry}>{result.available ? 'Request Booking' : 'Request a custom quotation'}</a><a href={enquiry + '&intent=contact'}>Contact Our Team</a></div></div>}
+    <p className="live-note">Reference: {result.reference}<br />Estimate expires: {new Date(result.expires_at).toLocaleString('en-GB', { timeZone: 'Asia/Qatar' })} (Qatar)</p><div className="live-choice"><a className="live-primary" href={enquiry(result.available ? "booking" : "quotation")} target="_blank" rel="noopener noreferrer" onClick={trackWhatsApp}>{result.available ? 'Request Booking' : 'Request a custom quotation'}</a><a href={enquiry("contact")} target="_blank" rel="noopener noreferrer" onClick={trackWhatsApp}>Contact Our Team</a></div><p className="live-note">Opens WhatsApp with your shipment details ready to send.</p></div>}
   </section>;
     const contactForm = <section className="live-calculator live-calculator-expanded live-contact"><header><span className="live-eyebrow">ARGUS SHIPPING · STEP 1 OF 2</span><h2 id="live-detail-title" ref={detailHeading} tabIndex={-1}>How can we reach you?</h2><p>Enter your contact details to continue with your shipment.</p><button type="button" className="live-close" aria-label="Close calculator" onClick={() => setExpanded(false)}><X size={20}/></button></header>
         <form onSubmit={continueToDetails}>
@@ -202,7 +210,7 @@ export default function LiveCalculator() {
                 <label>Email address<input required type="email" autoComplete="email" maxLength={254} value={contact.email} onChange={e => setContact(c => ({ ...c, email: e.target.value }))} placeholder="you@example.com"/></label>
             </fieldset>
             <p className="live-note">Continue sends your contact details and selected route to an Argus Shipping operator for this enquiry.</p>
-            {contactError && <p className="live-error" role="alert">{contactError} <a href="/contact">Contact our team</a></p>}
+            {contactError && <p className="live-error" role="alert">{contactError} <a href={enquiry("contact")} target="_blank" rel="noopener noreferrer" onClick={trackWhatsApp}>Contact our team</a></p>}
             <button className="live-primary" type="submit" disabled={contactBusy}>{contactBusy ? 'Sending enquiry…' : 'Continue'}</button>
         </form>
     </section>;

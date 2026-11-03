@@ -1,16 +1,15 @@
 import './WhatsAppFloatingButton.css';
 import { trackEvent } from '../../shared/analytics.mjs';
 
-const WHATSAPP_NUMBERS = ['97455792233', '97430512233', '97471261234'];
+import { selectWhatsAppNumber, whatsAppUrl } from '../../shared/whatsapp.mjs';
 
 export default function WhatsAppFloatingButton() {
   const handleClick = () => {
     trackEvent('whatsapp_click');
-    const selectedNumber =
-      WHATSAPP_NUMBERS[Math.floor(Math.random() * WHATSAPP_NUMBERS.length)];
+    const selectedNumber = selectWhatsAppNumber();
 
     window.open(
-      `https://wa.me/${selectedNumber}`,
+      whatsAppUrl(selectedNumber),
       '_blank',
       'noopener,noreferrer',
     );
