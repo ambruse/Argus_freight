@@ -50,6 +50,7 @@ export function shipmentMessage({ shipment, cargo, contact, countryCode, locatio
         if (result.available && result.estimate) {
             const estimate = result.estimate;
             lines.push(`Estimated total: USD ${estimate.total}`, `Base freight: USD ${estimate.base}`, `Rate basis: ${estimate.pricing_units} ${estimate.basis}`, `Service: ${estimate.service}`);
+            lines.push(`Quoted volume / actual weight: ${estimate.cbm} m³ / ${estimate.actual_kg} kg`);
             estimate.charges.forEach(charge => lines.push(`${charge.name}: USD ${charge.amount}${charge.tax ? ` (${charge.tax})` : ''}`));
             if (shipment.mode === 'AIR') lines.push(`Volumetric / chargeable / billed weight: ${estimate.volumetric_kg} / ${estimate.chargeable_kg} / ${estimate.billed_kg} kg`, `Air divisor: ${estimate.divisor} cm³/kg`);
             lines.push(`Rate validity (Qatar): ${estimate.valid_from} – ${estimate.valid_until}`, `Includes: ${estimate.inclusions.join(', ')}`, `Excludes: ${estimate.exclusions.join(', ') || 'None stated'}`, 'Estimate subject to availability and final confirmation.');
