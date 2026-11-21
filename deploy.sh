@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================
 #  ARGUS — cPanel Deployment Script (SINGLE APP)
-#  Called by .cpanel.yml on every git push.
+#  Called by .cpanel.yml. For Plesk, use npm run plesk:build instead.
 # =============================================================
 
 set -eo pipefail

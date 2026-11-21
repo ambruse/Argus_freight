@@ -75,8 +75,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ── Static File Serving (cPanel Dynamic Path Resolution) ───────
-let FRONTEND_OUT = path.join(__dirname, '../frontend/out');
-let LANDING_DIST = path.join(__dirname, '../dist');
+let FRONTEND_OUT = path.join(__dirname, '../../frontend/out');
+let LANDING_DIST = path.join(__dirname, '../../dist');
 
 // Helper to dynamically check parent paths if standard paths don't exist
 const findFolder = (folderName, defaultPath) => {
@@ -97,13 +97,15 @@ const hasLanding = fs.existsSync(LANDING_DIST);
 // Register before the static/SPA handlers so a missing dashboard export cannot
 // silently render the marketing homepage (including when frontend/out is absent).
 const { requiredPortalPage } = require('./utils/requiredPortalPage');
+const { startAutomaticPreparation, readState } = require('../../scripts/auto-prepare.cjs');
 app.get(['/shipment-tracking', '/shipment-tracking/', '/shipment-tracking.html'],
-  requiredPortalPage(FRONTEND_OUT, 'shipment-tracking.html'));
+  requiredPortalPage(FRONTEND_OUT, 'shipment-tracking.html', { state: readState }));
 
 
 // Serve static assets and routes if they exist on the server (or in production)
-if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
-  if (hasFrontend) {
+if (process.env.NODE_ENV !== 'development' || hasFrontend || hasLanding) {
+  // Mount before the export exists: a background build can make it available.
+  {
     app.get('/services', (req, res, next) => {
       if (req.path.endsWith('/')) return res.redirect(301, '/services');
       const hub = path.join(FRONTEND_OUT, 'services.html');
@@ -620,7 +622,11 @@ app.get('/api/health-email', async (_req, res) => {
 
 // ── Routes Mounting ──────────────────────────────────────────
 app.use('/api/auth',           authRoutes);
-const tracking = createTrackingRouters(require('./config/db').pool, { io, ready: coreSchemaReady });
+const trackingPool = require('./config/db').pool;
+const { createTrackingPreparation } = require('./tracking/prepare');
+const prepareTracking = createTrackingPreparation(trackingPool, { coreReady: coreSchemaReady });
+prepareTracking().catch(error => console.error('[Tracking preparation]', error.message));
+const tracking = createTrackingRouters(trackingPool, { io, ready: prepareTracking });
 app.locals.trackingService = tracking.service;
 installTrackingRealtime(io, tracking.service);
 app.use('/api/shipments', tracking.internal);
@@ -652,6 +658,7 @@ server.listen(PORT, () => {
   console.log(`🚀 FreightOS Backend running on port ${PORT}`);
   console.log(`===========================================\n`);
   
+  startAutomaticPreparation();
   startImapService();
 });
 

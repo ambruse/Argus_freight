@@ -27,7 +27,10 @@
     "cpanel:start:backend": "cd backend && node server.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:tracking": "node --test backend/test/tracking-*.cjs test/public-tracking.test.mjs frontend/test/tracking-model.test.cjs test/tracking-deployment.test.cjs"
+    "test:tracking": "node --test backend/test/tracking-*.cjs test/public-tracking.test.mjs frontend/test/tracking-model.test.cjs test/tracking-deployment.test.cjs test/plesk-build.test.cjs test/auto-prepare.test.cjs",
+    "plesk:build": "node scripts/plesk-build.cjs",
+    "plesk:check": "node scripts/check-deployment.cjs",
+    "plesk:migrate": "node backend/scripts/migrate-tracking.js --up && node backend/scripts/migrate-tracking.js --check"
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",

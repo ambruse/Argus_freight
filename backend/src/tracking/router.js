@@ -18,7 +18,7 @@ function createTrackingRouters(pool, { io, ready = Promise.resolve(), service: p
     const internal = express.Router(), publicRouter = express.Router();
     let checked = false;
     const requireReady = async (req, res, next) => { try {
-        await ready;
+        await (typeof ready === 'function' ? ready() : ready);
         if (!checked) {
             const result = await check(pool);
             if (!result.ready)
