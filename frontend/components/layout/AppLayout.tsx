@@ -165,6 +165,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   }
 
   if (user?.role === "operator" || user?.role === "admin") {
+    otherItems.unshift({ href: "/shipment-tracking", label: "Shipment Tracking", icon: CheckSquare });
     otherItems.unshift({ href: "/operator/live-rates", label: "Freight Live Rates", icon: Calculator });
   }
   // Prepend Home and append Logout only for non-other-tab roles (customer, calling_agent)

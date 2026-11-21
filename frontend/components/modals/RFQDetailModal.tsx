@@ -166,11 +166,10 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
     if (!shipment) return;
     setSavingCustomer(true);
     try {
-      const { data } = await api.put(`/shipments/${shipment.ref_no}`, {
-        ...shipment,
-        customer_name: custName,
-        customer_email: custEmail,
-      });
+      const changes = { customer_name: custName, customer_email: custEmail };
+      const { data } = shipment.status === "Confirmed"
+        ? await api.patch(`/shipments/${encodeURIComponent(shipment.ref_no)}/tracking`, changes)
+        : await api.put(`/shipments/${encodeURIComponent(shipment.ref_no)}`, { ...shipment, ...changes });
       toast.success("Customer details updated.");
       onUpdated(data.data);
       setEditingCustomer(false);
@@ -282,10 +281,10 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
           : `${window.location.protocol}//${window.location.hostname}:3001`)
       : "http://localhost:3001";
 
-    const newSocket = io(socketUrl);
+    const newSocket = io(socketUrl, { auth: { token: localStorage.getItem("freight_token") } });
     setSocket(newSocket);
 
-    newSocket.emit("joinRoom", `room_${roomKey}`);
+    newSocket.on("connect", () => newSocket.emit("joinRoom", `room_${roomKey}`));
 
     const fetchChatHistory = async () => {
       try {
@@ -361,9 +360,10 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
   if (!shipment) return null;
 
   const handleStatusChange = async () => {
-    const statusToSend = isSales ? (newStatus || shipment.status) : newStatus;
+    const canFinance = user?.role === "admin";
+    const statusToSend = canFinance ? (newStatus || shipment.status) : newStatus;
 
-    if (!isSales && (!newStatus || newStatus === shipment.status)) {
+    if (!canFinance && (!newStatus || newStatus === shipment.status)) {
       return;
     }
 
@@ -379,8 +379,8 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
     try {
       const { data } = await api.patch(`/shipments/${shipment.ref_no}/status`, {
         status: statusToSend,
-        cost: isSales ? parsedCost : undefined,
-        profit: isSales ? parsedProfit : undefined,
+        cost: canFinance ? parsedCost : undefined,
+        profit: canFinance ? parsedProfit : undefined,
       });
       toast.success("Shipment updated successfully.");
       onUpdated({
@@ -430,8 +430,8 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         <Field label="Container"    value={shipment.container} />
         <Field label="Weight"       value={shipment.weight ? `${shipment.weight} kg` : null} />
         <Field label="Dimension"    value={shipment.dimension} />
-        {user?.role !== "customer" && <Field label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />}
-        <Field label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
+        {user?.role === "admin" && <Field label="Cost"         value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />}
+        {user?.role === "admin" && <Field label="Customer Price" value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />}
         <Field label="ETD"          value={shipment.etd ? format(new Date(shipment.etd), "dd MMM yyyy") : null} />
         <Field label="ETA"          value={shipment.eta ? format(new Date(shipment.eta), "dd MMM yyyy") : null} />
         <Field label="Carrier"      value={shipment.carrier} />
@@ -443,7 +443,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
         <div className="mb-6 p-4 rounded-xl bg-surface-4 border border-white/[0.05]">
           <div className="flex items-center justify-between mb-3 border-b border-white/[0.05] pb-2">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted">Customer Information</p>
-            {!isSales && !editingCustomer ? (
+            {["admin", "operator"].includes(user?.role || "") && (!editingCustomer ? (
               <button
                 onClick={() => {
                   setCustName(shipment.customer_name || "");
@@ -470,7 +470,7 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
                   Cancel
                 </button>
               </div>
-            )}
+            ))}
           </div>
           
           {editingCustomer ? (
@@ -762,10 +762,10 @@ export default function RFQDetailModal({ shipment, isOpen, onClose, onUpdated }:
       {user?.role !== "customer" && !isSales && (
         <div className="border-t border-white/[0.06] pt-5">
           <p className="text-xs uppercase font-semibold tracking-widest text-muted mb-3">
-            {isSales ? "Update Status & Financials" : "Edit Status"}
+            {user?.role === "admin" ? "Update Status & Financials" : "Edit Status"}
           </p>
           
-          {isSales ? (
+          {user?.role === "admin" ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
                 <label className="block text-[10px] uppercase font-semibold text-muted mb-1.5">Status</label>

@@ -25,7 +25,8 @@ const compulsoryEmailsRoutes = require('./routes/compulsoryEmails');
 const callEnquiryRoutes  = require('./routes/callEnquiries');
 const quotationRoutes    = require('./routes/quotation');
 const cxRoutes           = require('./routes/3cx');
-const trackingRoutes     = require('./routes/tracking');
+const { createTrackingRouters } = require('./tracking/router');
+const { installTrackingRealtime } = require('./tracking/realtime');
 const errorHandler       = require('./middleware/errorHandler');
 const { startImapService } = require('./services/imapService');
 
@@ -42,17 +43,6 @@ const io = new Server(server, {
   }
 });
 global.io = io;
-
-io.on('connection', (socket) => {
-  console.log(`[Socket] Client connected: ${socket.id}`);
-  socket.on('joinRoom', (room) => {
-    socket.join(room);
-    console.log(`[Socket] Client ${socket.id} joined room: ${room}`);
-  });
-  socket.on('disconnect', () => {
-    console.log(`[Socket] Client disconnected: ${socket.id}`);
-  });
-});
 
 // ── Ensure uploads directory exists ─────────────────────────
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
@@ -116,7 +106,7 @@ if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
     
     // Dashboard Application Core Client routes
     const appRoutes = [
-      'login', 'register', 'dashboard', 'rfq', 'confirmed',
+      'login', 'register', 'dashboard', 'rfq', 'confirmed', 'shipment-tracking',
       'customers', 'customer', 'contacts', 'quotation',
       'calling-agent', 'sales', 'settings', 'summary',
       'admin', 'operator', 'calculator', 'reset-password'
@@ -623,7 +613,11 @@ app.get('/api/health-email', async (_req, res) => {
 
 // ── Routes Mounting ──────────────────────────────────────────
 app.use('/api/auth',           authRoutes);
-app.use('/api/shipments',      shipmentRoutes);
+const tracking = createTrackingRouters(require('./config/db').pool, { io, ready: coreSchemaReady });
+app.locals.trackingService = tracking.service;
+installTrackingRealtime(io, tracking.service);
+app.use('/api/shipments', tracking.internal);
+app.use('/api/shipments', shipmentRoutes);
 app.use('/api/dashboard',      dashboardRoutes);
 app.use('/api/files',          fileRoutes);
 app.use('/api/rfq',            rfqRoutes);
@@ -634,7 +628,7 @@ app.use('/api/compulsory-emails', compulsoryEmailsRoutes);
 app.use('/api/call-enquiries', callEnquiryRoutes);
 app.use('/api/quotation', quotationRoutes);
 app.use('/api/3cx', cxRoutes);
-app.use('/api/track', trackingRoutes);
+app.use('/api/track', tracking.publicRouter);
 app.use('/api/live-pricing', require('./live/router').createRouter(require('./config/db').pool, coreSchemaReady));
 
 // ── 404 Handler ──────────────────────────────────────────────

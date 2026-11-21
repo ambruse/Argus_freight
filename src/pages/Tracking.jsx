@@ -9,13 +9,13 @@ export default function Tracking() {
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
             <span className="hero-subtitle" style={{ justifyContent: 'center' }}>
-              <Globe size={16} /> Real-Time Freight Intelligence
+              <Globe size={16} /> Shipment progress, clearly reported
             </span>
             <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0.75rem 0', color: 'var(--text-primary)' }}>
-              Track Cargo & RFQ Status
+              Track Your Confirmed Shipment
             </h1>
             <p className="hero-description" style={{ margin: '0 auto 1.5rem auto' }}>
-              Enter your RFQ reference number or Bill of Lading to monitor real-time location, customs clearance updates, and estimated arrival times across Argus Shipping global routes.
+              Enter your shipment reference or Bill of Lading / AWB number to view the latest progress, recorded milestones and estimated arrival dates.
             </p>
           </div>
         </div>
@@ -52,10 +52,10 @@ export default function Tracking() {
               </div>
               <div>
                 <h4 style={{ margin: '0 0 0.35rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>
-                  24/7 Live Telematics
+                  Automatic Tracking Updates
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                  Continuous GPS and port EDI telemetry updates directly synced from air carriers and container vessels.
+                  Your tracking view refreshes when our operations team saves new shipment information.
                 </p>
               </div>
             </div>
@@ -79,10 +79,10 @@ export default function Tracking() {
               </div>
               <div>
                 <h4 style={{ margin: '0 0 0.35rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>
-                  Verified Customs Clearance
+                  Recorded Shipment Milestones
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                  Automated border inspection logs and digital clearance certificate tracking across GCC & international ports.
+                  Follow dated updates shared by our team, including departure, customs clearance and delivery progress.
                 </p>
               </div>
             </div>
@@ -106,10 +106,10 @@ export default function Tracking() {
               </div>
               <div>
                 <h4 style={{ margin: '0 0 0.35rem 0', color: 'var(--text-primary)', fontWeight: 700 }}>
-                  Last-Mile Warehouse Transit
+                  Clear Route and Schedule
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                  End-to-end visibility from bonded warehouse receipt to final consignee signature confirmation.
+                  See the recorded origin, destination and estimated schedule, with current location details when reported.
                 </p>
               </div>
             </div>

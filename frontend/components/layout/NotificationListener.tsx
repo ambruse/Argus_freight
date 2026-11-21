@@ -46,15 +46,13 @@ export default function NotificationListener() {
           ? window.location.origin
           : `${window.location.protocol}//${window.location.hostname}:3001`)
       : "http://localhost:3001";
-    const socket = io(socketUrl);
-    
-    socket.emit("joinRoom", `user_${user.username.toLowerCase()}`);
-    if (user.role === "admin") {
-      socket.emit("joinRoom", "role_admin");
-    }
-    if (user.role === "operator") {
-      socket.emit("joinRoom", "role_operator");
-    }
+    const socket = io(socketUrl, { auth: { token: localStorage.getItem("freight_token") } });
+
+    socket.on("connect", () => {
+      socket.emit("joinRoom", `user_${user.username.toLowerCase()}`);
+      if (user.role === "admin") socket.emit("joinRoom", "role_admin");
+      if (user.role === "operator") socket.emit("joinRoom", "role_operator");
+    });
     
     // Calling agent: post-call modal
     if (user.role === "calling_agent") {

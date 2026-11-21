@@ -30,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/contacts",              label: "Address Book",     icon: "◎",  section: "FREIGHT" },
   { href: "/customers",             label: "Customer Book",    icon: "▤",  section: "FREIGHT" },
   { href: "/calculator",            label: "Calculator",       icon: "🧮",  section: "FREIGHT" },
+  { href: "/shipment-tracking", label: "Shipment Tracking", icon: "◉", section: "OPERATIONS" },
   // Customer
   { href: "/customer/rfq/new",      label: "Request Quote",    icon: "✦",  section: "MY PORTAL" },
   { href: "/customer/rfq",          label: "My Requests",      icon: "◈",  section: "MY PORTAL" },
@@ -190,6 +191,7 @@ export default function Sidebar() {
 
   /* ── Filter nav by role ─────────────────────────────────── */
   const visibleItems = NAV_ITEMS.filter(item => {
+    if (item.href === "/shipment-tracking") return ["admin", "operator"].includes(user?.role || "");
     if (user?.role === "rater")         return ["/operator/live-rates", "/settings"].includes(item.href);
     if (user?.role === "customer")      return ["/dashboard", "/customer/rfq/new", "/customer/rfq", "/settings"].includes(item.href);
     if (user?.role === "sales")         return ["/rfq/new", "/rfq", "/confirmed", "/quotation", "/summary", "/sales/call-enquiries", "/settings", "/customers", "/calculator"].includes(item.href);

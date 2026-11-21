@@ -220,10 +220,10 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
           : `${window.location.protocol}//${window.location.hostname}:3001`)
       : "http://localhost:3001";
 
-    const newSocket = io(socketUrl);
+    const newSocket = io(socketUrl, { auth: { token: localStorage.getItem("freight_token") } });
     setSocket(newSocket);
 
-    newSocket.emit("joinRoom", `room_${roomKey}`);
+    newSocket.on("connect", () => newSocket.emit("joinRoom", `room_${roomKey}`));
 
     const fetchChatHistory = async () => {
       try {
@@ -309,7 +309,9 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
     if (!shipment) return;
     setSaving(true);
     try {
-      const { data } = await api.patch(`/shipments/${shipment.ref_no}/tracking`, editForm);
+      const payload = { ...editForm };
+      if (user?.role !== "admin") { delete payload.cost; delete payload.profit; }
+      const { data } = await api.patch(`/shipments/${shipment.ref_no}/tracking`, payload);
       toast.success("Tracking info updated.");
       onUpdated(data.data);
       setEditing(false);
@@ -455,7 +457,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
           <div className="rounded-xl border border-white/[0.07] overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 bg-surface-4 border-b border-white/[0.05]">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted">Tracking Information</p>
-              {!editing && !isSales && (
+              {!editing && ["admin", "operator"].includes(user?.role || "") && (
                 <button onClick={() => setEditing(true)} className="btn-secondary text-xs px-3 py-1.5">
                   ✎ Edit Tracking
                 </button>
@@ -478,7 +480,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                       ["Profit (QAR)",      "profit"],
                       ["Customer Name",     "customer_name"],
                       ["Customer Email",    "customer_email"],
-                    ].map(([label, key]) => (
+                    ].filter(([, key]) => user?.role === "admin" || !["cost", "profit"].includes(key)).map(([label, key]) => (
                       <div key={key}>
                         <p className="text-[10px] uppercase tracking-widest font-semibold text-muted mb-1">{label}</p>
                         <input
@@ -530,9 +532,11 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                   <InfoField label="Box No."           value={shipment.box_no} />
                   <InfoField label="Gross Weight"      value={shipment.gross_weight || (shipment.weight ? String(shipment.weight) : null)} />
                   <InfoField label="Chargeable Weight" value={shipment.chargeable_weight || shipment.gross_weight || (shipment.weight ? String(shipment.weight) : null)} />
+                  {user?.role === "admin" && <>
                   <InfoField label="Cost"              value={shipment.cost != null ? `QAR ${Number(shipment.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
                   <InfoField label="Customer Price"    value={shipment.cost != null ? `QAR ${(Number(shipment.cost) + Number(shipment.profit || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
                   <InfoField label="Profit"            value={shipment.profit ? `QAR ${Number(shipment.profit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null} />
+                  </>}
                   <InfoField label="ETD"               value={shipment.etd ? format(new Date(shipment.etd), "dd MMM yyyy") : null} />
                   <InfoField label="ETA"               value={shipment.eta ? format(new Date(shipment.eta), "dd MMM yyyy") : null} />
                   <InfoField label="Customer Name"     value={shipment.customer_name} />
@@ -541,48 +545,7 @@ export default function ConfirmedShipmentModal({ shipment, isOpen, onClose, onUp
                 </div>
               )}
 
-              {isSales && (
-                <div className="mt-6 pt-4 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-end gap-3">
-                  <div className="flex-1 max-w-xs">
-                    <label className="block text-[10px] uppercase tracking-widest font-semibold text-muted mb-1.5">
-                      Update Profit (QAR)
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      className="input-sm w-full font-semibold text-emerald"
-                      value={editForm.profit ?? ""}
-                      onChange={editSet("profit")}
-                      placeholder="e.g. 500"
-                    />
-                  </div>
-                  <button
-                    onClick={async () => {
-                      if (!shipment) return;
-                      const parsedProfit = editForm.profit !== "" && editForm.profit != null ? parseFloat(String(editForm.profit)) : null;
-                      setSaving(true);
-                      try {
-                        const { data } = await api.patch(`/shipments/${shipment.ref_no}/status`, {
-                          profit: parsedProfit,
-                        });
-                        toast.success("Profit updated successfully.");
-                        onUpdated({
-                          ...shipment,
-                          profit: data.data.profit,
-                        });
-                      } catch (err: any) {
-                        toast.error(err?.response?.data?.message ?? "Failed to update profit.");
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                    disabled={saving}
-                    className="btn-primary text-xs px-5 py-2 shrink-0"
-                  >
-                    {saving ? "Saving..." : "✓ Save Profit"}
-                  </button>
-                </div>
-              )}
+
             </div>
           </div>
         </div>

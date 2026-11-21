@@ -1,12 +1,14 @@
 {
   "name": "freight-rfq-backend",
   "version": "1.0.0",
-  "description": "Freight & RFQ Management System \u00e2\u20ac\u201d Express API",
+  "description": "Freight & RFQ Management System â€” Express API",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "reset-admin": "node scripts/reset-admin.js"
+    "reset-admin": "node scripts/reset-admin.js",
+    "tracking:migrate": "node scripts/migrate-tracking.js --up",
+    "tracking:check": "node scripts/migrate-tracking.js --check"
   },
   "dependencies": {
     "@matbee/libreoffice-converter": "^2.6.0",

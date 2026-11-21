@@ -26,7 +26,8 @@
     "cpanel:deploy": "npm run cpanel:install",
     "cpanel:start:backend": "cd backend && node server.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:tracking": "node --test backend/test/tracking-*.cjs test/public-tracking.test.mjs frontend/test/tracking-model.test.cjs"
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, Check, Package, Plane, Ship, Truck, Calendar, 
   Clock, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Copy, CheckCircle2
 } from 'lucide-react';
 import Globe3D from './Globe3D';
 import './ShipmentTracker.css';
+import useShipmentTracking from '../hooks/useShipmentTracking';
+import { formatTrackingTime, orderedPublicEvents, verifiedEndpoint } from '../utils/trackingPublic';
 
 // 6 Sequential Tracking Stages
 const STAGES = [
@@ -17,10 +19,12 @@ const STAGES = [
 ];
 
 export default function ShipmentTracker({ initialRfq = '' }) {
-  const [rfqInput, setRfqInput] = useState(initialRfq);
-  const [isLoading, setIsLoading] = useState(false);
-  const [shipmentData, setShipmentData] = useState(null);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [startingRef] = useState(() => initialRfq || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') || '' : ''));
+  const [rfqInput, setRfqInput] = useState(startingRef);
+  const { shipment: shipmentData, loading: isLoading, error: errorMsg, connection, lastChecked, search, refresh } = useShipmentTracking(startingRef);
+  const events = orderedPublicEvents(shipmentData?.events);
+  const originCoordinates = verifiedEndpoint(shipmentData?.origin);
+  const destinationCoordinates = verifiedEndpoint(shipmentData?.destination);
   const [showLog, setShowLog] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isDark, setIsDark] = useState(true);
@@ -38,54 +42,19 @@ export default function ShipmentTracker({ initialRfq = '' }) {
     return () => observer.disconnect();
   }, []);
 
-  // Fetch shipment data from live SQL backend API
-  const handleTrack = useCallback(async (searchRef) => {
-    const target = (searchRef || rfqInput).trim();
-    if (!target) {
-      setErrorMsg('Please enter a valid RFQ Reference Number.');
-      setShipmentData(null);
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMsg('');
-    setShipmentData(null);
-
-    try {
-      const res = await fetch(`/api/track/${encodeURIComponent(target)}`);
-      const json = await res.json();
-      if (json && json.success && json.data) {
-        setShipmentData(json.data);
-        setErrorMsg('');
-      } else {
-        setShipmentData(null);
-        setErrorMsg(json?.message || 'No tracking information found.');
-      }
-    } catch {
-      setShipmentData(null);
-      setErrorMsg('No tracking information found.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [rfqInput]);
-
-  useEffect(() => {
-    if (initialRfq) {
-      handleTrack(initialRfq);
-    }
-  }, [initialRfq, handleTrack]);
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    handleTrack(rfqInput);
+    search(rfqInput);
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const textToCopy = shipmentData?.cust_req_no || shipmentData?.ref_no;
     if (textToCopy) {
-      navigator.clipboard.writeText(textToCopy);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch { setCopied(false); }
     }
   };
 
@@ -108,11 +77,11 @@ export default function ShipmentTracker({ initialRfq = '' }) {
         <div className="argus-tracker-title-row">
           <h3 className="argus-tracker-title">
             <Package size={28} style={{ color: 'var(--accent)' }} />
-            Real-Time Shipment Tracking
+            Real-Time Tracking Updates
           </h3>
           <div className="argus-tracker-badge-live">
             <span className="argus-live-dot"></span>
-            Argus Live Tracking Network
+            {shipmentData ? connection : 'Updates from our operations team'}
           </div>
         </div>
 
@@ -121,6 +90,9 @@ export default function ShipmentTracker({ initialRfq = '' }) {
             <Search className="argus-input-icon" />
             <input
               type="text"
+              aria-label="Shipment reference or BL / AWB number"
+              autoComplete="off"
+              maxLength={100}
               className="argus-tracker-input"
               placeholder="Enter Ref Number (e.g. ARG-2408261 or ARG-2408261-1)..."
               value={rfqInput}
@@ -143,7 +115,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
         </form>
 
         {errorMsg && (
-          <div style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.6rem', fontWeight: 600 }}>
+          <div role="alert" style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.6rem', fontWeight: 600 }}>
             {errorMsg}
           </div>
         )}
@@ -151,6 +123,17 @@ export default function ShipmentTracker({ initialRfq = '' }) {
 
       {shipmentData && (
         <div style={{ animation: 'fadeIn 0.4s ease-in-out' }}>
+          <div className="argus-refresh-row">
+            <div aria-live="polite">
+              <strong>{shipmentData.status}</strong>
+              <span>Last updated: {formatTrackingTime(shipmentData.last_tracking_update || shipmentData.updated_at)}</span>
+              {lastChecked && <small>Last checked: {formatTrackingTime(lastChecked)}</small>}
+            </div>
+            <button className="argus-track-btn" type="button" onClick={refresh} disabled={isLoading}>
+              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> {isLoading ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+          {shipmentData.public_message && <p className="argus-customer-message">{shipmentData.public_message}</p>}
 
           {/* 2. TOP HEADER INFO (Origin / Destination & Dashed Line) */}
           <div className="argus-origin-dest-header">
@@ -166,6 +149,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               <div className="argus-meta-label">Origin (POL)</div>
               <div className="argus-country-name">{shipmentData.origin.country}</div>
               <div className="argus-city-highlight">{shipmentData.origin.city}</div>
+              <small>{shipmentData.origin.port || shipmentData.pol || 'Port not recorded'} {shipmentData.origin.code && `(${shipmentData.origin.code})`}</small>
             </div>
 
             {/* Right Side: Destination */}
@@ -173,20 +157,24 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               <div className="argus-meta-label">Destination (POD)</div>
               <div className="argus-country-name">{shipmentData.destination.country}</div>
               <div className="argus-city-highlight">{shipmentData.destination.city}</div>
+              <small>{shipmentData.destination.port || shipmentData.pod || 'Port not recorded'} {shipmentData.destination.code && `(${shipmentData.destination.code})`}</small>
             </div>
           </div>
 
           {/* 3. INTERACTIVE 3D GLOBAL ROUTE VISUALIZATION (POL -> POD) */}
           <div className="argus-globe-wrapper">
-            <Globe3D 
-              origin={shipmentData.origin}
-              destination={shipmentData.destination}
+            {originCoordinates && destinationCoordinates ? <Globe3D
+              origin={originCoordinates}
+              destination={destinationCoordinates}
+              routeOnly={true}
               transportMode={shipmentData.mode}
               currentStageIndex={shipmentData.currentStageIndex}
               status={shipmentData.track_status || shipmentData.status}
               isDarkMode={isDark}
               height={440}
-            />
+            /> : <div className="argus-route-empty"><Package size={24} aria-hidden="true" />Route map will appear when origin and destination coordinates are available.</div>}
+            <p className="argus-route-caption">Route illustration between reported endpoints. Updates reflect information saved by the Argus operations team.</p>
+            <p className="argus-reported-location"><strong>Current reported location:</strong> {[shipmentData.current_location, shipmentData.current_country].filter(Boolean).join(', ') || 'Not yet reported'}</p>
           </div>
 
           {/* 4. 6-STAGE SEQUENTIAL PROGRESS STEPPER */}
@@ -205,7 +193,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
                 const isActive = index === shipmentData.currentStageIndex;
                 const isUpcoming = index > shipmentData.currentStageIndex;
 
-                const timelineEvent = shipmentData.timeline && shipmentData.timeline[index];
+                const timelineEvent = events.find(event => event.new_status === stageItem.label);
 
                 return (
                   <div key={stageItem.id} className="argus-step-item">
@@ -241,7 +229,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
 
                     {timelineEvent && (
                       <div className="argus-stage-date">
-                        {timelineEvent.date}
+                        {formatTrackingTime(timelineEvent.event_time)}
                       </div>
                     )}
 
@@ -291,7 +279,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
                 <Calendar size={20} />
               </div>
               <div className="argus-detail-meta">
-                <span className="argus-detail-label">Est. Delivery (ETA)</span>
+                <span className="argus-detail-label">Estimated Arrival (ETA)</span>
                 <span className="argus-detail-value">{shipmentData.eta}</span>
               </div>
             </div>
@@ -340,14 +328,14 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               </div>
             )}
 
-            {shipmentData.container && shipmentData.container !== '—' && (
+            {(shipmentData.container_number || (shipmentData.container && shipmentData.container !== '—')) && (
               <div className="argus-detail-card">
                 <div className="argus-detail-icon-wrap">
                   <Package size={20} />
                 </div>
                 <div className="argus-detail-meta">
                   <span className="argus-detail-label">Container</span>
-                  <span className="argus-detail-value">{shipmentData.container}</span>
+                  <span className="argus-detail-value">{shipmentData.container_number || shipmentData.container}</span>
                 </div>
               </div>
             )}
@@ -368,9 +356,20 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               </div>
               <div className="argus-detail-meta">
                 <span className="argus-detail-label">Chargeable Weight</span>
-                <span className="argus-detail-value">{shipmentData.chargeable_weight || shipmentData.gross_weight || shipmentData.weight || '—'}</span>
+                <span className="argus-detail-value">{shipmentData.chargeable_weight || 'Not recorded'}</span>
               </div>
             </div>
+            {[
+              ['Estimated Departure (ETD)', shipmentData.etd],
+              ['Packages', shipmentData.package_count ?? shipmentData.number_of_packages],
+              ['Actual Departure (ATD)', shipmentData.actual_departure ? formatTrackingTime(shipmentData.actual_departure) : null],
+              ['Actual Arrival (ATA)', shipmentData.actual_arrival ? formatTrackingTime(shipmentData.actual_arrival) : null],
+              ['Next Expected Milestone', shipmentData.next_milestone],
+              ['Next Expected Update', shipmentData.next_update ? formatTrackingTime(shipmentData.next_update) : null],
+            ].map(([label, value]) => <div className="argus-detail-card" key={label}>
+              <div className="argus-detail-icon-wrap"><Package size={20} /></div>
+              <div className="argus-detail-meta"><span className="argus-detail-label">{label}</span><span className="argus-detail-value">{value || 'Not recorded'}</span></div>
+            </div>)}
           </div>
 
           {/* 5. INTERACTIVE ACTIONS & ACCORDION EXPANDER */}
@@ -378,6 +377,8 @@ export default function ShipmentTracker({ initialRfq = '' }) {
             <button 
               type="button" 
               onClick={() => setShowLog(!showLog)}
+              aria-expanded={showLog}
+              aria-controls="tracking-event-history"
               style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
             >
               {showLog ? 'Hide Milestone History' : 'View Detailed Milestone History'}
@@ -387,24 +388,24 @@ export default function ShipmentTracker({ initialRfq = '' }) {
 
           {/* Detailed Audit Log Timeline Accordion */}
           {showLog && (
-            <div className="argus-log-section">
+            <div className="argus-log-section" id="tracking-event-history">
               <div className="argus-log-toggle">
                 <span>Detailed Milestone History Log</span>
                 <Clock size={16} className="text-muted" />
               </div>
               <div className="argus-log-list">
-                {shipmentData.timeline.map((event, i) => (
-                  <div key={i} className="argus-log-item">
-                    <div className={`argus-log-dot ${event.status}`}>
-                      {event.status === 'completed' ? <Check size={12} /> : i + 1}
-                    </div>
+                {events.length === 0 && <p className="argus-timeline-empty">No tracking events have been recorded yet. The progress indicator shows the latest reported stage; earlier movement dates are unavailable.</p>}
+                {events.map((event, i) => (
+                  <div key={event.id || `${event.event_time}-${i}`} className="argus-log-item">
+                    <div className="argus-log-dot completed"><Check size={12} /></div>
                     <div className="argus-log-content">
                       <div className="argus-log-header-row">
-                        <span className="argus-log-stage-name">{event.label}</span>
-                        <span className="argus-log-time">{event.date} • {event.time}</span>
+                        <span className="argus-log-stage-name">{event.event_title || event.new_status || 'Shipment update'}</span>
+                        <span className="argus-log-time">{formatTrackingTime(event.event_time)}</span>
                       </div>
                       <div className="argus-log-desc">
-                        📍 <strong>{event.location}</strong> — {event.description}
+                        {[event.location_name, event.location_country].filter(Boolean).length > 0 && <strong>{[event.location_name, event.location_country].filter(Boolean).join(', ')} · </strong>}
+                        {event.event_description || ''}
                       </div>
                     </div>
                   </div>

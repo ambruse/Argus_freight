@@ -1,5 +1,5 @@
 // Response metadata only. This does not authorize access or change routing.
-const privatePath = /^\/(?:api|admin|operator|customer|customers|rfq|dashboard|confirmed|contacts|quotation|calling-agent|sales|settings|summary|calculator|login|register|reset-password|landing)(?:\/|\.html$|$)/i;
+const privatePath = /^\/(?:api|admin|operator|customer|customers|rfq|dashboard|confirmed|shipment-tracking|contacts|quotation|calling-agent|sales|settings|summary|calculator|login|register|reset-password|landing)(?:\/|\.html$|$)/i;
 function shouldNoindex(rawUrl) {
   const url = new URL(rawUrl, 'https://www.argusshipping.co');
   if (privatePath.test(url.pathname)) return true;

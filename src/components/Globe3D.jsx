@@ -19,7 +19,8 @@ export const Globe3D = ({
   status = 'In Transit',
   isDarkMode = true,
   className = "w-full flex flex-col gap-5",
-  height = 480
+  height = 480,
+  routeOnly = false
 }) => {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
@@ -74,6 +75,7 @@ export const Globe3D = ({
 
   // Determine if vehicle is at Origin (Confirmed/Scheduled), In Transit, or Destination (Clearance/Warehouse/Delivered)
   const stageType = useMemo(() => {
+    if (routeOnly) return 'route';
     if (typeof currentStageIndex === 'number' && currentStageIndex >= 0) {
       if (currentStageIndex <= 1) return 'origin'; // Confirmed (0) or Scheduled (1)
       if (currentStageIndex === 2) return 'transit'; // In Transit (2)
@@ -90,7 +92,7 @@ export const Globe3D = ({
       return 'destination';
     }
     return 'transit';
-  }, [currentStageIndex, status]);
+  }, [currentStageIndex, status, routeOnly]);
 
   // Normalized transport mode matching hero slider orbit modes
   const currentMode = useMemo(() => {
@@ -135,6 +137,7 @@ export const Globe3D = ({
   }, [height]);
 
   useEffect(() => {
+    if (routeOnly) return undefined;
     let animId;
     let lastTime = performance.now();
     const duration = currentMode === 'flight' ? 4000 : currentMode === 'maritime' ? 8000 : 2000;
@@ -148,7 +151,7 @@ export const Globe3D = ({
 
     animId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animId);
-  }, [currentMode]);
+  }, [currentMode, routeOnly]);
 
   const geoFeatures = useMemo(() => {
     try {
@@ -514,6 +517,7 @@ export const Globe3D = ({
           {currentMode === 'doortodoor' && <MapPin className="w-3.5 h-3.5 animate-pulse text-[#f5c842]" />}
 
           <span>
+            {routeOnly && 'Route illustration · POL → POD'}
             {stageType === 'origin' && `POL: ${resolvedOrigin?.name || 'Origin'} (${status || 'Confirmed'})`}
             {stageType === 'transit' && `In Transit • 3D ${currentMode === 'air' ? 'Airway' : currentMode === 'sea' ? 'Maritime Corridor' : 'Logistics Corridor'}`}
             {stageType === 'destination' && `POD: ${resolvedDest?.name || 'Destination'} (${status || 'Clearance'})`}

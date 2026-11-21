@@ -45,7 +45,7 @@ test('canonicals retain URL policy and reject unsafe or parameter URLs', () => {
 });
 test('private/query policy preserves public routes and campaigns', () => {
   for (const url of ['/','/services','/locations/qatar/','/tracking','/?utm_source=test&gclid=test']) assert.equal(shouldNoindex(url),false,url);
-  for (const url of ['/api/track/synthetic','/api/live-pricing/quotes/synthetic','/operator/live-rates','/Quotation.html','/customer/rfq/new?live_quote=synthetic','/?origin=a&destination=b','/tracking?ref=synthetic','/?utm_source=x&ref=synthetic','/?anything=value']) assert.equal(shouldNoindex(url),true,url);
+  for (const url of ['/api/track/synthetic','/api/live-pricing/quotes/synthetic','/operator/live-rates','/shipment-tracking','/shipment-tracking.html','/Quotation.html','/customer/rfq/new?live_quote=synthetic','/?origin=a&destination=b','/tracking?ref=synthetic','/?utm_source=x&ref=synthetic','/?anything=value']) assert.equal(shouldNoindex(url),true,url);
 });
 test('response middleware works for API success and failure without altering bodies', async () => {
   const express = require('../backend/node_modules/express');

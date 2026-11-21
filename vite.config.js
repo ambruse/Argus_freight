@@ -11,6 +11,8 @@ export default defineConfig({
       interval: 500
     },
     proxy: {
+      '/socket.io': { target: 'http://127.0.0.1:3001', ws: true, changeOrigin: true },
+      '/shipment-tracking': 'http://127.0.0.1:3002',
       '^/api': {
         target: 'http://127.0.0.1:3001',
         changeOrigin: true,

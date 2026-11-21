@@ -894,3 +894,17 @@ body.light-theme .argus-log-desc {
 }
 
 
+
+.argus-refresh-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; }
+.argus-refresh-row > div { display: flex; flex-direction: column; gap: .3rem; }
+.argus-refresh-row strong { color: var(--accent); font-size: 1.1rem; }
+.argus-refresh-row span, .argus-refresh-row small { color: var(--text-muted); font-size: .8rem; }
+.argus-refresh-row .argus-track-btn { padding: .7rem 1rem; }
+.argus-customer-message { padding: 1rem 1.25rem; border-left: 3px solid var(--accent); background: var(--accent-muted); border-radius: 8px; margin-bottom: 1.5rem; white-space: pre-wrap; }
+.argus-route-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .8rem; padding: 2rem; border: 1px dashed var(--border-color); border-radius: 16px; color: var(--text-muted); }
+.argus-route-caption { color: var(--text-muted); font-size: .75rem; margin: .8rem 0; }
+.argus-reported-location { font-size: .85rem; padding: .8rem 0; }
+.argus-timeline-empty { color: var(--text-muted); font-size: .85rem; line-height: 1.7; padding: 1rem; }
+.argus-detail-value, .argus-log-desc, .argus-origin-dest-box small { overflow-wrap: anywhere; }
+.argus-track-btn:focus-visible, .argus-tracker-card button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .argus-tracker-card *, .argus-tracker-card *::before, .argus-tracker-card *::after { animation: none !important; transition: none !important; } }

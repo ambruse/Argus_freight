@@ -3,13 +3,13 @@
 // ─────────────────────────────────────────────────────────────
 //  Confirmed Shipments Page
 //  • Shows only status = "Confirmed"
-//  • "+ Add Direct Shipment" button → AddShipmentModal
+//  • Direct shipment registration uses the authorized tracking workflow.
 //  • Double-click row → ConfirmedShipmentModal (tabbed details + file manager)
 // ─────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import Badge from "@/components/ui/Badge";
-import AddShipmentModal from "@/components/modals/AddShipmentModal";
+import Link from "next/link";
 import ConfirmedShipmentModal from "@/components/modals/ConfirmedShipmentModal";
 import PasswordPromptModal from "@/components/modals/PasswordPromptModal";
 import api from "@/lib/api";
@@ -44,7 +44,6 @@ export default function ConfirmedPage() {
   const [shipments,   setShipments]   = useState<Shipment[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState("");
-  const [addOpen,     setAddOpen]     = useState(false);
   const [selected,    setSelected]    = useState<Shipment | null>(null);
   const [detailOpen,  setDetailOpen]  = useState(false);
 
@@ -108,10 +107,6 @@ export default function ConfirmedPage() {
         clickTimerRef.current = null;
       }, 250);
     }
-  };
-
-  const handleCreated = (s: Shipment) => {
-    setShipments((prev) => [s, ...prev]);
   };
 
   const handleUpdated = (updated: Shipment) => {
@@ -269,20 +264,9 @@ export default function ConfirmedPage() {
           >
             📊 Export Excel
           </button>
-          {!user || user.role !== "sales" ? (
-            <button 
-              onClick={() => {
-                setPasswordPrompt({
-                  isOpen: true,
-                  actionName: "add a Direct Shipment",
-                  onSuccess: () => setAddOpen(true)
-                });
-              }} 
-              className="btn-emerald"
-            >
-              + Add Direct Shipment
-            </button>
-          ) : null}
+          {["admin", "operator"].includes(user?.role || "") && (
+            <Link href="/shipment-tracking?create=1" className="btn-emerald">+ Add Shipment to Tracking</Link>
+          )}
         </div>
       }
     >
@@ -347,10 +331,10 @@ export default function ConfirmedPage() {
                     <div className="space-y-2">
                       <p className="text-4xl">📦</p>
                       <p className="text-sm">No confirmed shipments found.</p>
-                      {(!user || user.role !== "sales") && (
-                        <button onClick={() => setAddOpen(true)} className="btn-emerald text-xs mt-3">
-                          + Add Direct Shipment
-                        </button>
+                      {["admin", "operator"].includes(user?.role || "") && (
+                        <Link href="/shipment-tracking?create=1" className="btn-emerald text-xs mt-3">
+                          + Add Shipment to Tracking
+                        </Link>
                       )}
                     </div>
                   </td>
@@ -470,11 +454,6 @@ export default function ConfirmedPage() {
       </p>
 
       {/* ── Modals ───────────────────────────────────────── */}
-      <AddShipmentModal
-        isOpen={addOpen}
-        onClose={() => setAddOpen(false)}
-        onCreated={handleCreated}
-      />
       <ConfirmedShipmentModal
         shipment={selected}
         isOpen={detailOpen}
