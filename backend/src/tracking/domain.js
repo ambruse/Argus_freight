@@ -11,7 +11,7 @@ const FIELD_TYPES = Object.freeze({
   ...Object.fromEntries(`gross_weight chargeable_weight cargo_volume net_weight cost customer_charge profit actual_profit`.split(' ').map(k => [k, 'decimal'])),
   package_count: 'integer', container_count: 'integer', dangerous_goods: 'boolean', mode: 'mode', track_status: 'stage',
 });
-const REQUIRED_NEW_FIELDS = Object.freeze(`customer_name mode pol_country pol_city pol_port pod_country pod_city pod_port commodity cargo_type package_count package_type gross_weight chargeable_weight weight_unit cargo_volume etd eta`.split(' '));
+const REQUIRED_NEW_FIELDS = Object.freeze(`mode pol_country pol_port pod_country pod_port commodity chargeable_weight etd eta`.split(' '));
 
 function failure(message, status = 400) {
   const error = new Error(message);
@@ -117,8 +117,9 @@ function validateChanges(body, { isNew = false, canFinance = false } = {}) {
     for (const key of REQUIRED_NEW_FIELDS) {
       if (changes[key] === undefined || changes[key] === null || changes[key] === '') throw failure(`${key} is required for a new confirmed shipment.`);
     }
-    if (changes.package_count < 1) throw failure('package_count must be at least 1.');
+    if (changes.package_count != null && changes.package_count < 1) throw failure('package_count must be at least 1.');
     changes.track_status ||= 'Confirmed';
+    changes.weight_unit ||= 'KG';
   }
   if (changes.etd && changes.eta && changes.eta < changes.etd) throw failure('ETA must be on or after ETD.');
   if (changes.actual_departure && changes.actual_arrival && changes.actual_arrival < changes.actual_departure) throw failure('Actual arrival must be on or after actual departure.');

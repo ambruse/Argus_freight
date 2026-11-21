@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
-  Search, Check, Package, Plane, Ship, Truck, Calendar, 
-  Clock, ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Copy, CheckCircle2
+  Search, Check, Package, Plane, Ship, Truck,
+  Clock, ChevronDown, ChevronUp, RefreshCw, Copy, CheckCircle2
 } from 'lucide-react';
 import Globe3D from './Globe3D';
 import './ShipmentTracker.css';
@@ -135,6 +135,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
           </div>
           {shipmentData.public_message && <p className="argus-customer-message">{shipmentData.public_message}</p>}
 
+          <div className="argus-refresh-row"><span>Customer request: <strong>{shipmentData.cust_req_no || shipmentData.ref_no}</strong></span><button type="button" className="argus-track-btn" onClick={handleCopy}>{copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}Copy reference</button></div>
           {/* 2. TOP HEADER INFO (Origin / Destination & Dashed Line) */}
           <div className="argus-origin-dest-header">
             <div className="argus-header-dashed-line" />
@@ -248,127 +249,19 @@ export default function ShipmentTracker({ initialRfq = '' }) {
 
           {/* 4. SHIPMENT DETAILS GRID & ACTIONS */}
           <div className="argus-details-grid">
-            <div className="argus-detail-card">
-              <div className="argus-detail-icon-wrap">
-                <ShieldCheck size={20} />
-              </div>
-              <div className="argus-detail-meta">
-                <span className="argus-detail-label">
-                  {shipmentData.cust_req_no ? 'Enquiry / RFQ Ref' : 'RFQ Reference'}
-                </span>
-                <span className="argus-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  {shipmentData.cust_req_no || shipmentData.ref_no}
-                  <button 
-                    onClick={handleCopy} 
-                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
-                    title="Copy Reference"
-                  >
-                    {copied ? <CheckCircle2 size={14} style={{ color: '#10b981' }} /> : <Copy size={14} />}
-                  </button>
-                </span>
-                {shipmentData.cust_req_no && shipmentData.ref_no && shipmentData.cust_req_no !== shipmentData.ref_no && (
-                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.1rem' }}>
-                    RFQ Ref: {shipmentData.ref_no}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="argus-detail-card">
-              <div className="argus-detail-icon-wrap">
-                <Calendar size={20} />
-              </div>
-              <div className="argus-detail-meta">
-                <span className="argus-detail-label">Estimated Arrival (ETA)</span>
-                <span className="argus-detail-value">{shipmentData.eta}</span>
-              </div>
-            </div>
-
-            <div className="argus-detail-card">
-              <div className="argus-detail-icon-wrap">
-                <Truck size={20} />
-              </div>
-              <div className="argus-detail-meta">
-                <span className="argus-detail-label">Carrier</span>
-                <span className="argus-detail-value">{shipmentData.carrier || '—'}</span>
-              </div>
-            </div>
-
-            <div className="argus-detail-card">
-              <div className="argus-detail-icon-wrap">
-                <ShieldCheck size={20} />
-              </div>
-              <div className="argus-detail-meta">
-                <span className="argus-detail-label">{(shipmentData.mode || '').toLowerCase().includes('air') ? 'AWB Number' : 'BL / DO Number'}</span>
-                <span className="argus-detail-value">{shipmentData.container_no || '—'}</span>
-              </div>
-            </div>
-
-            {shipmentData.commodity && shipmentData.commodity !== '—' && (
-              <div className="argus-detail-card">
-                <div className="argus-detail-icon-wrap">
-                  <Package size={20} />
-                </div>
-                <div className="argus-detail-meta">
-                  <span className="argus-detail-label">Commodity</span>
-                  <span className="argus-detail-value">{shipmentData.commodity}</span>
-                </div>
-              </div>
-            )}
-
-            {shipmentData.dimension && shipmentData.dimension !== '—' && (
-              <div className="argus-detail-card">
-                <div className="argus-detail-icon-wrap">
-                  <Package size={20} />
-                </div>
-                <div className="argus-detail-meta">
-                  <span className="argus-detail-label">Dimensions</span>
-                  <span className="argus-detail-value">{shipmentData.dimension}</span>
-                </div>
-              </div>
-            )}
-
-            {(shipmentData.container_number || (shipmentData.container && shipmentData.container !== '—')) && (
-              <div className="argus-detail-card">
-                <div className="argus-detail-icon-wrap">
-                  <Package size={20} />
-                </div>
-                <div className="argus-detail-meta">
-                  <span className="argus-detail-label">Container</span>
-                  <span className="argus-detail-value">{shipmentData.container_number || shipmentData.container}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="argus-detail-card">
-              <div className="argus-detail-icon-wrap">
-                <Package size={20} />
-              </div>
-              <div className="argus-detail-meta">
-                <span className="argus-detail-label">Gross Weight (G.W.)</span>
-                <span className="argus-detail-value">{shipmentData.gross_weight || shipmentData.weight || '—'}</span>
-              </div>
-            </div>
-
-            <div className="argus-detail-card">
-              <div className="argus-detail-icon-wrap">
-                <Package size={20} />
-              </div>
-              <div className="argus-detail-meta">
-                <span className="argus-detail-label">Chargeable Weight</span>
-                <span className="argus-detail-value">{shipmentData.chargeable_weight || 'Not recorded'}</span>
-              </div>
-            </div>
             {[
-              ['Estimated Departure (ETD)', shipmentData.etd],
-              ['Packages', shipmentData.package_count ?? shipmentData.number_of_packages],
-              ['Actual Departure (ATD)', shipmentData.actual_departure ? formatTrackingTime(shipmentData.actual_departure) : null],
-              ['Actual Arrival (ATA)', shipmentData.actual_arrival ? formatTrackingTime(shipmentData.actual_arrival) : null],
-              ['Next Expected Milestone', shipmentData.next_milestone],
-              ['Next Expected Update', shipmentData.next_update ? formatTrackingTime(shipmentData.next_update) : null],
+              ['Mode', shipmentData.mode],
+              ['POL country', shipmentData.origin?.country],
+              ['POL', shipmentData.origin?.port || shipmentData.pol],
+              ['POD country', shipmentData.destination?.country],
+              ['POD', shipmentData.destination?.port || shipmentData.pod],
+              ['Commodity', shipmentData.commodity],
+              ['Chargeable weight', shipmentData.chargeable_weight],
+              ['ETA', shipmentData.eta],
+              ['ETD', shipmentData.etd],
             ].map(([label, value]) => <div className="argus-detail-card" key={label}>
               <div className="argus-detail-icon-wrap"><Package size={20} /></div>
-              <div className="argus-detail-meta"><span className="argus-detail-label">{label}</span><span className="argus-detail-value">{value || 'Not recorded'}</span></div>
+              <div className="argus-detail-meta"><span className="argus-detail-label">{label}</span><span className="argus-detail-value">{value ?? 'Not recorded'}</span></div>
             </div>)}
           </div>
 

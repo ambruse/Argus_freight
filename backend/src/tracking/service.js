@@ -2,6 +2,7 @@
 const { createHash } = require('node:crypto');
 const { STAGES, FIELD_TYPES, FINANCIAL_FIELDS, mapStatusToStageIndex, normalizeRef, validateChanges, safePublic } = require('./domain');
 const { assertTransactionalShipmentTables } = require('./schema');
+const { requestDate, nextRequestNumber } = require('./requestNumber');
 const BASE_FIELDS = ['ref_no', 'cust_req_no', 'customer_id', 'customer_name', 'customer_email', 'pol', 'pod', 'commodity', 'term', 'dimension', 'container', 'mode', 'weight', 'gross_weight', 'chargeable_weight', 'do_number', 'box_no', 'so_number', 'bl_number', 'track_status', 'carrier', 'etd', 'eta', 'cost', 'profit', 'operator', 'refer_by', 'status', 'created_at', 'updated_at'];
 const quote = name => { if (!/^[a-zA-Z0-9_]+$/.test(name))
     throw new Error('Invalid database identifier'); return '`' + name + '`'; };
@@ -288,6 +289,7 @@ function createTrackingService(pool, { notify = () => { }, now = () => new Date(
     }
     async function save(user, ref, body, { isNew = false } = {}) {
         guard(user);
+        if (isNew && body?.cust_req_no) throw fail('Customer request numbers are generated automatically. Leave this field empty.');
         const changes = validateChanges(body, { isNew, canFinance: user.role === 'admin' });
         const limits = { customer_id: 5, cust_req_no: 50, pol: 100, pod: 100, term: 50, dimension: 255, container: 100, mode: 50, weight: 100, do_number: 100, box_no: 100, so_number: 100, bl_number: 100, carrier: 150 };
         for (const [field, limit] of Object.entries(limits))
@@ -328,16 +330,20 @@ function createTrackingService(pool, { notify = () => { }, now = () => new Date(
                     }
                 }
                 ref = prefix + (max + 1) + '-1';
-                key = normalizeRef(ref);
-                if (changes.cust_req_no) {
-                    const existingKey = normalizeRef(changes.cust_req_no);
-                    for (const t of tables) {
-                        const [matches] = await connection.query(`SELECT ref_no FROM ${quote(t.name)} s WHERE ${t.columns.has('cust_req_no') ? keySQL('s') : canonicalSQL('UPPER(TRIM(s.ref_no))')}=? LIMIT 1`, [existingKey]);
-                        if (matches.length)
-                            throw fail('This customer request already exists. Choose Add Existing Confirmed Shipment.', 409);
+                // Allocate under argus_tracking_create, before writing any copy.
+                // Include legacy copies and retained profiles so numbers are not reused.
+                const date = now();
+                const existingRequests = [];
+                for (const table of tables) {
+                    for (const column of ['ref_no', 'cust_req_no'].filter(c => table.columns.has(c))) {
+                        const [rows] = await connection.query(`SELECT ${quote(column)} AS ref FROM ${quote(table.name)} WHERE ${quote(column)} LIKE ?`, ['%' + requestDate(date) + '%']);
+                        existingRequests.push(...rows.map(row => row.ref));
                     }
-                    key = existingKey;
                 }
+                const [reserved] = await connection.query('SELECT shipment_key AS ref FROM tracking_profiles WHERE shipment_key LIKE ?', ['%' + requestDate(date) + '%']);
+                existingRequests.push(...reserved.map(row => row.ref));
+                changes.cust_req_no = nextRequestNumber(date, existingRequests);
+                key = changes.cust_req_no;
                 if (changes.customer_id) {
                     const [customers] = await connection.query('SELECT customer_id FROM customers WHERE customer_id=? LIMIT 1', [changes.customer_id]);
                     if (!customers.length)

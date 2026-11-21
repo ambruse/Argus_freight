@@ -32,7 +32,7 @@ test('new shipment validation retains separate gross/chargeable values and norma
 });
 
 test('new shipment requires cargo, country, schedule and weight details without invented defaults', () => {
-  for (const field of ['pol_country', 'pod_port', 'commodity', 'chargeable_weight', 'eta', 'package_count']) {
+  for (const field of ['pol_country', 'pod_port', 'commodity', 'chargeable_weight', 'eta']) {
     const body = newShipment();
     delete body[field];
     assert.throws(() => validateChanges(body, { isNew: true }), new RegExp(field));
@@ -160,4 +160,11 @@ test('timestamps are normalized consistently to UTC', () => {
   assert.equal(utcTimestamp('2026-11-21 12:30:00'), '2026-11-21T12:30:00.000Z');
   assert.equal(utcTimestamp('2026-11-21T15:30:00+03:00'), '2026-11-21T12:30:00.000Z');
   assert.equal(utcTimestamp('invalid'), null);
+});
+
+test('the compact nine-field form is sufficient without fabricating other cargo details',()=>{
+  const result=validateChanges({mode:'Sea Freight',pol_country:'China',pol_port:'Shanghai',pod_country:'Qatar',pod_port:'Hamad Port',commodity:'Furniture',chargeable_weight:'0.5',eta:'2026-12-04',etd:'2026-11-24'},{isNew:true});
+  assert.equal(result.chargeable_weight,0.5);
+  assert.equal(result.weight_unit,'KG');
+  for(const key of ['customer_name','dimension','gross_weight','package_count','cargo_volume','cargo_type'])assert.equal(Object.hasOwn(result,key),false);
 });

@@ -43,6 +43,7 @@ function fixture({ failUpdateTable, failAudit = false, ownership = true, empty =
           return [state.copies.shipments ? [{ ...state.copies.shipments, details: state.profile?.details || null, version: state.profile?.version || 0, tracking_updated_at: state.profile ? '2026-11-21 10:00:00' : null, __source: 'shipments', rn: 1, __priority: 0 }] : []];
         }
       }
+      if (sql.startsWith('SELECT shipment_key AS ref FROM tracking_profiles')) return [[]];
       if (sql.startsWith('SELECT details,version FROM tracking_profiles')) return [state.profile ? [{ ...state.profile }] : []];
       if (sql.startsWith('INSERT INTO tracking_profiles')) {
         state.profile = { details: values[1], version: (state.profile?.version || 0) + 1 };
@@ -66,7 +67,8 @@ function fixture({ failUpdateTable, failAudit = false, ownership = true, empty =
       if (insertCopy) {
         const fields = [...insertCopy[2].matchAll(/`([^`]+)`/g)].map(match => match[1]);
         assert.equal(state.copies[insertCopy[1]], null, 'Fixture copy insert must not replace an existing row');
-        state.copies[insertCopy[1]] = { ...Object.fromEntries(fields.map((field, i) => [field, values[i]])), shipment_key: KEY };
+        const inserted = Object.fromEntries(fields.map((field, i) => [field, values[i]]));
+        state.copies[insertCopy[1]] = { ...inserted, shipment_key: inserted.cust_req_no };
         return [{ affectedRows: 1 }];
       }
       const update = sql.match(/^UPDATE `([^`]+)` s SET (.+) WHERE /);
@@ -226,6 +228,8 @@ test('new confirmed shipment uses generated reference, persists required data an
     weight_unit: 'KG', cargo_volume: 0.24, etd: '2026-11-24', eta: '2026-12-04',
   }, { isNew: true });
   assert.equal(result.data.ref_no, REF);
+  assert.equal(result.data.cust_req_no, '121112026');
+  assert.equal(f.state().copies.shipments.cust_req_no, '121112026');
   assert.equal(result.data.status, 'Confirmed');
   assert.equal(result.data.track_status, 'Confirmed');
   assert.equal(f.state().copies.shipments.ref_no, REF);
@@ -239,4 +243,22 @@ test('new confirmed shipment uses generated reference, persists required data an
   assert.equal(publicResult.package_count, 12);
   assert.equal(publicResult.events[0].event_type, 'registered');
   assert.equal(f.notifications.length, 1);
+});
+
+test('compact creation persists the automatic customer request with only requested shipping details',async()=>{
+  const f=fixture({empty:true});
+  const result=await f.service.save(ADMIN,undefined,{mode:'AIR',pol_country:'China',pol_port:'Shanghai',pod_country:'Qatar',pod_port:'Hamad International Airport',commodity:'Samples',chargeable_weight:0.25,etd:'2026-11-24',eta:'2026-11-25'},{isNew:true});
+  assert.equal(result.data.cust_req_no,'121112026');
+  assert.equal(result.data.weight_unit,'KG');
+  assert.equal(result.data.status,'Confirmed');
+  assert.equal(f.state().copies.shipments.chargeable_weight,0.25);
+  assert.equal(f.notifications[0].key,'121112026');
+  assert.ok(f.trace.some(item=>item.sql?.startsWith('SELECT GET_LOCK')&&item.values[0]==='argus_tracking_create'));
+  const publicResult=await f.service.publicLookup('121112026');
+  assert.equal(publicResult.cust_req_no,'121112026');
+});
+test('new shipment requests cannot override automatic numbering',async()=>{
+  const f=fixture({empty:true});
+  await assert.rejects(f.service.save(ADMIN,undefined,{cust_req_no:'custom'},{isNew:true}),/generated automatically/);
+  assert.equal(f.state().copies.shipments,null);
 });
