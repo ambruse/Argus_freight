@@ -94,6 +94,13 @@ LANDING_DIST = findFolder('dist', LANDING_DIST);
 const hasFrontend = fs.existsSync(FRONTEND_OUT);
 const hasLanding = fs.existsSync(LANDING_DIST);
 
+// Register before the static/SPA handlers so a missing dashboard export cannot
+// silently render the marketing homepage (including when frontend/out is absent).
+const { requiredPortalPage } = require('./utils/requiredPortalPage');
+app.get(['/shipment-tracking', '/shipment-tracking/', '/shipment-tracking.html'],
+  requiredPortalPage(FRONTEND_OUT, 'shipment-tracking.html'));
+
+
 // Serve static assets and routes if they exist on the server (or in production)
 if (process.env.NODE_ENV === 'production' || hasFrontend || hasLanding) {
   if (hasFrontend) {

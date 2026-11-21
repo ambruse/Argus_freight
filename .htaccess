@@ -10,7 +10,7 @@ RewriteRule ^ - [E=SEO_CAMPAIGN:1]
 RewriteCond %{QUERY_STRING} !^$
 RewriteCond %{ENV:SEO_CAMPAIGN} !=1
 RewriteRule ^ - [E=SEO_NOINDEX:1]
-RewriteRule ^(?:api|admin|operator|customer|customers|rfq|dashboard|confirmed|contacts|quotation|calling-agent|sales|settings|summary|calculator|login|register|reset-password|landing)(?:/|\.html$|$) - [E=SEO_NOINDEX:1,NC]
+RewriteRule ^(?:api|admin|operator|customer|customers|rfq|dashboard|confirmed|shipment-tracking|contacts|quotation|calling-agent|sales|settings|summary|calculator|login|register|reset-password|landing)(?:/|\.html$|$) - [E=SEO_NOINDEX:1,NC]
 
 # ── SEO 301 Redirects for Legacy URLs ───────────────────────
 RewriteRule ^services/(.+)-qatar/?$ /services/$1/ [R=301,L]

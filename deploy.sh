@@ -25,43 +25,33 @@ echo "  ARGUS Deployment — $(date)"
 echo "  Deploy path : $DEPLOY_PATH"
 echo "=================================================="
 
-# ── 1. Install backend dependencies ──────────────────────────
-echo ""
-echo "▶ [1/4] Installing backend dependencies..."
-cd "$DEPLOY_PATH/backend"
-if [ ! -f ".env" ] && [ -f ".env.cpanel" ]; then
-    echo "💡 Ensuring .env file is configured from .env.cpanel..."
-    cp ".env.cpanel" ".env"
-fi
-npm install --legacy-peer-deps 2>&1 | tail -5
-echo "✅  Backend deps done."
-
-# ── 2. Install & build Next.js frontend (static export) ───────
-echo ""
-echo "▶ [2/4] Installing frontend dependencies..."
-cd "$DEPLOY_PATH/frontend"
-npm install --legacy-peer-deps 2>&1 | tail -5
-
-echo "▶ [2/4] Building Next.js (static export → frontend/out/)..."
-NODE_ENV=production npm run build 2>&1 | tail -20
-echo "✅  Frontend static build done → frontend/out/"
-
-# ── 3. Build Vite landing page ────────────────────────────────
-echo ""
-echo "▶ [3/4] Building Vite landing page (→ dist/)..."
+# Build both applications before signalling Passenger. Never deploy source-only
+# portal changes with an old tracked frontend/out export.
+echo "▶ [1/5] Installing locked dependencies (including build tools)..."
 cd "$DEPLOY_PATH"
-npm install --legacy-peer-deps 2>&1 | tail -5
-npm run build:landing 2>&1 | tail -10
-echo "✅  Landing page built → dist/"
+npm ci --include=dev --no-audit --no-fund
+npm ci --prefix backend --no-audit --no-fund
+npm ci --prefix frontend --include=dev --no-audit --no-fund
+if [ ! -f "backend/.env" ] && [ -f "backend/.env.cpanel" ]; then
+    cp "backend/.env.cpanel" "backend/.env"
+fi
 
-# Merge landing page build into frontend/out static export directory
-echo "▶ Merging landing page build into frontend/out..."
+echo "▶ [2/5] Building marketing pages and copying shared assets..."
+npm run build:landing
+npm run copy:landing
+
+echo "▶ [3/5] Building the dashboard, including Shipment Tracking..."
+NODE_ENV=production npm run build:frontend
 node scripts/merge-build.cjs
-echo "✅  Merge complete."
+node scripts/check-deployment.cjs frontend/out
+
+echo "▶ [4/5] Applying the additive tracking migration..."
+node backend/scripts/migrate-tracking.js --up
+node backend/scripts/migrate-tracking.js --check
 
 # ── 4. Copy/Merge .htaccess to public_html ───────────────────
 echo ""
-echo "▶ [4/4] Deploying .htaccess to public_html..."
+echo "▶ [5/5] Deploying .htaccess to public_html..."
 DEST_HTACCESS="$PUBLIC_HTML/.htaccess"
 SRC_HTACCESS="$DEPLOY_PATH/.htaccess"
 
