@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createSmtpTransporter } = require('../utils/mailer');
 const { encrypt, decrypt } = require('../utils/crypto');
-const registrationRoles = Object.freeze(['admin', 'sales', 'operator', 'calling_agent', 'customer', 'rater']);
+const registrationRoles = Object.freeze(['admin', 'sales', 'operator', 'calling_agent', 'customer', 'rater', 'tracker']);
 
 // Generate ephemeral 2048-bit RSA keypair for password transit encryption
 const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
@@ -113,7 +113,7 @@ const login = async (req, res, next) => {
 
     // Ensure operator sandbox tables exist on login (for users registered before sandboxing, etc.)
     const cleanUsername = user.username.toLowerCase();
-    if (!['admin', 'rater'].includes(user.role) && cleanUsername !== 'admin') {
+    if (!['admin', 'rater', 'tracker'].includes(user.role) && cleanUsername !== 'admin') {
       const { ensureUserTables } = require('../config/dbHelper');
       await ensureUserTables(user);
 
@@ -362,7 +362,7 @@ const register = async (req, res, next) => {
     // 4. Create and seed user-specific tables
     const newUser = insertRes.rows[0];
     const cleanUsername = newUsername.toLowerCase();
-    if (newRole !== 'rater' && cleanUsername !== 'admin') {
+    if (!['rater', 'tracker'].includes(newRole) && cleanUsername !== 'admin') {
       const { ensureUserTables } = require('../config/dbHelper');
       await ensureUserTables(newUser);
 
@@ -516,7 +516,7 @@ const updateAdminUserEmail = async (req, res, next) => {
     }
     const targetUser = userCheck.rows[0];
 
-    if (['customer', 'sales', 'rater'].includes(targetUser.role)) {
+    if (['customer', 'sales', 'rater', 'tracker'].includes(targetUser.role)) {
       return res.status(400).json({ success: false, message: 'User SMTP credentials are not needed for Customer, Sales and Rater roles.' });
     }
 

@@ -45,10 +45,10 @@ function createTrackingService(pool, { notify = () => { }, now = () => new Date(
             throw fail('Account unavailable.', 403);
         return user;
     }
-    const guard = user => { if (!['admin', 'operator'].includes(user?.role))
-        throw fail('Tracking management requires an administrator or assigned operator.', 403); };
+    const guard = user => { if (!['admin', 'operator', 'tracker'].includes(user?.role))
+        throw fail('Tracking management requires an administrator, Tracker or assigned operator.', 403); };
     function ownership(user, alias = 's') {
-        if (user.role === 'admin')
+        if (['admin', 'tracker'].includes(user.role))
             return { sql: '1=1', params: [] };
         const ids = [user.username, String(user.id), 'u' + user.id, user.name, user.email_address].filter(Boolean).map(v => String(v).trim().toLowerCase());
         const sources = ['shipments_u' + user.id, 'shipments_' + String(user.username).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()];
@@ -165,7 +165,7 @@ function createTrackingService(pool, { notify = () => { }, now = () => new Date(
     }
     async function checkAccess(user, key, connection = pool) {
         guard(user);
-        if (user.role === 'admin')
+        if (['admin', 'tracker'].includes(user.role))
             return;
         const prefix = await cte(connection), own = ownership(user, 's');
         const [rows] = await connection.query(`${prefix} SELECT 1 FROM keyed s WHERE s.shipment_key=? AND ${own.sql} LIMIT 1`, [key, ...own.params]);

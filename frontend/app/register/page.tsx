@@ -55,7 +55,7 @@ export default function RegisterPage() {
   };
 
   useEffect(() => {
-    if (authStorage.isAuthenticated()) router.replace(authStorage.getUser()?.role === "rater" ? "/operator/live-rates" : "/dashboard");
+    if (authStorage.isAuthenticated()) router.replace(authStorage.getUser()?.role === "tracker" ? "/shipment-tracking" : authStorage.getUser()?.role === "rater" ? "/operator/live-rates" : "/dashboard");
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("role") === "customer") {
@@ -175,6 +175,7 @@ export default function RegisterPage() {
               >
                 <option value="operator">Operator</option>
                 <option value="rater">Rater</option>
+                <option value="tracker">Tracker</option>
                 <option value="calling_agent">Calling Agent</option>
                 <option value="admin">Admin</option>
                 <option value="sales">Sales</option>

@@ -5,6 +5,7 @@
 //  Attaches req.user = { id, username, role } on success.
 // ─────────────────────────────────────────────────────────────
 const jwt = require('jsonwebtoken');
+const { trackerCanRequest } = require('./trackerAccess');
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -22,6 +23,9 @@ const authenticateToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // { id, username, role, iat, exp }
+    if (decoded.role === 'tracker' && !trackerCanRequest(`${req.baseUrl}${req.path}`.replace(/\/+$/, '').toLowerCase(), req.method)) {
+      return res.status(403).json({ success: false, message: 'Tracker access is limited to shipment tracking and your own account settings.' });
+    }
     // Raters manage tariffs only, plus their own account/password. Enforce this
     // centrally so direct API calls cannot bypass the restricted navigation.
     if (decoded.role === 'rater') {

@@ -33,8 +33,8 @@ function createTrackingRouters(pool, { io, ready = Promise.resolve(), service: p
     } };
     internal.use(authenticateToken, requireReady, async (req, res, next) => { try {
         req.trackingUser = await service.userForToken(req.user);
-        if (!['admin', 'operator'].includes(req.trackingUser.role))
-            return res.status(403).json({ success: false, message: 'Tracking management requires an administrator or assigned operator.' });
+        if (!['admin', 'operator', 'tracker'].includes(req.trackingUser.role))
+            return res.status(403).json({ success: false, message: 'Tracking management requires an administrator, Tracker or assigned operator.' });
         next();
     }
     catch (error) {

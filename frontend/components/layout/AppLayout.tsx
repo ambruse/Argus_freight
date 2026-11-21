@@ -76,6 +76,7 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
       router.replace("/login");
     } else {
       const currentUser = authStorage.getUser();
+      if (currentUser?.role === "tracker" && !["/shipment-tracking", "/settings"].includes(pathname.replace(/\/+$/, ""))) router.replace("/shipment-tracking");
       if (currentUser?.role === "rater" && !["/operator/live-rates", "/settings"].includes(pathname.replace(/\/+$/, ""))) {
         router.replace("/operator/live-rates");
       }
@@ -95,7 +96,12 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   let otherItems: { href?: string; label: string; icon: any; onClick?: () => void }[] = [];
   const showOtherTab = user?.role === "operator" || user?.role === "admin" || user?.role === "sales";
 
-  if (user?.role === "rater") {
+  if (user?.role === "tracker") {
+    roleItems = [
+      { href: "/shipment-tracking", label: "Shipment Tracking", icon: CheckSquare },
+      { href: "/settings", label: "Account Settings", icon: Settings },
+    ];
+  } else if (user?.role === "rater") {
     roleItems = [
       { href: "/operator/live-rates", label: "Freight Live Rates", icon: Calculator },
       { href: "/settings", label: "Account", icon: Settings },
@@ -170,12 +176,13 @@ export default function AppLayout({ children, title, subtitle, action }: AppLayo
   }
   // Prepend Home and append Logout only for non-other-tab roles (customer, calling_agent)
   const navItems = [
-    { href: "/", label: "Home", icon: Home },
+    ... (user?.role === "tracker" ? [] : [{ href: "/", label: "Home", icon: Home }]),
     ...roleItems,
     ...(showOtherTab ? [{ label: "Other", icon: MoreHorizontal, onClick: () => setIsOtherOpen(!isOtherOpen) }] : []),
     ...(!showOtherTab ? [{ label: "Logout", icon: LogOut, onClick: logout }] : [])
   ];
 
+  if (user?.role === "tracker" && !["/shipment-tracking", "/settings"].includes(pathname.replace(/\/+$/, ""))) return null;
   if (user?.role === "rater" && !["/operator/live-rates", "/settings"].includes(pathname.replace(/\/+$/, ""))) {
     return null;
   }

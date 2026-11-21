@@ -110,7 +110,7 @@ export default function Sidebar() {
   /* ── Unread badge polling ───────────────────────────────── */
   useEffect(() => {
     const fetchUnread = async () => {
-      if (!user || user.role === "rater") return;
+      if (!user || ["rater", "tracker"].includes(user.role)) return;
       const token = typeof window !== "undefined" ? localStorage.getItem("freight_token") : null;
       if (!token) return;
       try {
@@ -191,7 +191,8 @@ export default function Sidebar() {
 
   /* ── Filter nav by role ─────────────────────────────────── */
   const visibleItems = NAV_ITEMS.filter(item => {
-    if (item.href === "/shipment-tracking") return ["admin", "operator"].includes(user?.role || "");
+    if (item.href === "/shipment-tracking") return ["admin", "operator", "tracker"].includes(user?.role || "");
+    if (user?.role === "tracker")       return ["/shipment-tracking", "/settings"].includes(item.href);
     if (user?.role === "rater")         return ["/operator/live-rates", "/settings"].includes(item.href);
     if (user?.role === "customer")      return ["/dashboard", "/customer/rfq/new", "/customer/rfq", "/settings"].includes(item.href);
     if (user?.role === "sales")         return ["/rfq/new", "/rfq", "/confirmed", "/quotation", "/summary", "/sales/call-enquiries", "/settings", "/customers", "/calculator"].includes(item.href);

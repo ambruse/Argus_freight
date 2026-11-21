@@ -9,13 +9,13 @@ type RegistrationPayload = {
 
 export async function registerAccount(payload: RegistrationPayload) {
   const role = payload.role.trim().toLowerCase();
-  if (role === 'rater') {
+  if (['rater', 'tracker'].includes(role)) {
     // Static pages and the Node API can be deployed/restarted separately.
     // Older APIs silently save unfamiliar roles as Operator. Check the running
     // API before sending a registration request, rather than discovering it after.
     const { data } = await api.get('/auth/public-key', { params: { registration: Date.now() } });
     if (!Array.isArray(data.registrationRoles) || !data.registrationRoles.includes(role)) {
-      throw new Error('Rater registration is not available on the running server yet. Update and restart the backend, then try again. No account was created.');
+      throw new Error(`${role === 'tracker' ? 'Tracker' : 'Rater'} registration is not available on the running server yet. Update and restart the backend, then try again. No account was created.`);
     }
   }
   const response = await api.post('/auth/register', { ...payload, role });

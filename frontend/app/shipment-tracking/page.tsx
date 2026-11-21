@@ -19,7 +19,7 @@ type Pagination = { page: number; pageSize: number; total: number; totalPages: n
 
 export default function ShipmentTrackingPage() {
   const { user, loading: authLoading } = useAuth();
-  const allowed = !!user && ["admin", "operator"].includes(user.role);
+  const allowed = !!user && ["admin", "operator", "tracker"].includes(user.role);
   const [rows, setRows] = useState<TrackingRecord[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 25, total: 0, totalPages: 0 });

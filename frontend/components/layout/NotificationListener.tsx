@@ -247,7 +247,7 @@ export default function NotificationListener() {
 
   useEffect(() => {
     // Check if token exists in localStorage
-    if (authStorage.getUser()?.role === "rater") return;
+    if (["rater", "tracker"].includes(authStorage.getUser()?.role || "")) return;
     const hasToken = () => typeof window !== "undefined" && !!localStorage.getItem("freight_token");
 
     if (pathname === "/login" || pathname === "/register" || !hasToken()) {

@@ -37,6 +37,8 @@ function fixture({ failUpdateTable, failAudit = false, ownership = true, empty =
       if (sql.startsWith('SELECT id,role FROM users')) return [[]];
       if (sql.startsWith('SELECT id,username,role,customer_id FROM users')) return [[]];
       if (sql.startsWith('WITH candidates')) {
+        if (sql.includes('SELECT COUNT(*) AS total FROM chosen')) return [[{total: state.copies.shipments ? 1 : 0}]];
+        if (sql.includes('SELECT COUNT(*) AS total,SUM(')) return [[{total: 1, confirmed: 1}]];
         if (sql.includes('SELECT DISTINCT customer_id FROM keyed')) return [[]];
         if (sql.includes('SELECT 1 FROM keyed s WHERE')) return [ownership ? [{ 1: 1 }] : []];
         if (sql.includes('SELECT s.* FROM chosen s WHERE')) {
@@ -288,4 +290,36 @@ test('FCL edits validate merged fields and synchronize container changes without
   const output = await f.service.publicLookup(REF);
   assert.equal(output.container_type, '45FT'); assert.equal(output.cargo_volume, 12.5);
   assert.equal(output.bl_do_number, 'DO-456');
+});
+
+const TRACKER = { id: 8, username: 'tracker8', role: 'tracker' };
+test('Tracker lists and edits confirmed shipments assigned to other operators without financial access', async () => {
+  const f = fixture({ ownership: false });
+  const list = await f.service.list(TRACKER);
+  assert.equal(list.pagination.total, 1);
+  assert.equal(list.data[0].cost, undefined);
+  assert.ok(f.trace.some(t => t.sql?.includes('AND 1=1) AND')));
+  const detail = await f.service.detail(TRACKER, REF);
+  assert.equal(detail.data.profit, undefined);
+  await f.service.save(TRACKER, REF, { track_status: 'In Transit', carrier: 'Updated carrier' });
+  for (const copy of Object.values(f.state().copies)) {
+    assert.equal(copy.track_status, 'In Transit');
+    assert.equal(copy.carrier, 'Updated carrier');
+    assert.equal(copy.status, 'Confirmed');
+    assert.equal(copy.cost, 100);
+  }
+  assert.equal(f.state().events[0].created_by, TRACKER.id);
+  await assert.rejects(f.service.save(TRACKER, REF, {cost: 1}), /permission|financial|authorized/i);
+  await assert.rejects(f.service.audits(TRACKER, REF), /administrator/i);
+  await assert.rejects(f.service.addEvent(TRACKER, REF, {event_title: 'Correction', reason: 'test'}, 1), /administrator/i);
+});
+test('Tracker can attach tracking and create a confirmed shipment discoverable publicly', async () => {
+  const existing = fixture({ ownership: false });
+  await existing.service.save(TRACKER, REF, {method: 'existing', track_status: 'Scheduled'});
+  assert.equal(existing.state().copies.shipments.track_status, 'Scheduled');
+  const f = fixture({empty: true});
+  const result = await f.service.save(TRACKER, undefined, {mode:'AIR',pol_country:'China',pol_port:'Shanghai',pod_country:'Qatar',pod_port:'Hamad International Airport',commodity:'Samples',chargeable_weight:0.25,etd:'2026-11-24',eta:'2026-11-25'}, {isNew:true});
+  assert.equal(result.data.status, 'Confirmed');
+  assert.equal(result.data.cust_req_no, '121112026');
+  assert.equal((await f.service.publicLookup(result.data.ref_no)).track_status, 'Confirmed');
 });
