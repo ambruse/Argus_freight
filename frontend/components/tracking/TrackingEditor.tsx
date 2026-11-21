@@ -11,7 +11,7 @@ import { apiError, DATE_FIELDS, TrackingRecord } from "./model";
 type Values = Record<string, string>;
 type Field = [key: string, label: string, type?: string];
 const REQUIRED_NEW = ["mode", "pol_country", "pol_port", "pod_country", "pod_port", "commodity", "chargeable_weight", "etd", "eta"];
-const allKeys = [...REQUIRED_NEW, "weight_unit", "pol_city", "pod_city", "pol_code", "pod_code"];
+const allKeys = [...REQUIRED_NEW, "cargo_volume", "weight_unit", "pol_city", "pod_city", "pol_code", "pod_code"];
 function initialValues(row?: TrackingRecord | null): Values {
   const values: Values = { mode: "SEA", weight_unit: "KG" };
   if (!row) return values;
@@ -87,6 +87,7 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
     const nextErrors: Values = {};
     if (isNew) REQUIRED_NEW.forEach(key => { if (!form[key]?.trim()) nextErrors[key] = "This field is required for a new shipment."; });
     if (form.chargeable_weight && (!Number.isFinite(Number(form.chargeable_weight)) || Number(form.chargeable_weight) < 0)) nextErrors.chargeable_weight = "Enter a valid chargeable weight.";
+    if (form.cargo_volume && (!Number.isFinite(Number(form.cargo_volume)) || Number(form.cargo_volume) < 0)) nextErrors.cargo_volume = "Enter a valid CBM value.";
     if (form.eta && form.etd && form.eta < form.etd) nextErrors.eta = "ETA cannot be before ETD.";
     if (!isNew && !selected) { setError("Select an existing confirmed shipment first."); return; }
     if (isNew && !approved) { setError("Confirm that this booking is commercially approved before creating it."); return; }
@@ -95,7 +96,7 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
     const payload: Record<string, unknown> = {};
     allKeys.forEach(key => {
       if (isNew ? form[key] !== undefined && form[key] !== "" : form[key] !== baseline.current[key]) {
-        payload[key] = key === "chargeable_weight" ? form[key] === "" ? null : Number(form[key]) : form[key] || null;
+        payload[key] = ["chargeable_weight", "cargo_volume"].includes(key) ? form[key] === "" ? null : Number(form[key]) : form[key] || null;
       }
     });
     setSaving(true); setError("");
@@ -106,7 +107,7 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
     } catch (err: any) { setError(apiError(err, "Could not save tracking. Your changes have been kept.")); const fieldErrors = err.response?.data?.errors; if (fieldErrors && !Array.isArray(fieldErrors) && typeof fieldErrors === "object") setErrors(fieldErrors); }
     finally { setSaving(false); }
   };
-  const field = ([key, label, type = "text"]: Field) => <label key={key} className="block text-xs text-muted">{label}{isNew && <span className="text-gold"> *</span>}<input className="input w-full mt-1" type={type} value={form[key] || ""} onChange={e => set(key, e.target.value)} required={isNew} aria-invalid={!!errors[key]} aria-describedby={errors[key] ? `error-${key}` : undefined} {...(type === "number" ? { step: "any", min: "0" } : {})} />{errors[key] && <span id={`error-${key}`} className="text-rose block mt-1">{errors[key]}</span>}</label>;
+  const field = ([key, label, type = "text"]: Field) => <label key={key} className="block text-xs text-muted">{label}{isNew && REQUIRED_NEW.includes(key) && <span className="text-gold"> *</span>}<input className="input w-full mt-1" type={type} value={form[key] || ""} onChange={e => set(key, e.target.value)} required={isNew && REQUIRED_NEW.includes(key)} aria-invalid={!!errors[key]} aria-describedby={errors[key] ? `error-${key}` : undefined} {...(type === "number" ? { step: "any", min: "0" } : {})} />{errors[key] && <span id={`error-${key}`} className="text-rose block mt-1">{errors[key]}</span>}</label>;
   const endpoint = (prefix: "pol" | "pod") => {
     const ports = form.mode === "Road" ? [] : availablePorts(form[`${prefix}_country`], form.mode);
     const options = ports.map(port => ({ value: port.port_name, label: `${port.city} · ${port.port_name}`, searchText: port.aliases.join(" ") }));
@@ -127,6 +128,7 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {field(["commodity", "Commodity"])}
           {field(["chargeable_weight", `Chargeable weight (${form.weight_unit || "KG"})`, "number"])}
+          {field(["cargo_volume", "CBM (m³)", "number"])}
           {field(["eta", "ETA", "date"])}
           {field(["etd", "ETD", "date"])}
         </div>

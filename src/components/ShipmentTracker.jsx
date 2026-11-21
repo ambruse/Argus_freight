@@ -257,6 +257,7 @@ export default function ShipmentTracker({ initialRfq = '' }) {
               ['POD', shipmentData.destination?.port || shipmentData.pod],
               ['Commodity', shipmentData.commodity],
               ['Chargeable weight', shipmentData.chargeable_weight],
+              ['CBM (m³)', shipmentData.cargo_volume],
               ['ETA', shipmentData.eta],
               ['ETD', shipmentData.etd],
             ].map(([label, value]) => <div className="argus-detail-card" key={label}>
