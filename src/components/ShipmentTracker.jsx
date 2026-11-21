@@ -251,13 +251,17 @@ export default function ShipmentTracker({ initialRfq = '' }) {
           <div className="argus-details-grid">
             {[
               ['Mode', shipmentData.mode],
+              ...(/sea|ocean|road|land/i.test(shipmentData.mode || '') ? [['Load type', shipmentData.load_type]] : []),
               ['POL country', shipmentData.origin?.country],
               ['POL', shipmentData.origin?.port || shipmentData.pol],
               ['POD country', shipmentData.destination?.country],
               ['POD', shipmentData.destination?.port || shipmentData.pod],
               ['Commodity', shipmentData.commodity],
-              ['Chargeable weight', shipmentData.chargeable_weight],
-              ['CBM (m³)', shipmentData.cargo_volume],
+              ['Carrier', shipmentData.carrier],
+              ['BL / DO Number', shipmentData.bl_do_number || shipmentData.bl_number || shipmentData.container_no],
+              ...(/sea|ocean|road|land/i.test(shipmentData.mode || '') && shipmentData.load_type === 'FCL'
+                ? [['Container type', shipmentData.container_type]]
+                : [['Chargeable weight', shipmentData.chargeable_weight], ['CBM (m³)', shipmentData.cargo_volume]]),
               ['ETA', shipmentData.eta],
               ['ETD', shipmentData.etd],
             ].map(([label, value]) => <div className="argus-detail-card" key={label}>

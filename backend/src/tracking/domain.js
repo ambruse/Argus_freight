@@ -3,13 +3,14 @@
 // This module has no database or transport dependencies. Both public and internal
 // tracking routes use these explicit contracts rather than returning DB records.
 const STAGES = Object.freeze(['Confirmed', 'Scheduled', 'In Transit', 'Clearance', 'Warehouse', 'Delivered']);
+const CONTAINER_TYPES = Object.freeze(['20FT', '40FT', '45FT', '40FT Reefer']);
 const FINANCIAL_FIELDS = Object.freeze(['cost', 'customer_charge', 'profit', 'actual_profit']);
 const FIELD_TYPES = Object.freeze({
   ...Object.fromEntries(`customer_id cust_req_no customer_name customer_email customer_phone shipment_type booking_reference carrier carrier_booking_number house_bl_number master_bl_number do_number so_number bl_number container_number box_no pol pod pol_country pol_city pol_port pol_code pod_country pod_city pod_port pod_code place_of_receipt final_delivery_location transit_country transshipment_port commodity cargo_type package_type weight_unit dimension container container_type container_size hs_code current_location current_country last_known_facility next_milestone vessel_name voyage_number flight_number vehicle_number border_crossing term weight`.split(' ').map(k => [k, 'text'])),
   ...Object.fromEntries(`transit_stops route_notes special_handling cargo_remarks tracking_remarks delay_reason internal_notes public_message`.split(' ').map(k => [k, 'longtext'])),
   ...Object.fromEntries(`etd eta actual_departure actual_arrival booking_date cargo_ready_date pickup_date customs_clearance_date warehouse_arrival_date delivery_date next_update`.split(' ').map(k => [k, 'date'])),
   ...Object.fromEntries(`gross_weight chargeable_weight cargo_volume net_weight cost customer_charge profit actual_profit`.split(' ').map(k => [k, 'decimal'])),
-  package_count: 'integer', container_count: 'integer', dangerous_goods: 'boolean', mode: 'mode', track_status: 'stage',
+  package_count: 'integer', container_count: 'integer', dangerous_goods: 'boolean', mode: 'mode', track_status: 'stage', load_type: 'load_type',
 });
 const REQUIRED_NEW_FIELDS = Object.freeze(`mode pol_country pol_port pod_country pod_port commodity chargeable_weight etd eta`.split(' '));
 
@@ -96,6 +97,9 @@ function validateChanges(body, { isNew = false, canFinance = false } = {}) {
       if (type === 'stage') {
         if (!STAGES.includes(value)) throw failure('Choose a valid shipment tracking stage.');
         changes[key] = value;
+      } else if (type === 'load_type') {
+        if (!['FCL', 'LCL'].includes(value.toUpperCase())) throw failure('Choose FCL or LCL.');
+        changes[key] = value.toUpperCase();
       } else if (type === 'mode') {
         const modes = { air: 'AIR', 'air freight': 'AIR', sea: 'SEA', 'sea freight': 'SEA', ocean: 'SEA', road: 'Road', land: 'Road', 'road freight': 'Road' };
         if (!modes[value.toLowerCase()]) throw failure('Choose Air, Sea or Road Freight.');
@@ -114,16 +118,26 @@ function validateChanges(body, { isNew = false, canFinance = false } = {}) {
   if (observedUnits.size > 1) throw failure('Gross and chargeable weights must use the same weight unit.');
   if (observedUnits.size && !changes.weight_unit) changes.weight_unit = [...observedUnits][0];
   if (isNew) {
+    if (['SEA', 'Road'].includes(changes.mode)) changes.load_type ||= 'LCL';
     for (const key of REQUIRED_NEW_FIELDS) {
+      if (key === 'chargeable_weight' && changes.load_type === 'FCL') continue;
       if (changes[key] === undefined || changes[key] === null || changes[key] === '') throw failure(`${key} is required for a new confirmed shipment.`);
     }
     if (changes.package_count != null && changes.package_count < 1) throw failure('package_count must be at least 1.');
     changes.track_status ||= 'Confirmed';
     changes.weight_unit ||= 'KG';
+    validateLoadConfiguration(changes);
   }
   if (changes.etd && changes.eta && changes.eta < changes.etd) throw failure('ETA must be on or after ETD.');
   if (changes.actual_departure && changes.actual_arrival && changes.actual_arrival < changes.actual_departure) throw failure('Actual arrival must be on or after actual departure.');
   return changes;
+}
+
+function validateLoadConfiguration(row) {
+  if (!row.load_type) return; // Existing records may have no recorded load type.
+  if (!['FCL', 'LCL'].includes(row.load_type)) throw failure('Choose FCL or LCL.');
+  if (!/^(sea|sea freight|ocean|road|road freight|land)$/i.test(row.mode || '')) throw failure('FCL and LCL are only available for Sea and Road Freight.');
+  if (row.load_type === 'FCL' && !CONTAINER_TYPES.includes(row.container_type)) throw failure('Choose a container type: 20FT, 40FT, 45FT or 40FT Reefer.');
 }
 
 function utcTimestamp(value) {
@@ -180,6 +194,8 @@ function safePublic(row, events = []) {
     pol: row.pol || row.pol_port || '—', pod: row.pod || row.pod_port || '—',
     pol_country: row.pol_country || null, pod_country: row.pod_country || null,
     mode: row.mode || 'Unknown', carrier: row.carrier || '—',
+    load_type: row.load_type || null, container_type: row.container_type || null,
+    bl_do_number: row.bl_number || row.do_number || row.house_bl_number || null,
     container_no: row.bl_number || row.house_bl_number || row.do_number || row.so_number || row.box_no || '—',
     container_number: row.container_number || null,
     bl_number: row.bl_number || row.house_bl_number || null,
@@ -207,4 +223,4 @@ function safePublic(row, events = []) {
   };
 }
 
-module.exports = { STAGES, FINANCIAL_FIELDS, FIELD_TYPES, REQUIRED_NEW_FIELDS, normalizeRef, canonicalKey, mapStatusToStageIndex, stageIndex: mapStatusToStageIndex, validDate, validateChanges, safePublic, utcTimestamp };
+module.exports = { CONTAINER_TYPES, validateLoadConfiguration, STAGES, FINANCIAL_FIELDS, FIELD_TYPES, REQUIRED_NEW_FIELDS, normalizeRef, canonicalKey, mapStatusToStageIndex, stageIndex: mapStatusToStageIndex, validDate, validateChanges, safePublic, utcTimestamp };

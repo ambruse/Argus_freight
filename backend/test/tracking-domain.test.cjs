@@ -168,3 +168,27 @@ test('the compact nine-field form is sufficient without fabricating other cargo 
   assert.equal(result.weight_unit,'KG');
   for(const key of ['customer_name','dimension','gross_weight','package_count','cargo_volume','cargo_type'])assert.equal(Object.hasOwn(result,key),false);
 });
+
+test('Sea and Road FCL creation requires a supported container, not weight or CBM', () => {
+  for (const mode of ['SEA', 'Road']) for (const container_type of ['20FT', '40FT', '45FT', '40FT Reefer']) {
+    const body = { ...newShipment(), mode, load_type: 'FCL', container_type };
+    delete body.chargeable_weight; delete body.cargo_volume;
+    const result = validateChanges(body, { isNew: true });
+    assert.equal(result.container_type, container_type);
+    assert.equal(result.load_type, 'FCL');
+    assert.equal(result.chargeable_weight, undefined);
+    assert.equal(result.cargo_volume, undefined);
+  }
+  assert.throws(() => validateChanges({ ...newShipment(), load_type: 'FCL' }, { isNew: true }), /container type/);
+  assert.throws(() => validateChanges({ ...newShipment(), load_type: 'FCL', container_type: '99FT' }, { isNew: true }), /container type/);
+  assert.throws(() => validateChanges({ ...newShipment(), mode: 'AIR', load_type: 'FCL', container_type: '20FT' }, { isNew: true }), /only available/);
+  assert.throws(() => validateChanges({ load_type: 'INVALID' }), /FCL or LCL/);
+});
+
+test('LCL keeps weight validation and public tracking exposes operational container and document fields', () => {
+  const body = { ...newShipment(), load_type: 'LCL' }; delete body.chargeable_weight;
+  assert.throws(() => validateChanges(body, { isNew: true }), /chargeable_weight/);
+  const output = safePublic({ status: 'Confirmed', mode: 'Road', load_type: 'FCL', container_type: '40FT Reefer', carrier: 'Example carrier', do_number: 'DO-123' });
+  assert.equal(output.load_type, 'FCL'); assert.equal(output.container_type, '40FT Reefer');
+  assert.equal(output.carrier, 'Example carrier'); assert.equal(output.bl_do_number, 'DO-123');
+});

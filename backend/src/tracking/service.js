@@ -1,6 +1,6 @@
 'use strict';
 const { createHash } = require('node:crypto');
-const { STAGES, FIELD_TYPES, FINANCIAL_FIELDS, mapStatusToStageIndex, normalizeRef, validateChanges, safePublic } = require('./domain');
+const { STAGES, FIELD_TYPES, FINANCIAL_FIELDS, mapStatusToStageIndex, normalizeRef, validateChanges, validateLoadConfiguration, safePublic } = require('./domain');
 const { assertTransactionalShipmentTables } = require('./schema');
 const { requestDate, nextRequestNumber } = require('./requestNumber');
 const BASE_FIELDS = ['ref_no', 'cust_req_no', 'customer_id', 'customer_name', 'customer_email', 'pol', 'pod', 'commodity', 'term', 'dimension', 'container', 'mode', 'weight', 'gross_weight', 'chargeable_weight', 'do_number', 'box_no', 'so_number', 'bl_number', 'track_status', 'carrier', 'etd', 'eta', 'cost', 'profit', 'operator', 'refer_by', 'status', 'created_at', 'updated_at'];
@@ -356,6 +356,8 @@ function createTrackingService(pool, { notify = () => { }, now = () => new Date(
                 await checkAccess(user, key, connection);
             }
             const after = { ...before, ...changes };
+            if (isNew || ['mode', 'load_type', 'container_type'].some(field => Object.hasOwn(changes, field))) validateLoadConfiguration(after);
+            if (after.load_type === 'FCL' && Object.hasOwn(changes, 'container_type')) after.container = changes.container = after.container_type;
             after.shipment_key = key;
             after.status = 'Confirmed';
             after.track_status = after.track_status || 'Confirmed';

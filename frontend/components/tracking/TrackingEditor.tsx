@@ -11,12 +11,15 @@ import { apiError, DATE_FIELDS, TrackingRecord } from "./model";
 type Values = Record<string, string>;
 type Field = [key: string, label: string, type?: string];
 const REQUIRED_NEW = ["mode", "pol_country", "pol_port", "pod_country", "pod_port", "commodity", "chargeable_weight", "etd", "eta"];
-const allKeys = [...REQUIRED_NEW, "cargo_volume", "weight_unit", "pol_city", "pod_city", "pol_code", "pod_code"];
+const CONTAINERS = ["20FT", "40FT", "45FT", "40FT Reefer"];
+const allKeys = [...REQUIRED_NEW, "load_type", "container_type", "carrier", "bl_number", "cargo_volume", "weight_unit", "pol_city", "pod_city", "pol_code", "pod_code"];
 function initialValues(row?: TrackingRecord | null): Values {
-  const values: Values = { mode: "SEA", weight_unit: "KG" };
+  const values: Values = { mode: "SEA", load_type: "LCL", weight_unit: "KG" };
   if (!row) return values;
   for (const key of allKeys) if (row[key] !== null && row[key] !== undefined) values[key] = DATE_FIELDS.includes(key) ? String(row[key]).slice(0, 10) : String(row[key]);
   values.mode = /air/i.test(row.mode || "") ? "AIR" : /road|land/i.test(row.mode || "") ? "Road" : "SEA";
+  values.load_type = values.mode === "AIR" ? "" : row.load_type || "LCL";
+  values.bl_number ||= String(row.do_number || "");
   for (const key of ["chargeable_weight"]) {
     const match = values[key]?.match(/^\s*(\d+(?:\.\d+)?)\s*(KG|KGS|LB|LBS)?\s*$/i);
     if (match) { values[key] = match[1]; if (match[2] && !row.weight_unit) values.weight_unit = /^lb/i.test(match[2]) ? "LB" : "KG"; }
@@ -41,6 +44,8 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
   const dialog = useRef<HTMLDivElement>(null);
   const dirty = JSON.stringify(form) !== JSON.stringify(baseline.current);
   const isNew = !record && method === "new";
+  const isFCL = form.mode !== "AIR" && form.load_type === "FCL";
+  const requiredFields = REQUIRED_NEW.filter(key => !isFCL || key !== "chargeable_weight");
   const close = () => { if (!saving && (!dirty || window.confirm("Discard unsaved shipment changes?"))) onClose(); };
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } };
@@ -85,9 +90,10 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
   const save = async (event: FormEvent) => {
     event.preventDefault();
     const nextErrors: Values = {};
-    if (isNew) REQUIRED_NEW.forEach(key => { if (!form[key]?.trim()) nextErrors[key] = "This field is required for a new shipment."; });
-    if (form.chargeable_weight && (!Number.isFinite(Number(form.chargeable_weight)) || Number(form.chargeable_weight) < 0)) nextErrors.chargeable_weight = "Enter a valid chargeable weight.";
-    if (form.cargo_volume && (!Number.isFinite(Number(form.cargo_volume)) || Number(form.cargo_volume) < 0)) nextErrors.cargo_volume = "Enter a valid CBM value.";
+    if (isNew) requiredFields.forEach(key => { if (!form[key]?.trim()) nextErrors[key] = "This field is required for a new shipment."; });
+    if (isFCL && !CONTAINERS.includes(form.container_type)) nextErrors.container_type = "Choose a container type.";
+    if (!isFCL && form.chargeable_weight && (!Number.isFinite(Number(form.chargeable_weight)) || Number(form.chargeable_weight) < 0)) nextErrors.chargeable_weight = "Enter a valid chargeable weight.";
+    if (!isFCL && form.cargo_volume && (!Number.isFinite(Number(form.cargo_volume)) || Number(form.cargo_volume) < 0)) nextErrors.cargo_volume = "Enter a valid CBM value.";
     if (form.eta && form.etd && form.eta < form.etd) nextErrors.eta = "ETA cannot be before ETD.";
     if (!isNew && !selected) { setError("Select an existing confirmed shipment first."); return; }
     if (isNew && !approved) { setError("Confirm that this booking is commercially approved before creating it."); return; }
@@ -95,8 +101,10 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
     if (Object.keys(nextErrors).length) { setError("Review the highlighted fields before saving."); return; }
     const payload: Record<string, unknown> = {};
     allKeys.forEach(key => {
+      if (isFCL && ["chargeable_weight", "cargo_volume"].includes(key) || !isFCL && key === "container_type") return;
       if (isNew ? form[key] !== undefined && form[key] !== "" : form[key] !== baseline.current[key]) {
-        payload[key] = ["chargeable_weight", "cargo_volume"].includes(key) ? form[key] === "" ? null : Number(form[key]) : form[key] || null;
+        const target = key === "bl_number" && !(record || selected)?.bl_number && (record || selected)?.do_number ? "do_number" : key;
+        payload[target] = ["chargeable_weight", "cargo_volume"].includes(key) ? form[key] === "" ? null : Number(form[key]) : form[key] || null;
       }
     });
     setSaving(true); setError("");
@@ -107,7 +115,7 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
     } catch (err: any) { setError(apiError(err, "Could not save tracking. Your changes have been kept.")); const fieldErrors = err.response?.data?.errors; if (fieldErrors && !Array.isArray(fieldErrors) && typeof fieldErrors === "object") setErrors(fieldErrors); }
     finally { setSaving(false); }
   };
-  const field = ([key, label, type = "text"]: Field) => <label key={key} className="block text-xs text-muted">{label}{isNew && REQUIRED_NEW.includes(key) && <span className="text-gold"> *</span>}<input className="input w-full mt-1" type={type} value={form[key] || ""} onChange={e => set(key, e.target.value)} required={isNew && REQUIRED_NEW.includes(key)} aria-invalid={!!errors[key]} aria-describedby={errors[key] ? `error-${key}` : undefined} {...(type === "number" ? { step: "any", min: "0" } : {})} />{errors[key] && <span id={`error-${key}`} className="text-rose block mt-1">{errors[key]}</span>}</label>;
+  const field = ([key, label, type = "text"]: Field) => <label key={key} className="block text-xs text-muted">{label}{isNew && requiredFields.includes(key) && <span className="text-gold"> *</span>}<input className="input w-full mt-1" type={type} value={form[key] || ""} onChange={e => set(key, e.target.value)} required={isNew && requiredFields.includes(key)} aria-invalid={!!errors[key]} aria-describedby={errors[key] ? `error-${key}` : undefined} {...(type === "number" ? { step: "any", min: "0" } : {})} />{errors[key] && <span id={`error-${key}`} className="text-rose block mt-1">{errors[key]}</span>}</label>;
   const endpoint = (prefix: "pol" | "pod") => {
     const ports = form.mode === "Road" ? [] : availablePorts(form[`${prefix}_country`], form.mode);
     const options = ports.map(port => ({ value: port.port_name, label: `${port.city} · ${port.port_name}`, searchText: port.aliases.join(" ") }));
@@ -123,12 +131,14 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
       <section className="border border-white/10 bg-surface-1 rounded-xl p-4 sm:p-5 space-y-5">
         <h3 className="font-semibold text-primary">Shipping details</h3>
         {(record || selected) && <p className="text-xs text-muted">Shipment: {(record || selected)?.ref_no} · Customer request: {(record || selected)?.cust_req_no || "Not recorded"}</p>}
-        <label className="block text-xs text-muted">Mode *<select className="input w-full mt-1" value={form.mode} onChange={e => set("mode", e.target.value)}><option value="SEA">Sea Freight</option><option value="AIR">Air Freight</option><option value="Road">Road Freight</option></select></label>
+        <label className="block text-xs text-muted">Mode *<select className="input w-full mt-1" value={form.mode} onChange={e => { const mode = e.target.value; setForm(prev => ({ ...prev, mode, load_type: mode === "AIR" ? "" : prev.load_type || "LCL" })); setErrors({}); }}><option value="SEA">Sea Freight</option><option value="AIR">Air Freight</option><option value="Road">Road Freight</option></select></label>
+        {form.mode !== "AIR" && <label className="block text-xs text-muted">Load type<select className="input w-full mt-1" value={form.load_type || "LCL"} onChange={e => set("load_type", e.target.value)}><option value="LCL">LCL</option><option value="FCL">FCL</option></select></label>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">{endpoint("pol")}{endpoint("pod")}</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {field(["commodity", "Commodity"])}
-          {field(["chargeable_weight", `Chargeable weight (${form.weight_unit || "KG"})`, "number"])}
-          {field(["cargo_volume", "CBM (m³)", "number"])}
+          {field(["carrier", "Carrier"])}
+          {field(["bl_number", "BL / DO Number"])}
+          {isFCL ? <label className="block text-xs text-muted">Container type *<select className="input w-full mt-1" value={form.container_type || ""} onChange={e => set("container_type", e.target.value)} required aria-invalid={!!errors.container_type} aria-describedby={errors.container_type ? "error-container_type" : undefined}><option value="">Select container type</option>{CONTAINERS.map(container => <option key={container} value={container}>{container}</option>)}</select>{errors.container_type && <span id="error-container_type" className="text-rose block mt-1">{errors.container_type}</span>}</label> : <>{field(["chargeable_weight", `Chargeable weight (${form.weight_unit || "KG"})`, "number"])}{field(["cargo_volume", "CBM (m³)", "number"])}</>}
           {field(["eta", "ETA", "date"])}
           {field(["etd", "ETD", "date"])}
         </div>

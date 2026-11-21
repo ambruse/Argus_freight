@@ -262,3 +262,30 @@ test('new shipment requests cannot override automatic numbering',async()=>{
   await assert.rejects(f.service.save(ADMIN,undefined,{cust_req_no:'custom'},{isNew:true}),/generated automatically/);
   assert.equal(f.state().copies.shipments,null);
 });
+
+test('FCL container, carrier and BL survive creation and public lookup without weight or volume', async () => {
+  const f = fixture({ empty: true });
+  const result = await f.service.save(ADMIN, undefined, {
+    mode: 'Road', load_type: 'FCL', container_type: '40FT Reefer', carrier: 'Example carrier', bl_number: 'BL-123',
+    pol_country: 'China', pol_port: 'Shanghai', pod_country: 'Qatar', pod_port: 'Hamad',
+    commodity: 'Cargo', etd: '2026-11-24', eta: '2026-12-04',
+  }, { isNew: true });
+  const output = await f.service.publicLookup(result.data.ref_no);
+  assert.equal(output.load_type, 'FCL'); assert.equal(output.container_type, '40FT Reefer');
+  assert.equal(output.carrier, 'Example carrier'); assert.equal(output.bl_do_number, 'BL-123');
+  assert.equal(f.state().copies.shipments.container, '40FT Reefer');
+  assert.equal(f.state().copies.shipments.status, 'Confirmed');
+  assert.equal(result.data.chargeable_weight, undefined); assert.equal(result.data.cargo_volume, undefined);
+});
+
+test('FCL edits validate merged fields and synchronize container changes without erasing saved cargo', async () => {
+  const f = fixture({ initialDetails: { load_type: 'FCL', container_type: '20FT', cargo_volume: 12.5 } });
+  await assert.rejects(f.service.save(ADMIN, REF, { container_type: null }), /container type/);
+  await assert.rejects(f.service.save(ADMIN, REF, { mode: 'AIR' }), /only available/);
+  assert.equal(f.state().profile.version, 1);
+  await f.service.save(ADMIN, REF, { container_type: '45FT', carrier: 'Road carrier', do_number: 'DO-456' });
+  for (const copy of Object.values(f.state().copies)) assert.equal(copy.container, '45FT');
+  const output = await f.service.publicLookup(REF);
+  assert.equal(output.container_type, '45FT'); assert.equal(output.cargo_volume, 12.5);
+  assert.equal(output.bl_do_number, 'DO-456');
+});
