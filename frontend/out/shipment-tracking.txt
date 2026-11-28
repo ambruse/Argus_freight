@@ -1,5 +1,5 @@
 2:I[9107,[],"ClientPageRoot"]
-3:I[2487,["915","static/chunks/915-85d1df3f42466c55.js","9064","static/chunks/9064-5b58904dea725965.js","7648","static/chunks/7648-8e433751763760da.js","9763","static/chunks/9763-013a0af5e30d92d5.js","6752","static/chunks/6752-29d11949292adbe4.js","734","static/chunks/734-59e62255f9361dc7.js","6474","static/chunks/app/shipment-tracking/page-888e9277fceeb610.js"],"default",1]
+3:I[2487,["915","static/chunks/915-85d1df3f42466c55.js","9064","static/chunks/9064-5b58904dea725965.js","7648","static/chunks/7648-8e433751763760da.js","9763","static/chunks/9763-013a0af5e30d92d5.js","6752","static/chunks/6752-29d11949292adbe4.js","734","static/chunks/734-59e62255f9361dc7.js","6474","static/chunks/app/shipment-tracking/page-95e203a8e0b7f109.js"],"default",1]
 4:I[4707,[],""]
 5:I[6423,[],""]
 6:I[3000,["915","static/chunks/915-85d1df3f42466c55.js","9064","static/chunks/9064-5b58904dea725965.js","8680","static/chunks/8680-17822e519ab707a1.js","3185","static/chunks/app/layout-3338e4b8376c525c.js"],"default"]

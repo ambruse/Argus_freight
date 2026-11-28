@@ -6,15 +6,15 @@ import SearchComboBox from "@/components/ui/SearchComboBox";
 import { availablePorts } from "@/lib/portCatalog";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
-import { apiError, DATE_FIELDS, TrackingRecord } from "./model";
+import { apiError, DATE_FIELDS, TRACKING_STAGES, TrackingRecord } from "./model";
 
 type Values = Record<string, string>;
 type Field = [key: string, label: string, type?: string];
 const REQUIRED_NEW = ["mode", "pol_country", "pol_port", "pod_country", "pod_port", "commodity", "chargeable_weight", "etd", "eta"];
 const CONTAINERS = ["20FT", "40FT", "45FT", "40FT Reefer"];
-const allKeys = [...REQUIRED_NEW, "load_type", "container_type", "carrier", "bl_number", "cargo_volume", "weight_unit", "pol_city", "pod_city", "pol_code", "pod_code"];
+const allKeys = [...REQUIRED_NEW, "track_status", "load_type", "container_type", "carrier", "bl_number", "cargo_volume", "weight_unit", "pol_city", "pod_city", "pol_code", "pod_code"];
 function initialValues(row?: TrackingRecord | null): Values {
-  const values: Values = { mode: "SEA", load_type: "LCL", weight_unit: "KG" };
+  const values: Values = { mode: "SEA", load_type: "LCL", weight_unit: "KG", track_status: "Confirmed" };
   if (!row) return values;
   for (const key of allKeys) if (row[key] !== null && row[key] !== undefined) values[key] = DATE_FIELDS.includes(key) ? String(row[key]).slice(0, 10) : String(row[key]);
   values.mode = /air/i.test(row.mode || "") ? "AIR" : /road|land/i.test(row.mode || "") ? "Road" : "SEA";
@@ -90,6 +90,7 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
   const save = async (event: FormEvent) => {
     event.preventDefault();
     const nextErrors: Values = {};
+    if (!TRACKING_STAGES.some(stage => stage === form.track_status)) nextErrors.track_status = "Select a valid tracking status.";
     if (isNew) requiredFields.forEach(key => { if (!form[key]?.trim()) nextErrors[key] = "This field is required for a new shipment."; });
     if (isFCL && !CONTAINERS.includes(form.container_type)) nextErrors.container_type = "Choose a container type.";
     if (!isFCL && form.chargeable_weight && (!Number.isFinite(Number(form.chargeable_weight)) || Number(form.chargeable_weight) < 0)) nextErrors.chargeable_weight = "Enter a valid chargeable weight.";
@@ -135,6 +136,7 @@ export default function TrackingEditor({ record, initialMethod = "existing", onC
         {form.mode !== "AIR" && <label className="block text-xs text-muted">Load type<select className="input w-full mt-1" value={form.load_type || "LCL"} onChange={e => set("load_type", e.target.value)}><option value="LCL">LCL</option><option value="FCL">FCL</option></select></label>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">{endpoint("pol")}{endpoint("pod")}</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <label className="block text-xs text-muted">Tracking status<select className="input w-full mt-1" value={form.track_status} onChange={e => set("track_status", e.target.value)} required aria-invalid={!!errors.track_status} aria-describedby={errors.track_status ? "error-track_status" : undefined}>{TRACKING_STAGES.map(stage => <option key={stage} value={stage}>{stage}</option>)}</select>{errors.track_status && <span id="error-track_status" className="text-rose block mt-1">{errors.track_status}</span>}</label>
           {field(["commodity", "Commodity"])}
           {field(["carrier", "Carrier"])}
           {field(["bl_number", "BL / DO Number"])}
